@@ -57,39 +57,33 @@ export const PIPE_ELASTICITY = [
   { name: "Personalizado", E: 0 },
 ];
 
-// ── Wall thickness references by material ──
-export const THICKNESS_BY_MATERIAL: Record<string, {
+// ── Wall thickness reference type ──
+export interface ThicknessRef {
   title: string;
   note?: string;
   columns: string[];
-  rows: { dn: number; values: number[] }[];
-} | null> = {
+  rows: { label: string; values: number[] }[];
+}
+
+// ── Wall thickness references by material ──
+export const THICKNESS_BY_MATERIAL: Record<string, ThicknessRef | null> = {
   "Hierro dúctil": {
     title: "ISO 2531 — Hierro ductil K9 (referencia)",
     columns: ["DN", "K9 (mm)"],
     rows: [
-      { dn: 100, values: [6.0] }, { dn: 150, values: [6.0] }, { dn: 200, values: [6.3] },
-      { dn: 250, values: [6.8] }, { dn: 300, values: [7.2] }, { dn: 350, values: [7.7] },
-      { dn: 400, values: [8.1] }, { dn: 500, values: [9.0] }, { dn: 600, values: [9.9] },
+      { label: "100", values: [6.0] }, { label: "150", values: [6.0] }, { label: "200", values: [6.3] },
+      { label: "250", values: [6.8] }, { label: "300", values: [7.2] }, { label: "350", values: [7.7] },
+      { label: "400", values: [8.1] }, { label: "500", values: [9.0] }, { label: "600", values: [9.9] },
     ],
   },
-  PVC: {
-    title: "ISO 4422 — PVC presion (referencia SDR)",
-    note: "e = D_nominal / SDR (aproximado)",
-    columns: ["DN", "SDR 17 (PN10)", "SDR 13.6 (PN16)"],
-    rows: [
-      { dn: 100, values: [6.2, 7.7] }, { dn: 150, values: [9.1, 11.4] },
-      { dn: 200, values: [12.3, 15.3] }, { dn: 250, values: [15.3, 19.1] },
-      { dn: 300, values: [18.3, 22.9] },
-    ],
-  },
+  PVC: null, // handled by PVC_SUBSYSTEMS
   HDPE: {
     title: "ISO 4427 — HDPE PE100 (referencia SDR)",
     columns: ["DN", "SDR 17 (PN10)", "SDR 11 (PN16)"],
     rows: [
-      { dn: 100, values: [6.2, 9.5] }, { dn: 150, values: [9.1, 14.2] },
-      { dn: 200, values: [12.3, 18.7] }, { dn: 250, values: [15.3, 23.4] },
-      { dn: 300, values: [18.3, 28.1] },
+      { label: "100", values: [6.2, 9.5] }, { label: "150", values: [9.1, 14.2] },
+      { label: "200", values: [12.3, 18.7] }, { label: "250", values: [15.3, 23.4] },
+      { label: "300", values: [18.3, 28.1] },
     ],
   },
   Acero: {
@@ -97,14 +91,89 @@ export const THICKNESS_BY_MATERIAL: Record<string, {
     note: "Verificar con fabricante y especificacion del proyecto",
     columns: ["DN", "Sch 20 (mm)", "Sch 40 (mm)"],
     rows: [
-      { dn: 100, values: [3.1, 6.0] }, { dn: 150, values: [4.0, 7.1] },
-      { dn: 200, values: [5.2, 8.2] }, { dn: 250, values: [5.2, 9.3] },
-      { dn: 300, values: [6.4, 10.3] },
+      { label: "100", values: [3.1, 6.0] }, { label: "150", values: [4.0, 7.1] },
+      { label: "200", values: [5.2, 8.2] }, { label: "250", values: [5.2, 9.3] },
+      { label: "300", values: [6.4, 10.3] },
     ],
   },
   "Asbesto cemento": null,
   Concreto: null,
   Personalizado: null,
+};
+
+// ── PVC Sub-systems ──
+export type PVCSystem = "metrico" | "ingles" | "c900";
+
+export const PVC_SYSTEM_LABELS: Record<PVCSystem, string> = {
+  metrico: "Metrico — ISO 4422 / NMX-E-143",
+  ingles: "Ingles — NMX / ASTM D2241",
+  c900: "AWWA C900 — Municipal",
+};
+
+export const PVC_THICKNESS: Record<PVCSystem, ThicknessRef> = {
+  metrico: {
+    title: "ISO 4422 / NMX-E-143 — PVC Metrico",
+    note: "e = OD / SDR. D interno = OD - 2e",
+    columns: ["OD (mm)", "SDR 26 / PN6", "SDR 17 / PN10", "SDR 13.6 / PN16"],
+    rows: [
+      { label: "63", values: [2.5, 3.8, 4.7] },
+      { label: "75", values: [3.0, 4.5, 5.6] },
+      { label: "110", values: [4.3, 6.6, 8.1] },
+      { label: "160", values: [6.2, 9.5, 11.8] },
+      { label: "200", values: [7.7, 11.9, 14.8] },
+      { label: "250", values: [9.7, 14.8, 18.5] },
+      { label: "315", values: [12.2, 18.7, 23.2] },
+    ],
+  },
+  ingles: {
+    title: "NMX-E-143 Ingles / ASTM D2241 — PVC Hidraulico",
+    note: "OD basado en IPS. D interno = OD - 2e",
+    columns: ["Nom.", "OD (mm)", "SDR 41 (100psi)", "SDR 26 (160psi)", "SDR 17 (250psi)"],
+    rows: [
+      { label: '2"', values: [60.3, 1.5, 2.3, 3.6] },
+      { label: '3"', values: [88.9, 2.2, 3.4, 5.2] },
+      { label: '4"', values: [114.3, 2.8, 4.4, 6.7] },
+      { label: '6"', values: [168.3, 4.1, 6.5, 9.9] },
+      { label: '8"', values: [219.1, 5.3, 8.4, 12.9] },
+      { label: '10"', values: [273.0, 6.7, 10.5, 16.1] },
+      { label: '12"', values: [323.9, 7.9, 12.5, 19.1] },
+    ],
+  },
+  c900: {
+    title: "AWWA C900 — PVC Agua Potable Municipal",
+    note: "OD coincide con hierro ductil (IPS). D interno = OD - 2e",
+    columns: ["Nom.", "OD (mm)", "DR 25 (100psi)", "DR 18 (150psi)", "DR 14 (200psi)"],
+    rows: [
+      { label: '4"', values: [118.1, 4.7, 6.6, 8.4] },
+      { label: '6"', values: [168.3, 6.7, 9.4, 12.0] },
+      { label: '8"', values: [219.1, 8.8, 12.2, 15.7] },
+      { label: '10"', values: [273.0, 10.9, 15.2, 19.5] },
+      { label: '12"', values: [323.9, 13.0, 18.0, 23.1] },
+    ],
+  },
+};
+
+export const PVC_CLASSES: Record<PVCSystem, { title: string; note?: string; classes: PipeClassRow[] }> = {
+  metrico: {
+    title: "ISO 4422 / NMX-E-143 — PVC Presion",
+    classes: [
+      { clase: "SDR 41", pn: 3.4 }, { clase: "SDR 26", pn: 6 },
+      { clase: "SDR 17", pn: 10 }, { clase: "SDR 13.6", pn: 12.5 }, { clase: "SDR 11", pn: 16 },
+    ],
+  },
+  ingles: {
+    title: "NMX-E-143 Ingles / ASTM D2241 — PVC Presion",
+    classes: [
+      { clase: "SDR 41", pn: 3.4 }, { clase: "SDR 26", pn: 6 },
+      { clase: "SDR 17", pn: 10 }, { clase: "SDR 13.6", pn: 12.5 }, { clase: "SDR 11", pn: 16 },
+    ],
+  },
+  c900: {
+    title: "AWWA C900 — PVC Municipal",
+    classes: [
+      { clase: "DR 25", pn: 6.9 }, { clase: "DR 18", pn: 10.3 }, { clase: "DR 14", pn: 13.8 },
+    ],
+  },
 };
 
 // ── Pipe class tables by material ──
@@ -122,14 +191,7 @@ export const PIPE_CLASSES_BY_MATERIAL: Record<string, {
       { clase: "K12", pn: 25 }, { clase: "K14", pn: 25 }, { clase: "K16", pn: 40 },
     ],
   },
-  PVC: {
-    title: "ISO 4422 — PVC presion",
-    note: "SDR equivalente: PN10=SDR17, PN16=SDR13.6, PN25=SDR11",
-    classes: [
-      { clase: "PN 6", pn: 6 }, { clase: "PN 10", pn: 10 },
-      { clase: "PN 16", pn: 16 }, { clase: "PN 20", pn: 20 }, { clase: "PN 25", pn: 25 },
-    ],
-  },
+  PVC: null, // handled by PVC_CLASSES subsystem
   HDPE: {
     title: "ISO 4427 — HDPE PE100",
     classes: [

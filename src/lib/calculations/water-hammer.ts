@@ -3,10 +3,10 @@
    Module 3
    ════════════════════════════════════════ */
 
-import { K_AGUA, RHO, G, PIPE_CLASSES_BY_MATERIAL } from "@/lib/constants";
+import { K_AGUA, RHO, G, PIPE_CLASSES_BY_MATERIAL, PVC_CLASSES, type PVCSystem, type PipeClassRow } from "@/lib/constants";
 import type { WaterHammerInputs, WaterHammerResults, Alert } from "@/types/hydraulic";
 
-export function calculateWaterHammer(input: WaterHammerInputs): WaterHammerResults | null {
+export function calculateWaterHammer(input: WaterHammerInputs, pvcSystem?: PVCSystem): WaterHammerResults | null {
   const { V0, D, e, E, P0, Tc, L } = input;
 
   if (V0 == null || D == null || e == null || E == null || L == null || Tc == null) {
@@ -47,7 +47,14 @@ export function calculateWaterHammer(input: WaterHammerInputs): WaterHammerResul
   let pipeClass: string | null = null;
   const alerts: Alert[] = [];
 
-  const matClasses = PIPE_CLASSES_BY_MATERIAL[input.materialName];
+  // Get class table: for PVC use subsystem, otherwise use material lookup
+  let matClassesData: { title: string; note?: string; classes: PipeClassRow[] } | null = null;
+  if (input.materialName === "PVC" && pvcSystem) {
+    matClassesData = PVC_CLASSES[pvcSystem];
+  } else {
+    matClassesData = PIPE_CLASSES_BY_MATERIAL[input.materialName] ?? null;
+  }
+  const matClasses = matClassesData;
   if (matClasses) {
     let classFound = false;
     for (const pc of matClasses.classes) {

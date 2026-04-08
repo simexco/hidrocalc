@@ -9,7 +9,7 @@ import { DataStatusBanner } from "@/components/ui/DataStatusBanner";
 import { ExportPDFButton } from "@/components/ui/ExportPDFButton";
 import { calculateWaterHammer } from "@/lib/calculations/water-hammer";
 import { formatNumber, mcaToKgcm2 } from "@/lib/calculations/conversions";
-import { PIPE_ELASTICITY, THICKNESS_BY_MATERIAL, PIPE_CLASSES_BY_MATERIAL } from "@/lib/constants";
+import { PIPE_ELASTICITY, THICKNESS_BY_MATERIAL, PIPE_CLASSES_BY_MATERIAL, PVC_THICKNESS, PVC_CLASSES, PVC_SYSTEM_LABELS, type PVCSystem } from "@/lib/constants";
 import { saveFormState, loadFormState } from "@/lib/storage/form-persistence";
 import type { AssumedValue } from "@/types/hydraulic";
 
@@ -17,6 +17,7 @@ export default function GolpeArietePage() {
   const { inputs, results, setInput, setResults } = useWaterHammerStore();
   const singlePipe = useSinglePipeStore();
   const [showThicknessRef, setShowThicknessRef] = useState(false);
+  const [pvcSystem, setPvcSystem] = useState<PVCSystem>("metrico");
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
   const persistRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
@@ -41,9 +42,9 @@ export default function GolpeArietePage() {
       ...inputs,
       P0: inputs.P0 != null ? inputs.P0 * 10 : null,
     };
-    const res = calculateWaterHammer(inputsConverted);
+    const res = calculateWaterHammer(inputsConverted, inputs.materialName === "PVC" ? pvcSystem : undefined);
     setResults(res);
-  }, [inputs, setResults]);
+  }, [inputs, pvcSystem, setResults]);
 
   useEffect(() => {
     clearTimeout(debounceRef.current);
@@ -122,7 +123,7 @@ export default function GolpeArietePage() {
             </div>
 
             {showThicknessRef && (() => {
-              const ref = THICKNESS_BY_MATERIAL[inputs.materialName];
+              const ref = inputs.materialName === "PVC" ? PVC_THICKNESS[pvcSystem] : THICKNESS_BY_MATERIAL[inputs.materialName];
               if (!ref) return (
                 <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 text-xs text-gray-500">
                   Consultar especificaciones del fabricante o norma del proyecto.
@@ -139,8 +140,8 @@ export default function GolpeArietePage() {
                     </thead>
                     <tbody>
                       {ref.rows.map((r) => (
-                        <tr key={r.dn} className="text-gray-500 dark:text-gray-400">
-                          <td className="py-0.5 px-1">{r.dn}</td>
+                        <tr key={r.label} className="text-gray-500 dark:text-gray-400">
+                          <td className="py-0.5 px-1">{r.label}</td>
                           {r.values.map((v, i) => <td key={i} className="py-0.5 px-1 font-mono">{v}</td>)}
                         </tr>
                       ))}
@@ -163,7 +164,21 @@ export default function GolpeArietePage() {
                 ))}
               </select>
               {inputs.materialName === "Personalizado" && (
-                <InputField label="E (Pa)" value={inputs.E} onChange={(v) => setInput("E", parseFloat(v) || 0)} tooltip="Módulo de elasticidad del material de la tubería en Pascales. Ejemplo: Hierro dúctil = 169,000,000,000 Pa" />
+                <InputField label="E (Pa)" value={inputs.E} onChange={(v) => setInput("E", parseFloat(v) || 0)} tooltip="Modulo de elasticidad del material en Pascales. Ej: Hierro ductil = 169,000,000,000 Pa" />
+              )}
+              {inputs.materialName === "PVC" && (
+                <div className="mt-2">
+                  <label className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1 block">Sistema PVC</label>
+                  <select
+                    value={pvcSystem}
+                    onChange={(e) => setPvcSystem(e.target.value as PVCSystem)}
+                    className="w-full px-2 py-1.5 text-xs border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 dark:text-white"
+                  >
+                    {(Object.keys(PVC_SYSTEM_LABELS) as PVCSystem[]).map((sys) => (
+                      <option key={sys} value={sys}>{PVC_SYSTEM_LABELS[sys]}</option>
+                    ))}
+                  </select>
+                </div>
               )}
             </div>
 
@@ -278,7 +293,7 @@ export default function GolpeArietePage() {
 
               {/* Pipe class comparison table — dynamic by material */}
               {results.Pmax_bar != null && (() => {
-                const matClasses = PIPE_CLASSES_BY_MATERIAL[inputs.materialName];
+                const matClasses = inputs.materialName === "PVC" ? PVC_CLASSES[pvcSystem] : PIPE_CLASSES_BY_MATERIAL[inputs.materialName];
                 if (!matClasses) return (
                   <div className="bg-gray-50 dark:bg-gray-700 rounded-xl px-4 py-3 text-xs text-gray-500">
                     La recomendacion de clase no esta disponible para este material. Consultar la norma aplicable al proyecto.
