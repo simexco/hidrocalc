@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useCallback, useRef } from "react";
+import { useEffect, useCallback, useRef, useState } from "react";
 import { v4 as uuid } from "uuid";
 import { useSeriesPipeStore } from "@/store/calculationStore";
 import { InputField } from "@/components/ui/InputField";
@@ -50,6 +50,23 @@ export default function EnSeriePage() {
     debounceRef.current = setTimeout(runCalc, 300);
     return () => clearTimeout(debounceRef.current);
   }, [runCalc]);
+
+  const [showRefTable, setShowRefTable] = useState(false);
+
+  const K_LE_REF = [
+    { acc: "Codo 90 deg radio largo", k: 0.3, leD: 16 },
+    { acc: "Codo 90 deg radio corto", k: 0.9, leD: 50 },
+    { acc: "Codo 45 deg", k: 0.2, leD: 12 },
+    { acc: "Tee paso directo", k: 0.2, leD: 20 },
+    { acc: "Tee ramal lateral", k: 1.0, leD: 60 },
+    { acc: "Valvula compuerta (100%)", k: 0.2, leD: 8 },
+    { acc: "Valvula mariposa (100%)", k: 0.3, leD: 40 },
+    { acc: "Valvula check disco", k: 2.0, leD: 100 },
+    { acc: "Reduccion gradual", k: 0.1, leD: 5 },
+    { acc: "Reduccion brusca", k: 0.5, leD: 30 },
+    { acc: "Entrada a tuberia", k: 0.5, leD: 25 },
+    { acc: "Salida de tuberia", k: 1.0, leD: 50 },
+  ];
 
   const handleAddTramo = () => {
     addTramo({
@@ -121,12 +138,50 @@ export default function EnSeriePage() {
 
           {/* Tramos */}
           <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 space-y-3">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between gap-2">
               <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300">Tramos</h2>
-              <button onClick={handleAddTramo} className="text-xs bg-[#1C3D5A] text-white px-3 py-1.5 rounded-lg hover:bg-[#0F2438] transition-colors">
-                + Tramo
-              </button>
+              <div className="flex gap-2">
+                <button onClick={() => setShowRefTable(true)} className="text-[10px] text-[#1C3D5A] border border-[#1C3D5A]/30 px-2 py-1 rounded hover:bg-[#1C3D5A]/10 transition-colors">
+                  Ref. K/Le
+                </button>
+                <button onClick={handleAddTramo} className="text-xs bg-[#1C3D5A] text-white px-3 py-1.5 rounded-lg hover:bg-[#0F2438] transition-colors">
+                  + Tramo
+                </button>
+              </div>
             </div>
+
+            {/* K/Le reference modal */}
+            {showRefTable && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setShowRefTable(false)}>
+                <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl max-w-lg w-full mx-4 max-h-[80vh] overflow-auto" onClick={(e) => e.stopPropagation()}>
+                  <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-700">
+                    <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300">Referencia de coeficientes K y Le/D</h3>
+                    <button onClick={() => setShowRefTable(false)} className="text-gray-400 hover:text-gray-600 text-lg">&times;</button>
+                  </div>
+                  <table className="w-full text-xs">
+                    <thead>
+                      <tr className="bg-[#1C3D5A] text-white">
+                        <th className="px-3 py-2 text-left">Accesorio</th>
+                        <th className="px-3 py-2 text-center">K (adim.)</th>
+                        <th className="px-3 py-2 text-center">Le/D</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {K_LE_REF.map((r, i) => (
+                        <tr key={r.acc} className={`border-b border-gray-100 dark:border-gray-700 ${i % 2 ? "bg-gray-50 dark:bg-gray-800/50" : ""}`}>
+                          <td className="px-3 py-1.5">{r.acc}</td>
+                          <td className="px-3 py-1.5 text-center font-mono">{r.k.toFixed(1)}</td>
+                          <td className="px-3 py-1.5 text-center font-mono">{r.leD}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                  <div className="px-4 py-2 text-[10px] text-gray-400 border-t border-gray-100 dark:border-gray-700">
+                    Ref: Sotelo Avila — Hidraulica General Vol. 1 / Streeter-Wylie
+                  </div>
+                </div>
+              </div>
+            )}
 
             {inputs.tramos.length === 0 && (
               <p className="text-xs text-gray-400 text-center py-4">Agrega al menos un tramo para calcular</p>

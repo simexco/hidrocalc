@@ -125,6 +125,9 @@ export default function DimensionamientoPage() {
                   <option key={m.name} value={m.name}>{m.name} (C={m.c})</option>
                 ))}
               </select>
+              <p className="text-[10px] text-gray-400 dark:text-gray-500 leading-tight mt-1">
+                Diseno (C=130): proyectos nuevos CONAGUA. Verificacion (C=140): lineas existentes.
+              </p>
             </div>
 
             <InputField label="Presión entrada P₁" value={inputs.P1} onChange={(v) => handleNum("P1", v)} unit="kg/cm²" tooltip="Presión disponible al inicio de la tubería. Si no la conoces, la tabla mostrará solo velocidad y pérdidas, pero no podrá verificar presión de salida" />

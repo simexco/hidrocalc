@@ -70,7 +70,7 @@ export default function Home() {
       <div className="w-full border-b border-white/10 px-6 py-3">
         <div className="max-w-6xl mx-auto flex items-center justify-between">
           <span className="text-white/40 text-xs tracking-widest uppercase font-medium">Herramienta de Ingeniería</span>
-          <span className="text-white/30 text-xs">v1.1</span>
+          <span className="text-white/30 text-xs">v1.2</span>
         </div>
       </div>
 

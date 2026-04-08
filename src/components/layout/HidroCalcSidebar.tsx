@@ -73,7 +73,7 @@ export function HidroCalcSidebar() {
         </Link>
         <div className="mt-3 px-1">
           <span className="text-sm font-semibold text-white/90 tracking-wide">HidroCalc</span>
-          <span className="text-[10px] text-white/30 ml-1.5">v1.1</span>
+          <span className="text-[10px] text-white/30 ml-1.5">v1.2</span>
         </div>
       </div>
 

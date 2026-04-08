@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useCallback, useRef } from "react";
+import { useEffect, useCallback, useRef, useState } from "react";
 import { usePumpOperationStore } from "@/store/calculationStore";
 import { InputField } from "@/components/ui/InputField";
 import { MetricCard } from "@/components/ui/MetricCard";
@@ -16,6 +16,7 @@ import type { PumpInputMethod, PumpPoint } from "@/types/hydraulic";
 
 export default function BombeoPage() {
   const { inputs, results, setInput, setResults, addPumpPoint, removePumpPoint, updatePumpPoint } = usePumpOperationStore();
+  const [p2Req, setP2Req] = useState<number>(0); // kg/cm² — pressure required at delivery
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
   const persistRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
@@ -35,9 +36,11 @@ export default function BombeoPage() {
   }, [inputs]);
 
   const runCalc = useCallback(() => {
-    const res = calculatePumpOperation(inputs);
+    // Hs = Hg + P2_requerida (converted to m.c.a.)
+    const Hs = (inputs.Hg ?? 0) + (p2Req * 10);
+    const res = calculatePumpOperation({ ...inputs, Hg: Hs });
     setResults(res);
-  }, [inputs, setResults]);
+  }, [inputs, p2Req, setResults]);
 
   useEffect(() => {
     clearTimeout(debounceRef.current);
@@ -71,7 +74,9 @@ export default function BombeoPage() {
               Sistema
             </h2>
             <InputField label="Nombre del proyecto" value={inputs.projectName} onChange={(v) => setInput("projectName", v)} type="text" />
-            <InputField label="Altura estática Hg" value={inputs.Hg} onChange={(v) => handleNum("Hg", v)} unit="m" required tooltip="Diferencia de elevación entre la succión y la descarga de la bomba" />
+            <InputField label="Altura geometrica Hg" value={inputs.Hg} onChange={(v) => handleNum("Hg", v)} unit="m" required tooltip="Diferencia de elevacion entre la succion y la descarga de la bomba (z2 - z1)" />
+            <InputField label="Presion remanente P2" value={p2Req} onChange={(v) => setP2Req(parseFloat(v) || 0)} unit="kg/cm2" tooltip="Presion minima requerida en el punto de entrega (tanque, red). Si descarga a tanque atmosferico, usar 0." />
+            <p className="text-[10px] text-gray-400 -mt-2 mb-1">Hs = Hg + P2 = {((inputs.Hg ?? 0) + p2Req * 10).toFixed(1)} m</p>
             <InputField label="Longitud total L" value={inputs.L} onChange={(v) => handleNum("L", v)} unit="m" required tooltip="Longitud total de la tubería desde la bomba hasta el punto de descarga" />
 
             <div className="space-y-1">

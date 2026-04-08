@@ -272,6 +272,9 @@ export default function TramoSimplePage() {
                   </option>
                 ))}
               </select>
+              <p className="text-[10px] text-gray-400 dark:text-gray-500 leading-tight mt-1">
+                Diseno (C=130): proyectos nuevos, criterio conservador CONAGUA. Verificacion (C=140): lineas existentes en buen estado.
+              </p>
               {inputs.materialName === "Personalizado" && (
                 <InputField
                   label="C personalizado"
@@ -493,15 +496,19 @@ export default function TramoSimplePage() {
                 />
               </div>
 
-              {/* Alerts */}
-              {results.alerts.filter((a) => a.level !== "OK").length > 0 && (
-                <div className="space-y-2">
-                  <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300">Alertas</h3>
-                  {results.alerts.filter((a) => a.level !== "OK").map((a, i) => (
-                    <AlertBanner key={i} level={a.level} message={a.message} />
-                  ))}
-                </div>
-              )}
+              {/* Alerts — only those NOT already shown on metric cards */}
+              {(() => {
+                const shownOnCards = new Set(["V", "P2", "J"]);
+                const extra = results.alerts.filter((a) => a.level !== "OK" && !shownOnCards.has(a.field));
+                return extra.length > 0 ? (
+                  <div className="space-y-2">
+                    <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300">Alertas</h3>
+                    {extra.map((a, i) => (
+                      <AlertBanner key={i} level={a.level} message={a.message} />
+                    ))}
+                  </div>
+                ) : null;
+              })()}
 
               {/* Hydraulic Profile Chart */}
               {profilePoints.length >= 2 && (

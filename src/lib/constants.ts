@@ -8,9 +8,9 @@ export const STANDARD_DNS = [50, 63, 75, 100, 150, 200, 250, 300, 350, 400, 450,
 // ── Materials with Hazen-Williams C ──
 export const MATERIALS = [
   { name: "PVC / HDPE", c: 150 },
-  { name: "Hierro dúctil nuevo — diseño (C=130)", c: 130 },
-  { name: "Hierro dúctil nuevo — verificación (C=140)", c: 140 },
-  { name: "Hierro dúctil (10+ años)", c: 120 },
+  { name: "HD nuevo — diseno", c: 130 },
+  { name: "HD nuevo — verificacion", c: 140 },
+  { name: "HD (10+ anos)", c: 130 },
   { name: "Hierro galvanizado / Acero nuevo", c: 120 },
   { name: "Concreto centrifugado", c: 130 },
   { name: "Asbesto cemento", c: 140 },
