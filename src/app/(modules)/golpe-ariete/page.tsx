@@ -18,6 +18,23 @@ export default function GolpeArietePage() {
   const singlePipe = useSinglePipeStore();
   const [showThicknessRef, setShowThicknessRef] = useState(false);
   const [pvcSystem, setPvcSystem] = useState<PVCSystem>("metrico");
+  const [diamMode, setDiamMode] = useState<"dint" | "od">("dint");
+  const [odValue, setOdValue] = useState<number | null>(null);
+
+  // Computed OD and DR
+  const computedOD = diamMode === "od" ? odValue : (inputs.D != null && inputs.e != null ? inputs.D + 2 * inputs.e : null);
+  const computedDR = computedOD != null && inputs.e != null && inputs.e > 0 ? computedOD / inputs.e : null;
+  const computedDint = diamMode === "od" && odValue != null && inputs.e != null ? odValue - 2 * inputs.e : inputs.D;
+
+  // When in OD mode, update D_interno whenever OD or e changes
+  useEffect(() => {
+    if (diamMode === "od" && odValue != null && inputs.e != null && inputs.e > 0) {
+      const dint = odValue - 2 * inputs.e;
+      if (dint > 0 && dint !== inputs.D) {
+        setInput("D", Math.round(dint * 10) / 10);
+      }
+    }
+  }, [diamMode, odValue, inputs.e, inputs.D, setInput]);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
   const persistRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
@@ -137,11 +154,23 @@ export default function GolpeArietePage() {
               required
               tooltip="Velocidad del agua en la tubería antes del cierre de válvula. Puedes obtenerla del Módulo 1 (Tramo Simple) o calcularla como Q/A"
             />
-            <InputField label="Diámetro interno D" value={inputs.D} onChange={(v) => handleNum("D", v)} unit="mm" required tooltip="Diámetro interior real de la tubería (no el nominal). Consulta la ficha técnica del fabricante" />
+            {/* Diameter mode toggle */}
+            <div className="space-y-2">
+              <div className="flex items-center gap-1">
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mr-2">Diametro</label>
+                <button type="button" onClick={() => setDiamMode("dint")} className={`text-[10px] px-2 py-0.5 rounded transition-colors ${diamMode === "dint" ? "bg-[#1C3D5A] text-white" : "bg-gray-100 dark:bg-gray-700 text-gray-500"}`}>D interno</button>
+                <button type="button" onClick={() => setDiamMode("od")} className={`text-[10px] px-2 py-0.5 rounded transition-colors ${diamMode === "od" ? "bg-[#1C3D5A] text-white" : "bg-gray-100 dark:bg-gray-700 text-gray-500"}`}>OD exterior</button>
+              </div>
+              {diamMode === "dint" ? (
+                <InputField label="D interno" value={inputs.D} onChange={(v) => handleNum("D", v)} unit="mm" required tooltip="Diametro interior real de la tuberia" />
+              ) : (
+                <InputField label="OD exterior" value={odValue} onChange={(v) => setOdValue(v === "" ? null : parseFloat(v))} unit="mm" required tooltip="Diametro exterior nominal del tubo. Se calcula D_int = OD - 2e" />
+              )}
+            </div>
 
             <div className="flex items-end gap-2">
               <div className="flex-1">
-                <InputField label="Espesor de pared e" value={inputs.e} onChange={(v) => handleNum("e", v)} unit="mm" required tooltip="Grosor de la pared de la tubería en milímetros. Haz clic en 'Ver ref.' para consultar valores típicos por diámetro" />
+                <InputField label="Espesor de pared e" value={inputs.e} onChange={(v) => handleNum("e", v)} unit="mm" required tooltip="Grosor de la pared de la tuberia. Clic en 'Ver ref.' para valores tipicos" />
               </div>
               <button
                 onClick={() => setShowThicknessRef(!showThicknessRef)}
@@ -181,8 +210,23 @@ export default function GolpeArietePage() {
               );
             })()}
 
+            {/* OD / DR computed display */}
+            {(inputs.D != null || odValue != null) && inputs.e != null && inputs.e > 0 && (
+              <div className="bg-gray-50 dark:bg-gray-700 rounded-lg px-3 py-2 text-xs text-gray-500 dark:text-gray-400 flex flex-wrap gap-x-4 gap-y-1">
+                {diamMode === "dint" && computedOD != null && (
+                  <span>OD = D + 2e = <strong className="text-gray-700 dark:text-gray-300">{computedOD.toFixed(1)} mm</strong></span>
+                )}
+                {diamMode === "od" && computedDint != null && (
+                  <span>D_int = OD - 2e = <strong className="text-gray-700 dark:text-gray-300">{(typeof computedDint === "number" ? computedDint : 0).toFixed(1)} mm</strong></span>
+                )}
+                {computedDR != null && (
+                  <span>DR = OD/e = <strong className="text-gray-700 dark:text-gray-300">{computedDR.toFixed(1)}</strong></span>
+                )}
+              </div>
+            )}
+
             <div className="space-y-1">
-              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Material (Módulo E)</label>
+              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Material (Modulo E)</label>
               <select
                 value={inputs.materialName}
                 onChange={(e) => handleMaterial(e.target.value)}
@@ -338,10 +382,11 @@ export default function GolpeArietePage() {
                     <table className="w-full text-xs">
                       <thead>
                         <tr className="bg-gray-50 dark:bg-gray-700 text-gray-500 dark:text-gray-400">
-                          <th className="px-3 py-2 text-left">Clase</th>
-                          <th className="px-3 py-2 text-right">PN (bar)</th>
-                          <th className="px-3 py-2 text-center">Cumple Pmax</th>
-                          <th className="px-3 py-2 text-right">Factor seg.</th>
+                          <th className="px-2 py-2 text-left">Clase</th>
+                          <th className="px-2 py-2 text-right">PN (bar)</th>
+                          <th className="px-2 py-2 text-center">Cumple</th>
+                          {computedDR != null && <th className="px-2 py-2 text-center">Tu tubo</th>}
+                          <th className="px-2 py-2 text-right">F.S.</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -349,17 +394,45 @@ export default function GolpeArietePage() {
                           const cumple = results.Pmax_bar != null && results.Pmax_bar <= row.pn;
                           const fs = results.Pmax_bar != null && results.Pmax_bar > 0 ? row.pn / results.Pmax_bar : 0;
                           const isRec = row.clase === results.pipeClass;
+
+                          // "Tu tubo" logic: extract DR number from class name
+                          let tuTuboOk: boolean | null = null;
+                          let isTuTubo = false;
+                          if (computedDR != null) {
+                            const classDR = parseFloat(row.clase.replace(/[^0-9.]/g, ""));
+                            if (!isNaN(classDR) && classDR > 0) {
+                              // For SDR/DR: lower DR = thicker wall = stronger. User's DR must be <= class DR to meet/exceed it.
+                              // But for K-classes (HD), we skip this logic
+                              if (inputs.materialName !== "Hierro dúctil") {
+                                tuTuboOk = computedDR <= classDR;
+                                // Mark closest match
+                                if (Math.abs(computedDR - classDR) < 1.5) isTuTubo = true;
+                              }
+                            }
+                          }
+
                           return (
-                            <tr key={row.clase} className={`border-b border-gray-100 dark:border-gray-700 ${isRec ? "bg-green-50 dark:bg-green-900/20 font-medium" : ""}`}>
-                              <td className="px-3 py-2">
+                            <tr key={row.clase} className={`border-b border-gray-100 dark:border-gray-700 ${isRec ? "bg-green-50 dark:bg-green-900/20 font-medium" : ""} ${isTuTubo ? "ring-1 ring-inset ring-[#1C3D5A]/30" : ""}`}>
+                              <td className="px-2 py-2">
                                 {row.clase}
                                 {isRec && <span className="ml-1 text-[10px] bg-green-100 text-green-700 px-1 py-0.5 rounded">REC</span>}
                               </td>
-                              <td className="px-3 py-2 text-right font-mono">{row.pn}</td>
-                              <td className="px-3 py-2 text-center">
-                                {cumple ? <span className="text-green-600">&#10003;</span> : <span className="text-red-500">&#10005;</span>}
+                              <td className="px-2 py-2 text-right font-mono">{row.pn}</td>
+                              <td className="px-2 py-2 text-center">
+                                {cumple ? <span className="text-green-600">{"\u2713"}</span> : <span className="text-red-500">{"\u2717"}</span>}
                               </td>
-                              <td className="px-3 py-2 text-right font-mono">{fs > 0 ? fs.toFixed(2) : "\u2014"}</td>
+                              {computedDR != null && (
+                                <td className="px-2 py-2 text-center">
+                                  {tuTuboOk === true ? (
+                                    <span className="text-green-600">{"\u2713"}{isTuTubo ? ` DR${computedDR.toFixed(0)}` : ""}</span>
+                                  ) : tuTuboOk === false ? (
+                                    <span className="text-red-500">{"\u2717"}</span>
+                                  ) : (
+                                    <span className="text-gray-300">{"\u2014"}</span>
+                                  )}
+                                </td>
+                              )}
+                              <td className="px-2 py-2 text-right font-mono">{fs > 0 ? fs.toFixed(2) : "\u2014"}</td>
                             </tr>
                           );
                         })}
