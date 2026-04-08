@@ -3,7 +3,7 @@
    Module 3
    ════════════════════════════════════════ */
 
-import { K_AGUA, RHO, G, PIPE_CLASS_BY_PRESSURE } from "@/lib/constants";
+import { K_AGUA, RHO, G, PIPE_CLASSES_BY_MATERIAL } from "@/lib/constants";
 import type { WaterHammerInputs, WaterHammerResults, Alert } from "@/types/hydraulic";
 
 export function calculateWaterHammer(input: WaterHammerInputs): WaterHammerResults | null {
@@ -43,22 +43,29 @@ export function calculateWaterHammer(input: WaterHammerInputs): WaterHammerResul
   const deltaP_kPa = deltaP / 1000;
   const deltaP_bar = deltaP / 100000;
 
-  // Pipe class recommendation
+  // Pipe class recommendation (material-specific)
   let pipeClass: string | null = null;
   const alerts: Alert[] = [];
 
-  let classFound = false;
-  for (const pc of PIPE_CLASS_BY_PRESSURE) {
-    if (Pmax_bar <= pc.maxBar) {
-      pipeClass = pc.clase;
-      alerts.push({ level: "OK", field: "pipeClass", message: `Clase ${pc.clase} es adecuada para Pmax = ${Pmax_bar.toFixed(1)} bar` });
-      classFound = true;
-      break;
+  const matClasses = PIPE_CLASSES_BY_MATERIAL[input.materialName];
+  if (matClasses) {
+    let classFound = false;
+    for (const pc of matClasses.classes) {
+      if (Pmax_bar <= pc.pn) {
+        pipeClass = pc.clase;
+        alerts.push({ level: "OK", field: "pipeClass", message: `${pc.clase} (PN ${pc.pn} bar) adecuada para Pmax = ${Pmax_bar.toFixed(1)} bar` });
+        classFound = true;
+        break;
+      }
     }
-  }
-  if (!classFound) {
-    pipeClass = "Excede K12";
-    alerts.push({ level: "ERROR", field: "pipeClass", message: "Revisar diseño — instalar protección contra ariete" });
+    if (!classFound) {
+      const maxClass = matClasses.classes[matClasses.classes.length - 1];
+      pipeClass = `Excede ${maxClass.clase}`;
+      alerts.push({ level: "ERROR", field: "pipeClass", message: `Pmax (${Pmax_bar.toFixed(1)} bar) excede la clase maxima disponible (${maxClass.clase} PN ${maxClass.pn}). Revisar diseno o instalar proteccion contra ariete.` });
+    }
+  } else {
+    pipeClass = null;
+    alerts.push({ level: "WARN", field: "pipeClass", message: "Recomendacion de clase no disponible para este material. Consultar norma del proyecto." });
   }
 
   // Closure type alert

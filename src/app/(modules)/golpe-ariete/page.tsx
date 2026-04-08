@@ -9,7 +9,7 @@ import { DataStatusBanner } from "@/components/ui/DataStatusBanner";
 import { ExportPDFButton } from "@/components/ui/ExportPDFButton";
 import { calculateWaterHammer } from "@/lib/calculations/water-hammer";
 import { formatNumber, mcaToKgcm2 } from "@/lib/calculations/conversions";
-import { PIPE_ELASTICITY, WALL_THICKNESS_REF } from "@/lib/constants";
+import { PIPE_ELASTICITY, THICKNESS_BY_MATERIAL, PIPE_CLASSES_BY_MATERIAL } from "@/lib/constants";
 import { saveFormState, loadFormState } from "@/lib/storage/form-persistence";
 import type { AssumedValue } from "@/types/hydraulic";
 
@@ -121,17 +121,35 @@ export default function GolpeArietePage() {
               </button>
             </div>
 
-            {showThicknessRef && (
-              <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 text-xs space-y-1">
-                <p className="font-semibold text-gray-600 dark:text-gray-300 mb-1">Espesores de referencia (Hierro dúctil K9)</p>
-                {WALL_THICKNESS_REF.map((r) => (
-                  <div key={r.dn} className="flex justify-between text-gray-500 dark:text-gray-400">
-                    <span>DN {r.dn}</span>
-                    <span>{r.e} mm</span>
-                  </div>
-                ))}
-              </div>
-            )}
+            {showThicknessRef && (() => {
+              const ref = THICKNESS_BY_MATERIAL[inputs.materialName];
+              if (!ref) return (
+                <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 text-xs text-gray-500">
+                  Consultar especificaciones del fabricante o norma del proyecto.
+                </div>
+              );
+              return (
+                <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 text-xs space-y-1">
+                  <p className="font-semibold text-gray-600 dark:text-gray-300 mb-2">{ref.title}</p>
+                  <table className="w-full">
+                    <thead>
+                      <tr className="text-gray-400">
+                        {ref.columns.map((c) => <th key={c} className="text-left py-0.5 px-1 font-medium">{c}</th>)}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {ref.rows.map((r) => (
+                        <tr key={r.dn} className="text-gray-500 dark:text-gray-400">
+                          <td className="py-0.5 px-1">{r.dn}</td>
+                          {r.values.map((v, i) => <td key={i} className="py-0.5 px-1 font-mono">{v}</td>)}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                  {ref.note && <p className="text-[10px] text-gray-400 mt-1">{ref.note}</p>}
+                </div>
+              );
+            })()}
 
             <div className="space-y-1">
               <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Material (Módulo E)</label>
@@ -258,53 +276,57 @@ export default function GolpeArietePage() {
                 </div>
               )}
 
-              {/* Pipe class comparison table — ISO 2531 */}
-              {results.Pmax_bar != null && (
-                <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
-                  <div className="bg-[#1C3D5A] px-4 py-2">
-                    <h3 className="text-xs font-semibold text-white">Clases de tuberia disponibles (ISO 2531 - Hierro ductil)</h3>
+              {/* Pipe class comparison table — dynamic by material */}
+              {results.Pmax_bar != null && (() => {
+                const matClasses = PIPE_CLASSES_BY_MATERIAL[inputs.materialName];
+                if (!matClasses) return (
+                  <div className="bg-gray-50 dark:bg-gray-700 rounded-xl px-4 py-3 text-xs text-gray-500">
+                    La recomendacion de clase no esta disponible para este material. Consultar la norma aplicable al proyecto.
                   </div>
-                  <table className="w-full text-xs">
-                    <thead>
-                      <tr className="bg-gray-50 dark:bg-gray-700 text-gray-500 dark:text-gray-400">
-                        <th className="px-3 py-2 text-left">Clase</th>
-                        <th className="px-3 py-2 text-right">PN (bar)</th>
-                        <th className="px-3 py-2 text-center">Cumple Pmax</th>
-                        <th className="px-3 py-2 text-right">Factor seg.</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {[
-                        { clase: "K7", pn: 10 },
-                        { clase: "K9", pn: 16 },
-                        { clase: "K12", pn: 25 },
-                        { clase: "K14", pn: 25 },
-                        { clase: "K16", pn: 40 },
-                      ].map((row) => {
-                        const cumple = results.Pmax_bar != null && results.Pmax_bar <= row.pn;
-                        const fs = results.Pmax_bar != null && results.Pmax_bar > 0 ? row.pn / results.Pmax_bar : 0;
-                        const isRec = row.clase === results.pipeClass;
-                        return (
-                          <tr key={row.clase} className={`border-b border-gray-100 dark:border-gray-700 ${isRec ? "bg-green-50 dark:bg-green-900/20 font-medium" : ""}`}>
-                            <td className="px-3 py-2">
-                              {row.clase}
-                              {isRec && <span className="ml-1 text-[10px] bg-green-100 text-green-700 px-1 py-0.5 rounded">REC</span>}
-                            </td>
-                            <td className="px-3 py-2 text-right font-mono">{row.pn}</td>
-                            <td className="px-3 py-2 text-center">
-                              {cumple ? <span className="text-green-600">&#10003;</span> : <span className="text-red-500">&#10005;</span>}
-                            </td>
-                            <td className="px-3 py-2 text-right font-mono">{fs > 0 ? fs.toFixed(2) : "—"}</td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                  <div className="px-3 py-2 text-[10px] text-gray-400 border-t border-gray-100 dark:border-gray-700">
-                    PN para DN &le; 300 mm. Para DN mayores consultar tabla ISO 2531 completa. Factor seg. = PN / Pmax.
+                );
+                return (
+                  <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+                    <div className="bg-[#1C3D5A] px-4 py-2">
+                      <h3 className="text-xs font-semibold text-white">Clases disponibles ({matClasses.title})</h3>
+                    </div>
+                    <table className="w-full text-xs">
+                      <thead>
+                        <tr className="bg-gray-50 dark:bg-gray-700 text-gray-500 dark:text-gray-400">
+                          <th className="px-3 py-2 text-left">Clase</th>
+                          <th className="px-3 py-2 text-right">PN (bar)</th>
+                          <th className="px-3 py-2 text-center">Cumple Pmax</th>
+                          <th className="px-3 py-2 text-right">Factor seg.</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {matClasses.classes.map((row) => {
+                          const cumple = results.Pmax_bar != null && results.Pmax_bar <= row.pn;
+                          const fs = results.Pmax_bar != null && results.Pmax_bar > 0 ? row.pn / results.Pmax_bar : 0;
+                          const isRec = row.clase === results.pipeClass;
+                          return (
+                            <tr key={row.clase} className={`border-b border-gray-100 dark:border-gray-700 ${isRec ? "bg-green-50 dark:bg-green-900/20 font-medium" : ""}`}>
+                              <td className="px-3 py-2">
+                                {row.clase}
+                                {isRec && <span className="ml-1 text-[10px] bg-green-100 text-green-700 px-1 py-0.5 rounded">REC</span>}
+                              </td>
+                              <td className="px-3 py-2 text-right font-mono">{row.pn}</td>
+                              <td className="px-3 py-2 text-center">
+                                {cumple ? <span className="text-green-600">&#10003;</span> : <span className="text-red-500">&#10005;</span>}
+                              </td>
+                              <td className="px-3 py-2 text-right font-mono">{fs > 0 ? fs.toFixed(2) : "\u2014"}</td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                    {matClasses.note && (
+                      <div className="px-3 py-2 text-[10px] text-gray-400 border-t border-gray-100 dark:border-gray-700">
+                        {matClasses.note}. Factor seg. = PN / Pmax.
+                      </div>
+                    )}
                   </div>
-                </div>
-              )}
+                );
+              })()}
 
               {/* Alerts */}
               {results.alerts.filter((a) => a.level !== "OK").map((a, i) => (

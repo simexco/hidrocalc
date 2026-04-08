@@ -57,20 +57,101 @@ export const PIPE_ELASTICITY = [
   { name: "Personalizado", E: 0 },
 ];
 
-// ── Water Hammer: Wall thickness reference (mm) ──
-export const WALL_THICKNESS_REF = [
-  { material: "Hierro dúctil", dn: 100, clase: "K9", e: 6.0 },
-  { material: "Hierro dúctil", dn: 150, clase: "K9", e: 6.0 },
-  { material: "Hierro dúctil", dn: 200, clase: "K9", e: 6.3 },
-  { material: "Hierro dúctil", dn: 250, clase: "K9", e: 6.8 },
-  { material: "Hierro dúctil", dn: 300, clase: "K9", e: 7.2 },
-  { material: "Hierro dúctil", dn: 350, clase: "K9", e: 7.7 },
-  { material: "Hierro dúctil", dn: 400, clase: "K9", e: 8.1 },
-  { material: "Hierro dúctil", dn: 500, clase: "K9", e: 9.0 },
-  { material: "Hierro dúctil", dn: 600, clase: "K9", e: 9.9 },
-];
+// ── Wall thickness references by material ──
+export const THICKNESS_BY_MATERIAL: Record<string, {
+  title: string;
+  note?: string;
+  columns: string[];
+  rows: { dn: number; values: number[] }[];
+} | null> = {
+  "Hierro dúctil": {
+    title: "ISO 2531 — Hierro ductil K9 (referencia)",
+    columns: ["DN", "K9 (mm)"],
+    rows: [
+      { dn: 100, values: [6.0] }, { dn: 150, values: [6.0] }, { dn: 200, values: [6.3] },
+      { dn: 250, values: [6.8] }, { dn: 300, values: [7.2] }, { dn: 350, values: [7.7] },
+      { dn: 400, values: [8.1] }, { dn: 500, values: [9.0] }, { dn: 600, values: [9.9] },
+    ],
+  },
+  PVC: {
+    title: "ISO 4422 — PVC presion (referencia SDR)",
+    note: "e = D_nominal / SDR (aproximado)",
+    columns: ["DN", "SDR 17 (PN10)", "SDR 13.6 (PN16)"],
+    rows: [
+      { dn: 100, values: [6.2, 7.7] }, { dn: 150, values: [9.1, 11.4] },
+      { dn: 200, values: [12.3, 15.3] }, { dn: 250, values: [15.3, 19.1] },
+      { dn: 300, values: [18.3, 22.9] },
+    ],
+  },
+  HDPE: {
+    title: "ISO 4427 — HDPE PE100 (referencia SDR)",
+    columns: ["DN", "SDR 17 (PN10)", "SDR 11 (PN16)"],
+    rows: [
+      { dn: 100, values: [6.2, 9.5] }, { dn: 150, values: [9.1, 14.2] },
+      { dn: 200, values: [12.3, 18.7] }, { dn: 250, values: [15.3, 23.4] },
+      { dn: 300, values: [18.3, 28.1] },
+    ],
+  },
+  Acero: {
+    title: "AWWA C200 — Acero (referencia Schedule)",
+    note: "Verificar con fabricante y especificacion del proyecto",
+    columns: ["DN", "Sch 20 (mm)", "Sch 40 (mm)"],
+    rows: [
+      { dn: 100, values: [3.1, 6.0] }, { dn: 150, values: [4.0, 7.1] },
+      { dn: 200, values: [5.2, 8.2] }, { dn: 250, values: [5.2, 9.3] },
+      { dn: 300, values: [6.4, 10.3] },
+    ],
+  },
+  "Asbesto cemento": null,
+  Concreto: null,
+  Personalizado: null,
+};
 
-// ── Pipe class recommendation by max pressure ──
+// ── Pipe class tables by material ──
+export interface PipeClassRow { clase: string; pn: number }
+
+export const PIPE_CLASSES_BY_MATERIAL: Record<string, {
+  title: string;
+  note?: string;
+  classes: PipeClassRow[];
+} | null> = {
+  "Hierro dúctil": {
+    title: "ISO 2531 — Hierro ductil",
+    classes: [
+      { clase: "K7", pn: 10 }, { clase: "K9", pn: 16 },
+      { clase: "K12", pn: 25 }, { clase: "K14", pn: 25 }, { clase: "K16", pn: 40 },
+    ],
+  },
+  PVC: {
+    title: "ISO 4422 — PVC presion",
+    note: "SDR equivalente: PN10=SDR17, PN16=SDR13.6, PN25=SDR11",
+    classes: [
+      { clase: "PN 6", pn: 6 }, { clase: "PN 10", pn: 10 },
+      { clase: "PN 16", pn: 16 }, { clase: "PN 20", pn: 20 }, { clase: "PN 25", pn: 25 },
+    ],
+  },
+  HDPE: {
+    title: "ISO 4427 — HDPE PE100",
+    classes: [
+      { clase: "SDR 26", pn: 6.3 }, { clase: "SDR 17", pn: 10 },
+      { clase: "SDR 13.6", pn: 12.5 }, { clase: "SDR 11", pn: 16 },
+      { clase: "SDR 9", pn: 20 }, { clase: "SDR 7.4", pn: 25 },
+    ],
+  },
+  Acero: {
+    title: "AWWA C200 — Acero",
+    note: "PN varia por DN y grado de acero. Verificar con fabricante.",
+    classes: [
+      { clase: "Sch 10", pn: 17 }, { clase: "Sch 20", pn: 21 },
+      { clase: "Sch 40", pn: 38 }, { clase: "Sch 80", pn: 69 },
+    ],
+  },
+  "Asbesto cemento": null,
+  Concreto: null,
+  Personalizado: null,
+};
+
+// Legacy compatibility
 export const PIPE_CLASS_BY_PRESSURE = [
   { maxBar: 25, clase: "K9" },
   { maxBar: 40, clase: "K10" },
