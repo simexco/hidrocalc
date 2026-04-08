@@ -4,7 +4,7 @@
    ════════════════════════════════════════ */
 
 import { G, NU_20C, DEFAULTS } from "@/lib/constants";
-import type { Fitting, Alert, AlertLevel } from "@/types/hydraulic";
+import type { Fitting, Alert, AlertLevel, DiameterComparisonRow } from "@/types/hydraulic";
 import { getVelocityAlerts, getPressureAlerts, getGradientAlerts } from "./validators";
 
 export interface HWInput {
@@ -163,12 +163,14 @@ export function compareDiameters(
   z1: number, z2: number,
   maxVelocity: number,
   dns: number[]
-): { rows: { dn: number; V: number; hf: number; hm: number; P2: number | null; J_km: number; meetsVelocity: boolean; meetsPressure: boolean | null; recommended: boolean }[]; recommendedDN: number | null } {
+): { rows: DiameterComparisonRow[]; recommendedDN: number | null } {
   const rows = dns.map((dn) => {
     const D = dn / 1000; // mm → m
     const result = calculateHazenWilliams({ Q, D, L, C, P1, z1, z2, useEstimatedHm: true });
 
-    const meetsVelocity = result.V >= 0.3 && result.V <= maxVelocity;
+    const meetsVmin = result.V >= 0.3;
+    const meetsVmax = result.V <= maxVelocity;
+    const meetsVelocity = meetsVmin && meetsVmax;
     const meetsPressure = result.P2 != null ? result.P2 >= P2min : null;
 
     return {
@@ -178,6 +180,8 @@ export function compareDiameters(
       hm: result.hm,
       P2: result.P2,
       J_km: result.J_km,
+      meetsVmin,
+      meetsVmax,
       meetsVelocity,
       meetsPressure,
       recommended: false,

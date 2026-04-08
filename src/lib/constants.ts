@@ -8,8 +8,9 @@ export const STANDARD_DNS = [50, 63, 75, 100, 150, 200, 250, 300, 350, 400, 450,
 // ── Materials with Hazen-Williams C ──
 export const MATERIALS = [
   { name: "PVC / HDPE", c: 150 },
-  { name: "Hierro dúctil nuevo", c: 140 },
-  { name: "Hierro dúctil (10+ años)", c: 130 },
+  { name: "Hierro dúctil nuevo — diseño (C=130)", c: 130 },
+  { name: "Hierro dúctil nuevo — verificación (C=140)", c: 140 },
+  { name: "Hierro dúctil (10+ años)", c: 120 },
   { name: "Hierro galvanizado / Acero nuevo", c: 120 },
   { name: "Concreto centrifugado", c: 130 },
   { name: "Asbesto cemento", c: 140 },
@@ -17,6 +18,9 @@ export const MATERIALS = [
   { name: "Polietileno corrugado", c: 100 },
   { name: "Personalizado", c: 130 },
 ];
+
+// Tooltip for C selection
+export const C_TOOLTIP = "Para diseño de proyectos nuevos se recomienda C=130 (criterio conservador CONAGUA). C=140 es apropiado para verificación de líneas existentes.";
 
 // ── Fittings Catalog (K values) ──
 export const FITTINGS_CATALOG = [
@@ -106,10 +110,12 @@ export const PRESSURE_LIMITS = {
   excessive: 100,     // 100 m.c.a. = 10.0 kg/cm²
 };
 
-// ── Gradient limits (m/km) ──
+// ── Gradient limits (m/km) — NOM-001-CONAGUA ──
 export const GRADIENT_LIMITS = {
-  low: 1,
-  high: 10,
+  low: 1,          // < 1 m/km — possibly oversized
+  optimalMax: 5,   // ≤ 5 m/km — optimal range
+  acceptableMax: 10, // ≤ 10 m/km — acceptable with justification
+  high: 10,        // > 10 m/km — requires review
 };
 
 // ── Flow unit conversions to m³/s ──

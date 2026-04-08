@@ -254,7 +254,55 @@ export default function GolpeArietePage() {
               {/* Safe Tc recommendation */}
               {results.closureType === "brusco" && results.safeTc != null && (
                 <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg px-4 py-3 text-sm text-blue-700 dark:text-blue-300">
-                  Tc mínimo recomendado para cierre lento: <strong>{formatNumber(results.safeTc, 2)} s</strong>
+                  Tc minimo recomendado para cierre lento: <strong>{formatNumber(results.safeTc, 2)} s</strong>
+                </div>
+              )}
+
+              {/* Pipe class comparison table — ISO 2531 */}
+              {results.Pmax_bar != null && (
+                <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+                  <div className="bg-[#1C3D5A] px-4 py-2">
+                    <h3 className="text-xs font-semibold text-white">Clases de tuberia disponibles (ISO 2531 - Hierro ductil)</h3>
+                  </div>
+                  <table className="w-full text-xs">
+                    <thead>
+                      <tr className="bg-gray-50 dark:bg-gray-700 text-gray-500 dark:text-gray-400">
+                        <th className="px-3 py-2 text-left">Clase</th>
+                        <th className="px-3 py-2 text-right">PN (bar)</th>
+                        <th className="px-3 py-2 text-center">Cumple Pmax</th>
+                        <th className="px-3 py-2 text-right">Factor seg.</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {[
+                        { clase: "K7", pn: 10 },
+                        { clase: "K9", pn: 16 },
+                        { clase: "K12", pn: 25 },
+                        { clase: "K14", pn: 25 },
+                        { clase: "K16", pn: 40 },
+                      ].map((row) => {
+                        const cumple = results.Pmax_bar != null && results.Pmax_bar <= row.pn;
+                        const fs = results.Pmax_bar != null && results.Pmax_bar > 0 ? row.pn / results.Pmax_bar : 0;
+                        const isRec = row.clase === results.pipeClass;
+                        return (
+                          <tr key={row.clase} className={`border-b border-gray-100 dark:border-gray-700 ${isRec ? "bg-green-50 dark:bg-green-900/20 font-medium" : ""}`}>
+                            <td className="px-3 py-2">
+                              {row.clase}
+                              {isRec && <span className="ml-1 text-[10px] bg-green-100 text-green-700 px-1 py-0.5 rounded">REC</span>}
+                            </td>
+                            <td className="px-3 py-2 text-right font-mono">{row.pn}</td>
+                            <td className="px-3 py-2 text-center">
+                              {cumple ? <span className="text-green-600">&#10003;</span> : <span className="text-red-500">&#10005;</span>}
+                            </td>
+                            <td className="px-3 py-2 text-right font-mono">{fs > 0 ? fs.toFixed(2) : "—"}</td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                  <div className="px-3 py-2 text-[10px] text-gray-400 border-t border-gray-100 dark:border-gray-700">
+                    PN para DN &le; 300 mm. Para DN mayores consultar tabla ISO 2531 completa. Factor seg. = PN / Pmax.
+                  </div>
                 </div>
               )}
 

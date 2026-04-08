@@ -93,6 +93,8 @@ export interface DiameterComparisonRow {
   hm: number;
   P2: number | null;
   J_km: number;
+  meetsVmin: boolean;
+  meetsVmax: boolean;
   meetsVelocity: boolean;
   meetsPressure: boolean | null;
   recommended: boolean;
@@ -106,7 +108,11 @@ export interface SeriesTramo {
   DN: number | null;
   C: number;
   zEnd: number;
-  kTotal: number;
+  // Minor losses mode
+  lossMode: "K" | "Le" | "percent";
+  kTotal: number;       // K mode: sum of K coefficients
+  leTotal: number;      // Le mode: equivalent length (m)
+  hmPercent: number;     // % mode: percentage of hf (default 10)
   // optional per-tramo Q
   Q: number | null;
 }

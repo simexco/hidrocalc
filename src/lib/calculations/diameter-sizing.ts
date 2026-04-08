@@ -12,7 +12,6 @@ export function calculatePipeSizing(input: PipeSizingInputs): PipeSizingResults 
 
   if (Q == null || L == null || Q <= 0 || L <= 0) return null;
 
-  // Use all standard DNs up to 600mm for sizing
   const dns = STANDARD_DNS.filter((d) => d <= 600);
 
   const { rows, recommendedDN } = compareDiameters(
@@ -24,14 +23,47 @@ export function calculatePipeSizing(input: PipeSizingInputs): PipeSizingResults 
     alerts.push({
       level: "OK" as const,
       field: "DN",
-      message: `DN recomendado: ${recommendedDN} mm — cumple velocidad y presión`,
+      message: `DN recomendado: ${recommendedDN} mm — cumple velocidad y presion`,
     });
   } else {
-    alerts.push({
-      level: "ERROR" as const,
-      field: "DN",
-      message: "Ningún diámetro estándar cumple las restricciones con los parámetros ingresados. Verificar P₁ o L.",
-    });
+    // Determine specific failure reason
+    const allFailVmin = rows.every((r) => !r.meetsVmin);
+    const allFailVmax = rows.every((r) => !r.meetsVmax);
+    const allFailP = rows.every((r) => r.meetsPressure === false);
+    const someVok = rows.some((r) => r.meetsVelocity);
+    const somePok = rows.some((r) => r.meetsPressure === true);
+
+    if (allFailVmin) {
+      alerts.push({
+        level: "ERROR" as const,
+        field: "DN",
+        message: "Caudal muy bajo para los diametros disponibles — todos tienen V < 0.3 m/s. Verificar caudal de diseno.",
+      });
+    } else if (allFailVmax) {
+      alerts.push({
+        level: "ERROR" as const,
+        field: "DN",
+        message: "Caudal muy alto para los diametros disponibles — todos exceden velocidad maxima. Considerar diametros mayores.",
+      });
+    } else if (allFailP) {
+      alerts.push({
+        level: "ERROR" as const,
+        field: "DN",
+        message: "Presion insuficiente para este tramo en todos los diametros. Aumentar P1 o reducir longitud.",
+      });
+    } else if (someVok && somePok) {
+      alerts.push({
+        level: "ERROR" as const,
+        field: "DN",
+        message: "No existe DN estandar que cumpla simultaneamente velocidad y presion. Considerar cambio de condiciones de diseno.",
+      });
+    } else {
+      alerts.push({
+        level: "ERROR" as const,
+        field: "DN",
+        message: "Ningun diametro estandar cumple las restricciones. Verificar parametros de entrada.",
+      });
+    }
   }
 
   return {

@@ -114,7 +114,7 @@ function addHeader(doc: jsPDF, pageWidth: number, logoB64: string | null) {
   doc.setFontSize(11);
   doc.setFont("helvetica", "bold");
   doc.setTextColor(...BRAND);
-  doc.text("HidroCalc v1.0", pageWidth - 14, 16, { align: "right" });
+  doc.text("HidroCalc v1.1", pageWidth - 14, 16, { align: "right" });
 
   doc.setFontSize(7);
   doc.setFont("helvetica", "normal");
@@ -293,14 +293,25 @@ export async function generateHidroCalcPDF(data: PDFExportData): Promise<jsPDF> 
     }
   }
 
-  // ── DISCLAIMER ──
-  if (y > 265) { doc.addPage(); y = 20; }
-  y += 5;
+  // ── TECHNICAL DISCLAIMERS ──
+  if (y > 240) { doc.addPage(); addWatermark(doc); y = 20; }
+  y += 4;
+  y = sectionHeader(doc, "NOTAS TECNICAS Y LIMITACIONES", y, pw);
+
   doc.setFontSize(6.5);
-  doc.setFont("helvetica", "italic");
-  doc.setTextColor(150, 150, 150);
-  doc.text("Este documento es generado automaticamente por HidroCalc y es solo para referencia tecnica.", 14, y);
-  doc.text("Los resultados deben ser validados por un ingeniero certificado antes de su uso en proyecto.", 14, y + 3.5);
+  doc.setFont("helvetica", "normal");
+  doc.setTextColor(100, 100, 100);
+  const disclaimers = [
+    "1. Calculos basados en formula de Hazen-Williams. Valida para agua limpia a 20 C y flujo turbulento (V > 0.3 m/s).",
+    "2. Perdidas menores estimadas. Verificar con accesorios reales del proyecto.",
+    "3. Analisis de golpe de ariete basado en Joukowsky/Michaud. No sustituye analisis de transitorio completo.",
+    "4. Validar resultados con normativa local aplicable (NOM-001-CONAGUA, MAPAS, etc.).",
+    "5. Este calculo es de referencia tecnica. No sustituye proyecto ejecutivo firmado por ingeniero responsable.",
+  ];
+  for (const d of disclaimers) {
+    doc.text(d, 16, y);
+    y += 3.5;
+  }
 
   // Footers
   const totalPages = doc.getNumberOfPages();

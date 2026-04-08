@@ -8,7 +8,7 @@ export function HidroCalcFooter() {
         <span>&middot;</span>
         <span>Sigma Flow &middot; Soluciones en Infraestructura Hidráulica</span>
         <span>&middot;</span>
-        <span>v1.0</span>
+        <span>v1.1</span>
       </div>
     </footer>
   );
