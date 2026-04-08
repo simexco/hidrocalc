@@ -108,7 +108,7 @@ export type PVCSystem = "metrico" | "ingles" | "c900";
 export const PVC_SYSTEM_LABELS: Record<PVCSystem, string> = {
   metrico: "Metrico — ISO 4422 / NMX-E-143",
   ingles: "Ingles — NMX / ASTM D2241",
-  c900: "AWWA C900 (4\"-12\") / C905 (14\"-24\")",
+  c900: "AWWA C900 (4in-12in) / C905 (14in-24in)",
 };
 
 export const PVC_THICKNESS: Record<PVCSystem, ThicknessRef> = {
@@ -148,8 +148,8 @@ export const PVC_THICKNESS: Record<PVCSystem, ThicknessRef> = {
     ],
   },
   c900: {
-    title: "AWWA C900 (4\"-12\") / C905 (14\"-24\")",
-    note: "C900: 4\"-12\". C905: 14\"-48\". DR=OD/e. D_interno=OD-2e. PN a 23 C.",
+    title: "AWWA C900 (4in-12in) / C905 (14in-24in)",
+    note: "C900: 4in-12in. C905: 14in-48in. DR=OD/e. D_interno=OD-2e. PN a 23 C.",
     columns: ["Nom.", "OD (mm)", "Clase 1", "Clase 2", "Clase 3"],
     rows: [
       // C900 section
@@ -185,8 +185,8 @@ export function getPVCClasses(pvcSys: PVCSystem, D_mm: number | null): { title: 
   // c900/c905
   if (D_mm != null && D_mm > 290) {
     return {
-      title: "AWWA C905 — PVC Municipal (14\"-24\")",
-      note: "Aplica para diametros 14\" a 24\". PN a 23 C.",
+      title: "AWWA C905 — PVC Municipal (14in-24in)",
+      note: "Aplica para diametros 14in a 24in. PN a 23 C.",
       classes: [
         { clase: "DR 51", pn: 4.8 }, { clase: "DR 41", pn: 6.0 },
         { clase: "DR 32.5", pn: 7.6 }, { clase: "DR 26", pn: 9.5 },
@@ -194,8 +194,8 @@ export function getPVCClasses(pvcSys: PVCSystem, D_mm: number | null): { title: 
     };
   }
   return {
-    title: "AWWA C900 — PVC Municipal (4\"-12\")",
-    note: "Aplica para diametros 4\" a 12\". PN a 23 C.",
+    title: "AWWA C900 — PVC Municipal (4in-12in)",
+    note: "Aplica para diametros 4in a 12in. PN a 23 C.",
     classes: [
       { clase: "DR 25", pn: 6.9 }, { clase: "DR 18", pn: 10.3 }, { clase: "DR 14", pn: 13.8 },
     ],
