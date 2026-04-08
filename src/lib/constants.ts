@@ -57,6 +57,100 @@ export const PIPE_ELASTICITY = [
   { name: "Personalizado", E: 0 },
 ];
 
+// ── PIPE CATALOG — for simple mode in Golpe de Ariete ──
+// Each entry: { od, e, dInt } all in mm
+export interface PipeCatalogEntry {
+  label: string;    // display: "4in", "6in", "DN 100", etc.
+  od: number;       // mm
+  classes: { name: string; e: number }[];  // available classes with wall thickness
+}
+
+export interface PipeCatalogGroup {
+  material: string;
+  E: number;        // Pa
+  label: string;    // display name
+  sizes: PipeCatalogEntry[];
+}
+
+export const PIPE_CATALOG: PipeCatalogGroup[] = [
+  {
+    material: "PVC", E: 3e9, label: "PVC — AWWA C900 (4in-12in)",
+    sizes: [
+      { label: '4"', od: 118.1, classes: [{ name: "DR 25", e: 4.7 }, { name: "DR 18", e: 6.6 }, { name: "DR 14", e: 8.4 }] },
+      { label: '6"', od: 168.3, classes: [{ name: "DR 25", e: 6.7 }, { name: "DR 18", e: 9.4 }, { name: "DR 14", e: 12.0 }] },
+      { label: '8"', od: 219.1, classes: [{ name: "DR 25", e: 8.8 }, { name: "DR 18", e: 12.2 }, { name: "DR 14", e: 15.7 }] },
+      { label: '10"', od: 273.0, classes: [{ name: "DR 25", e: 10.9 }, { name: "DR 18", e: 15.2 }, { name: "DR 14", e: 19.5 }] },
+      { label: '12"', od: 323.9, classes: [{ name: "DR 25", e: 13.0 }, { name: "DR 18", e: 18.0 }, { name: "DR 14", e: 23.1 }] },
+    ],
+  },
+  {
+    material: "PVC", E: 3e9, label: "PVC — AWWA C905 (14in-24in)",
+    sizes: [
+      { label: '14"', od: 368.3, classes: [{ name: "DR 51", e: 7.2 }, { name: "DR 41", e: 9.0 }, { name: "DR 32.5", e: 11.3 }, { name: "DR 26", e: 14.2 }] },
+      { label: '16"', od: 422.4, classes: [{ name: "DR 51", e: 8.3 }, { name: "DR 41", e: 10.3 }, { name: "DR 32.5", e: 13.0 }, { name: "DR 26", e: 16.2 }] },
+      { label: '18"', od: 473.1, classes: [{ name: "DR 51", e: 9.3 }, { name: "DR 41", e: 11.5 }, { name: "DR 32.5", e: 14.6 }, { name: "DR 26", e: 18.2 }] },
+      { label: '20"', od: 527.8, classes: [{ name: "DR 51", e: 10.3 }, { name: "DR 41", e: 12.9 }, { name: "DR 32.5", e: 16.2 }, { name: "DR 26", e: 20.3 }] },
+      { label: '24"', od: 635.0, classes: [{ name: "DR 51", e: 12.5 }, { name: "DR 41", e: 15.5 }, { name: "DR 32.5", e: 19.5 }, { name: "DR 26", e: 24.4 }] },
+    ],
+  },
+  {
+    material: "PVC", E: 3e9, label: "PVC — Metrico ISO 4422",
+    sizes: [
+      { label: "OD 63", od: 63, classes: [{ name: "SDR 26", e: 2.5 }, { name: "SDR 17", e: 3.8 }, { name: "SDR 13.6", e: 4.7 }] },
+      { label: "OD 110", od: 110, classes: [{ name: "SDR 26", e: 4.3 }, { name: "SDR 17", e: 6.6 }, { name: "SDR 13.6", e: 8.1 }] },
+      { label: "OD 160", od: 160, classes: [{ name: "SDR 26", e: 6.2 }, { name: "SDR 17", e: 9.5 }, { name: "SDR 13.6", e: 11.8 }] },
+      { label: "OD 200", od: 200, classes: [{ name: "SDR 26", e: 7.7 }, { name: "SDR 17", e: 11.9 }, { name: "SDR 13.6", e: 14.8 }] },
+      { label: "OD 250", od: 250, classes: [{ name: "SDR 26", e: 9.7 }, { name: "SDR 17", e: 14.8 }, { name: "SDR 13.6", e: 18.5 }] },
+      { label: "OD 315", od: 315, classes: [{ name: "SDR 26", e: 12.2 }, { name: "SDR 17", e: 18.7 }, { name: "SDR 13.6", e: 23.2 }] },
+    ],
+  },
+  {
+    material: "PVC", E: 3e9, label: "PVC — Ingles ASTM D2241",
+    sizes: [
+      { label: '2"', od: 60.3, classes: [{ name: "SDR 41", e: 1.5 }, { name: "SDR 26", e: 2.3 }, { name: "SDR 17", e: 3.6 }] },
+      { label: '4"', od: 114.3, classes: [{ name: "SDR 41", e: 2.8 }, { name: "SDR 26", e: 4.4 }, { name: "SDR 17", e: 6.7 }] },
+      { label: '6"', od: 168.3, classes: [{ name: "SDR 41", e: 4.1 }, { name: "SDR 26", e: 6.5 }, { name: "SDR 17", e: 9.9 }] },
+      { label: '8"', od: 219.1, classes: [{ name: "SDR 41", e: 5.3 }, { name: "SDR 26", e: 8.4 }, { name: "SDR 17", e: 12.9 }] },
+      { label: '12"', od: 323.9, classes: [{ name: "SDR 41", e: 7.9 }, { name: "SDR 26", e: 12.5 }, { name: "SDR 17", e: 19.1 }] },
+    ],
+  },
+  {
+    material: "HDPE", E: 1e9, label: "HDPE — ISO 4427 PE100",
+    sizes: [
+      { label: "OD 110", od: 110, classes: [{ name: "SDR 17", e: 6.6 }, { name: "SDR 11", e: 9.5 }] },
+      { label: "OD 160", od: 160, classes: [{ name: "SDR 17", e: 9.5 }, { name: "SDR 11", e: 14.6 }] },
+      { label: "OD 200", od: 200, classes: [{ name: "SDR 17", e: 11.9 }, { name: "SDR 11", e: 18.2 }] },
+      { label: "OD 250", od: 250, classes: [{ name: "SDR 17", e: 14.8 }, { name: "SDR 11", e: 22.7 }] },
+      { label: "OD 315", od: 315, classes: [{ name: "SDR 17", e: 18.7 }, { name: "SDR 11", e: 28.6 }] },
+      { label: "OD 400", od: 400, classes: [{ name: "SDR 17", e: 23.7 }, { name: "SDR 11", e: 36.4 }] },
+    ],
+  },
+  {
+    material: "Hierro dúctil", E: 169e9, label: "Hierro ductil — ISO 2531",
+    sizes: [
+      { label: "DN 100", od: 118, classes: [{ name: "K9", e: 6.0 }] },
+      { label: "DN 150", od: 170, classes: [{ name: "K9", e: 6.0 }] },
+      { label: "DN 200", od: 222, classes: [{ name: "K9", e: 6.3 }] },
+      { label: "DN 250", od: 274, classes: [{ name: "K9", e: 6.8 }] },
+      { label: "DN 300", od: 326, classes: [{ name: "K9", e: 7.2 }] },
+      { label: "DN 400", od: 429, classes: [{ name: "K9", e: 8.1 }] },
+      { label: "DN 500", od: 532, classes: [{ name: "K9", e: 9.0 }] },
+      { label: "DN 600", od: 635, classes: [{ name: "K9", e: 9.9 }] },
+    ],
+  },
+  {
+    material: "Acero", E: 210e9, label: "Acero — AWWA C200",
+    sizes: [
+      { label: '4"', od: 114.3, classes: [{ name: "Sch 20", e: 3.1 }, { name: "Sch 40", e: 6.0 }] },
+      { label: '6"', od: 168.3, classes: [{ name: "Sch 20", e: 4.0 }, { name: "Sch 40", e: 7.1 }] },
+      { label: '8"', od: 219.1, classes: [{ name: "Sch 20", e: 5.2 }, { name: "Sch 40", e: 8.2 }] },
+      { label: '12"', od: 323.9, classes: [{ name: "Sch 20", e: 6.4 }, { name: "Sch 40", e: 10.3 }] },
+      { label: '16"', od: 406.4, classes: [{ name: "Sch 20", e: 6.4 }, { name: "Sch 40", e: 12.7 }] },
+      { label: '24"', od: 609.6, classes: [{ name: "Sch 20", e: 6.4 }, { name: "Sch 40", e: 17.5 }] },
+    ],
+  },
+];
+
 // ── Wall thickness reference type ──
 export interface ThicknessRef {
   title: string;

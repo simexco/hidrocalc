@@ -9,7 +9,7 @@ import { DataStatusBanner } from "@/components/ui/DataStatusBanner";
 import { ExportPDFButton } from "@/components/ui/ExportPDFButton";
 import { calculateWaterHammer } from "@/lib/calculations/water-hammer";
 import { formatNumber, mcaToKgcm2 } from "@/lib/calculations/conversions";
-import { PIPE_ELASTICITY, THICKNESS_BY_MATERIAL, PIPE_CLASSES_BY_MATERIAL, PVC_THICKNESS, getPVCClasses, PVC_SYSTEM_LABELS, type PVCSystem } from "@/lib/constants";
+import { PIPE_ELASTICITY, THICKNESS_BY_MATERIAL, PIPE_CLASSES_BY_MATERIAL, PVC_THICKNESS, getPVCClasses, PVC_SYSTEM_LABELS, type PVCSystem, PIPE_CATALOG, type PipeCatalogGroup } from "@/lib/constants";
 import { saveFormState, loadFormState } from "@/lib/storage/form-persistence";
 import type { AssumedValue } from "@/types/hydraulic";
 
@@ -18,23 +18,34 @@ export default function GolpeArietePage() {
   const singlePipe = useSinglePipeStore();
   const [showThicknessRef, setShowThicknessRef] = useState(false);
   const [pvcSystem, setPvcSystem] = useState<PVCSystem>("metrico");
-  const [diamMode, setDiamMode] = useState<"dint" | "od">("dint");
-  const [odValue, setOdValue] = useState<number | null>(null);
+  const [entryMode, setEntryMode] = useState<"simple" | "advanced">("simple");
 
-  // Computed OD and DR
-  const computedOD = diamMode === "od" ? odValue : (inputs.D != null && inputs.e != null ? inputs.D + 2 * inputs.e : null);
-  const computedDR = computedOD != null && inputs.e != null && inputs.e > 0 ? computedOD / inputs.e : null;
-  const computedDint = diamMode === "od" && odValue != null && inputs.e != null ? odValue - 2 * inputs.e : inputs.D;
+  // Simple mode state
+  const [selectedCatalog, setSelectedCatalog] = useState<number>(0);
+  const [selectedSize, setSelectedSize] = useState<number>(0);
+  const [selectedClass, setSelectedClass] = useState<number>(0);
 
-  // When in OD mode, update D_interno whenever OD or e changes
+  const catalog = PIPE_CATALOG[selectedCatalog];
+  const sizeEntry = catalog?.sizes[selectedSize];
+  const classEntry = sizeEntry?.classes[selectedClass];
+
+  // When simple mode selection changes, auto-fill D, e, E, materialName
   useEffect(() => {
-    if (diamMode === "od" && odValue != null && inputs.e != null && inputs.e > 0) {
-      const dint = odValue - 2 * inputs.e;
-      if (dint > 0 && dint !== inputs.D) {
-        setInput("D", Math.round(dint * 10) / 10);
-      }
-    }
-  }, [diamMode, odValue, inputs.e, inputs.D, setInput]);
+    if (entryMode !== "simple" || !catalog || !sizeEntry || !classEntry) return;
+    const dInt = Math.round((sizeEntry.od - 2 * classEntry.e) * 10) / 10;
+    if (dInt > 0) setInput("D", dInt);
+    setInput("e", classEntry.e);
+    setInput("E", catalog.E);
+    setInput("materialName", catalog.material);
+  }, [entryMode, selectedCatalog, selectedSize, selectedClass, catalog, sizeEntry, classEntry, setInput]);
+
+  // Reset size/class when catalog changes
+  useEffect(() => { setSelectedSize(0); setSelectedClass(0); }, [selectedCatalog]);
+  useEffect(() => { setSelectedClass(0); }, [selectedSize]);
+
+  // Computed OD and DR for display
+  const computedOD = inputs.D != null && inputs.e != null ? inputs.D + 2 * inputs.e : null;
+  const computedDR = computedOD != null && inputs.e != null && inputs.e > 0 ? computedOD / inputs.e : null;
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
   const persistRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
@@ -147,89 +158,82 @@ export default function GolpeArietePage() {
 
             <InputField label="Nombre del proyecto" value={inputs.projectName} onChange={(v) => setInput("projectName", v)} type="text" />
             <InputField
-              label="Velocidad V₀"
+              label="Velocidad V0"
               value={inputs.V0}
               onChange={(v) => handleNum("V0", v)}
               unit="m/s"
               required
-              tooltip="Velocidad del agua en la tubería antes del cierre de válvula. Puedes obtenerla del Módulo 1 (Tramo Simple) o calcularla como Q/A"
+              tooltip="Velocidad del agua antes del cierre de valvula. Puedes obtenerla del Modulo 1 o calcularla como Q/A"
             />
-            {/* Diameter mode toggle */}
-            <div className="space-y-2">
-              <div className="flex items-center gap-1">
-                <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mr-2">Diametro</label>
-                <button type="button" onClick={() => setDiamMode("dint")} className={`text-[10px] px-2 py-0.5 rounded transition-colors ${diamMode === "dint" ? "bg-[#1C3D5A] text-white" : "bg-gray-100 dark:bg-gray-700 text-gray-500"}`}>D interno</button>
-                <button type="button" onClick={() => setDiamMode("od")} className={`text-[10px] px-2 py-0.5 rounded transition-colors ${diamMode === "od" ? "bg-[#1C3D5A] text-white" : "bg-gray-100 dark:bg-gray-700 text-gray-500"}`}>OD exterior</button>
-              </div>
-              {diamMode === "dint" ? (
-                <InputField label="D interno" value={inputs.D} onChange={(v) => handleNum("D", v)} unit="mm" required tooltip="Diametro interior real de la tuberia" />
-              ) : (
-                <InputField label="OD exterior" value={odValue} onChange={(v) => setOdValue(v === "" ? null : parseFloat(v))} unit="mm" required tooltip="Diametro exterior nominal del tubo. Se calcula D_int = OD - 2e" />
-              )}
-            </div>
 
-            <div className="flex items-end gap-2">
-              <div className="flex-1">
-                <InputField label="Espesor de pared e" value={inputs.e} onChange={(v) => handleNum("e", v)} unit="mm" required tooltip="Grosor de la pared de la tuberia. Clic en 'Ver ref.' para valores tipicos" />
-              </div>
-              <button
-                onClick={() => setShowThicknessRef(!showThicknessRef)}
-                className="text-xs text-[#1C3D5A] hover:underline whitespace-nowrap pb-2"
-              >
-                {showThicknessRef ? "Ocultar ref." : "Ver ref."}
+            {/* Entry mode toggle */}
+            <div className="flex gap-2 pt-1">
+              <button type="button" onClick={() => setEntryMode("simple")} className={`flex-1 px-3 py-2 rounded-lg text-xs font-medium transition-colors ${entryMode === "simple" ? "bg-[#1C3D5A] text-white" : "bg-gray-100 dark:bg-gray-700 text-gray-500"}`}>
+                Seleccionar tuberia
+              </button>
+              <button type="button" onClick={() => setEntryMode("advanced")} className={`flex-1 px-3 py-2 rounded-lg text-xs font-medium transition-colors ${entryMode === "advanced" ? "bg-[#1C3D5A] text-white" : "bg-gray-100 dark:bg-gray-700 text-gray-500"}`}>
+                Ingreso manual
               </button>
             </div>
 
-            {showThicknessRef && (() => {
-              const ref = inputs.materialName === "PVC" ? PVC_THICKNESS[pvcSystem] : THICKNESS_BY_MATERIAL[inputs.materialName];
-              if (!ref) return (
-                <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 text-xs text-gray-500">
-                  Consultar especificaciones del fabricante o norma del proyecto.
+            {entryMode === "simple" ? (
+              <>
+                {/* 1. Tipo de tuberia */}
+                <div className="space-y-1">
+                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Tipo de tuberia</label>
+                  <select value={selectedCatalog} onChange={(e) => setSelectedCatalog(parseInt(e.target.value))} className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 dark:text-white">
+                    {PIPE_CATALOG.map((g, i) => <option key={i} value={i}>{g.label}</option>)}
+                  </select>
                 </div>
-              );
-              return (
-                <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 text-xs space-y-1">
-                  <p className="font-semibold text-gray-600 dark:text-gray-300 mb-2">{ref.title}</p>
-                  <table className="w-full">
-                    <thead>
-                      <tr className="text-gray-400">
-                        {ref.columns.map((c) => <th key={c} className="text-left py-0.5 px-1 font-medium">{c}</th>)}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {ref.rows.map((r) => (
-                        <tr key={r.label} className="text-gray-500 dark:text-gray-400">
-                          <td className="py-0.5 px-1">{r.label}</td>
-                          {r.values.map((v, i) => <td key={i} className="py-0.5 px-1 font-mono">{v}</td>)}
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                  {ref.note && <p className="text-[10px] text-gray-400 mt-1">{ref.note}</p>}
+
+                {/* 2. Diametro */}
+                <div className="space-y-1">
+                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Diametro</label>
+                  <select value={selectedSize} onChange={(e) => setSelectedSize(parseInt(e.target.value))} className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 dark:text-white">
+                    {catalog?.sizes.map((s, i) => <option key={i} value={i}>{s.label} (OD {s.od} mm)</option>)}
+                  </select>
                 </div>
-              );
-            })()}
 
-            {/* OD / DR computed display */}
-            {(inputs.D != null || odValue != null) && inputs.e != null && inputs.e > 0 && (
-              <div className="bg-gray-50 dark:bg-gray-700 rounded-lg px-3 py-2 text-xs text-gray-500 dark:text-gray-400 flex flex-wrap gap-x-4 gap-y-1">
-                {diamMode === "dint" && computedOD != null && (
-                  <span>OD = D + 2e = <strong className="text-gray-700 dark:text-gray-300">{computedOD.toFixed(1)} mm</strong></span>
-                )}
-                {diamMode === "od" && computedDint != null && (
-                  <span>D_int = OD - 2e = <strong className="text-gray-700 dark:text-gray-300">{(typeof computedDint === "number" ? computedDint : 0).toFixed(1)} mm</strong></span>
-                )}
-                {computedDR != null && (
-                  <span>DR = OD/e = <strong className="text-gray-700 dark:text-gray-300">{computedDR.toFixed(1)}</strong></span>
-                )}
-              </div>
-            )}
+                {/* 3. Clase */}
+                <div className="space-y-1">
+                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Clase / DR</label>
+                  <select value={selectedClass} onChange={(e) => setSelectedClass(parseInt(e.target.value))} className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 dark:text-white">
+                    {sizeEntry?.classes.map((c, i) => <option key={i} value={i}>{c.name} (e={c.e} mm)</option>)}
+                  </select>
+                </div>
 
-            <div className="space-y-1">
-              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Material (Modulo E)</label>
-              <select
-                value={inputs.materialName}
-                onChange={(e) => handleMaterial(e.target.value)}
+                {/* Auto-filled summary */}
+                {sizeEntry && classEntry && (
+                  <div className="bg-[#E9EFF5] dark:bg-[#1C3D5A]/20 rounded-lg px-3 py-2.5 text-xs space-y-1">
+                    <p className="font-medium text-[#1C3D5A] dark:text-blue-300 mb-1">Datos de la tuberia (auto)</p>
+                    <div className="grid grid-cols-2 gap-x-4 gap-y-0.5 text-gray-600 dark:text-gray-400">
+                      <span>OD: <strong>{sizeEntry.od} mm</strong></span>
+                      <span>e: <strong>{classEntry.e} mm</strong></span>
+                      <span>D int: <strong>{(sizeEntry.od - 2 * classEntry.e).toFixed(1)} mm</strong></span>
+                      <span>DR: <strong>{(sizeEntry.od / classEntry.e).toFixed(1)}</strong></span>
+                      <span>Material: <strong>{catalog.material}</strong></span>
+                      <span>E: <strong>{(catalog.E / 1e9).toFixed(0)} GPa</strong></span>
+                    </div>
+                  </div>
+                )}
+              </>
+            ) : (
+              <>
+                {/* Advanced: manual entry */}
+                <InputField label="D interno" value={inputs.D} onChange={(v) => handleNum("D", v)} unit="mm" required tooltip="Diametro interior real de la tuberia" />
+                <InputField label="Espesor de pared e" value={inputs.e} onChange={(v) => handleNum("e", v)} unit="mm" required tooltip="Grosor de la pared de la tuberia" />
+
+                {/* OD/DR display */}
+                {computedOD != null && computedDR != null && (
+                  <div className="bg-gray-50 dark:bg-gray-700 rounded-lg px-3 py-2 text-xs text-gray-500 dark:text-gray-400 flex gap-4">
+                    <span>OD = <strong className="text-gray-700 dark:text-gray-300">{computedOD.toFixed(1)} mm</strong></span>
+                    <span>DR = <strong className="text-gray-700 dark:text-gray-300">{computedDR.toFixed(1)}</strong></span>
+                  </div>
+                )}
+
+                <div className="space-y-1">
+                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Material (Modulo E)</label>
+                  <select value={inputs.materialName} onChange={(e) => handleMaterial(e.target.value)}
                 className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 dark:text-white"
               >
                 {PIPE_ELASTICITY.map((m) => (
@@ -254,8 +258,10 @@ export default function GolpeArietePage() {
                 </div>
               )}
             </div>
+              </>
+            )}
 
-            <InputField label="Presión estática P₀" value={inputs.P0} onChange={(v) => handleNum("P0", v)} unit="kg/cm²" tooltip="Presión normal de operación en la tubería antes del cierre de válvula. Se mide con manómetro en metros columna de agua" />
+            <InputField label="Presion estatica P0" value={inputs.P0} onChange={(v) => handleNum("P0", v)} unit="kg/cm2" tooltip="Presion normal de operacion antes del cierre de valvula" />
             <InputField
               label="Tiempo de cierre Tc"
               value={inputs.Tc}
