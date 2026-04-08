@@ -63,12 +63,41 @@ export default function GolpeArietePage() {
   };
 
   const handleImportFromMod1 = () => {
+    // Velocidad
     const v = singlePipe.results?.V;
     if (v != null) setInput("V0", v);
+    // Diametro
     const dn = singlePipe.inputs.DN;
     if (dn != null) setInput("D", dn);
+    // Longitud
     const l = singlePipe.inputs.L;
     if (l != null) setInput("L", l);
+    // Presion estatica P1 → P0 (ya viene en kg/cm2 del input del usuario)
+    const p1 = singlePipe.inputs.P1;
+    if (p1 != null) setInput("P0", p1);
+    // Material → buscar equivalente en PIPE_ELASTICITY
+    const matName = singlePipe.inputs.materialName;
+    if (matName) {
+      // Map HW material names to elasticity material names
+      const matMap: Record<string, string> = {
+        "PVC / HDPE": "PVC",
+        "HD nuevo — diseno": "Hierro dúctil",
+        "HD nuevo — verificacion": "Hierro dúctil",
+        "HD (10+ anos)": "Hierro dúctil",
+        "Hierro galvanizado / Acero nuevo": "Acero",
+        "Asbesto cemento": "Asbesto cemento",
+        "Concreto centrifugado": "Concreto",
+        "Fibrocemento": "Asbesto cemento",
+      };
+      const elastName = matMap[matName];
+      if (elastName) {
+        const mat = PIPE_ELASTICITY.find((m) => m.name === elastName);
+        if (mat) {
+          setInput("materialName", mat.name);
+          setInput("E", mat.E);
+        }
+      }
+    }
   };
 
   const missing: string[] = [];
