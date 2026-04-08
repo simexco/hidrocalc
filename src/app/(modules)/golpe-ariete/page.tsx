@@ -277,7 +277,7 @@ export default function GolpeArietePage() {
                   ? "bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 text-yellow-800 dark:text-yellow-300"
                   : "bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 text-green-800 dark:text-green-300"
               }`}>
-                {results.closureType === "brusco" ? "&#9888; Cierre Brusco" : "&#10003; Cierre Lento"}
+                {results.closureType === "brusco" ? <><span>{"\u26A0"}</span> Cierre Brusco</> : <><span>{"\u2713"}</span> Cierre Lento</>}
                 <span className="text-xs ml-2 font-normal">
                   (Tc={inputs.Tc}s {results.closureType === "brusco" ? "<" : "≥"} Tfase={formatNumber(results.Tphase, 2)}s)
                 </span>
