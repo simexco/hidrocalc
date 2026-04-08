@@ -9,7 +9,7 @@ import { DataStatusBanner } from "@/components/ui/DataStatusBanner";
 import { ExportPDFButton } from "@/components/ui/ExportPDFButton";
 import { calculateWaterHammer } from "@/lib/calculations/water-hammer";
 import { formatNumber, mcaToKgcm2 } from "@/lib/calculations/conversions";
-import { PIPE_ELASTICITY, THICKNESS_BY_MATERIAL, PIPE_CLASSES_BY_MATERIAL, PVC_THICKNESS, PVC_CLASSES, PVC_SYSTEM_LABELS, type PVCSystem } from "@/lib/constants";
+import { PIPE_ELASTICITY, THICKNESS_BY_MATERIAL, PIPE_CLASSES_BY_MATERIAL, PVC_THICKNESS, getPVCClasses, PVC_SYSTEM_LABELS, type PVCSystem } from "@/lib/constants";
 import { saveFormState, loadFormState } from "@/lib/storage/form-persistence";
 import type { AssumedValue } from "@/types/hydraulic";
 
@@ -293,7 +293,9 @@ export default function GolpeArietePage() {
 
               {/* Pipe class comparison table — dynamic by material */}
               {results.Pmax_bar != null && (() => {
-                const matClasses = inputs.materialName === "PVC" ? PVC_CLASSES[pvcSystem] : PIPE_CLASSES_BY_MATERIAL[inputs.materialName];
+                const matClasses = inputs.materialName === "PVC"
+                  ? getPVCClasses(pvcSystem, inputs.D)
+                  : PIPE_CLASSES_BY_MATERIAL[inputs.materialName];
                 if (!matClasses) return (
                   <div className="bg-gray-50 dark:bg-gray-700 rounded-xl px-4 py-3 text-xs text-gray-500">
                     La recomendacion de clase no esta disponible para este material. Consultar la norma aplicable al proyecto.

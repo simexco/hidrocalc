@@ -3,7 +3,7 @@
    Module 3
    ════════════════════════════════════════ */
 
-import { K_AGUA, RHO, G, PIPE_CLASSES_BY_MATERIAL, PVC_CLASSES, type PVCSystem, type PipeClassRow } from "@/lib/constants";
+import { K_AGUA, RHO, G, PIPE_CLASSES_BY_MATERIAL, getPVCClasses, type PVCSystem, type PipeClassRow } from "@/lib/constants";
 import type { WaterHammerInputs, WaterHammerResults, Alert } from "@/types/hydraulic";
 
 export function calculateWaterHammer(input: WaterHammerInputs, pvcSystem?: PVCSystem): WaterHammerResults | null {
@@ -47,10 +47,10 @@ export function calculateWaterHammer(input: WaterHammerInputs, pvcSystem?: PVCSy
   let pipeClass: string | null = null;
   const alerts: Alert[] = [];
 
-  // Get class table: for PVC use subsystem, otherwise use material lookup
+  // Get class table: for PVC use subsystem with D-based C900/C905 selection
   let matClassesData: { title: string; note?: string; classes: PipeClassRow[] } | null = null;
   if (input.materialName === "PVC" && pvcSystem) {
-    matClassesData = PVC_CLASSES[pvcSystem];
+    matClassesData = getPVCClasses(pvcSystem, D != null ? D * 1000 : null);
   } else {
     matClassesData = PIPE_CLASSES_BY_MATERIAL[input.materialName] ?? null;
   }

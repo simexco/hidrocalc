@@ -74,6 +74,7 @@ export const THICKNESS_BY_MATERIAL: Record<string, ThicknessRef | null> = {
       { label: "100", values: [6.0] }, { label: "150", values: [6.0] }, { label: "200", values: [6.3] },
       { label: "250", values: [6.8] }, { label: "300", values: [7.2] }, { label: "350", values: [7.7] },
       { label: "400", values: [8.1] }, { label: "500", values: [9.0] }, { label: "600", values: [9.9] },
+      { label: "700", values: [10.8] }, { label: "800", values: [11.7] },
     ],
   },
   PVC: null, // handled by PVC_SUBSYSTEMS
@@ -107,27 +108,29 @@ export type PVCSystem = "metrico" | "ingles" | "c900";
 export const PVC_SYSTEM_LABELS: Record<PVCSystem, string> = {
   metrico: "Metrico — ISO 4422 / NMX-E-143",
   ingles: "Ingles — NMX / ASTM D2241",
-  c900: "AWWA C900 — Municipal",
+  c900: "AWWA C900 (4\"-12\") / C905 (14\"-24\")",
 };
 
 export const PVC_THICKNESS: Record<PVCSystem, ThicknessRef> = {
   metrico: {
     title: "ISO 4422 / NMX-E-143 — PVC Metrico",
-    note: "e = OD / SDR. D interno = OD - 2e",
-    columns: ["OD (mm)", "SDR 26 / PN6", "SDR 17 / PN10", "SDR 13.6 / PN16"],
+    note: "e = OD / SDR. D_interno = OD - 2e. Ref: ISO 4422",
+    columns: ["OD (mm)", "DN aprox", "SDR 26 (PN6)", "SDR 17 (PN10)", "SDR 13.6 (PN16)"],
     rows: [
-      { label: "63", values: [2.5, 3.8, 4.7] },
-      { label: "75", values: [3.0, 4.5, 5.6] },
-      { label: "110", values: [4.3, 6.6, 8.1] },
-      { label: "160", values: [6.2, 9.5, 11.8] },
-      { label: "200", values: [7.7, 11.9, 14.8] },
-      { label: "250", values: [9.7, 14.8, 18.5] },
-      { label: "315", values: [12.2, 18.7, 23.2] },
+      { label: "63", values: [50, 2.5, 3.8, 4.7] },
+      { label: "110", values: [100, 4.3, 6.6, 8.1] },
+      { label: "160", values: [150, 6.2, 9.5, 11.8] },
+      { label: "200", values: [200, 7.7, 11.9, 14.8] },
+      { label: "250", values: [250, 9.7, 14.8, 18.5] },
+      { label: "315", values: [300, 12.2, 18.7, 23.2] },
+      { label: "400", values: [400, 15.4, 23.5, 29.4] },
+      { label: "500", values: [500, 19.2, 29.4, 36.8] },
+      { label: "630", values: [600, 24.2, 37.1, 46.3] },
     ],
   },
   ingles: {
     title: "NMX-E-143 Ingles / ASTM D2241 — PVC Hidraulico",
-    note: "OD basado en IPS. D interno = OD - 2e",
+    note: "D_interno = OD - 2e. Ref: ASTM D2241 / NMX-E-143",
     columns: ["Nom.", "OD (mm)", "SDR 41 (100psi)", "SDR 26 (160psi)", "SDR 17 (250psi)"],
     rows: [
       { label: '2"', values: [60.3, 1.5, 2.3, 3.6] },
@@ -137,43 +140,82 @@ export const PVC_THICKNESS: Record<PVCSystem, ThicknessRef> = {
       { label: '8"', values: [219.1, 5.3, 8.4, 12.9] },
       { label: '10"', values: [273.0, 6.7, 10.5, 16.1] },
       { label: '12"', values: [323.9, 7.9, 12.5, 19.1] },
+      { label: '14"', values: [355.6, 8.7, 13.7, 20.9] },
+      { label: '16"', values: [406.4, 9.9, 15.6, 23.9] },
+      { label: '18"', values: [457.2, 11.1, 17.6, 26.9] },
+      { label: '20"', values: [508.0, 12.4, 19.5, 29.9] },
+      { label: '24"', values: [609.6, 14.9, 23.4, 35.9] },
     ],
   },
   c900: {
-    title: "AWWA C900 — PVC Agua Potable Municipal",
-    note: "OD coincide con hierro ductil (IPS). D interno = OD - 2e",
-    columns: ["Nom.", "OD (mm)", "DR 25 (100psi)", "DR 18 (150psi)", "DR 14 (200psi)"],
+    title: "AWWA C900 (4\"-12\") / C905 (14\"-24\")",
+    note: "C900: 4\"-12\". C905: 14\"-48\". DR=OD/e. D_interno=OD-2e. PN a 23 C.",
+    columns: ["Nom.", "OD (mm)", "Clase 1", "Clase 2", "Clase 3"],
     rows: [
+      // C900 section
       { label: '4"', values: [118.1, 4.7, 6.6, 8.4] },
       { label: '6"', values: [168.3, 6.7, 9.4, 12.0] },
       { label: '8"', values: [219.1, 8.8, 12.2, 15.7] },
       { label: '10"', values: [273.0, 10.9, 15.2, 19.5] },
       { label: '12"', values: [323.9, 13.0, 18.0, 23.1] },
+      // C905 section
+      { label: '14"', values: [368.3, 7.2, 9.0, 14.2] },
+      { label: '16"', values: [422.4, 8.3, 10.3, 16.2] },
+      { label: '18"', values: [473.1, 9.3, 11.5, 18.2] },
+      { label: '20"', values: [527.8, 10.3, 12.9, 20.3] },
+      { label: '24"', values: [635.0, 12.5, 15.5, 24.4] },
     ],
   },
 };
 
-export const PVC_CLASSES: Record<PVCSystem, { title: string; note?: string; classes: PipeClassRow[] }> = {
-  metrico: {
-    title: "ISO 4422 / NMX-E-143 — PVC Presion",
-    classes: [
-      { clase: "SDR 41", pn: 3.4 }, { clase: "SDR 26", pn: 6 },
-      { clase: "SDR 17", pn: 10 }, { clase: "SDR 13.6", pn: 12.5 }, { clase: "SDR 11", pn: 16 },
-    ],
-  },
-  ingles: {
-    title: "NMX-E-143 Ingles / ASTM D2241 — PVC Presion",
-    classes: [
-      { clase: "SDR 41", pn: 3.4 }, { clase: "SDR 26", pn: 6 },
-      { clase: "SDR 17", pn: 10 }, { clase: "SDR 13.6", pn: 12.5 }, { clase: "SDR 11", pn: 16 },
-    ],
-  },
-  c900: {
-    title: "AWWA C900 — PVC Municipal",
+/**
+ * Get PVC pressure classes based on D_interno to auto-select C900 vs C905.
+ * D > 290mm (~12") → C905 classes, otherwise C900.
+ */
+export function getPVCClasses(pvcSys: PVCSystem, D_mm: number | null): { title: string; note?: string; classes: PipeClassRow[] } {
+  if (pvcSys === "metrico" || pvcSys === "ingles") {
+    return {
+      title: pvcSys === "metrico" ? "ISO 4422 / NMX-E-143 — PVC Presion" : "NMX-E-143 / ASTM D2241 — PVC Presion",
+      classes: [
+        { clase: "SDR 41", pn: 3.4 }, { clase: "SDR 26", pn: 6 },
+        { clase: "SDR 17", pn: 10 }, { clase: "SDR 13.6", pn: 12.5 }, { clase: "SDR 11", pn: 16 },
+      ],
+    };
+  }
+  // c900/c905
+  if (D_mm != null && D_mm > 290) {
+    return {
+      title: "AWWA C905 — PVC Municipal (14\"-24\")",
+      note: "Aplica para diametros 14\" a 24\". PN a 23 C.",
+      classes: [
+        { clase: "DR 51", pn: 4.8 }, { clase: "DR 41", pn: 6.0 },
+        { clase: "DR 32.5", pn: 7.6 }, { clase: "DR 26", pn: 9.5 },
+      ],
+    };
+  }
+  return {
+    title: "AWWA C900 — PVC Municipal (4\"-12\")",
+    note: "Aplica para diametros 4\" a 12\". PN a 23 C.",
     classes: [
       { clase: "DR 25", pn: 6.9 }, { clase: "DR 18", pn: 10.3 }, { clase: "DR 14", pn: 13.8 },
     ],
-  },
+  };
+}
+
+// Legacy — kept for non-PVC
+export const PVC_CLASSES: Record<PVCSystem, { title: string; note?: string; classes: PipeClassRow[] }> = {
+  metrico: { title: "ISO 4422 / NMX-E-143 — PVC Presion", classes: [
+    { clase: "SDR 41", pn: 3.4 }, { clase: "SDR 26", pn: 6 }, { clase: "SDR 17", pn: 10 },
+    { clase: "SDR 13.6", pn: 12.5 }, { clase: "SDR 11", pn: 16 },
+  ]},
+  ingles: { title: "NMX-E-143 / ASTM D2241 — PVC Presion", classes: [
+    { clase: "SDR 41", pn: 3.4 }, { clase: "SDR 26", pn: 6 }, { clase: "SDR 17", pn: 10 },
+    { clase: "SDR 13.6", pn: 12.5 }, { clase: "SDR 11", pn: 16 },
+  ]},
+  c900: { title: "AWWA C900/C905 — PVC Municipal", classes: [
+    { clase: "DR 25", pn: 6.9 }, { clase: "DR 18", pn: 10.3 }, { clase: "DR 14", pn: 13.8 },
+    { clase: "DR 51", pn: 4.8 }, { clase: "DR 41", pn: 6.0 }, { clase: "DR 32.5", pn: 7.6 }, { clase: "DR 26", pn: 9.5 },
+  ]},
 };
 
 // ── Pipe class tables by material ──
