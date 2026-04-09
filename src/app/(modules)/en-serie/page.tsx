@@ -11,7 +11,7 @@ import { HydraulicProfileChart } from "@/components/hydraulic/HydraulicProfileCh
 import { ExportPDFButton } from "@/components/ui/ExportPDFButton";
 import { calculateSeriesPipes } from "@/lib/calculations/series-pipes";
 import { flowToM3s, formatNumber, mcaToKgcm2 } from "@/lib/calculations/conversions";
-import { STANDARD_DNS, MATERIALS } from "@/lib/constants";
+import { STANDARD_DNS, MATERIALS, FITTINGS_CATALOG } from "@/lib/constants";
 import { saveFormState, loadFormState } from "@/lib/storage/form-persistence";
 import type { FlowUnit, SeriesTramo, AssumedValue } from "@/types/hydraulic";
 
@@ -76,10 +76,11 @@ export default function EnSeriePage() {
       DN: 150,
       C: 140,
       zEnd: 0,
-      lossMode: "percent",
+      lossMode: "accesorios",
       kTotal: 0,
       leTotal: 0,
       hmPercent: 10,
+      fittings: [],
       Q: null,
     });
   };
@@ -212,33 +213,71 @@ export default function EnSeriePage() {
                   <InputField label="Coef. C" value={t.C} onChange={(v) => updateTramo(t.id, { C: parseFloat(v) || 140 })} tooltip="Coeficiente de rugosidad del material. PVC=150, HD nuevo diseño=130, HD verificacion=140" />
                   <InputField label="Cota final" value={t.zEnd} onChange={(v) => updateTramo(t.id, { zEnd: parseFloat(v) || 0 })} unit="m" tooltip="Elevacion al final de este tramo (m.s.n.m.)" />
 
-                  {/* Minor losses mode selector */}
+                  {/* Accesorios per tramo */}
                   <div className="col-span-2 space-y-1">
-                    <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Perdidas menores</label>
-                    <div className="flex gap-1">
-                      {(["K", "Le", "percent"] as const).map((mode) => (
-                        <button
-                          key={mode}
-                          type="button"
-                          onClick={() => updateTramo(t.id, { lossMode: mode })}
-                          className={`flex-1 px-2 py-1 rounded text-[10px] font-medium transition-colors ${
-                            (t.lossMode || "percent") === mode
-                              ? "bg-[#1C3D5A] text-white"
-                              : "bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400"
-                          }`}
-                        >
-                          {mode === "K" ? "K (adim.)" : mode === "Le" ? "Le (m)" : "% de hf"}
-                        </button>
-                      ))}
+                    <div className="flex items-center justify-between">
+                      <label className="text-xs font-medium text-gray-600 dark:text-gray-400">Accesorios</label>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const cat = FITTINGS_CATALOG[0];
+                          const newFittings = [...(t.fittings || []), { type: cat.type, k: cat.k, qty: 1 }];
+                          updateTramo(t.id, { fittings: newFittings, lossMode: "accesorios" as const });
+                        }}
+                        className="text-[10px] bg-[#1C3D5A] text-white px-2 py-0.5 rounded hover:bg-[#0F2438] transition-colors"
+                      >
+                        + Agregar
+                      </button>
                     </div>
-                    {(t.lossMode || "percent") === "K" && (
-                      <InputField label="K total" value={t.kTotal} onChange={(v) => updateTramo(t.id, { kTotal: parseFloat(v) || 0 })} tooltip="Suma de coeficientes K de accesorios (codos, valvulas, tees)" />
+                    {(!t.fittings || t.fittings.length === 0) && (
+                      <p className="text-[10px] text-yellow-600 bg-yellow-50 dark:bg-yellow-900/20 rounded px-2 py-1">
+                        Sin accesorios — hm = 10% de hf (estimado)
+                      </p>
                     )}
-                    {(t.lossMode) === "Le" && (
-                      <InputField label="Le total" value={t.leTotal} onChange={(v) => updateTramo(t.id, { leTotal: parseFloat(v) || 0 })} unit="m" tooltip="Longitud equivalente total de accesorios en metros. Se calcula como Le = (Le/D) x D para cada accesorio" />
-                    )}
-                    {(t.lossMode || "percent") === "percent" && (
-                      <InputField label="% de hf" value={t.hmPercent ?? 10} onChange={(v) => updateTramo(t.id, { hmPercent: parseFloat(v) || 10 })} unit="%" tooltip="Porcentaje de las perdidas por friccion. Valor tipico: 10% para estimacion preliminar" />
+                    {t.fittings && t.fittings.length > 0 && (
+                      <div className="space-y-1">
+                        {t.fittings.map((f, fi) => (
+                          <div key={fi} className="flex items-center gap-1">
+                            <select
+                              value={f.type}
+                              onChange={(e) => {
+                                const cat = FITTINGS_CATALOG.find((c) => c.type === e.target.value);
+                                if (!cat) return;
+                                const updated = [...t.fittings];
+                                updated[fi] = { ...updated[fi], type: cat.type, k: cat.k };
+                                updateTramo(t.id, { fittings: updated });
+                              }}
+                              className="flex-1 text-[10px] bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded px-1 py-0.5"
+                            >
+                              {FITTINGS_CATALOG.map((c) => (
+                                <option key={c.type} value={c.type}>{c.type} (K={c.k})</option>
+                              ))}
+                            </select>
+                            <input
+                              type="number"
+                              value={f.qty}
+                              min={1}
+                              onChange={(e) => {
+                                const updated = [...t.fittings];
+                                updated[fi] = { ...updated[fi], qty: parseInt(e.target.value) || 1 };
+                                updateTramo(t.id, { fittings: updated });
+                              }}
+                              className="w-10 text-center text-[10px] bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded px-0.5 py-0.5"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const updated = t.fittings.filter((_, idx) => idx !== fi);
+                                updateTramo(t.id, { fittings: updated });
+                              }}
+                              className="text-red-400 hover:text-red-600 text-[10px]"
+                            >{"\u2717"}</button>
+                          </div>
+                        ))}
+                        <p className="text-[10px] text-gray-400 font-mono">
+                          K total: {t.fittings.reduce((s, f) => s + f.k * f.qty, 0).toFixed(2)}
+                        </p>
+                      </div>
                     )}
                   </div>
                   {inputs.variableFlow && (

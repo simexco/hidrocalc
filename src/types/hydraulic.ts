@@ -108,11 +108,13 @@ export interface SeriesTramo {
   DN: number | null;
   C: number;
   zEnd: number;
-  // Minor losses mode
-  lossMode: "K" | "Le" | "percent";
-  kTotal: number;       // K mode: sum of K coefficients
-  leTotal: number;      // Le mode: equivalent length (m)
-  hmPercent: number;     // % mode: percentage of hf (default 10)
+  // Minor losses
+  lossMode: "accesorios" | "K" | "Le" | "percent";
+  kTotal: number;
+  leTotal: number;
+  hmPercent: number;
+  // Accessory list for "accesorios" mode
+  fittings: { type: string; k: number; qty: number }[];
   // optional per-tramo Q
   Q: number | null;
 }

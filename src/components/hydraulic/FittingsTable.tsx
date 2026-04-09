@@ -33,6 +33,10 @@ export function FittingsTable({ fittings, velocity, onAdd, onRemove, onUpdate }:
     }
   };
 
+  // Totals
+  const totalK = fittings.reduce((sum, f) => sum + f.k * f.quantity, 0);
+  const totalHm = totalK * velocityHead;
+
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
@@ -48,23 +52,24 @@ export function FittingsTable({ fittings, velocity, onAdd, onRemove, onUpdate }:
 
       {fittings.length === 0 ? (
         <p className="text-xs text-yellow-600 dark:text-yellow-400 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg px-3 py-2 border border-yellow-200 dark:border-yellow-800">
-          &#9888; Sin accesorios — se asumirá hm = 10% de hf (regla empírica)
+          &#9888; Sin accesorios — se asumira hm = 10% de hf (regla empirica)
         </p>
       ) : (
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="bg-gray-50 dark:bg-gray-800 text-xs text-gray-500 dark:text-gray-400">
-                <th className="text-left px-2 py-2">Tipo</th>
-                <th className="text-center px-2 py-2 w-16">K</th>
+                <th className="text-left px-2 py-2">Accesorio</th>
+                <th className="text-center px-2 py-2 w-14">K</th>
                 <th className="text-center px-2 py-2 w-16">Cant.</th>
                 <th className="text-right px-2 py-2 w-20">hm (m)</th>
-                <th className="w-10" />
+                <th className="w-8" />
               </tr>
             </thead>
             <tbody>
               {fittings.map((f) => {
                 const hmPartial = f.k * f.quantity * velocityHead;
+                const isCustom = f.type === "Personalizado";
                 return (
                   <tr key={f.id} className="border-b border-gray-100 dark:border-gray-700">
                     <td className="px-2 py-1.5">
@@ -74,18 +79,22 @@ export function FittingsTable({ fittings, velocity, onAdd, onRemove, onUpdate }:
                         className="w-full text-xs bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded px-1.5 py-1"
                       >
                         {FITTINGS_CATALOG.map((c) => (
-                          <option key={c.type} value={c.type}>{c.type}</option>
+                          <option key={c.type} value={c.type}>{c.type} (K={c.k})</option>
                         ))}
                       </select>
                     </td>
-                    <td className="px-2 py-1.5 text-center">
-                      <input
-                        type="number"
-                        value={f.k}
-                        onChange={(e) => onUpdate(f.id, { k: parseFloat(e.target.value) || 0 })}
-                        step="0.01"
-                        className="w-14 text-center text-xs bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded px-1 py-1"
-                      />
+                    <td className="px-2 py-1.5 text-center text-xs font-mono text-gray-500">
+                      {isCustom ? (
+                        <input
+                          type="number"
+                          value={f.k}
+                          onChange={(e) => onUpdate(f.id, { k: parseFloat(e.target.value) || 0 })}
+                          step="0.01"
+                          className="w-12 text-center text-xs bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded px-1 py-0.5"
+                        />
+                      ) : (
+                        <span>{f.k}</span>
+                      )}
                     </td>
                     <td className="px-2 py-1.5 text-center">
                       <input
@@ -93,25 +102,34 @@ export function FittingsTable({ fittings, velocity, onAdd, onRemove, onUpdate }:
                         value={f.quantity}
                         onChange={(e) => onUpdate(f.id, { quantity: parseInt(e.target.value) || 1 })}
                         min={1}
-                        className="w-14 text-center text-xs bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded px-1 py-1"
+                        className="w-12 text-center text-xs bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded px-1 py-0.5"
                       />
                     </td>
                     <td className="px-2 py-1.5 text-right text-xs font-mono">
-                      {isFinite(hmPartial) ? hmPartial.toFixed(3) : "—"}
+                      {isFinite(hmPartial) ? hmPartial.toFixed(3) : "\u2014"}
                     </td>
                     <td className="px-1 py-1.5">
                       <button
                         type="button"
                         onClick={() => onRemove(f.id)}
-                        className="text-red-400 hover:text-red-600 text-xs px-1"
+                        className="text-red-400 hover:text-red-600 text-xs"
                       >
-                        &#10005;
+                        {"\u2717"}
                       </button>
                     </td>
                   </tr>
                 );
               })}
             </tbody>
+            <tfoot>
+              <tr className="bg-gray-50 dark:bg-gray-800 text-xs font-medium">
+                <td className="px-2 py-1.5 text-gray-600 dark:text-gray-400">Total</td>
+                <td className="px-2 py-1.5 text-center font-mono text-gray-600">{totalK.toFixed(2)}</td>
+                <td className="px-2 py-1.5 text-center text-gray-400">{fittings.reduce((s, f) => s + f.quantity, 0)}</td>
+                <td className="px-2 py-1.5 text-right font-mono text-gray-700 dark:text-gray-300">{isFinite(totalHm) ? totalHm.toFixed(3) : "\u2014"}</td>
+                <td />
+              </tr>
+            </tfoot>
           </table>
         </div>
       )}

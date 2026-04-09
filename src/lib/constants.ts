@@ -5,22 +5,44 @@
 // ── Standard Nominal Diameters (mm) ──
 export const STANDARD_DNS = [50, 63, 75, 100, 150, 200, 250, 300, 350, 400, 450, 500, 600, 700, 800];
 
+// ── Standard diameters with inch labels for dropdowns ──
+export const STANDARD_DNS_LABELED = [
+  { dn: 50, label: '2" (DN 50)' },
+  { dn: 63, label: '2.5" (DN 63)' },
+  { dn: 75, label: '3" (DN 75)' },
+  { dn: 100, label: '4" (DN 100)' },
+  { dn: 150, label: '6" (DN 150)' },
+  { dn: 200, label: '8" (DN 200)' },
+  { dn: 250, label: '10" (DN 250)' },
+  { dn: 300, label: '12" (DN 300)' },
+  { dn: 350, label: '14" (DN 350)' },
+  { dn: 400, label: '16" (DN 400)' },
+  { dn: 450, label: '18" (DN 450)' },
+  { dn: 500, label: '20" (DN 500)' },
+  { dn: 600, label: '24" (DN 600)' },
+  { dn: 700, label: '28" (DN 700)' },
+  { dn: 800, label: '30" (DN 800)' },
+];
+
 // ── Materials with Hazen-Williams C ──
+// Names match the pipe catalog in Golpe de Ariete for consistency
 export const MATERIALS = [
-  { name: "PVC / HDPE", c: 150 },
-  { name: "HD nuevo — diseno", c: 130 },
-  { name: "HD nuevo — verificacion", c: 140 },
-  { name: "HD (10+ anos)", c: 130 },
-  { name: "Hierro galvanizado / Acero nuevo", c: 120 },
-  { name: "Concreto centrifugado", c: 130 },
+  { name: "PVC — AWWA C900/C905", c: 150 },
+  { name: "PVC — Metrico ISO 4422", c: 150 },
+  { name: "PVC — Ingles ASTM D2241", c: 150 },
+  { name: "HDPE — AWWA C906", c: 150 },
+  { name: "Hierro ductil — diseno", c: 130 },
+  { name: "Hierro ductil — verificacion", c: 140 },
+  { name: "Hierro ductil (10+ anos)", c: 130 },
+  { name: "Acero nuevo", c: 120 },
+  { name: "Acero (10+ anos)", c: 100 },
   { name: "Asbesto cemento", c: 140 },
-  { name: "Fibrocemento", c: 140 },
-  { name: "Polietileno corrugado", c: 100 },
+  { name: "Concreto centrifugado", c: 130 },
   { name: "Personalizado", c: 130 },
 ];
 
 // Tooltip for C selection
-export const C_TOOLTIP = "Para diseño de proyectos nuevos se recomienda C=130 (criterio conservador CONAGUA). C=140 es apropiado para verificación de líneas existentes.";
+export const C_TOOLTIP = "Diseno (C=130): proyectos nuevos, criterio conservador CONAGUA. Verificacion (C=140): lineas existentes en buen estado.";
 
 // ── Fittings Catalog (K values) ──
 export const FITTINGS_CATALOG = [

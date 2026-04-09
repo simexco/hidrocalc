@@ -13,7 +13,7 @@ import { DiameterComparisonTable } from "@/components/hydraulic/DiameterComparis
 import { ExportPDFButton } from "@/components/ui/ExportPDFButton";
 import { calculateHazenWilliams, findMaxFlow, compareDiameters } from "@/lib/calculations/hazen-williams";
 import { flowToM3s, m3sToFlow, formatNumber, mcaToKgcm2 } from "@/lib/calculations/conversions";
-import { STANDARD_DNS, MATERIALS, DEFAULTS } from "@/lib/constants";
+import { STANDARD_DNS, STANDARD_DNS_LABELED, MATERIALS, DEFAULTS } from "@/lib/constants";
 import { saveFormState, loadFormState } from "@/lib/storage/form-persistence";
 import type { CalcMode, FlowUnit, AssumedValue, Alert } from "@/types/hydraulic";
 
@@ -229,18 +229,18 @@ export default function TramoSimplePage() {
                   required
                 />
                 <div className="flex flex-wrap gap-1 mt-1">
-                  {STANDARD_DNS.slice(0, 10).map((dn) => (
+                  {STANDARD_DNS_LABELED.slice(0, 12).map((d) => (
                     <button
-                      key={dn}
+                      key={d.dn}
                       type="button"
-                      onClick={() => setInput("DN", dn)}
+                      onClick={() => setInput("DN", d.dn)}
                       className={`text-[10px] px-1.5 py-0.5 rounded border transition-colors ${
-                        inputs.DN === dn
+                        inputs.DN === d.dn
                           ? "bg-[#1C3D5A] text-white border-[#1C3D5A]"
                           : "bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-400 hover:border-[#1C3D5A]"
                       }`}
                     >
-                      {dn}
+                      {d.label}
                     </button>
                   ))}
                 </div>

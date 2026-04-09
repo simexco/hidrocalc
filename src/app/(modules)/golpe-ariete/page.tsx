@@ -115,14 +115,17 @@ export default function GolpeArietePage() {
     if (matName) {
       // Map HW material names to elasticity material names
       const matMap: Record<string, string> = {
-        "PVC / HDPE": "PVC",
-        "HD nuevo — diseno": "Hierro dúctil",
-        "HD nuevo — verificacion": "Hierro dúctil",
-        "HD (10+ anos)": "Hierro dúctil",
-        "Hierro galvanizado / Acero nuevo": "Acero",
+        "PVC — AWWA C900/C905": "PVC",
+        "PVC — Metrico ISO 4422": "PVC",
+        "PVC — Ingles ASTM D2241": "PVC",
+        "HDPE — AWWA C906": "HDPE",
+        "Hierro ductil — diseno": "Hierro dúctil",
+        "Hierro ductil — verificacion": "Hierro dúctil",
+        "Hierro ductil (10+ anos)": "Hierro dúctil",
+        "Acero nuevo": "Acero",
+        "Acero (10+ anos)": "Acero",
         "Asbesto cemento": "Asbesto cemento",
         "Concreto centrifugado": "Concreto",
-        "Fibrocemento": "Asbesto cemento",
       };
       const elastName = matMap[matName];
       if (elastName) {

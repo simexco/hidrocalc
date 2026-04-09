@@ -22,11 +22,17 @@ function calculateMinorLoss(
   const velocityHead = V * V / (2 * G);
 
   switch (tramo.lossMode) {
+    case "accesorios":
+      if (tramo.fittings && tramo.fittings.length > 0) {
+        const kFromFittings = tramo.fittings.reduce((sum, f) => sum + f.k * f.qty, 0);
+        return { hm: kFromFittings * velocityHead, estimated: false };
+      }
+      return { hm: 0.10 * hf, estimated: true };
+
     case "K":
       if (tramo.kTotal > 0) {
         return { hm: tramo.kTotal * velocityHead, estimated: false };
       }
-      // Fall through to estimated
       return { hm: 0.10 * hf, estimated: true };
 
     case "Le":
