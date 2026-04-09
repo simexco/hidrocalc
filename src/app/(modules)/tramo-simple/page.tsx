@@ -199,7 +199,7 @@ export default function TramoSimplePage() {
                     label="Caudal Q"
                     value={inputs.rawQ}
                     onChange={(v) => handleNumInput("rawQ", v)}
-                    tooltip="Volumen de agua por unidad de tiempo que circula por la tubería"
+                    tooltip="Volumen de agua por unidad de tiempo. Unidades: L/s (mas comun en Mexico), m3/h o m3/s. Rango tipico: 2-500 L/s para lineas municipales. Campo obligatorio."
                     required
                     min={0}
                     step="0.1"
@@ -225,7 +225,7 @@ export default function TramoSimplePage() {
                   value={inputs.DN}
                   onChange={(v) => handleNumInput("DN", v)}
                   unit="mm"
-                  tooltip="Diámetro interior de la tubería. Para hierro dúctil, consultar catálogo del fabricante"
+                  tooltip="Diametro nominal comercial de la tuberia en mm. NO es el diametro interior real — varia segun material y clase. Rango: 2in (DN50) a 30in (DN800). Campo obligatorio."
                   required
                 />
                 <div className="flex flex-wrap gap-1 mt-1">
@@ -255,7 +255,7 @@ export default function TramoSimplePage() {
               required
               min={0}
               step="1"
-              tooltip="Distancia total de la tubería entre el punto de entrada y el punto de salida, medida en metros"
+              tooltip="Distancia total del tramo en metros, medida a lo largo del eje de la tuberia. Rango tipico: 50-5,000 m por tramo. Campo obligatorio."
             />
 
             {/* Material / C */}
@@ -290,7 +290,7 @@ export default function TramoSimplePage() {
               value={inputs.P1}
               onChange={(v) => handleNumInput("P1", v)}
               unit="kg/cm²"
-              tooltip="Presión manométrica en el punto de inicio. Si no se conoce, se calculan pérdidas pero no presión de salida"
+              tooltip="Presion disponible al inicio del tramo en kg/cm2. 1 kg/cm2 = 10 m.c.a. = 98 kPa. Rango tipico en redes: 1.5-7.0 kg/cm2. Si esta vacio: se calculan velocidad y perdidas, pero NO presion de salida."
             />
 
             {/* Mode B: P2 min */}
