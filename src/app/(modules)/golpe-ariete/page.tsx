@@ -119,6 +119,8 @@ export default function GolpeArietePage() {
         "PVC — Métrico ISO 4422": "PVC",
         "PVC — Ingles ASTM D2241": "PVC",
         "HDPE — AWWA C906": "HDPE",
+        "Hierro dúctil": "Hierro dúctil",
+        // Legacy names for localStorage compatibility
         "Hierro dúctil — diseño": "Hierro dúctil",
         "Hierro dúctil — verificación": "Hierro dúctil",
         "Hierro dúctil (10+ años)": "Hierro dúctil",

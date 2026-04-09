@@ -126,7 +126,7 @@ export default function DimensionamientoPage() {
                 ))}
               </select>
               <p className="text-[10px] text-gray-400 dark:text-gray-500 leading-tight mt-1">
-                Diseño (C=130): proyectos nuevos CONAGUA. Verificacion (C=140): lineas existentes.
+                Para mayor precisión en líneas existentes en buen estado usar C=140 con la opción Personalizado.
               </p>
             </div>
 

@@ -30,9 +30,7 @@ export const MATERIALS = [
   { name: "PVC — Métrico ISO 4422", c: 150 },
   { name: "PVC — Ingles ASTM D2241", c: 150 },
   { name: "HDPE — AWWA C906", c: 150 },
-  { name: "Hierro dúctil — diseño", c: 130 },
-  { name: "Hierro dúctil — verificación", c: 140 },
-  { name: "Hierro dúctil (10+ años)", c: 130 },
+  { name: "Hierro dúctil", c: 130 },
   { name: "Acero nuevo", c: 120 },
   { name: "Acero (10+ años)", c: 100 },
   { name: "Asbesto cemento", c: 140 },
@@ -41,7 +39,7 @@ export const MATERIALS = [
 ];
 
 // Tooltip for C selection
-export const C_TOOLTIP = "Diseño (C=130): proyectos nuevos, criterio conservador CONAGUA. Verificacion (C=140): lineas existentes en buen estado.";
+export const C_TOOLTIP = "Para mayor precisión en líneas existentes en buen estado usar C=140 con la opción Personalizado.";
 
 // ── Fittings Catalog (K values) ──
 export const FITTINGS_CATALOG = [

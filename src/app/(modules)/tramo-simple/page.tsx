@@ -273,7 +273,7 @@ export default function TramoSimplePage() {
                 ))}
               </select>
               <p className="text-[10px] text-gray-400 dark:text-gray-500 leading-tight mt-1">
-                Diseño (C=130): proyectos nuevos, criterio conservador CONAGUA. Verificacion (C=140): lineas existentes en buen estado.
+                Para mayor precisión en líneas existentes en buen estado usar C=140 con la opción Personalizado.
               </p>
               {inputs.materialName === "Personalizado" && (
                 <InputField

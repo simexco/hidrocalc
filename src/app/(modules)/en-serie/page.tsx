@@ -210,7 +210,7 @@ export default function EnSeriePage() {
                       {STANDARD_DNS.map((dn) => <option key={dn} value={dn}>{dn}</option>)}
                     </select>
                   </div>
-                  <InputField label="Coef. C" value={t.C} onChange={(v) => updateTramo(t.id, { C: parseFloat(v) || 140 })} tooltip="Coeficiente de rugosidad del material. PVC=150, HD nuevo diseño=130, HD verificación=140" />
+                  <InputField label="Coef. C" value={t.C} onChange={(v) => updateTramo(t.id, { C: parseFloat(v) || 140 })} tooltip="Coeficiente de rugosidad del material. PVC=150, Hierro dúctil=130, Acero=120. Para C=140 usar Personalizado." />
                   <InputField label="Cota final" value={t.zEnd} onChange={(v) => updateTramo(t.id, { zEnd: parseFloat(v) || 0 })} unit="m" tooltip="Elevacion al final de este tramo (m.s.n.m.)" />
 
                   {/* Accesorios per tramo */}
