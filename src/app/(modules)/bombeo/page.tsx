@@ -74,8 +74,8 @@ export default function BombeoPage() {
               Sistema
             </h2>
             <InputField label="Nombre del proyecto" value={inputs.projectName} onChange={(v) => setInput("projectName", v)} type="text" />
-            <InputField label="Altura geometrica Hg" value={inputs.Hg} onChange={(v) => handleNum("Hg", v)} unit="m" required tooltip="Diferencia de elevacion entre la succion y la descarga de la bomba (z2 - z1)" />
-            <InputField label="Presion remanente P2" value={p2Req} onChange={(v) => setP2Req(parseFloat(v) || 0)} unit="kg/cm2" tooltip="Presion minima requerida en el punto de entrega (tanque, red). Si descarga a tanque atmosferico, usar 0." />
+            <InputField label="Altura geométrica Hg" value={inputs.Hg} onChange={(v) => handleNum("Hg", v)} unit="m" required tooltip="Diferencia de elevacion entre la succion y la descarga de la bomba (z2 - z1)" />
+            <InputField label="Presión remanente P2" value={p2Req} onChange={(v) => setP2Req(parseFloat(v) || 0)} unit="kg/cm2" tooltip="Presión minima requerida en el punto de entrega (tanque, red). Si descarga a tanque atmosferico, usar 0." />
             <p className="text-[10px] text-gray-400 -mt-2 mb-1">Hs = Hg + P2 = {((inputs.Hg ?? 0) + p2Req * 10).toFixed(1)} m</p>
             <InputField label="Longitud total L" value={inputs.L} onChange={(v) => handleNum("L", v)} unit="m" required tooltip="Longitud total de la tubería desde la bomba hasta el punto de descarga" />
 
@@ -181,8 +181,8 @@ export default function BombeoPage() {
                     { label: "Método bomba", value: inputs.pumpMethod === "equation" ? `Ecuación: H=${inputs.H0} - ${inputs.Kbomba}×Q²` : `${inputs.pumpPoints.length} puntos` },
                   ],
                   results: [
-                    { label: "Q operacion", value: results.Qop != null ? formatNumber(results.Qop, 1) : "No encontrado", unit: "L/s" },
-                    { label: "H operacion", value: results.Hop != null ? formatNumber(results.Hop, 1) : "—", unit: "m" },
+                    { label: "Q operación", value: results.Qop != null ? formatNumber(results.Qop, 1) : "No encontrado", unit: "L/s" },
+                    { label: "H operación", value: results.Hop != null ? formatNumber(results.Hop, 1) : "—", unit: "m" },
                     ...(results.recommendation ? [
                       { label: "Tipo de bomba", value: results.recommendation.pumpType, unit: "" },
                       { label: "Potencia motor", value: `${results.recommendation.powerHP} HP (${formatNumber(results.recommendation.powerKW, 1)} kW)`, unit: "" },

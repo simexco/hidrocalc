@@ -199,7 +199,7 @@ export default function TramoSimplePage() {
                     label="Caudal Q"
                     value={inputs.rawQ}
                     onChange={(v) => handleNumInput("rawQ", v)}
-                    tooltip="Volumen de agua por unidad de tiempo. Unidades: L/s (mas comun en Mexico), m3/h o m3/s. Rango tipico: 2-500 L/s para lineas municipales. Campo obligatorio."
+                    tooltip="Volumen de agua por unidad de tiempo. Unidades: L/s (mas comun en Mexico), m3/h o m3/s. Rango típico: 2-500 L/s para lineas municipales. Campo obligatorio."
                     required
                     min={0}
                     step="0.1"
@@ -225,7 +225,7 @@ export default function TramoSimplePage() {
                   value={inputs.DN}
                   onChange={(v) => handleNumInput("DN", v)}
                   unit="mm"
-                  tooltip="Diametro nominal comercial de la tuberia en mm. NO es el diametro interior real — varia segun material y clase. Rango: 2in (DN50) a 30in (DN800). Campo obligatorio."
+                  tooltip="Diámetro nominal comercial de la tubería en mm. NO es el diámetro interior real — varia segun material y clase. Rango: 2in (DN50) a 30in (DN800). Campo obligatorio."
                   required
                 />
                 <div className="flex flex-wrap gap-1 mt-1">
@@ -255,7 +255,7 @@ export default function TramoSimplePage() {
               required
               min={0}
               step="1"
-              tooltip="Distancia total del tramo en metros, medida a lo largo del eje de la tuberia. Rango tipico: 50-5,000 m por tramo. Campo obligatorio."
+              tooltip="Distancia total del tramo en metros, medida a lo largo del eje de la tubería. Rango típico: 50-5,000 m por tramo. Campo obligatorio."
             />
 
             {/* Material / C */}
@@ -273,7 +273,7 @@ export default function TramoSimplePage() {
                 ))}
               </select>
               <p className="text-[10px] text-gray-400 dark:text-gray-500 leading-tight mt-1">
-                Diseno (C=130): proyectos nuevos, criterio conservador CONAGUA. Verificacion (C=140): lineas existentes en buen estado.
+                Diseño (C=130): proyectos nuevos, criterio conservador CONAGUA. Verificacion (C=140): lineas existentes en buen estado.
               </p>
               {inputs.materialName === "Personalizado" && (
                 <InputField
@@ -290,7 +290,7 @@ export default function TramoSimplePage() {
               value={inputs.P1}
               onChange={(v) => handleNumInput("P1", v)}
               unit="kg/cm²"
-              tooltip="Presion disponible al inicio del tramo en kg/cm2. 1 kg/cm2 = 10 m.c.a. = 98 kPa. Rango tipico en redes: 1.5-7.0 kg/cm2. Si esta vacio: se calculan velocidad y perdidas, pero NO presion de salida."
+              tooltip="Presión disponible al inicio del tramo en kg/cm2. 1 kg/cm2 = 10 m.c.a. = 98 kPa. Rango típico en redes: 1.5-7.0 kg/cm2. Si esta vacio: se calculan velocidad y pérdidas, pero NO presión de salida."
             />
 
             {/* Mode B: P2 min */}

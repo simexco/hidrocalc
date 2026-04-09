@@ -28,21 +28,21 @@ export const STANDARD_DNS_LABELED = [
 // Names match the pipe catalog in Golpe de Ariete for consistency
 export const MATERIALS = [
   { name: "PVC — AWWA C900/C905", c: 150 },
-  { name: "PVC — Metrico ISO 4422", c: 150 },
+  { name: "PVC — Métrico ISO 4422", c: 150 },
   { name: "PVC — Ingles ASTM D2241", c: 150 },
   { name: "HDPE — AWWA C906", c: 150 },
-  { name: "Hierro ductil — diseno", c: 130 },
-  { name: "Hierro ductil — verificacion", c: 140 },
-  { name: "Hierro ductil (10+ anos)", c: 130 },
+  { name: "Hierro dúctil — diseño", c: 130 },
+  { name: "Hierro dúctil — verificación", c: 140 },
+  { name: "Hierro dúctil (10+ años)", c: 130 },
   { name: "Acero nuevo", c: 120 },
-  { name: "Acero (10+ anos)", c: 100 },
+  { name: "Acero (10+ años)", c: 100 },
   { name: "Asbesto cemento", c: 140 },
   { name: "Concreto centrifugado", c: 130 },
   { name: "Personalizado", c: 130 },
 ];
 
 // Tooltip for C selection
-export const C_TOOLTIP = "Diseno (C=130): proyectos nuevos, criterio conservador CONAGUA. Verificacion (C=140): lineas existentes en buen estado.";
+export const C_TOOLTIP = "Diseño (C=130): proyectos nuevos, criterio conservador CONAGUA. Verificacion (C=140): lineas existentes en buen estado.";
 
 // ── Fittings Catalog (K values) ──
 export const FITTINGS_CATALOG = [
@@ -116,7 +116,7 @@ export const PIPE_CATALOG: PipeCatalogGroup[] = [
     ],
   },
   {
-    material: "PVC", E: 3e9, label: "PVC — Metrico ISO 4422",
+    material: "PVC", E: 3e9, label: "PVC — Métrico ISO 4422",
     sizes: [
       { label: '2" (OD 63mm)', od: 63, classes: [{ name: "SDR 41", e: 1.5 }, { name: "SDR 26", e: 2.5 }, { name: "SDR 17", e: 3.8 }, { name: "SDR 13.6", e: 4.7 }, { name: "SDR 11", e: 5.7 }] },
       { label: '2.5" (OD 75mm)', od: 75, classes: [{ name: "SDR 41", e: 1.8 }, { name: "SDR 26", e: 3.0 }, { name: "SDR 17", e: 4.5 }, { name: "SDR 13.6", e: 5.6 }, { name: "SDR 11", e: 6.8 }] },
@@ -166,7 +166,7 @@ export const PIPE_CATALOG: PipeCatalogGroup[] = [
     ],
   },
   {
-    material: "Hierro dúctil", E: 169e9, label: "Hierro ductil — ISO 2531",
+    material: "Hierro dúctil", E: 169e9, label: "Hierro dúctil — ISO 2531",
     sizes: [
       { label: '3" (DN 80)', od: 98, classes: [{ name: "K9", e: 6.0 }] },
       { label: '4" (DN 100)', od: 118, classes: [{ name: "K9", e: 6.0 }] },
@@ -211,7 +211,7 @@ export interface ThicknessRef {
 // ── Wall thickness references by material ──
 export const THICKNESS_BY_MATERIAL: Record<string, ThicknessRef | null> = {
   "Hierro dúctil": {
-    title: "ISO 2531 — Hierro ductil K9 (referencia)",
+    title: "ISO 2531 — Hierro dúctil K9 (referencia)",
     columns: ["DN", "K9 (mm)"],
     rows: [
       { label: "100", values: [6.0] }, { label: "150", values: [6.0] }, { label: "200", values: [6.3] },
@@ -261,18 +261,18 @@ export const THICKNESS_BY_MATERIAL: Record<string, ThicknessRef | null> = {
 };
 
 // ── PVC Sub-systems ──
-export type PVCSystem = "metrico" | "ingles" | "c900" | "c905";
+export type PVCSystem = "métrico" | "ingles" | "c900" | "c905";
 
 export const PVC_SYSTEM_LABELS: Record<PVCSystem, string> = {
-  metrico: "Metrico — ISO 4422 / NMX-E-143",
+  métrico: "Métrico — ISO 4422 / NMX-E-143",
   ingles: "Ingles — NMX / ASTM D2241",
   c900: "AWWA C900 (4in-12in)",
   c905: "AWWA C905 (14in-24in)",
 };
 
 export const PVC_THICKNESS: Record<PVCSystem, ThicknessRef> = {
-  metrico: {
-    title: "ISO 4422 / NMX-E-143 — PVC Metrico",
+  métrico: {
+    title: "ISO 4422 / NMX-E-143 — PVC Métrico",
     note: "e = OD / SDR. D_interno = OD - 2e. Ref: ISO 4422",
     columns: ["OD (mm)", "DN aprox", "SDR 26 (PN6)", "SDR 17 (PN10)", "SDR 13.6 (PN16)"],
     rows: [
@@ -337,9 +337,9 @@ export const PVC_THICKNESS: Record<PVCSystem, ThicknessRef> = {
  * D > 290mm (~12") → C905 classes, otherwise C900.
  */
 export function getPVCClasses(pvcSys: PVCSystem, isC905: boolean): { title: string; note?: string; classes: PipeClassRow[] } {
-  if (pvcSys === "metrico" || pvcSys === "ingles") {
+  if (pvcSys === "métrico" || pvcSys === "ingles") {
     return {
-      title: pvcSys === "metrico" ? "ISO 4422 / NMX-E-143 — PVC Presion" : "NMX-E-143 / ASTM D2241 — PVC Presion",
+      title: pvcSys === "métrico" ? "ISO 4422 / NMX-E-143 — PVC Presion" : "NMX-E-143 / ASTM D2241 — PVC Presion",
       classes: [
         { clase: "SDR 41", pn: 3.4 }, { clase: "SDR 26", pn: 6 },
         { clase: "SDR 17", pn: 10 }, { clase: "SDR 13.6", pn: 12.5 }, { clase: "SDR 11", pn: 16 },
@@ -350,7 +350,7 @@ export function getPVCClasses(pvcSys: PVCSystem, isC905: boolean): { title: stri
   if (isC905) {
     return {
       title: "AWWA C905 — PVC Municipal (14in-24in)",
-      note: "Aplica para diametros 14in a 24in. PN a 23 C.",
+      note: "Aplica para diámetros 14in a 24in. PN a 23 C.",
       classes: [
         { clase: "DR 51", pn: 4.8 }, { clase: "DR 41", pn: 6.0 },
         { clase: "DR 32.5", pn: 7.6 }, { clase: "DR 26", pn: 9.5 },
@@ -359,7 +359,7 @@ export function getPVCClasses(pvcSys: PVCSystem, isC905: boolean): { title: stri
   }
   return {
     title: "AWWA C900 — PVC Municipal (4in-12in)",
-    note: "Aplica para diametros 4in a 12in. PN a 23 C.",
+    note: "Aplica para diámetros 4in a 12in. PN a 23 C.",
     classes: [
       { clase: "DR 25", pn: 6.9 }, { clase: "DR 18", pn: 10.3 }, { clase: "DR 14", pn: 13.8 },
     ],
@@ -368,7 +368,7 @@ export function getPVCClasses(pvcSys: PVCSystem, isC905: boolean): { title: stri
 
 // Legacy — kept for non-PVC
 export const PVC_CLASSES: Record<PVCSystem, { title: string; note?: string; classes: PipeClassRow[] }> = {
-  metrico: { title: "ISO 4422 / NMX-E-143 — PVC Presion", classes: [
+  métrico: { title: "ISO 4422 / NMX-E-143 — PVC Presion", classes: [
     { clase: "SDR 41", pn: 3.4 }, { clase: "SDR 26", pn: 6 }, { clase: "SDR 17", pn: 10 },
     { clase: "SDR 13.6", pn: 12.5 }, { clase: "SDR 11", pn: 16 },
   ]},
@@ -393,7 +393,7 @@ export const PIPE_CLASSES_BY_MATERIAL: Record<string, {
   classes: PipeClassRow[];
 } | null> = {
   "Hierro dúctil": {
-    title: "ISO 2531 — Hierro ductil",
+    title: "ISO 2531 — Hierro dúctil",
     classes: [
       { clase: "K7", pn: 10 }, { clase: "K9", pn: 16 },
       { clase: "K12", pn: 25 }, { clase: "K14", pn: 25 }, { clase: "K16", pn: 40 },

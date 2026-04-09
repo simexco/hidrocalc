@@ -52,7 +52,7 @@ export function FittingsTable({ fittings, velocity, onAdd, onRemove, onUpdate }:
 
       {fittings.length === 0 ? (
         <p className="text-xs text-yellow-600 dark:text-yellow-400 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg px-3 py-2 border border-yellow-200 dark:border-yellow-800">
-          &#9888; Sin accesorios — se asumira hm = 10% de hf (regla empirica)
+          &#9888; Sin accesorios — se asumira hm = 10% de hf (regla empírica)
         </p>
       ) : (
         <div className="overflow-x-auto">

@@ -17,7 +17,7 @@ export default function GolpeArietePage() {
   const { inputs, results, setInput, setResults } = useWaterHammerStore();
   const singlePipe = useSinglePipeStore();
   const [showThicknessRef, setShowThicknessRef] = useState(false);
-  const [pvcSystem, setPvcSystem] = useState<PVCSystem>("metrico");
+  const [pvcSystem, setPvcSystem] = useState<PVCSystem>("métrico");
   const [entryMode, setEntryMode] = useState<"simple" | "advanced">("simple");
 
   // Simple mode state
@@ -41,7 +41,7 @@ export default function GolpeArietePage() {
     if (catalog.material === "PVC") {
       if (catalog.label.includes("C905")) setPvcSystem("c905");
       else if (catalog.label.includes("C900")) setPvcSystem("c900");
-      else if (catalog.label.includes("Metrico")) setPvcSystem("metrico");
+      else if (catalog.label.includes("Métrico")) setPvcSystem("métrico");
       else if (catalog.label.includes("Ingles")) setPvcSystem("ingles");
     }
   }, [entryMode, selectedCatalog, selectedSize, selectedClass, catalog, sizeEntry, classEntry, setInput]);
@@ -101,13 +101,13 @@ export default function GolpeArietePage() {
     // Velocidad
     const v = singlePipe.results?.V;
     if (v != null) setInput("V0", v);
-    // Diametro
+    // Diámetro
     const dn = singlePipe.inputs.DN;
     if (dn != null) setInput("D", dn);
     // Longitud
     const l = singlePipe.inputs.L;
     if (l != null) setInput("L", l);
-    // Presion estatica P1 → P0 (ya viene en kg/cm2 del input del usuario)
+    // Presión estática P1 → P0 (ya viene en kg/cm2 del input del usuario)
     const p1 = singlePipe.inputs.P1;
     if (p1 != null) setInput("P0", p1);
     // Material → buscar equivalente en PIPE_ELASTICITY
@@ -116,14 +116,14 @@ export default function GolpeArietePage() {
       // Map HW material names to elasticity material names
       const matMap: Record<string, string> = {
         "PVC — AWWA C900/C905": "PVC",
-        "PVC — Metrico ISO 4422": "PVC",
+        "PVC — Métrico ISO 4422": "PVC",
         "PVC — Ingles ASTM D2241": "PVC",
         "HDPE — AWWA C906": "HDPE",
-        "Hierro ductil — diseno": "Hierro dúctil",
-        "Hierro ductil — verificacion": "Hierro dúctil",
-        "Hierro ductil (10+ anos)": "Hierro dúctil",
+        "Hierro dúctil — diseño": "Hierro dúctil",
+        "Hierro dúctil — verificación": "Hierro dúctil",
+        "Hierro dúctil (10+ años)": "Hierro dúctil",
         "Acero nuevo": "Acero",
-        "Acero (10+ anos)": "Acero",
+        "Acero (10+ años)": "Acero",
         "Asbesto cemento": "Asbesto cemento",
         "Concreto centrifugado": "Concreto",
       };
@@ -173,7 +173,7 @@ export default function GolpeArietePage() {
               onChange={(v) => handleNum("V0", v)}
               unit="m/s"
               required
-              tooltip="Velocidad del agua antes del cierre de valvula. Puedes obtenerla del Modulo 1 o calcularla como Q/A"
+              tooltip="Velocidad del agua antes del cierre de válvula. Puedes obtenerla del Módulo 1 o calcularla como Q/A"
             />
 
             {/* Entry mode toggle */}
@@ -188,7 +188,7 @@ export default function GolpeArietePage() {
 
             {entryMode === "simple" ? (
               <>
-                {/* 1. Tipo de tuberia */}
+                {/* 1. Tipo de tubería */}
                 <div className="space-y-1">
                   <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Tipo de tuberia</label>
                   <select value={selectedCatalog} onChange={(e) => setSelectedCatalog(parseInt(e.target.value))} className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 dark:text-white">
@@ -196,9 +196,9 @@ export default function GolpeArietePage() {
                   </select>
                 </div>
 
-                {/* 2. Diametro */}
+                {/* 2. Diámetro */}
                 <div className="space-y-1">
-                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Diametro</label>
+                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Diámetro</label>
                   <select value={selectedSize} onChange={(e) => setSelectedSize(parseInt(e.target.value))} className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 dark:text-white">
                     {catalog?.sizes.map((s, i) => <option key={i} value={i}>{s.label} (OD {s.od} mm)</option>)}
                   </select>
@@ -215,7 +215,7 @@ export default function GolpeArietePage() {
                 {/* Auto-filled summary */}
                 {sizeEntry && classEntry && (
                   <div className="bg-[#E9EFF5] dark:bg-[#1C3D5A]/20 rounded-lg px-3 py-2.5 text-xs space-y-1">
-                    <p className="font-medium text-[#1C3D5A] dark:text-blue-300 mb-1">Datos de la tuberia (auto)</p>
+                    <p className="font-medium text-[#1C3D5A] dark:text-blue-300 mb-1">Datos de la tubería (auto)</p>
                     <div className="grid grid-cols-2 gap-x-4 gap-y-0.5 text-gray-600 dark:text-gray-400">
                       <span>OD: <strong>{sizeEntry.od} mm</strong></span>
                       <span>e: <strong>{classEntry.e} mm</strong></span>
@@ -230,7 +230,7 @@ export default function GolpeArietePage() {
             ) : (
               <>
                 {/* Advanced: manual entry */}
-                <InputField label="D interno" value={inputs.D} onChange={(v) => handleNum("D", v)} unit="mm" required tooltip="Diametro interior real de la tuberia" />
+                <InputField label="D interno" value={inputs.D} onChange={(v) => handleNum("D", v)} unit="mm" required tooltip="Diámetro interior real de la tuberia" />
                 <InputField label="Espesor de pared e" value={inputs.e} onChange={(v) => handleNum("e", v)} unit="mm" required tooltip="Grosor de la pared de la tuberia" />
 
                 {/* OD/DR display */}
@@ -242,7 +242,7 @@ export default function GolpeArietePage() {
                 )}
 
                 <div className="space-y-1">
-                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Material (Modulo E)</label>
+                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Material (Módulo E)</label>
                   <select value={inputs.materialName} onChange={(e) => handleMaterial(e.target.value)}
                 className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 dark:text-white"
               >
@@ -251,7 +251,7 @@ export default function GolpeArietePage() {
                 ))}
               </select>
               {inputs.materialName === "Personalizado" && (
-                <InputField label="E (Pa)" value={inputs.E} onChange={(v) => setInput("E", parseFloat(v) || 0)} tooltip="Modulo de elasticidad del material en Pascales. Ej: Hierro ductil = 169,000,000,000 Pa" />
+                <InputField label="E (Pa)" value={inputs.E} onChange={(v) => setInput("E", parseFloat(v) || 0)} tooltip="Módulo de elasticidad del material en Pascales. Ej: Hierro dúctil = 169,000,000,000 Pa" />
               )}
               {inputs.materialName === "PVC" && (
                 <div className="mt-2">
@@ -271,7 +271,7 @@ export default function GolpeArietePage() {
               </>
             )}
 
-            <InputField label="Presion estatica P0" value={inputs.P0} onChange={(v) => handleNum("P0", v)} unit="kg/cm2" tooltip="Presion normal de operacion antes del cierre de valvula" />
+            <InputField label="Presión estática P0" value={inputs.P0} onChange={(v) => handleNum("P0", v)} unit="kg/cm2" tooltip="Presión normal de operación antes del cierre de valvula" />
             <InputField
               label="Tiempo de cierre Tc"
               value={inputs.Tc}
@@ -397,7 +397,7 @@ export default function GolpeArietePage() {
                     </div>
                     {/* Explanation of the table */}
                     <div className="px-4 py-2 text-[10px] text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700">
-                      <strong>Cumple:</strong> La clase resiste la presion maxima del golpe de ariete.
+                      <strong>Cumple:</strong> La clase resiste la presión maxima del golpe de ariete.
                       <strong className="ml-2">REC:</strong> Clase minima suficiente (mas economica).
                       {computedDR != null && <><br /><strong>Tu seleccion:</strong> DR {computedDR.toFixed(1)} (e={inputs.e} mm). Las clases con pared igual o mas delgada que tu tubo estan marcadas.</>}
                     </div>

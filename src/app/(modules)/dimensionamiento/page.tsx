@@ -126,7 +126,7 @@ export default function DimensionamientoPage() {
                 ))}
               </select>
               <p className="text-[10px] text-gray-400 dark:text-gray-500 leading-tight mt-1">
-                Diseno (C=130): proyectos nuevos CONAGUA. Verificacion (C=140): lineas existentes.
+                Diseño (C=130): proyectos nuevos CONAGUA. Verificacion (C=140): lineas existentes.
               </p>
             </div>
 

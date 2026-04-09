@@ -37,31 +37,31 @@ export function calculatePipeSizing(input: PipeSizingInputs): PipeSizingResults 
       alerts.push({
         level: "ERROR" as const,
         field: "DN",
-        message: "Caudal muy bajo para los diametros disponibles — todos tienen V < 0.3 m/s. Verificar caudal de diseno.",
+        message: "Caudal muy bajo para los diámetros disponibles — todos tienen V < 0.3 m/s. Verificar caudal de diseño.",
       });
     } else if (allFailVmax) {
       alerts.push({
         level: "ERROR" as const,
         field: "DN",
-        message: "Caudal muy alto para los diametros disponibles — todos exceden velocidad maxima. Considerar diametros mayores.",
+        message: "Caudal muy alto para los diámetros disponibles — todos exceden velocidad maxima. Considerar diámetros mayores.",
       });
     } else if (allFailP) {
       alerts.push({
         level: "ERROR" as const,
         field: "DN",
-        message: "Presion insuficiente para este tramo en todos los diametros. Aumentar P1 o reducir longitud.",
+        message: "Presión insuficiente para este tramo en todos los diámetros. Aumentar P1 o reducir longitud.",
       });
     } else if (someVok && somePok) {
       alerts.push({
         level: "ERROR" as const,
         field: "DN",
-        message: "No existe DN estandar que cumpla simultaneamente velocidad y presion. Considerar cambio de condiciones de diseno.",
+        message: "No existe DN estándar que cumpla simultáneamente velocidad y presión. Considerar cambio de condiciones de diseño.",
       });
     } else {
       alerts.push({
         level: "ERROR" as const,
         field: "DN",
-        message: "Ningun diametro estandar cumple las restricciones. Verificar parametros de entrada.",
+        message: "Ningun diámetro estándar cumple las restricciones. Verificar parametros de entrada.",
       });
     }
   }

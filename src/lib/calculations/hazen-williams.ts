@@ -59,7 +59,7 @@ export function calculateHazenWilliams(input: HWInput): HWResult {
     const totalK = fittings.reduce((sum, f) => sum + f.k * f.quantity, 0);
     hm = totalK * velocityHead;
   } else if (input.useEstimatedHm !== false) {
-    // 10% empirical rule
+    // 10% empírical rule
     hm = DEFAULTS.hmPercent * hf;
     hmEstimated = true;
   }

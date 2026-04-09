@@ -128,15 +128,15 @@ export default function Home() {
 
         {/* Decision guide */}
         <div className="max-w-4xl w-full bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-6 md:p-8 mb-8">
-          <h2 className="text-lg font-semibold text-white mb-1 text-center">Que modulo necesito?</h2>
+          <h2 className="text-lg font-semibold text-white mb-1 text-center">Que módulo necesito?</h2>
           <p className="text-xs text-white/40 text-center mb-6">Selecciona segun tu situacion</p>
           <div className="space-y-3">
             {[
-              { situation: "Tengo una linea y quiero saber si la presion llega al final", module: "Tramo Simple (Modo A)", data: "Q, DN, L, P1", href: "/tramo-simple" },
+              { situation: "Tengo una linea y quiero saber si la presión llega al final", module: "Tramo Simple (Modo A)", data: "Q, DN, L, P1", href: "/tramo-simple" },
               { situation: "Quiero saber cuanto caudal puede pasar sin bajar la presion", module: "Tramo Simple (Modo B)", data: "DN, L, P1, P2 minima", href: "/tramo-simple" },
-              { situation: "No se que diametro usar para un caudal dado", module: "Dimensionamiento", data: "Q, L, P1", href: "/dimensionamiento" },
-              { situation: "Mi linea cambia de diametro o material en el trayecto", module: "Tuberias en Serie", data: "Q global, tramos con L/DN/C", href: "/en-serie" },
-              { situation: "Quiero saber que clase de tuberia aguanta el cierre de una valvula", module: "Golpe de Ariete", data: "V0, D interno, espesor, material, Tc", href: "/golpe-ariete" },
+              { situation: "No se que diámetro usar para un caudal dado", module: "Dimensionamiento", data: "Q, L, P1", href: "/dimensionamiento" },
+              { situation: "Mi linea cambia de diámetro o material en el trayecto", module: "Tuberías en Serie", data: "Q global, tramos con L/DN/C", href: "/en-serie" },
+              { situation: "Quiero saber que clase de tubería aguanta el cierre de una valvula", module: "Golpe de Ariete", data: "V0, D interno, espesor, material, Tc", href: "/golpe-ariete" },
               { situation: "Tengo una bomba y quiero saber en que punto opera", module: "Punto de Operacion", data: "Hg, L, DN, curva de bomba", href: "/bombeo" },
             ].map((r) => (
               <Link key={r.module} href={r.href} className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4 bg-white/5 hover:bg-white/10 border border-white/5 rounded-lg px-4 py-3 transition-colors group">

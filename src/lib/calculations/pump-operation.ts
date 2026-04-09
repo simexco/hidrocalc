@@ -72,7 +72,7 @@ function estimateEfficiency(Q: number): number {
  */
 function estimateNPSHr(Q: number, rpm: number): number {
   // Simplified Thoma correlation: NPSHr ~ Ns^(4/3) factor
-  // For practical purposes, use empirical ranges:
+  // For practical purposes, use empírical ranges:
   if (rpm <= 1750) {
     if (Q < 10) return 2.0;
     if (Q < 30) return 3.0;
@@ -212,11 +212,11 @@ export function calculatePumpOperation(input: PumpOperationInputs): PumpOperatio
 
   if (Qop != null && Qop > 0 && Hop != null && Hop > 0) {
     recommendation = generateRecommendation(Qop, Hop, Hg);
-    alerts.push({ level: "OK", field: "Qop", message: `Punto de operacion: ${Qop.toFixed(1)} L/s @ ${Hop.toFixed(1)} m` });
+    alerts.push({ level: "OK", field: "Qop", message: `Punto de operación: ${Qop.toFixed(1)} L/s @ ${Hop.toFixed(1)} m` });
   } else if (Qop === null || Qop === 0) {
     alerts.push({ level: "ERROR", field: "Qop", message: "La curva del sistema no intersecta la curva de la bomba" });
   } else if (Hop != null && Hop < Hg) {
-    alerts.push({ level: "ERROR", field: "Hop", message: "La bomba no vence la altura estatica" });
+    alerts.push({ level: "ERROR", field: "Hop", message: "La bomba no vence la altura estática" });
   }
 
   return {

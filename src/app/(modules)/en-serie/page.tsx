@@ -178,7 +178,7 @@ export default function EnSeriePage() {
                     </tbody>
                   </table>
                   <div className="px-4 py-2 text-[10px] text-gray-400 border-t border-gray-100 dark:border-gray-700">
-                    Ref: Sotelo Avila — Hidraulica General Vol. 1 / Streeter-Wylie
+                    Ref: Sotelo Avila — Hidráulica General Vol. 1 / Streeter-Wylie
                   </div>
                 </div>
               </div>
@@ -210,7 +210,7 @@ export default function EnSeriePage() {
                       {STANDARD_DNS.map((dn) => <option key={dn} value={dn}>{dn}</option>)}
                     </select>
                   </div>
-                  <InputField label="Coef. C" value={t.C} onChange={(v) => updateTramo(t.id, { C: parseFloat(v) || 140 })} tooltip="Coeficiente de rugosidad del material. PVC=150, HD nuevo diseño=130, HD verificacion=140" />
+                  <InputField label="Coef. C" value={t.C} onChange={(v) => updateTramo(t.id, { C: parseFloat(v) || 140 })} tooltip="Coeficiente de rugosidad del material. PVC=150, HD nuevo diseño=130, HD verificación=140" />
                   <InputField label="Cota final" value={t.zEnd} onChange={(v) => updateTramo(t.id, { zEnd: parseFloat(v) || 0 })} unit="m" tooltip="Elevacion al final de este tramo (m.s.n.m.)" />
 
                   {/* Accesorios per tramo */}

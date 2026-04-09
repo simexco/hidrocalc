@@ -68,7 +68,7 @@ export function calculateWaterHammer(input: WaterHammerInputs, pvcSystem?: PVCSy
     if (!classFound) {
       const maxClass = matClasses.classes[matClasses.classes.length - 1];
       pipeClass = `Excede ${maxClass.clase}`;
-      alerts.push({ level: "ERROR", field: "pipeClass", message: `Pmax (${Pmax_bar.toFixed(1)} bar) excede la clase maxima disponible (${maxClass.clase} PN ${maxClass.pn}). Revisar diseno o instalar proteccion contra ariete.` });
+      alerts.push({ level: "ERROR", field: "pipeClass", message: `Pmax (${Pmax_bar.toFixed(1)} bar) excede la clase maxima disponible (${maxClass.clase} PN ${maxClass.pn}). Revisar diseño o instalar proteccion contra ariete.` });
     }
   } else {
     pipeClass = null;

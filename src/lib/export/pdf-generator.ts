@@ -108,7 +108,7 @@ function addHeader(doc: jsPDF, pageWidth: number, logoB64: string | null) {
   doc.setFontSize(7.5);
   doc.setFont("helvetica", "normal");
   doc.setTextColor(130, 130, 130);
-  doc.text("Soluciones en Infraestructura Hidraulica", 14, 26);
+  doc.text("Soluciones en Infraestructura Hidráulica", 14, 26);
 
   // Right: HidroCalc
   doc.setFontSize(11);
@@ -302,11 +302,11 @@ export async function generateHidroCalcPDF(data: PDFExportData): Promise<jsPDF> 
   doc.setFont("helvetica", "normal");
   doc.setTextColor(100, 100, 100);
   const disclaimers = [
-    "1. Calculos basados en formula de Hazen-Williams. Valida para agua limpia a 20 C y flujo turbulento (V > 0.3 m/s).",
-    "2. Perdidas menores estimadas. Verificar con accesorios reales del proyecto.",
+    "1. Cálculos basados en formula de Hazen-Williams. Valida para agua limpia a 20 C y flujo turbulento (V > 0.3 m/s).",
+    "2. Pérdidas menores estimadas. Verificar con accesorios reales del proyecto.",
     "3. Analisis de golpe de ariete basado en Joukowsky/Michaud. No sustituye analisis de transitorio completo.",
     "4. Validar resultados con normativa local aplicable (NOM-001-CONAGUA, MAPAS, etc.).",
-    "5. Este calculo es de referencia tecnica. No sustituye proyecto ejecutivo firmado por ingeniero responsable.",
+    "5. Este cálculo es de referencia tecnica. No sustituye proyecto ejecutivo firmado por ingeniero responsable.",
   ];
   for (const d of disclaimers) {
     doc.text(d, 16, y);
