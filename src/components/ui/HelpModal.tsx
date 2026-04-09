@@ -17,8 +17,8 @@ export function HelpButton({ moduleTitle, sections }: HelpModalProps) {
 
   return (
     <>
-      <button onClick={() => setOpen(true)} className="text-xs text-[#1C3D5A]/60 hover:text-[#1C3D5A] border border-[#1C3D5A]/20 px-2.5 py-1 rounded-lg hover:bg-[#1C3D5A]/5 transition-colors whitespace-nowrap">
-        Como usar
+      <button onClick={() => setOpen(true)} className="text-xs font-semibold text-white bg-[#1C3D5A] px-4 py-1.5 rounded-lg hover:bg-[#0F2438] transition-colors whitespace-nowrap shadow-sm flex items-center gap-1.5">
+        <span>?</span> Como usar
       </button>
 
       {open && (
