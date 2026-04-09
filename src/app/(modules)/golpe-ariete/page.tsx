@@ -392,14 +392,19 @@ export default function GolpeArietePage() {
                     <div className="bg-[#1C3D5A] px-4 py-2">
                       <h3 className="text-xs font-semibold text-white">Clases disponibles ({matClasses.title})</h3>
                     </div>
+                    {/* Explanation of the table */}
+                    <div className="px-4 py-2 text-[10px] text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700">
+                      <strong>Cumple:</strong> La clase resiste la presion maxima del golpe de ariete.
+                      <strong className="ml-2">REC:</strong> Clase minima suficiente (mas economica).
+                      {computedDR != null && <><br /><strong>Tu seleccion:</strong> DR {computedDR.toFixed(1)} (e={inputs.e} mm). Las clases con pared igual o mas delgada que tu tubo estan marcadas.</>}
+                    </div>
                     <table className="w-full text-xs">
                       <thead>
                         <tr className="bg-gray-50 dark:bg-gray-700 text-gray-500 dark:text-gray-400">
-                          <th className="px-2 py-2 text-left">Clase</th>
-                          <th className="px-2 py-2 text-right">PN (bar)</th>
-                          <th className="px-2 py-2 text-center">Cumple</th>
-                          {computedDR != null && <th className="px-2 py-2 text-center">Tu tubo</th>}
-                          <th className="px-2 py-2 text-right">F.S.</th>
+                          <th className="px-3 py-2 text-left">Clase</th>
+                          <th className="px-3 py-2 text-right">PN (bar)</th>
+                          <th className="px-3 py-2 text-center">Aguanta golpe</th>
+                          <th className="px-3 py-2 text-right">Factor seg.</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -408,44 +413,25 @@ export default function GolpeArietePage() {
                           const fs = results.Pmax_bar != null && results.Pmax_bar > 0 ? row.pn / results.Pmax_bar : 0;
                           const isRec = row.clase === results.pipeClass;
 
-                          // "Tu tubo" logic: extract DR number from class name
-                          let tuTuboOk: boolean | null = null;
-                          let isTuTubo = false;
-                          if (computedDR != null) {
+                          // Highlight the class that matches user's selection
+                          let isUserClass = false;
+                          if (computedDR != null && inputs.materialName !== "Hierro dúctil") {
                             const classDR = parseFloat(row.clase.replace(/[^0-9.]/g, ""));
-                            if (!isNaN(classDR) && classDR > 0) {
-                              // For SDR/DR: lower DR = thicker wall = stronger. User's DR must be <= class DR to meet/exceed it.
-                              // But for K-classes (HD), we skip this logic
-                              if (inputs.materialName !== "Hierro dúctil") {
-                                tuTuboOk = computedDR <= classDR;
-                                // Mark closest match
-                                if (Math.abs(computedDR - classDR) < 1.5) isTuTubo = true;
-                              }
-                            }
+                            if (!isNaN(classDR) && Math.abs(computedDR - classDR) < 1.5) isUserClass = true;
                           }
 
                           return (
-                            <tr key={row.clase} className={`border-b border-gray-100 dark:border-gray-700 ${isRec ? "bg-green-50 dark:bg-green-900/20 font-medium" : ""} ${isTuTubo ? "ring-1 ring-inset ring-[#1C3D5A]/30" : ""}`}>
-                              <td className="px-2 py-2">
+                            <tr key={row.clase} className={`border-b border-gray-100 dark:border-gray-700 ${isUserClass ? "bg-blue-50 dark:bg-blue-900/20 ring-1 ring-inset ring-[#1C3D5A]/30" : isRec ? "bg-green-50 dark:bg-green-900/20" : ""}`}>
+                              <td className="px-3 py-2">
                                 {row.clase}
                                 {isRec && <span className="ml-1 text-[10px] bg-green-100 text-green-700 px-1 py-0.5 rounded">REC</span>}
+                                {isUserClass && <span className="ml-1 text-[10px] bg-blue-100 text-blue-700 px-1 py-0.5 rounded">TU TUBO</span>}
                               </td>
-                              <td className="px-2 py-2 text-right font-mono">{row.pn}</td>
-                              <td className="px-2 py-2 text-center">
+                              <td className="px-3 py-2 text-right font-mono">{row.pn}</td>
+                              <td className="px-3 py-2 text-center">
                                 {cumple ? <span className="text-green-600">{"\u2713"}</span> : <span className="text-red-500">{"\u2717"}</span>}
                               </td>
-                              {computedDR != null && (
-                                <td className="px-2 py-2 text-center">
-                                  {tuTuboOk === true ? (
-                                    <span className="text-green-600">{"\u2713"}{isTuTubo ? ` DR${computedDR.toFixed(0)}` : ""}</span>
-                                  ) : tuTuboOk === false ? (
-                                    <span className="text-red-500">{"\u2717"}</span>
-                                  ) : (
-                                    <span className="text-gray-300">{"\u2014"}</span>
-                                  )}
-                                </td>
-                              )}
-                              <td className="px-2 py-2 text-right font-mono">{fs > 0 ? fs.toFixed(2) : "\u2014"}</td>
+                              <td className="px-3 py-2 text-right font-mono">{fs > 0 ? fs.toFixed(2) : "\u2014"}</td>
                             </tr>
                           );
                         })}
