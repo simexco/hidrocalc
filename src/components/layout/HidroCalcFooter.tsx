@@ -10,7 +10,7 @@ export function HidroCalcFooter() {
         <span>&middot;</span>
         <span>Sigma Flow</span>
         <span>&middot;</span>
-        <span>v1.2</span>
+        <span>v1.3</span>
         <span>&middot;</span>
         <GlossaryButton />
       </div>

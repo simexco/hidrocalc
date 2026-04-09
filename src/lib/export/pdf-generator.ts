@@ -114,7 +114,7 @@ function addHeader(doc: jsPDF, pageWidth: number, logoB64: string | null) {
   doc.setFontSize(11);
   doc.setFont("helvetica", "bold");
   doc.setTextColor(...BRAND);
-  doc.text("HidroCalc v1.2", pageWidth - 14, 16, { align: "right" });
+  doc.text("HidroCalc v1.3", pageWidth - 14, 16, { align: "right" });
 
   doc.setFontSize(7);
   doc.setFont("helvetica", "normal");

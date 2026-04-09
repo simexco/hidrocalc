@@ -50,6 +50,15 @@ const modules = [
     ),
   },
   {
+    href: "/valvulas-aire",
+    label: "Válvulas de Aire",
+    icon: (
+      <svg viewBox="0 0 24 24" className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={1.8}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M5 15l7-7 7 7" />
+      </svg>
+    ),
+  },
+  {
     href: "/proyectos",
     label: "Proyectos",
     icon: (
@@ -73,7 +82,7 @@ export function HidroCalcSidebar() {
         </Link>
         <div className="mt-3 px-1">
           <span className="text-sm font-semibold text-white/90 tracking-wide">HidroCalc</span>
-          <span className="text-[10px] text-white/30 ml-1.5">v1.2</span>
+          <span className="text-[10px] text-white/30 ml-1.5">v1.3</span>
         </div>
       </div>
 

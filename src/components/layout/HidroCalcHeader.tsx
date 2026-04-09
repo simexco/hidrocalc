@@ -9,7 +9,8 @@ const moduleNames: Record<string, string> = {
   "/en-serie": "Tuberías en Serie",
   "/golpe-ariete": "Golpe de Ariete",
   "/bombeo": "Punto de Operacion de Bomba",
-  "/dimensionamiento": "Dimensionamiento de Tuberia",
+  "/dimensionamiento": "Dimensionamiento de Tubería",
+  "/valvulas-aire": "Válvulas de Aire",
   "/proyectos": "Mis Proyectos",
 };
 
@@ -54,6 +55,15 @@ const moduleHelp: Record<string, { title: string; sections: { title: string; con
       { title: "Cuando usar?", content: "Para comparar todos los diámetros disponibles y seleccionar el óptimo segun criterios de velocidad y presión." },
       { title: "Paso a paso", content: "1. Ingresa Q de diseño y longitud L\n2. Selecciona material (C=130 para diseño conservador)\n3. Ingresa P1 si la conoces\n4. Define P2 minima requerida (default 1 kg/cm2)\n5. La tabla comparativa aparece automáticamente\n6. DN en VERDE cumplen todos los criterios\n7. Selecciona el DN minimo en verde" },
       { title: "Interpretación de la tabla", content: "V min: velocidad >= 0.3 m/s (sin sedimentación)\nV max: velocidad <= 2.5 m/s (sin erosión)\nPres.: P2 calculada >= P2 minima\nEstado OK: cumple los tres criterios\nREC: DN minimo que cumple todo" },
+    ],
+  },
+  "/valvulas-aire": {
+    title: "Válvulas de Aire — Guía de uso",
+    sections: [
+      { title: "¿Cuándo usar?", content: "Para determinar dónde y qué tamaño de válvula de aire instalar en una línea de conducción nueva o existente. Obligatorio en líneas con puntos altos, pendientes pronunciadas o longitudes mayores a 500 m." },
+      { title: "Tipos de válvulas", content: "VA-C (Combinada): Para puntos altos, inicio y fin de línea. Permite entrada y salida de grandes volúmenes de aire.\nVA-A (Admisión/Expulsión): Para pendientes descendentes pronunciadas. Evita vacío durante vaciado rápido.\nVA-E (Eliminadora): Para tramos rectos largos. Expulsa aire acumulado en operación normal." },
+      { title: "Paso a paso", content: "1. Ingresa Q, DN y material de la línea\n2. Ingresa P₀ si la conoces (activa cálculo de presiones)\n3. En la tabla de perfil, agrega los vértices del trazo:\n   → Primer vértice: distancia=0, cota del inicio\n   → Incluye TODOS los puntos altos y bajos\n   → Último vértice: punto final\n4. Los resultados aparecen automáticamente\n5. Revisa puntos en rojo (presión crítica)\n6. Exporta el PDF" },
+      { title: "Interpretación", content: "VA-C azul: ubicación crítica — instalación obligatoria\nVA-A amarilla: necesaria para vaciado seguro\nVA-E verde: mantenimiento de aire en operación\nFondo rojo: presión insuficiente — revisar diseño\nLínea piezométrica: nunca debe cruzar el perfil del terreno" },
     ],
   },
 };

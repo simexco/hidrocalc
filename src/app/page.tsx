@@ -52,6 +52,16 @@ const modules = [
     ),
   },
   {
+    title: "Válvulas de Aire",
+    desc: "Ubicación y dimensionamiento de válvulas de admisión, expulsión y eliminadoras.",
+    href: "/valvulas-aire",
+    icon: (
+      <svg viewBox="0 0 24 24" className="w-7 h-7" fill="none" stroke="currentColor" strokeWidth={1.5}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M5 15l7-7 7 7" />
+      </svg>
+    ),
+  },
+  {
     title: "Mis Proyectos",
     desc: "Guardar, duplicar, exportar e importar cálculos realizados.",
     href: "/proyectos",
@@ -70,7 +80,7 @@ export default function Home() {
       <div className="w-full border-b border-white/10 px-6 py-3">
         <div className="max-w-6xl mx-auto flex items-center justify-between">
           <span className="text-white/40 text-xs tracking-widest uppercase font-medium">Herramienta de Ingeniería</span>
-          <span className="text-white/30 text-xs">v1.2</span>
+          <span className="text-white/30 text-xs">v1.3</span>
         </div>
       </div>
 
@@ -137,7 +147,8 @@ export default function Home() {
               { situation: "No se que diámetro usar para un caudal dado", module: "Dimensionamiento", data: "Q, L, P1", href: "/dimensionamiento" },
               { situation: "Mi linea cambia de diámetro o material en el trayecto", module: "Tuberías en Serie", data: "Q global, tramos con L/DN/C", href: "/en-serie" },
               { situation: "Quiero saber que clase de tubería aguanta el cierre de una valvula", module: "Golpe de Ariete", data: "V0, D interno, espesor, material, Tc", href: "/golpe-ariete" },
-              { situation: "Tengo una bomba y quiero saber en que punto opera", module: "Punto de Operacion", data: "Hg, L, DN, curva de bomba", href: "/bombeo" },
+              { situation: "Tengo una bomba y quiero saber en que punto opera", module: "Punto de Operación", data: "Hg, L, DN, curva de bomba", href: "/bombeo" },
+              { situation: "Necesito ubicar válvulas de aire en una línea", module: "Válvulas de Aire", data: "Q, DN, perfil de cotas", href: "/valvulas-aire" },
             ].map((r) => (
               <Link key={r.module} href={r.href} className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4 bg-white/5 hover:bg-white/10 border border-white/5 rounded-lg px-4 py-3 transition-colors group">
                 <p className="text-sm text-white/80 flex-1 group-hover:text-white">{r.situation}</p>
