@@ -3,12 +3,11 @@
    ════════════════════════════════════════ */
 
 // ── Standard Nominal Diameters (mm) ──
-export const STANDARD_DNS = [50, 63, 75, 100, 150, 200, 250, 300, 350, 400, 450, 500, 600, 700, 800];
+export const STANDARD_DNS = [50, 75, 100, 150, 200, 250, 300, 350, 400, 450, 500, 600, 750, 900];
 
-// ── Standard diameters with inch labels for dropdowns ──
+// ── Standard diameters AWWA/NPS with inch labels ──
 export const STANDARD_DNS_LABELED = [
   { dn: 50, label: '2" (DN 50)' },
-  { dn: 63, label: '2.5" (DN 63)' },
   { dn: 75, label: '3" (DN 75)' },
   { dn: 100, label: '4" (DN 100)' },
   { dn: 150, label: '6" (DN 150)' },
@@ -20,8 +19,8 @@ export const STANDARD_DNS_LABELED = [
   { dn: 450, label: '18" (DN 450)' },
   { dn: 500, label: '20" (DN 500)' },
   { dn: 600, label: '24" (DN 600)' },
-  { dn: 700, label: '28" (DN 700)' },
-  { dn: 800, label: '30" (DN 800)' },
+  { dn: 750, label: '30" (DN 750)' },
+  { dn: 900, label: '36" (DN 900)' },
 ];
 
 // ── Materials with Hazen-Williams C ──
