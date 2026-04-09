@@ -150,8 +150,24 @@ export default function ValvulasAirePage() {
               {vertices.map((v, i) => (
                 <div key={v.id} className="flex items-center gap-2 text-xs">
                   <span className="w-5 text-gray-400 text-center">{i + 1}</span>
-                  <input type="number" value={v.dist} onChange={(e) => updateVertex(v.id, { dist: parseFloat(e.target.value) || 0 })} placeholder="Dist (m)" className="w-20 px-2 py-1 border border-gray-200 dark:border-gray-600 rounded bg-white dark:bg-gray-800 dark:text-white text-xs" />
-                  <input type="number" value={v.cota} onChange={(e) => updateVertex(v.id, { cota: parseFloat(e.target.value) || 0 })} placeholder="Cota (m)" className="w-20 px-2 py-1 border border-gray-200 dark:border-gray-600 rounded bg-white dark:bg-gray-800 dark:text-white text-xs" />
+                  <input
+                    type="number"
+                    defaultValue={v.dist}
+                    key={`dist-${v.id}-${v.dist}`}
+                    onBlur={(e) => updateVertex(v.id, { dist: parseFloat(e.target.value) || 0 })}
+                    onChange={(e) => updateVertex(v.id, { dist: parseFloat(e.target.value) || 0 })}
+                    placeholder="Dist (m)"
+                    className="w-20 px-2 py-1 border border-gray-200 dark:border-gray-600 rounded bg-white dark:bg-gray-800 dark:text-white text-xs"
+                  />
+                  <input
+                    type="number"
+                    defaultValue={v.cota}
+                    key={`cota-${v.id}-${v.cota}`}
+                    onBlur={(e) => updateVertex(v.id, { cota: parseFloat(e.target.value) || 0 })}
+                    onChange={(e) => updateVertex(v.id, { cota: parseFloat(e.target.value) || 0 })}
+                    placeholder="Cota (m)"
+                    className="w-20 px-2 py-1 border border-gray-200 dark:border-gray-600 rounded bg-white dark:bg-gray-800 dark:text-white text-xs"
+                  />
                   <input type="text" value={v.desc} onChange={(e) => updateVertex(v.id, { desc: e.target.value })} placeholder="Descripción" className="flex-1 px-2 py-1 border border-gray-200 dark:border-gray-600 rounded bg-white dark:bg-gray-800 dark:text-white text-xs" />
                   {vertices.length > 2 && (
                     <button onClick={() => removeVertex(v.id)} className="text-red-400 hover:text-red-600">{"\u2717"}</button>
@@ -225,7 +241,14 @@ export default function ValvulasAirePage() {
                 <ComposedChart data={chartData} margin={{ top: 5, right: 20, bottom: 20, left: 10 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
                   <XAxis dataKey="dist" label={{ value: "Distancia (m)", position: "insideBottom", offset: -10, style: { fontSize: 11 } }} tick={{ fontSize: 10 }} />
-                  <YAxis label={{ value: "Elevación (m)", angle: -90, position: "insideLeft", style: { fontSize: 11 } }} tick={{ fontSize: 10 }} />
+                  <YAxis
+                    domain={[
+                      Math.floor(Math.min(...vertices.map((v) => v.cota)) * 0.99),
+                      Math.ceil(Math.max(...vertices.map((v) => v.cota)) * 1.01),
+                    ]}
+                    label={{ value: "Elevación (m)", angle: -90, position: "insideLeft", style: { fontSize: 11 } }}
+                    tick={{ fontSize: 10 }}
+                  />
                   <Tooltip />
                   <Legend />
                   <Area type="monotone" dataKey="cota" stroke="#1C3D5A" fill="#1C3D5A" fillOpacity={0.15} strokeWidth={2} name="Terreno" />
