@@ -50,7 +50,7 @@ export function calculateWaterHammer(input: WaterHammerInputs, pvcSystem?: PVCSy
   // Get class table: for PVC use subsystem with D-based C900/C905 selection
   let matClassesData: { title: string; note?: string; classes: PipeClassRow[] } | null = null;
   if (input.materialName === "PVC" && pvcSystem) {
-    matClassesData = getPVCClasses(pvcSystem, D != null ? D * 1000 : null);
+    matClassesData = getPVCClasses(pvcSystem, pvcSystem === "c905");
   } else {
     matClassesData = PIPE_CLASSES_BY_MATERIAL[input.materialName] ?? null;
   }

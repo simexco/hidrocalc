@@ -239,12 +239,13 @@ export const THICKNESS_BY_MATERIAL: Record<string, ThicknessRef | null> = {
 };
 
 // ── PVC Sub-systems ──
-export type PVCSystem = "metrico" | "ingles" | "c900";
+export type PVCSystem = "metrico" | "ingles" | "c900" | "c905";
 
 export const PVC_SYSTEM_LABELS: Record<PVCSystem, string> = {
   metrico: "Metrico — ISO 4422 / NMX-E-143",
   ingles: "Ingles — NMX / ASTM D2241",
-  c900: "AWWA C900 (4in-12in) / C905 (14in-24in)",
+  c900: "AWWA C900 (4in-12in)",
+  c905: "AWWA C905 (14in-24in)",
 };
 
 export const PVC_THICKNESS: Record<PVCSystem, ThicknessRef> = {
@@ -284,22 +285,27 @@ export const PVC_THICKNESS: Record<PVCSystem, ThicknessRef> = {
     ],
   },
   c900: {
-    title: "AWWA C900 (4in-12in) / C905 (14in-24in)",
-    note: "C900: 4in-12in. C905: 14in-48in. DR=OD/e. D_interno=OD-2e. PN a 23 C.",
-    columns: ["Nom.", "OD (mm)", "Clase 1", "Clase 2", "Clase 3"],
+    title: "AWWA C900 — PVC Municipal (4in-12in)",
+    note: "DR=OD/e. D_interno=OD-2e. PN a 23 C.",
+    columns: ["Nom.", "OD (mm)", "DR 25", "DR 18", "DR 14"],
     rows: [
-      // C900 section
       { label: '4"', values: [118.1, 4.7, 6.6, 8.4] },
       { label: '6"', values: [168.3, 6.7, 9.4, 12.0] },
       { label: '8"', values: [219.1, 8.8, 12.2, 15.7] },
       { label: '10"', values: [273.0, 10.9, 15.2, 19.5] },
       { label: '12"', values: [323.9, 13.0, 18.0, 23.1] },
-      // C905 section
-      { label: '14"', values: [368.3, 7.2, 9.0, 14.2] },
-      { label: '16"', values: [422.4, 8.3, 10.3, 16.2] },
-      { label: '18"', values: [473.1, 9.3, 11.5, 18.2] },
-      { label: '20"', values: [527.8, 10.3, 12.9, 20.3] },
-      { label: '24"', values: [635.0, 12.5, 15.5, 24.4] },
+    ],
+  },
+  c905: {
+    title: "AWWA C905 — PVC Municipal (14in-24in)",
+    note: "DR=OD/e. D_interno=OD-2e. PN a 23 C.",
+    columns: ["Nom.", "OD (mm)", "DR 51", "DR 41", "DR 32.5", "DR 26"],
+    rows: [
+      { label: '14"', values: [368.3, 7.2, 9.0, 11.3, 14.2] },
+      { label: '16"', values: [422.4, 8.3, 10.3, 13.0, 16.2] },
+      { label: '18"', values: [473.1, 9.3, 11.5, 14.6, 18.2] },
+      { label: '20"', values: [527.8, 10.3, 12.9, 16.2, 20.3] },
+      { label: '24"', values: [635.0, 12.5, 15.5, 19.5, 24.4] },
     ],
   },
 };
@@ -308,7 +314,7 @@ export const PVC_THICKNESS: Record<PVCSystem, ThicknessRef> = {
  * Get PVC pressure classes based on D_interno to auto-select C900 vs C905.
  * D > 290mm (~12") → C905 classes, otherwise C900.
  */
-export function getPVCClasses(pvcSys: PVCSystem, D_mm: number | null): { title: string; note?: string; classes: PipeClassRow[] } {
+export function getPVCClasses(pvcSys: PVCSystem, isC905: boolean): { title: string; note?: string; classes: PipeClassRow[] } {
   if (pvcSys === "metrico" || pvcSys === "ingles") {
     return {
       title: pvcSys === "metrico" ? "ISO 4422 / NMX-E-143 — PVC Presion" : "NMX-E-143 / ASTM D2241 — PVC Presion",
@@ -318,8 +324,8 @@ export function getPVCClasses(pvcSys: PVCSystem, D_mm: number | null): { title: 
       ],
     };
   }
-  // c900/c905
-  if (D_mm != null && D_mm > 290) {
+  // c900 vs c905 — determined by catalog selection, not by diameter
+  if (isC905) {
     return {
       title: "AWWA C905 — PVC Municipal (14in-24in)",
       note: "Aplica para diametros 14in a 24in. PN a 23 C.",
@@ -348,8 +354,10 @@ export const PVC_CLASSES: Record<PVCSystem, { title: string; note?: string; clas
     { clase: "SDR 41", pn: 3.4 }, { clase: "SDR 26", pn: 6 }, { clase: "SDR 17", pn: 10 },
     { clase: "SDR 13.6", pn: 12.5 }, { clase: "SDR 11", pn: 16 },
   ]},
-  c900: { title: "AWWA C900/C905 — PVC Municipal", classes: [
+  c900: { title: "AWWA C900 — PVC Municipal (4in-12in)", classes: [
     { clase: "DR 25", pn: 6.9 }, { clase: "DR 18", pn: 10.3 }, { clase: "DR 14", pn: 13.8 },
+  ]},
+  c905: { title: "AWWA C905 — PVC Municipal (14in-24in)", classes: [
     { clase: "DR 51", pn: 4.8 }, { clase: "DR 41", pn: 6.0 }, { clase: "DR 32.5", pn: 7.6 }, { clase: "DR 26", pn: 9.5 },
   ]},
 };

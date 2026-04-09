@@ -39,8 +39,8 @@ export default function GolpeArietePage() {
     setInput("materialName", catalog.material);
     // Auto-detect PVC system from catalog label
     if (catalog.material === "PVC") {
-      if (catalog.label.includes("C900")) setPvcSystem("c900");
-      else if (catalog.label.includes("C905")) setPvcSystem("c900"); // C905 uses same getPVCClasses with D > 290
+      if (catalog.label.includes("C905")) setPvcSystem("c905");
+      else if (catalog.label.includes("C900")) setPvcSystem("c900");
       else if (catalog.label.includes("Metrico")) setPvcSystem("metrico");
       else if (catalog.label.includes("Ingles")) setPvcSystem("ingles");
     }
@@ -380,7 +380,7 @@ export default function GolpeArietePage() {
               {/* Pipe class comparison table — dynamic by material */}
               {results.Pmax_bar != null && (() => {
                 const matClasses = inputs.materialName === "PVC"
-                  ? getPVCClasses(pvcSystem, inputs.D)
+                  ? getPVCClasses(pvcSystem, pvcSystem === "c905")
                   : PIPE_CLASSES_BY_MATERIAL[inputs.materialName];
                 if (!matClasses) return (
                   <div className="bg-gray-50 dark:bg-gray-700 rounded-xl px-4 py-3 text-xs text-gray-500">
