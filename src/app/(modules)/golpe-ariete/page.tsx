@@ -29,7 +29,7 @@ export default function GolpeArietePage() {
   const sizeEntry = catalog?.sizes[selectedSize];
   const classEntry = sizeEntry?.classes[selectedClass];
 
-  // When simple mode selection changes, auto-fill D, e, E, materialName
+  // When simple mode selection changes, auto-fill D, e, E, materialName, pvcSystem
   useEffect(() => {
     if (entryMode !== "simple" || !catalog || !sizeEntry || !classEntry) return;
     const dInt = Math.round((sizeEntry.od - 2 * classEntry.e) * 10) / 10;
@@ -37,6 +37,13 @@ export default function GolpeArietePage() {
     setInput("e", classEntry.e);
     setInput("E", catalog.E);
     setInput("materialName", catalog.material);
+    // Auto-detect PVC system from catalog label
+    if (catalog.material === "PVC") {
+      if (catalog.label.includes("C900")) setPvcSystem("c900");
+      else if (catalog.label.includes("C905")) setPvcSystem("c900"); // C905 uses same getPVCClasses with D > 290
+      else if (catalog.label.includes("Metrico")) setPvcSystem("metrico");
+      else if (catalog.label.includes("Ingles")) setPvcSystem("ingles");
+    }
   }, [entryMode, selectedCatalog, selectedSize, selectedClass, catalog, sizeEntry, classEntry, setInput]);
 
   // Reset size/class when catalog changes
@@ -356,9 +363,9 @@ export default function GolpeArietePage() {
                 />
                 <MetricCard label="P máx (bar)" value={formatNumber(results.Pmax_bar, 1)} unit="bar" dataStatus={results.dataStatus} />
                 <MetricCard
-                  label="Clase de tubería"
+                  label="Clase recomendada"
                   value={results.pipeClass ?? "—"}
-                  alertLevel={results.pipeClass === "Excede K12" ? "ERROR" : "OK"}
+                  alertLevel={results.pipeClass?.startsWith("Excede") ? "ERROR" : results.pipeClass == null ? "WARN" : "OK"}
                   dataStatus={results.dataStatus}
                 />
               </div>
