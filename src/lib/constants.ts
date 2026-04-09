@@ -200,18 +200,22 @@ export const THICKNESS_BY_MATERIAL: Record<string, ThicknessRef | null> = {
   },
   PVC: null, // handled by PVC_SUBSYSTEMS
   HDPE: {
-    title: "ISO 4427 — HDPE PE100 (referencia SDR)",
+    title: "HDPE IPS/DIPS — AWWA C906 (referencia SDR)",
     note: "e = OD / SDR. D_interno = OD - 2e",
-    columns: ["OD (mm)", "DN aprox", "SDR 17 (PN10)", "SDR 11 (PN16)"],
+    columns: ["Nom.", "OD (mm)", "SDR 17", "SDR 11", "SDR 9"],
     rows: [
-      { label: "110", values: [100, 6.6, 9.5] },
-      { label: "160", values: [150, 9.5, 14.6] },
-      { label: "200", values: [200, 11.9, 18.2] },
-      { label: "250", values: [250, 14.8, 22.7] },
-      { label: "315", values: [300, 18.7, 28.6] },
-      { label: "400", values: [400, 23.7, 36.4] },
-      { label: "500", values: [500, 29.4, 45.5] },
-      { label: "630", values: [600, 37.1, 57.3] },
+      { label: '2"', values: [60.3, 3.5, 5.5, 6.7] },
+      { label: '3"', values: [88.9, 5.2, 8.1, 9.9] },
+      { label: '4"', values: [114.3, 6.7, 10.4, 12.7] },
+      { label: '6"', values: [168.3, 9.9, 15.3, 18.7] },
+      { label: '8"', values: [219.1, 12.9, 19.9, 24.3] },
+      { label: '10"', values: [273.0, 16.1, 24.8, 30.3] },
+      { label: '12"', values: [323.9, 19.1, 29.4, 36.0] },
+      { label: '14"', values: [355.6, 20.9, 32.3, 39.5] },
+      { label: '16"', values: [406.4, 23.9, 36.9, 45.2] },
+      { label: '18"', values: [457.2, 26.9, 41.6, 50.8] },
+      { label: '20"', values: [508.0, 29.9, 46.2, 56.4] },
+      { label: '24"', values: [609.6, 35.9, 55.4, 67.7] },
     ],
   },
   Acero: {
@@ -367,7 +371,7 @@ export const PIPE_CLASSES_BY_MATERIAL: Record<string, {
   },
   PVC: null, // handled by PVC_CLASSES subsystem
   HDPE: {
-    title: "ISO 4427 — HDPE PE100",
+    title: "HDPE IPS/DIPS — AWWA C906",
     classes: [
       { clase: "SDR 26", pn: 6.3 }, { clase: "SDR 17", pn: 10 },
       { clase: "SDR 13.6", pn: 12.5 }, { clase: "SDR 11", pn: 16 },
