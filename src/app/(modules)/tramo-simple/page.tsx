@@ -123,9 +123,16 @@ export default function TramoSimplePage() {
         hmEstimated: true,
         H1: recH1, H2: recH2, P2: recRow?.P2 ?? null, P2_kPa: recRow?.P2 != null ? recRow.P2 * 9.81 : null,
         J: null, J_km: recRow?.J_km ?? null, Re: null,
-        alerts: recommendedDN
-          ? [{ level: "OK", field: "DN", message: `DN recomendado: ${recommendedDN} mm` }]
-          : [{ level: "ERROR", field: "DN", message: "Ningún DN estándar cumple las restricciones" }],
+        alerts: (() => {
+          const a: { level: "OK" | "WARN" | "ERROR"; field: string; message: string }[] = [];
+          if (recommendedDN && recRow) {
+            a.push({ level: "OK", field: "DN", message: `DN recomendado: ${recommendedDN} mm — cumple V >= 0.3 m/s y P2 >= P2 mínima` });
+            if (recRow.V < 0.5) a.push({ level: "WARN", field: "V_rec", message: `AVISO: El DN ${recommendedDN} tiene V=${recRow.V.toFixed(2)} m/s (< 0.5). Cumple el mínimo absoluto (0.3) pero está por debajo del óptimo NOM (0.5-2.5). Considerar aumentar el caudal o reducir el diámetro si la presión lo permite.` });
+          } else {
+            a.push({ level: "ERROR", field: "DN", message: "Ningún DN estándar cumple las restricciones" });
+          }
+          return a;
+        })(),
         dataStatus: P1 != null ? "calculated" : "estimated",
         Qmax: null, diameterComparison: rows, recommendedDN,
       });

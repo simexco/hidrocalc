@@ -20,11 +20,19 @@ export function calculatePipeSizing(input: PipeSizingInputs): PipeSizingResults 
 
   const alerts = [];
   if (recommendedDN) {
+    const rec = rows.find((r) => r.dn === recommendedDN);
     alerts.push({
       level: "OK" as const,
       field: "DN",
-      message: `DN recomendado: ${recommendedDN} mm — cumple velocidad y presion`,
+      message: `DN recomendado: ${recommendedDN} mm — cumple V >= 0.3 m/s y P2 >= P2 mínima`,
     });
+    if (rec && rec.V < 0.5) {
+      alerts.push({
+        level: "WARN" as const,
+        field: "V_rec",
+        message: `AVISO: DN ${recommendedDN} tiene V=${rec.V.toFixed(2)} m/s (< 0.5). Cumple mínimo absoluto (0.3) pero está por debajo del óptimo NOM (0.5-2.5). Considerar si el caudal de diseño es correcto.`,
+      });
+    }
   } else {
     // Determine specific failure reason
     const allFailVmin = rows.every((r) => !r.meetsVmin);

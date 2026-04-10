@@ -46,7 +46,10 @@ export function DiameterComparisonTable({ rows, showPressure }: DiameterComparis
                     </span>
                   )}
                 </td>
-                <td className="px-2 py-2 text-right font-mono">{formatNumber(row.V, 3)}</td>
+                <td className={`px-2 py-2 text-right font-mono ${row.V >= 0.3 && row.V < 0.5 ? "text-yellow-600" : ""}`}>
+                  {formatNumber(row.V, 3)}
+                  {row.V >= 0.3 && row.V < 0.5 && <span className="text-[8px] text-yellow-500 ml-0.5" title="Cumple mínimo (0.3) pero debajo del óptimo (0.5)">*</span>}
+                </td>
                 <td className="px-2 py-2 text-right font-mono">{formatNumber(row.hf, 2)}</td>
                 <td className="px-2 py-2 text-right font-mono">{formatNumber(row.J_km, 2)}</td>
                 {showPressure && (
@@ -89,6 +92,10 @@ export function DiameterComparisonTable({ rows, showPressure }: DiameterComparis
           })}
         </tbody>
       </table>
+      <div className="px-3 py-2 text-[10px] text-gray-400 border-t border-gray-100 dark:border-gray-700 space-y-0.5">
+        <p><strong>V min:</strong> V {"\u2265"} 0.3 m/s (mínimo absoluto NOM). <strong>V max:</strong> V {"\u2264"} velocidad máxima.</p>
+        <p><span className="text-yellow-600">*</span> Velocidad entre 0.3 y 0.5 m/s — cumple mínimo pero está por debajo del rango óptimo (0.5-2.5 m/s).</p>
+      </div>
     </div>
   );
 }

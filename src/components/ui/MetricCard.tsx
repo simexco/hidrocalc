@@ -61,9 +61,18 @@ export function MetricCard({
         {unit && <span className="text-sm text-gray-500 dark:text-gray-400">{unit}</span>}
       </div>
       {alertMessage && (
-        <div className="flex items-center gap-1.5 mt-2">
-          {style.dot && <div className={`w-1.5 h-1.5 rounded-full ${style.dot}`} />}
-          <p className="text-xs text-gray-600 dark:text-gray-400">{alertMessage}</p>
+        <div className="flex items-start gap-1.5 mt-2">
+          {alertLevel && alertLevel !== "OK" && (
+            <span className={`text-[9px] font-bold px-1 py-0.5 rounded mt-0.5 shrink-0 ${
+              alertLevel === "WARN" ? "bg-yellow-200 text-yellow-800" :
+              alertLevel === "ERROR" ? "bg-red-200 text-red-800" :
+              "bg-red-300 text-red-900"
+            }`}>
+              {alertLevel === "WARN" ? "AVISO" : "ERROR"}
+            </span>
+          )}
+          {alertLevel === "OK" && style.dot && <div className={`w-1.5 h-1.5 rounded-full ${style.dot} mt-1.5 shrink-0`} />}
+          <p className="text-xs text-gray-600 dark:text-gray-400 leading-tight">{alertMessage}</p>
         </div>
       )}
     </div>
