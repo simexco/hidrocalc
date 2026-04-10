@@ -44,8 +44,8 @@ export default function TramoSimplePage() {
     const { mode, rawQ, flowUnit, DN, L, C, P1: P1_kgcm2, z1, z2, P2min: P2min_kgcm2, maxVelocity, fittings } = inputs;
 
     // Convert kg/cm² to m.c.a. for engine (1 kg/cm² = 10 m.c.a.)
-    const P1 = P1_kgcm2 != null ? P1_kgcm2 * 10 : null;
-    const P2min = P2min_kgcm2 != null ? P2min_kgcm2 * 10 : null;
+    const P1 = P1_kgcm2 != null && isFinite(P1_kgcm2) ? P1_kgcm2 * 10 : null;
+    const P2min = P2min_kgcm2 != null && isFinite(P2min_kgcm2) ? P2min_kgcm2 * 10 : null;
 
     // Collect assumed values
     const assumed: AssumedValue[] = [];
@@ -107,12 +107,21 @@ export default function TramoSimplePage() {
       const Q = flowToM3s(rawQ, flowUnit);
       const { rows, recommendedDN } = compareDiameters(Q, L, C, P1, P2min ?? DEFAULTS.P2min, z1, z2, maxVelocity, STANDARD_DNS);
 
-      // Get result for recommended DN
+      // Get full result for recommended DN
       const recRow = rows.find((r) => r.recommended);
+      let recH1: number | null = null;
+      let recH2: number | null = null;
+      if (recRow && P1 != null) {
+        const recD = (recRow.dn) / 1000;
+        const recV = recRow.V;
+        const recVH = recV * recV / (2 * 9.81);
+        recH1 = z1 + P1 + recVH;
+        recH2 = recH1 - recRow.hf - recRow.hm;
+      }
       setResults({
         A: null, V: recRow?.V ?? null, hf: recRow?.hf ?? null, hm: recRow?.hm ?? null,
         hmEstimated: true,
-        H1: null, H2: null, P2: recRow?.P2 ?? null, P2_kPa: recRow?.P2 != null ? recRow.P2 * 9.81 : null,
+        H1: recH1, H2: recH2, P2: recRow?.P2 ?? null, P2_kPa: recRow?.P2 != null ? recRow.P2 * 9.81 : null,
         J: null, J_km: recRow?.J_km ?? null, Re: null,
         alerts: recommendedDN
           ? [{ level: "OK", field: "DN", message: `DN recomendado: ${recommendedDN} mm` }]
