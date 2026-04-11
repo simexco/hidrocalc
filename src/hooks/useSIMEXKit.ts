@@ -58,6 +58,59 @@ export const DN_MM_TO_STR: Record<number, string> = {
   450: '18"', 500: '20"', 600: '24"', 750: '30"', 900: '36"',
 };
 
+// ── Valve catalog by type and DN ──
+export const VALV_CATALOG: Record<string, Record<string, { sku: string; bridas: number; norma: string }>> = {
+  "vcg-r": {
+    '2"': {sku:"VI-VFF-2",bridas:2,norma:"AWWA C515"}, '3"': {sku:"VI-VFF-3",bridas:2,norma:"AWWA C515"},
+    '4"': {sku:"VI-VFF-4",bridas:2,norma:"AWWA C515"}, '6"': {sku:"VI-VFF-6",bridas:2,norma:"AWWA C515"},
+    '8"': {sku:"VI-VFF-8",bridas:2,norma:"AWWA C515"}, '10"': {sku:"VI-VFF-10",bridas:2,norma:"AWWA C515"},
+    '12"': {sku:"VI-VFF-12",bridas:2,norma:"AWWA C515"}, '14"': {sku:"VI-VFF-14",bridas:2,norma:"AWWA C515"},
+    '16"': {sku:"VI-VFF-16",bridas:2,norma:"AWWA C515"}, '18"': {sku:"VI-VFF-18",bridas:2,norma:"AWWA C515"},
+    '20"': {sku:"VI-VFF-20",bridas:2,norma:"AWWA C515"}, '24"': {sku:"VI-VFF-24",bridas:2,norma:"AWWA C515"},
+    '30"': {sku:"VI-VFF-30",bridas:2,norma:"AWWA C515"}, '36"': {sku:"VI-VFF-36",bridas:2,norma:"AWWA C515"},
+  },
+  "vcg-b": {
+    '2"': {sku:"VI-VFB-2",bridas:2,norma:"AWWA C500"}, '3"': {sku:"VI-VFB-3",bridas:2,norma:"AWWA C500"},
+    '4"': {sku:"VI-VFB-4",bridas:2,norma:"AWWA C500"}, '6"': {sku:"VI-VFB-6",bridas:2,norma:"AWWA C500"},
+    '8"': {sku:"VI-VFB-8",bridas:2,norma:"AWWA C500"}, '10"': {sku:"VI-VFB-10",bridas:2,norma:"AWWA C500"},
+    '12"': {sku:"VI-VFB-12",bridas:2,norma:"AWWA C500"}, '14"': {sku:"VI-VFB-14",bridas:2,norma:"AWWA C500"},
+    '16"': {sku:"VI-VFB-16",bridas:2,norma:"AWWA C500"}, '18"': {sku:"VI-VFB-18",bridas:2,norma:"AWWA C500"},
+    '20"': {sku:"VI-VFB-20",bridas:2,norma:"AWWA C500"}, '24"': {sku:"VI-VFB-24",bridas:2,norma:"AWWA C500"},
+  },
+  "vmb-c": {
+    '3"': {sku:"VI-VMC-3250",bridas:2,norma:"AWWA C504"}, '4"': {sku:"VI-VMC-4250",bridas:2,norma:"AWWA C504"},
+    '6"': {sku:"VI-VMC-6250",bridas:2,norma:"AWWA C504"}, '8"': {sku:"VI-VMC-8250",bridas:2,norma:"AWWA C504"},
+    '10"': {sku:"VI-VMC-10250",bridas:2,norma:"AWWA C504"}, '12"': {sku:"VI-VMC-12250",bridas:2,norma:"AWWA C504"},
+    '14"': {sku:"VI-VMC-14250",bridas:2,norma:"AWWA C504"}, '16"': {sku:"VI-VMC-16250",bridas:2,norma:"AWWA C504"},
+    '18"': {sku:"VI-VMC-18250",bridas:2,norma:"AWWA C504"}, '20"': {sku:"VI-VMC-20250",bridas:2,norma:"AWWA C504"},
+    '24"': {sku:"VI-VMC-24250",bridas:2,norma:"AWWA C504"},
+  },
+  "vmb-dex": {
+    '30"': {sku:"VI-VMC-30150",bridas:2,norma:"AWWA C504"}, '36"': {sku:"VI-VMC-36150",bridas:2,norma:"AWWA C504"},
+  },
+  "vmb-w": {
+    '2"': {sku:"VI-VMW-2",bridas:0,norma:"ISO 5752"}, '3"': {sku:"VI-VMW-3",bridas:0,norma:"ISO 5752"},
+    '4"': {sku:"VI-VMW-4",bridas:0,norma:"ISO 5752"}, '6"': {sku:"VI-VMW-6",bridas:0,norma:"ISO 5752"},
+    '8"': {sku:"VI-VMW-8",bridas:0,norma:"ISO 5752"}, '10"': {sku:"VI-VMW-10",bridas:0,norma:"ISO 5752"},
+    '12"': {sku:"VI-VMW-12",bridas:0,norma:"ISO 5752"},
+  },
+};
+
+export const VALV_TIPOS = [
+  { key: "vcg-r", titulo: "Compuerta Resilente", sub: "Sello EPDM · AWWA C515", rango: '2"-36" · 250 PSI' },
+  { key: "vcg-b", titulo: "Compuerta Bronce", sub: "Asientos Bronce · AWWA C500", rango: '2"-24" · 250 PSI' },
+  { key: "vmb-c", titulo: "Mariposa Concéntrica", sub: "EPDM vulcanizado · AWWA C504", rango: '3"-24" · 250 PSI' },
+  { key: "vmb-dex", titulo: "Mariposa Doble Exc.", sub: "Para diámetros grandes", rango: '30"-36" · 150 PSI' },
+  { key: "vmb-w", titulo: "Mariposa Wafer", sub: "Entre bridas · ISO 5752", rango: '2"-12" · Sin bridas propias' },
+];
+
+export const VALV_NOMBRES: Record<string, string> = {
+  "vcg-r": "Compuerta Resilente", "vcg-b": "Compuerta Bronce",
+  "vmb-c": "Mariposa Concéntrica", "vmb-dex": "Mariposa Doble Exc.", "vmb-w": "Mariposa Wafer",
+};
+
+export type ConexionAcero = "bridado" | "roscado" | "soldado";
+
 export interface KitItem {
   sku: string;
   descripcion: string;
