@@ -11,6 +11,7 @@ import { FittingsTable } from "@/components/hydraulic/FittingsTable";
 import { HydraulicProfileChart } from "@/components/hydraulic/HydraulicProfileChart";
 import { DiameterComparisonTable } from "@/components/hydraulic/DiameterComparisonTable";
 import { ExportPDFButton } from "@/components/ui/ExportPDFButton";
+import { ListaMaterialesSIMEX } from "@/components/ListaMaterialesSIMEX";
 import { calculateHazenWilliams, findMaxFlow, compareDiameters } from "@/lib/calculations/hazen-williams";
 import { flowToM3s, m3sToFlow, formatNumber, mcaToKgcm2 } from "@/lib/calculations/conversions";
 import { STANDARD_DNS, STANDARD_DNS_LABELED, MATERIALS, DEFAULTS } from "@/lib/constants";
@@ -531,6 +532,16 @@ export default function TramoSimplePage() {
                 <HydraulicProfileChart
                   points={profilePoints}
                   title="Perfil Hidráulico"
+                />
+              )}
+              {/* SIMEX Materials */}
+              {inputs.DN && inputs.materialName && (
+                <ListaMaterialesSIMEX
+                  dn={(() => {
+                    const dnMap: Record<number, string> = { 50: '2"', 75: '3"', 100: '4"', 150: '6"', 200: '8"', 250: '10"', 300: '12"', 350: '14"', 400: '16"', 450: '18"', 500: '20"', 600: '24"', 750: '30"', 900: '36"' };
+                    return dnMap[inputs.DN!] || `${inputs.DN}`;
+                  })()}
+                  material={inputs.materialName.includes("C900") ? "PVC AWWA C900" : inputs.materialName.includes("dúctil") ? "HD AWWA" : inputs.materialName.includes("HDPE") ? "PEAD" : inputs.materialName.includes("Acero") ? "Acero" : "PVC Inglés"}
                 />
               )}
             </>

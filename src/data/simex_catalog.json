@@ -1,0 +1,411 @@
+{
+  "kit": {
+    "4\"|PVC AWWA C900": {
+      "od": 122,
+      "abu": "CI-ABU-4109130",
+      "ext": "CN-EXT-4120",
+      "emp": "JI-ENE-4",
+      "tor": "DN-TOR-5/83",
+      "bolts": 8
+    },
+    "4\"|HD AWWA": {
+      "od": 122,
+      "abu": "CI-ABU-4109130",
+      "ext": "CN-EXT-4120",
+      "emp": "JI-ENE-4",
+      "tor": "DN-TOR-5/83",
+      "bolts": 8
+    },
+    "6\"|PVC AWWA C900": {
+      "od": 175,
+      "abu": "CI-ABU-6159184",
+      "ext": "CN-EXT-6175",
+      "emp": "JI-ENE-6",
+      "tor": "DN-TOR-3/431/2",
+      "bolts": 8
+    },
+    "6\"|HD AWWA": {
+      "od": 175,
+      "abu": "CI-ABU-6159184",
+      "ext": "CN-EXT-6175",
+      "emp": "JI-ENE-6",
+      "tor": "DN-TOR-3/431/2",
+      "bolts": 8
+    },
+    "8\"|PVC AWWA C900": {
+      "od": 230,
+      "abu": "CI-ABU-8I",
+      "ext": "CN-EXT-8230",
+      "emp": "JI-ENE-8",
+      "tor": "DN-TOR-3/431/2",
+      "bolts": 8
+    },
+    "8\"|HD AWWA": {
+      "od": 230,
+      "abu": "CI-ABU-8I",
+      "ext": "CN-EXT-8230",
+      "emp": "JI-ENE-8",
+      "tor": "DN-TOR-3/431/2",
+      "bolts": 8
+    },
+    "10\"|PVC AWWA C900": {
+      "od": 282,
+      "abu": "CI-ABU-10AC",
+      "ext": "CN-EXT-10280",
+      "emp": "JI-ENE-10",
+      "tor": "DN-TOR-7/84",
+      "bolts": 12
+    },
+    "10\"|HD AWWA": {
+      "od": 282,
+      "abu": "CI-ABU-10AC",
+      "ext": "CN-EXT-10280",
+      "emp": "JI-ENE-10",
+      "tor": "DN-TOR-7/84",
+      "bolts": 12
+    },
+    "12\"|PVC AWWA C900": {
+      "od": 335,
+      "abu": "CI-ABU-12322342",
+      "ext": "CN-EXT-12335",
+      "emp": "JI-ENE-12",
+      "tor": "DN-TOR-7/84",
+      "bolts": 12
+    },
+    "12\"|HD AWWA": {
+      "od": 335,
+      "abu": "CI-ABU-12322342",
+      "ext": "CN-EXT-12335",
+      "emp": "JI-ENE-12",
+      "tor": "DN-TOR-7/84",
+      "bolts": 12
+    }
+  },
+  "conexiones": [
+    {
+      "familia": "Codo HD",
+      "dn1": "4\"",
+      "dn2": "90°",
+      "bridas": 2,
+      "sku": "CI-CFB-490"
+    },
+    {
+      "familia": "Codo HD",
+      "dn1": "4\"",
+      "dn2": "45°",
+      "bridas": 2,
+      "sku": "CI-CFB-445"
+    },
+    {
+      "familia": "Codo HD",
+      "dn1": "6\"",
+      "dn2": "90°",
+      "bridas": 2,
+      "sku": "CI-CFB-690"
+    },
+    {
+      "familia": "Codo HD",
+      "dn1": "6\"",
+      "dn2": "45°",
+      "bridas": 2,
+      "sku": "CI-CFB-645"
+    },
+    {
+      "familia": "Codo HD",
+      "dn1": "8\"",
+      "dn2": "90°",
+      "bridas": 2,
+      "sku": "CI-CFB-890"
+    },
+    {
+      "familia": "Codo HD",
+      "dn1": "8\"",
+      "dn2": "45°",
+      "bridas": 2,
+      "sku": "CI-CFB-845"
+    },
+    {
+      "familia": "Codo HD",
+      "dn1": "10\"",
+      "dn2": "90°",
+      "bridas": 2,
+      "sku": "CI-CFB-1090"
+    },
+    {
+      "familia": "Codo HD",
+      "dn1": "10\"",
+      "dn2": "45°",
+      "bridas": 2,
+      "sku": "CI-CFB-1045"
+    },
+    {
+      "familia": "Codo HD",
+      "dn1": "12\"",
+      "dn2": "90°",
+      "bridas": 2,
+      "sku": "CI-CFB-1290"
+    },
+    {
+      "familia": "Codo HD",
+      "dn1": "12\"",
+      "dn2": "45°",
+      "bridas": 2,
+      "sku": "CI-CFB-1245"
+    },
+    {
+      "familia": "Tee HD",
+      "dn1": "4\"",
+      "dn2": "4\"",
+      "bridas": 3,
+      "sku": "CI-CFT-44"
+    },
+    {
+      "familia": "Tee HD",
+      "dn1": "6\"",
+      "dn2": "4\"",
+      "bridas": 3,
+      "sku": "CI-CFT-64"
+    },
+    {
+      "familia": "Tee HD",
+      "dn1": "6\"",
+      "dn2": "6\"",
+      "bridas": 3,
+      "sku": "CI-CFT-66"
+    },
+    {
+      "familia": "Tee HD",
+      "dn1": "8\"",
+      "dn2": "4\"",
+      "bridas": 3,
+      "sku": "CI-CFT-84"
+    },
+    {
+      "familia": "Tee HD",
+      "dn1": "8\"",
+      "dn2": "6\"",
+      "bridas": 3,
+      "sku": "CI-CFT-86"
+    },
+    {
+      "familia": "Tee HD",
+      "dn1": "8\"",
+      "dn2": "8\"",
+      "bridas": 3,
+      "sku": "CI-CFT-88"
+    },
+    {
+      "familia": "Tee HD",
+      "dn1": "10\"",
+      "dn2": "6\"",
+      "bridas": 3,
+      "sku": "CI-CFT-106"
+    },
+    {
+      "familia": "Tee HD",
+      "dn1": "10\"",
+      "dn2": "8\"",
+      "bridas": 3,
+      "sku": "CI-CFT-108"
+    },
+    {
+      "familia": "Tee HD",
+      "dn1": "10\"",
+      "dn2": "10\"",
+      "bridas": 3,
+      "sku": "CI-CFT-1010"
+    },
+    {
+      "familia": "Tee HD",
+      "dn1": "12\"",
+      "dn2": "6\"",
+      "bridas": 3,
+      "sku": "CI-CFT-126"
+    },
+    {
+      "familia": "Tee HD",
+      "dn1": "12\"",
+      "dn2": "8\"",
+      "bridas": 3,
+      "sku": "CI-CFT-128"
+    },
+    {
+      "familia": "Tee HD",
+      "dn1": "12\"",
+      "dn2": "12\"",
+      "bridas": 3,
+      "sku": "CI-CFT-1212"
+    },
+    {
+      "familia": "Reducción HD",
+      "dn1": "6\"",
+      "dn2": "4\"",
+      "bridas": 2,
+      "sku": "CI-CFR-64"
+    },
+    {
+      "familia": "Reducción HD",
+      "dn1": "8\"",
+      "dn2": "6\"",
+      "bridas": 2,
+      "sku": "CI-CFR-86"
+    },
+    {
+      "familia": "Reducción HD",
+      "dn1": "10\"",
+      "dn2": "8\"",
+      "bridas": 2,
+      "sku": "CI-CFR-108"
+    },
+    {
+      "familia": "Reducción HD",
+      "dn1": "12\"",
+      "dn2": "10\"",
+      "bridas": 2,
+      "sku": "CI-CFR-1210"
+    }
+  ],
+  "valv_compuerta": [
+    {
+      "dn": "4\"",
+      "sku": "VI-VFF-4",
+      "norma": "AWWA C515",
+      "bridas": 2
+    },
+    {
+      "dn": "6\"",
+      "sku": "VI-VFF-6",
+      "norma": "AWWA C515",
+      "bridas": 2
+    },
+    {
+      "dn": "8\"",
+      "sku": "VI-VFF-8",
+      "norma": "AWWA C515",
+      "bridas": 2
+    },
+    {
+      "dn": "10\"",
+      "sku": "VI-VFF-10",
+      "norma": "AWWA C515",
+      "bridas": 2
+    },
+    {
+      "dn": "12\"",
+      "sku": "VI-VFF-12",
+      "norma": "AWWA C515",
+      "bridas": 2
+    }
+  ],
+  "valv_check": [
+    {
+      "dn": "4\"",
+      "sku": "VI-CHK-R4",
+      "bridas": 2
+    },
+    {
+      "dn": "6\"",
+      "sku": "VI-CHK-R6",
+      "bridas": 2
+    },
+    {
+      "dn": "8\"",
+      "sku": "VI-CHK-R8",
+      "bridas": 2
+    },
+    {
+      "dn": "10\"",
+      "sku": "VI-CHK-R10",
+      "bridas": 2
+    },
+    {
+      "dn": "12\"",
+      "sku": "VI-CHK-R12",
+      "bridas": 2
+    }
+  ],
+  "valv_mariposa": [
+    {
+      "dn": "4\"",
+      "sku": "VI-VMC-4250",
+      "bridas": 2
+    },
+    {
+      "dn": "6\"",
+      "sku": "VI-VMC-6250",
+      "bridas": 2
+    },
+    {
+      "dn": "8\"",
+      "sku": "VI-VMC-8250",
+      "bridas": 2
+    },
+    {
+      "dn": "10\"",
+      "sku": "VI-VMC-10250",
+      "bridas": 2
+    },
+    {
+      "dn": "12\"",
+      "sku": "VI-VMC-12250",
+      "bridas": 2
+    }
+  ],
+  "valv_aire": [
+    {
+      "dn": "1/2\"",
+      "sku": "VI-VEA-1/2",
+      "tipo": "eliminadora"
+    },
+    {
+      "dn": "3/4\"",
+      "sku": "VI-VEA-3/4",
+      "tipo": "eliminadora"
+    },
+    {
+      "dn": "1\"",
+      "sku": "VI-VEA-1",
+      "tipo": "eliminadora"
+    },
+    {
+      "dn": "2\"",
+      "sku": "VI-VEA-2",
+      "tipo": "eliminadora"
+    },
+    {
+      "dn": "1/2\"",
+      "sku": "VI-VAC-1/2",
+      "tipo": "combinada"
+    },
+    {
+      "dn": "3/4\"",
+      "sku": "VI-VAC-3/4",
+      "tipo": "combinada"
+    },
+    {
+      "dn": "1\"",
+      "sku": "VI-VAC-1",
+      "tipo": "combinada"
+    },
+    {
+      "dn": "2\"",
+      "sku": "VI-VAC-2",
+      "tipo": "combinada"
+    },
+    {
+      "dn": "3\"",
+      "sku": "VI-VAC-3",
+      "tipo": "combinada"
+    },
+    {
+      "dn": "4\"",
+      "sku": "VI-VAC-4",
+      "tipo": "combinada"
+    },
+    {
+      "dn": "6\"",
+      "sku": "VI-VAC-6",
+      "tipo": "combinada"
+    }
+  ]
+}

@@ -310,6 +310,19 @@ export default function ValvulasAirePage() {
               </div>
             </div>
           )}
+          {/* SIMEX Air Valve Products */}
+          {results && results.valves.length > 0 && (
+            <div className="bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-200 dark:border-blue-800 p-4 space-y-2">
+              <h3 className="text-sm font-semibold text-blue-800 dark:text-blue-300">Productos SIMEX recomendados</h3>
+              {results.valves.filter((v, i, arr) => arr.findIndex((x) => x.type === v.type && x.bodySize === v.bodySize) === i).map((v, i) => (
+                <div key={i} className="text-xs text-blue-700 dark:text-blue-400">
+                  <span className="font-mono">{v.type === "VA-C" ? `VI-VAC-${v.bodySize.replace(/"/g, "")}` : v.type === "VA-A" ? `VI-VAE-${v.bodySize.replace(/"/g, "")}` : `VI-VEA-${v.bodySize.replace(/"/g, "")}`}</span>
+                  {" — "}{v.type} {v.bodySize} — Conexión roscada NTP | HD A536
+                </div>
+              ))}
+              <p className="text-[9px] text-blue-500 mt-2">Contacte a su distribuidor SIMEX autorizado para cotización. S.H.I. de México — simexco.com.mx</p>
+            </div>
+          )}
         </div>
       </div>
     </div>
