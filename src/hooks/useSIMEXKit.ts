@@ -9,16 +9,26 @@ export const LONGITUD_EQUIV: Record<string, number> = {
   "codo-11": 4,
   "tee-directo": 20,
   "tee-lateral": 60,
+  "cruz": 60,
   "reduccion": 10,
+  "vcg-r": 13,
+  "vcg-b": 13,
+  "vmb-c": 45,
+  "vmb-dex": 35,
+  "vmb-w": 45,
   "valvula-compuerta": 13,
   "valvula-mariposa": 45,
+  "check": 150,
+  "duo-check": 100,
   "check-resilente": 150,
+  "tapa-ciega": 0,
   "fin-linea": 0,
   "medidor-woltmann": 50,
   "vrp": 50,
   "valvula-alivio": 50,
   "cople-desmontaje": 5,
   "abrazadera": 0,
+  "marco-tapa": 0,
 };
 
 export interface AccesorioCalc {
@@ -125,10 +135,19 @@ export function getKit(dn: string, material: string) {
   return { od: entry.od, abu: entry.abu, ext: entry.ext, gib: entry.gib, emp: entry.emp, tor: entry.tor, bolts: entry.bolts || 8 };
 }
 
+export function getTapaCiegaSKU(dn: string): string {
+  return (catalog as any).tapa_ciega?.[dn] || `CI-BCF-${dn.replace(/"/g, "")}`;
+}
+
+export function getCopleSKU(dn: string): string {
+  return (catalog as any).cople_desmontaje?.[dn] || `CI-CDM-${dn.replace(/"/g, "")}`;
+}
+
 export function getConexionSKU(tipo: string, dn1: string, dn2?: string): { sku: string; bridas: number; desc: string } | null {
   const conex = catalog.conexiones as any[];
   const match = conex.find((c: any) => {
     if (tipo === "codo") return c.familia.includes("Codo") && c.dn1 === dn1 && c.dn2.includes(dn2 || "90");
+    if (tipo === "cruz") return c.familia.includes("Cruz") && c.dn1 === dn1 && c.dn2 === (dn2 || dn1);
     if (tipo === "tee") return c.familia.includes("Tee") && c.dn1 === dn1 && c.dn2 === (dn2 || dn1);
     if (tipo === "reduccion") return c.familia.includes("Reducc") && c.dn1 === dn1 && c.dn2 === dn2;
     return false;

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo, useCallback } from "react";
-import { getConexionSKU, buildKitBrida, hasABU, VALV_CATALOG, VALV_TIPOS, VALV_NOMBRES, type KitItem, type AccesorioCalc, type KitOpcion, type ConexionAcero, MATERIAL_MAP, DN_MM_TO_STR } from "@/hooks/useSIMEXKit";
+import { getConexionSKU, buildKitBrida, hasABU, getTapaCiegaSKU, getCopleSKU, VALV_CATALOG, VALV_TIPOS, LONGITUD_EQUIV, type KitItem, type AccesorioCalc, type KitOpcion, type ConexionAcero, MATERIAL_MAP, DN_MM_TO_STR } from "@/hooks/useSIMEXKit";
 import { STANDARD_DNS_LABELED } from "@/lib/constants";
 
 interface AccesoriosProps {
@@ -16,25 +16,43 @@ interface AccesoriosProps {
 let idC = 0;
 const nid = () => `a-${++idC}-${Date.now()}`;
 
-const FUNC_ROW1 = [
-  { key: "direccion", icon: "\u21A9", title: "Cambio dirección", sub: "Codo" },
-  { key: "bifurcacion", icon: "\u2442", title: "Bifurcación", sub: "Tee / Abrazadera" },
-  { key: "seccionamiento", icon: "\u2295", title: "Seccionamiento", sub: "Válvula" },
-  { key: "reduccion", icon: "\u25B7", title: "Reducción", sub: "Cambio DN" },
-  { key: "antiretorno", icon: "\u2192|", title: "Antiretorno", sub: "Check" },
-  { key: "fin", icon: "\u25C9", title: "Fin de línea", sub: "Tapón" },
-];
-
 export function AccesoriosSection({ dnMm, materialName, accesorios, onAddAccesorio, onRemoveAccesorio, onClearAll }: AccesoriosProps) {
   const [activeFunc, setActiveFunc] = useState<string | null>(null);
   const [confirmClear, setConfirmClear] = useState(false);
+  const [tipoBif, setTipoBif] = useState<"tee" | "cruz" | null>(null);
+  const [tipoRed, setTipoRed] = useState<"linea" | "derivacion" | "bifurca" | null>(null);
   const dn = DN_MM_TO_STR[dnMm] || `${dnMm}`;
   const smallerDNs = STANDARD_DNS_LABELED.filter((d) => d.dn < dnMm).map((d) => DN_MM_TO_STR[d.dn]).filter(Boolean);
 
-  const add = useCallback((tipo: string, label: string, angulo?: string, dn2?: string, extra?: Partial<AccesorioCalc>) => {
-    onAddAccesorio({ id: nid(), tipo, label, cantidad: 1, angulo, dn2, ...extra });
-    setActiveFunc(null);
+  const add = useCallback((tipo: string, label: string, angulo?: string, dn2?: string, extra?: Record<string, unknown>) => {
+    onAddAccesorio({ id: nid(), tipo, label, cantidad: 1, angulo, dn2, ...extra } as AccesorioCalc);
+    setActiveFunc(null); setTipoBif(null); setTipoRed(null);
   }, [onAddAccesorio]);
+
+  const addValvula = (vKey: string) => {
+    const info = VALV_CATALOG[vKey]?.[dn];
+    if (!info) return;
+    const nombres: Record<string, string> = { "vcg-r": "Comp. Resilente C515", "vcg-b": "Comp. Bronce C500", "vmb-c": "Mariposa C504", "vmb-dex": "Mariposa D.Exc.", "vmb-w": "Mariposa Wafer" };
+    add(vKey, `${nombres[vKey]} ${dn}`, undefined, undefined, { sku: info.sku });
+  };
+
+  const addReduc = (modo: string, dn2: string) => {
+    if (modo === "linea") {
+      const r = getConexionSKU("reduccion", dn, dn2);
+      add("reduccion", `Reducción ${dn}×${dn2}`, undefined, dn2, r ? { sku: r.sku } : {});
+    } else if (modo === "derivacion") {
+      const r = getConexionSKU("tee", dn, dn2);
+      add("tee-lateral", `Tee ${dn}×${dn2}`, undefined, dn2, r ? { sku: r.sku } : {});
+    } else {
+      // bifurca igual + reduce
+      const t = getConexionSKU("tee", dn, dn);
+      add("tee-lateral", `Tee ${dn}×${dn}`, undefined, undefined, t ? { sku: t.sku } : {});
+      setTimeout(() => {
+        const r = getConexionSKU("reduccion", dn, dn2);
+        onAddAccesorio({ id: nid(), tipo: "reduccion", label: `Reducción ${dn}×${dn2}`, cantidad: 1, dn2, ...(r ? { sku: r.sku } : {}) } as AccesorioCalc);
+      }, 50);
+    }
+  };
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 space-y-4">
@@ -52,11 +70,17 @@ export function AccesoriosSection({ dnMm, materialName, accesorios, onAddAccesor
 
       {/* Function cards */}
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-        {FUNC_ROW1.map((f) => (
+        {[
+          { key: "codo", icon: "\u21A9", title: "Cambio dirección", sub: "Codo 11°-90°" },
+          { key: "bifurc", icon: "\u2442", title: "Bifurcación", sub: "Tee o Cruz" },
+          { key: "secc", icon: "\u2295", title: "Seccionamiento", sub: "5 tipos válvula" },
+          { key: "reducc", icon: "\u25B7", title: "Reducción", sub: "3 modos" },
+          { key: "antiret", icon: "\u2192|", title: "Antiretorno", sub: "Check / Duo" },
+          { key: "finlinea", icon: "\u25C9", title: "Fin de línea", sub: "Tapa ciega" },
+        ].map((f) => (
           <button key={f.key} onClick={() => {
-            if (f.key === "antiretorno") add("check-resilente", `V. Check ${dn}`);
-            else if (f.key === "fin") add("fin-linea", `Tapón ${dn}`);
-            else setActiveFunc(activeFunc === f.key ? null : f.key);
+            if (f.key === "finlinea") { add("tapa-ciega", `Tapa Ciega ${dn}`, undefined, undefined, { sku: getTapaCiegaSKU(dn) }); return; }
+            setActiveFunc(activeFunc === f.key ? null : f.key); setTipoBif(null); setTipoRed(null);
           }} className={`p-3 rounded-lg border text-left transition-all ${activeFunc === f.key ? "border-[#1C3D5A] bg-[#1C3D5A]/5 ring-1 ring-[#1C3D5A]/30" : "border-gray-200 dark:border-gray-600 hover:border-[#1C3D5A]/40"}`}>
             <span className="text-lg block mb-1">{f.icon}</span>
             <span className="text-xs font-semibold text-gray-700 dark:text-gray-300 block">{f.title}</span>
@@ -65,74 +89,66 @@ export function AccesoriosSection({ dnMm, materialName, accesorios, onAddAccesor
         ))}
       </div>
 
-      {/* Complementarios */}
-      <div className="grid grid-cols-3 gap-2">
-        {[
-          { key: "cople", icon: "\u2699", title: "Cople desmontaje" },
-          { key: "medicion", icon: "\u2B07", title: "Medición/Control" },
-          { key: "marco", icon: "\u2B1C", title: "Marco/Registro" },
-        ].map((f) => (
-          <button key={f.key} onClick={() => {
-            if (f.key === "cople") add("cople-desmontaje", `Cople ${dn}`);
-            else if (f.key === "marco") add("fin-linea", "Marco tapa AI-MCT-D");
-            else setActiveFunc(activeFunc === f.key ? null : f.key);
-          }} className={`p-2 rounded-lg border text-left text-xs ${activeFunc === f.key ? "border-[#1C3D5A] bg-[#1C3D5A]/5" : "border-gray-200 dark:border-gray-600 hover:border-[#1C3D5A]/40"}`}>
-            <span className="mr-1">{f.icon}</span><span className="font-medium text-gray-600 dark:text-gray-400">{f.title}</span>
-          </button>
-        ))}
+      {/* Obra accessories */}
+      <div className="flex gap-2 flex-wrap">
+        <span className="text-[10px] text-gray-400 self-center">Obra:</span>
+        <button onClick={() => add("cople-desmontaje", `Cople Desmontaje ${dn}`, undefined, undefined, { sku: getCopleSKU(dn) })} className="text-[10px] px-2 py-1 rounded border border-gray-200 hover:bg-gray-50 dark:border-gray-600">{"\u2699"} Cople desmontaje</button>
+        <button onClick={() => add("marco-tapa", "Marco con Tapa AI-MCT-D", undefined, undefined, { sku: "AI-MCT-D" })} className="text-[10px] px-2 py-1 rounded border border-gray-200 hover:bg-gray-50 dark:border-gray-600">{"\u2B1C"} Marco con tapa</button>
       </div>
 
-      {/* Sub-selectors */}
-      {activeFunc === "direccion" && (
-        <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 space-y-2">
-          <p className="text-xs font-medium text-gray-600 dark:text-gray-300">Ángulo:</p>
+      {/* ── CODO ── */}
+      {activeFunc === "codo" && (
+        <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-3">
+          <p className="text-xs font-medium text-gray-600 dark:text-gray-300 mb-2">Ángulo:</p>
           <div className="flex gap-2">
             {["11°", "22°", "45°", "90°"].map((a) => (
-              <button key={a} onClick={() => add(`codo-${a.replace("°", "")}`, `Codo ${dn} × ${a}`, a)}
+              <button key={a} onClick={() => { const r = getConexionSKU("codo", dn, a); add(`codo-${a.replace("°", "")}`, `Codo ${dn}×${a}`, a, undefined, r ? { sku: r.sku } : {}); }}
                 className="px-4 py-2 text-sm rounded-lg border border-gray-200 hover:bg-[#1C3D5A] hover:text-white transition-colors">{a}</button>
             ))}
           </div>
         </div>
       )}
 
-      {activeFunc === "bifurcacion" && (
+      {/* ── BIFURCACIÓN ── */}
+      {activeFunc === "bifurc" && (
         <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 space-y-3">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div className="space-y-2">
-              <p className="text-[10px] text-gray-500 font-semibold">Tee HD (corte de tubería)</p>
-              <button onClick={() => add("tee-lateral", `Tee ${dn}×${dn}`)} className="w-full px-3 py-1.5 text-xs rounded border border-gray-200 hover:bg-[#1C3D5A] hover:text-white transition-colors text-left">Igual DN ({dn})</button>
-              <div className="flex flex-wrap gap-1">{smallerDNs.map((d) => (
-                <button key={d} onClick={() => add("tee-lateral", `Tee ${dn}×${d}`, undefined, d)} className="px-2 py-1 text-[10px] rounded border border-gray-200 hover:bg-[#1C3D5A] hover:text-white transition-colors">{d}</button>
-              ))}</div>
-            </div>
-            <div className="space-y-2">
-              <p className="text-[10px] text-gray-500 font-semibold">Abrazadera (sin cortar)</p>
-              <div className="flex flex-wrap gap-1">{['1/2"', '3/4"', '1"', '2"'].map((d) => (
-                <button key={d} onClick={() => add("abrazadera", `Abrazadera ${dn}×${d}`, undefined, d)} className="px-2 py-1 text-[10px] rounded border border-gray-200 hover:bg-[#1C3D5A] hover:text-white transition-colors">Toma {d}</button>
-              ))}</div>
-            </div>
+          <p className="text-xs font-medium text-gray-600 dark:text-gray-300 mb-2">Tipo:</p>
+          <div className="grid grid-cols-2 gap-2 mb-2">
+            {([["tee", "Tee — 1 ramal", "3 bridas"], ["cruz", "Cruz — 2 ramales", "4 bridas"]] as const).map(([k, l, s]) => (
+              <button key={k} onClick={() => setTipoBif(tipoBif === k ? null : k)} className={`p-2 rounded-lg border text-left ${tipoBif === k ? "border-[#1C3D5A] bg-[#1C3D5A]/5" : "border-gray-200"}`}>
+                <span className="text-xs font-semibold block">{l}</span><span className="text-[10px] text-gray-400">{s}</span>
+              </button>
+            ))}
           </div>
+          {tipoBif && (
+            <div>
+              <p className="text-[10px] text-gray-500 mb-1">DN ramal:</p>
+              <div className="flex flex-wrap gap-1">
+                <button onClick={() => { const r = getConexionSKU(tipoBif, dn, dn); add(tipoBif === "tee" ? "tee-lateral" : "cruz", `${tipoBif === "tee" ? "Tee" : "Cruz"} ${dn}×${dn}`, undefined, undefined, r ? { sku: r.sku } : {}); }}
+                  className="px-3 py-1.5 text-xs rounded border border-gray-200 hover:bg-[#1C3D5A] hover:text-white">Igual ({dn})</button>
+                {smallerDNs.map((d) => (
+                  <button key={d} onClick={() => { const r = getConexionSKU(tipoBif, dn, d); add(tipoBif === "tee" ? "tee-lateral" : "cruz", `${tipoBif === "tee" ? "Tee" : "Cruz"} ${dn}×${d}`, undefined, d, r ? { sku: r.sku } : {}); }}
+                    className="px-2 py-1 text-[10px] rounded border border-gray-200 hover:bg-[#1C3D5A] hover:text-white">{d}</button>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
 
-      {/* VALVE SUB-SELECTOR */}
-      {activeFunc === "seccionamiento" && (
-        <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 space-y-2">
-          <p className="text-xs font-medium text-gray-600 dark:text-gray-300">Tipo de válvula de seccionamiento:</p>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+      {/* ── SECCIONAMIENTO ── */}
+      {activeFunc === "secc" && (
+        <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-3">
+          <p className="text-xs font-medium text-gray-600 dark:text-gray-300 mb-2">Tipo de válvula:</p>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
             {VALV_TIPOS.map((vt) => {
-              const available = !!VALV_CATALOG[vt.key]?.[dn];
-              const info = VALV_CATALOG[vt.key]?.[dn];
+              const avail = !!VALV_CATALOG[vt.key]?.[dn];
               return (
-                <button key={vt.key} onClick={() => {
-                  if (!available || !info) return;
-                  add(info.bridas === 0 ? "valvula-mariposa" : "valvula-compuerta", `${vt.titulo} ${dn}`, undefined, undefined, { sku: info.sku } as any);
-                }} disabled={!available} className={`p-2.5 rounded-lg border text-left transition-all ${available ? "border-gray-200 hover:border-[#1C3D5A] hover:bg-[#1C3D5A]/5 cursor-pointer" : "border-gray-100 bg-gray-100/50 opacity-50 cursor-not-allowed"}`}>
-                  <span className="text-xs font-semibold text-gray-700 dark:text-gray-300 block">{vt.titulo}</span>
-                  <span className="text-[10px] text-gray-400 block">{vt.sub}</span>
-                  <span className="text-[9px] text-gray-400">{vt.rango}</span>
-                  {!available && <span className="text-[9px] text-red-400 block mt-0.5">No disponible en {dn}</span>}
-                  {available && info && <span className="text-[9px] text-[#1C3D5A] font-mono block mt-0.5">{info.sku}</span>}
+                <button key={vt.key} onClick={() => avail && addValvula(vt.key)} disabled={!avail}
+                  className={`p-2 rounded-lg border text-left ${avail ? "border-gray-200 hover:border-[#1C3D5A] cursor-pointer" : "border-gray-100 opacity-40 cursor-not-allowed"}`}>
+                  <span className="text-xs font-semibold block">{vt.titulo}</span>
+                  <span className="text-[9px] text-gray-400 block">{vt.sub}</span>
+                  {!avail && <span className="text-[9px] text-red-400 block">No en {dn}</span>}
                 </button>
               );
             })}
@@ -140,42 +156,60 @@ export function AccesoriosSection({ dnMm, materialName, accesorios, onAddAccesor
         </div>
       )}
 
-      {activeFunc === "reduccion" && (
-        <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 space-y-2">
-          <p className="text-xs font-medium text-gray-600 dark:text-gray-300">Reducir a:</p>
-          <div className="flex flex-wrap gap-1">{smallerDNs.map((d) => (
-            <button key={d} onClick={() => add("reduccion", `Reducción ${dn}×${d}`, undefined, d)} className="px-3 py-1.5 text-xs rounded border border-gray-200 hover:bg-[#1C3D5A] hover:text-white transition-colors">{d}</button>
-          ))}</div>
-        </div>
-      )}
-
-      {activeFunc === "medicion" && (
-        <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 space-y-2">
-          <p className="text-xs font-medium text-gray-600 dark:text-gray-300">Tipo:</p>
-          <div className="flex flex-wrap gap-2">
-            {[["medidor-woltmann", "Medidor Woltmann"], ["vrp", "VRP"], ["valvula-alivio", "V. Alivio"]].map(([t, l]) => (
-              <button key={t} onClick={() => add(t, `${l} ${dn}`)} className="px-3 py-2 text-xs rounded border border-gray-200 hover:bg-[#1C3D5A] hover:text-white transition-colors">{l}</button>
+      {/* ── REDUCCIÓN ── */}
+      {activeFunc === "reducc" && (
+        <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 space-y-3">
+          <p className="text-xs font-medium text-gray-600 dark:text-gray-300 mb-1">¿Cómo reduce?</p>
+          <div className="grid grid-cols-3 gap-2 mb-2">
+            {([["linea", "En línea", "Cambio DN"], ["derivacion", "Derivación", "Tee reducida"], ["bifurca", "Bifurca + reduce", "Tee + Reduc."]] as const).map(([k, l, s]) => (
+              <button key={k} onClick={() => setTipoRed(tipoRed === k ? null : k)} className={`p-2 rounded-lg border text-left text-xs ${tipoRed === k ? "border-[#1C3D5A] bg-[#1C3D5A]/5" : "border-gray-200"}`}>
+                <span className="font-semibold block">{l}</span><span className="text-[10px] text-gray-400">{s}</span>
+              </button>
             ))}
           </div>
-          <p className="text-[9px] text-yellow-600">Pérdida estimada Le/D=50. Consultar ficha técnica.</p>
+          {tipoRed && (
+            <div className="flex flex-wrap gap-1">
+              {smallerDNs.map((d) => (
+                <button key={d} onClick={() => addReduc(tipoRed, d)} className="px-3 py-1.5 text-xs rounded border border-gray-200 hover:bg-[#1C3D5A] hover:text-white">{d}</button>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
-      {/* Accessories list with individual × */}
+      {/* ── ANTIRETORNO ── */}
+      {activeFunc === "antiret" && (
+        <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-3">
+          <p className="text-xs font-medium text-gray-600 dark:text-gray-300 mb-2">Tipo de check:</p>
+          <div className="grid grid-cols-2 gap-2">
+            <button onClick={() => add("check", `Check Resilente ${dn}`, undefined, undefined, { sku: `VI-CHK-R${dn.replace(/"/g, "")}` })}
+              className="p-2 rounded-lg border border-gray-200 hover:border-[#1C3D5A] text-left">
+              <span className="text-xs font-semibold block">Check Resilente</span>
+              <span className="text-[9px] text-gray-400">2 bridas · AWWA C508</span>
+            </button>
+            <button onClick={() => add("duo-check", `Duo Check Wafer ${dn}`, undefined, undefined, { sku: `VI-DCK-I${dn.replace(/"/g, "")}` })}
+              className="p-2 rounded-lg border border-gray-200 hover:border-[#1C3D5A] text-left">
+              <span className="text-xs font-semibold block">Duo Check Wafer</span>
+              <span className="text-[9px] text-gray-400">Entre bridas · ISO 5752</span>
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Accessories list */}
       {accesorios.length > 0 && (
-        <div className="space-y-1">
-          <p className="text-[10px] font-medium text-gray-500">Accesorios agregados:</p>
-          <div className="flex flex-wrap gap-1.5">{accesorios.map((a) => (
+        <div className="flex flex-wrap gap-1.5">
+          {accesorios.map((a) => (
             <span key={a.id} className="text-[11px] bg-[#E9EFF5] text-[#1C3D5A] px-2.5 py-1 rounded-lg flex items-center gap-1.5 font-medium">
               {a.label}
               <button onClick={() => onRemoveAccesorio(a.id)} className="text-[#1C3D5A]/40 hover:text-red-500">{"\u2717"}</button>
             </span>
-          ))}</div>
+          ))}
         </div>
       )}
 
       {accesorios.length === 0 && (
-        <p className="text-[10px] text-yellow-600 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg px-3 py-2 border border-yellow-200 dark:border-yellow-800">
+        <p className="text-[10px] text-yellow-600 bg-yellow-50 rounded-lg px-3 py-2 border border-yellow-200">
           Sin accesorios — pérdidas menores estimadas como 10% de hf
         </p>
       )}
@@ -183,16 +217,10 @@ export function AccesoriosSection({ dnMm, materialName, accesorios, onAddAccesor
   );
 }
 
-// ── Materials list with A/B toggle + steel connection type ──
-interface MatProps {
-  dnMm: number;
-  materialName: string;
-  accesorios: AccesorioCalc[];
-  hidden?: boolean;
-  onToggleHidden?: () => void;
-}
+// ── Materials table with loss detail ──
+interface MatProps { dnMm: number; materialName: string; accesorios: AccesorioCalc[]; hidden?: boolean; onToggleHidden?: () => void; hf?: number; longitud?: number }
 
-export function MaterialesSIMEXTable({ dnMm, materialName, accesorios, hidden, onToggleHidden }: MatProps) {
+export function MaterialesSIMEXTable({ dnMm, materialName, accesorios, hidden, onToggleHidden, hf, longitud }: MatProps) {
   const [collapsed, setCollapsed] = useState(false);
   const [kitOpcion, setKitOpcion] = useState<KitOpcion>("A");
   const [conexionAcero, setConexionAcero] = useState<ConexionAcero>("bridado");
@@ -202,54 +230,52 @@ export function MaterialesSIMEXTable({ dnMm, materialName, accesorios, hidden, o
   const esAcero = materialName.includes("Acero");
   const efectivoOp = abuAvail ? kitOpcion : "B";
   const necesitaKit = !esAcero || conexionAcero === "bridado";
+  const D_m = dnMm / 1000;
+  const L = longitud || 1000;
 
-  const items = useMemo(() => {
+  const { piezas, kit, totalBridas, lossDetail } = useMemo(() => {
     const list: KitItem[] = [];
-    let totalBridas = 0;
+    let totalBr = 0;
+    const losses: { label: string; leD: number; Le: number; dH: number }[] = [];
 
     for (const acc of accesorios) {
-      if (acc.tipo.startsWith("codo")) {
-        const r = getConexionSKU("codo", dn, acc.angulo || "90°");
-        if (r) { list.push({ sku: r.sku, descripcion: r.desc, cantidad: 1, tipo: "pieza" }); totalBridas += r.bridas; }
-      } else if (acc.tipo.includes("tee")) {
-        const r = getConexionSKU("tee", dn, acc.dn2 || dn);
-        if (r) { list.push({ sku: r.sku, descripcion: r.desc, cantidad: 1, tipo: "pieza" }); totalBridas += r.bridas; }
-      } else if (acc.tipo === "reduccion") {
-        const r = getConexionSKU("reduccion", dn, acc.dn2);
-        if (r) { list.push({ sku: r.sku, descripcion: r.desc, cantidad: 1, tipo: "pieza" }); totalBridas += r.bridas; }
-      } else if (acc.tipo === "valvula-compuerta") {
-        const skuAcc = (acc as any).sku;
-        if (skuAcc) { list.push({ sku: skuAcc, descripcion: acc.label, cantidad: 1, tipo: "valvula" }); totalBridas += 2; }
-      } else if (acc.tipo === "valvula-mariposa") {
-        const skuAcc = (acc as any).sku;
-        if (skuAcc) { list.push({ sku: skuAcc, descripcion: acc.label + " (Wafer)", cantidad: 1, tipo: "valvula" }); /* wafer = 0 bridas */ }
-      } else if (acc.tipo === "check-resilente") {
-        list.push({ sku: `VI-CHK-R${dn.replace(/"/g, "")}`, descripcion: `V. Check Resilente ${dn}`, cantidad: 1, tipo: "valvula" }); totalBridas += 2;
-      } else if (acc.tipo === "fin-linea") {
-        list.push({ sku: `CI-TAP-${dn.replace(/"/g, "")}`, descripcion: acc.label, cantidad: 1, tipo: "pieza" }); totalBridas += 1;
-      } else if (acc.tipo === "cople-desmontaje") {
-        list.push({ sku: `JN-JDE-${dn.replace(/"/g, "")}`, descripcion: `Cople Desmontaje ${dn}`, cantidad: 1, tipo: "pieza" }); totalBridas += 2;
-      } else if (["medidor-woltmann", "vrp", "valvula-alivio"].includes(acc.tipo)) {
-        list.push({ sku: "CONF", descripcion: `${acc.label} — Consultar SKU`, cantidad: 1, tipo: "pieza" }); totalBridas += 2;
-      } else if (acc.tipo === "abrazadera") {
-        list.push({ sku: "CONF", descripcion: `Abrazadera ${dn}×${acc.dn2}`, cantidad: 1, tipo: "pieza" });
+      const skuAcc = (acc as any).sku;
+      let bridas = 0;
+      if (acc.tipo.startsWith("codo")) { const r = getConexionSKU("codo", dn, acc.angulo || "90°"); list.push({ sku: skuAcc || r?.sku || "CONF", descripcion: acc.label, cantidad: 1, tipo: "pieza" }); bridas = 2; }
+      else if (acc.tipo.includes("tee") || acc.tipo === "cruz") { const r = getConexionSKU(acc.tipo === "cruz" ? "cruz" : "tee", dn, acc.dn2 || dn); list.push({ sku: skuAcc || r?.sku || "CONF", descripcion: acc.label, cantidad: 1, tipo: "pieza" }); bridas = acc.tipo === "cruz" ? 4 : 3; }
+      else if (acc.tipo === "reduccion") { const r = getConexionSKU("reduccion", dn, acc.dn2); list.push({ sku: skuAcc || r?.sku || "CONF", descripcion: acc.label, cantidad: 1, tipo: "pieza" }); bridas = 2; }
+      else if (acc.tipo.startsWith("vcg") || acc.tipo.startsWith("vmb")) { list.push({ sku: skuAcc || "CONF", descripcion: acc.label, cantidad: 1, tipo: "valvula" }); bridas = acc.tipo === "vmb-w" ? 0 : 2; }
+      else if (acc.tipo === "check") { list.push({ sku: skuAcc || "CONF", descripcion: acc.label, cantidad: 1, tipo: "valvula" }); bridas = 2; }
+      else if (acc.tipo === "duo-check") { list.push({ sku: skuAcc || "CONF", descripcion: acc.label, cantidad: 1, tipo: "valvula" }); bridas = 0; }
+      else if (acc.tipo === "tapa-ciega") { list.push({ sku: skuAcc || getTapaCiegaSKU(dn), descripcion: acc.label, cantidad: 1, tipo: "pieza" }); bridas = 1; }
+      else if (acc.tipo === "cople-desmontaje") { list.push({ sku: skuAcc || getCopleSKU(dn), descripcion: acc.label, cantidad: 1, tipo: "pieza" }); bridas = 2; }
+      else if (acc.tipo === "marco-tapa") { list.push({ sku: "AI-MCT-D", descripcion: acc.label, cantidad: 1, tipo: "pieza" }); bridas = 0; }
+      else { list.push({ sku: skuAcc || "CONF", descripcion: acc.label, cantidad: 1, tipo: "pieza" }); bridas = 2; }
+      totalBr += bridas;
+
+      // Loss calculation
+      const leD = LONGITUD_EQUIV[acc.tipo] ?? 0;
+      if (leD > 0 && hf && D_m > 0) {
+        const Le = leD * D_m * acc.cantidad;
+        const dH = (hf / L) * Le;
+        losses.push({ label: acc.label, leD, Le: Math.round(Le * 100) / 100, dH: Math.round(dH * 1000) / 1000 });
       }
     }
 
-    const bridaItems = necesitaKit && totalBridas > 0 ? buildKitBrida(dn, simexMat, totalBridas, efectivoOp) : [];
+    const bridaItems = necesitaKit && totalBr > 0 ? buildKitBrida(dn, simexMat, totalBr, efectivoOp) : [];
     const all = [...list, ...bridaItems];
-    const consolidated = new Map<string, KitItem>();
-    for (const item of all) { const ex = consolidated.get(item.sku); if (ex) ex.cantidad += item.cantidad; else consolidated.set(item.sku, { ...item }); }
-    return { piezas: Array.from(consolidated.values()).filter((i) => i.tipo !== "kit_brida"), kit: Array.from(consolidated.values()).filter((i) => i.tipo === "kit_brida"), totalBridas };
-  }, [accesorios, dn, simexMat, efectivoOp, necesitaKit]);
+    const con = new Map<string, KitItem>();
+    for (const i of all) { const e = con.get(i.sku); if (e) e.cantidad += i.cantidad; else con.set(i.sku, { ...i }); }
+    return { piezas: Array.from(con.values()).filter((i) => i.tipo !== "kit_brida"), kit: Array.from(con.values()).filter((i) => i.tipo === "kit_brida"), totalBridas: totalBr, lossDetail: losses };
+  }, [accesorios, dn, simexMat, efectivoOp, necesitaKit, hf, D_m, L]);
 
   if (accesorios.length === 0) return null;
   if (hidden) return <button onClick={onToggleHidden} className="text-[10px] text-[#1C3D5A] hover:underline">Mostrar lista SIMEX</button>;
 
-  const copy = () => { const a = [...items.piezas, ...items.kit]; navigator.clipboard.writeText(a.map((i) => `${i.sku}\t${i.descripcion}\t${i.cantidad}`).join("\n")); };
+  const copy = () => { navigator.clipboard.writeText([...piezas, ...kit].map((i) => `${i.sku}\t${i.descripcion}\t${i.cantidad}`).join("\n")); };
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-xl border border-[#1C3D5A]/20 overflow-hidden">
+    <div className="bg-white dark:bg-gray-800 rounded-xl border border-[#1C3D5A]/20 overflow-hidden simex-print-area">
       <div className="bg-[#1C3D5A] px-4 py-2.5 flex items-center justify-between">
         <h3 className="text-xs font-semibold text-white">Lista de materiales SIMEX</h3>
         <div className="flex gap-3">
@@ -261,58 +287,47 @@ export function MaterialesSIMEXTable({ dnMm, materialName, accesorios, hidden, o
 
       {!collapsed && (
         <>
-          {/* Steel connection type selector */}
+          {/* Acero connection type */}
           {esAcero && (
-            <div className="px-3 py-2 bg-yellow-50 dark:bg-yellow-900/10 border-b border-yellow-200 dark:border-yellow-800">
-              <p className="text-[10px] font-medium text-yellow-800 mb-1">Tipo de conexión (Acero):</p>
+            <div className="px-3 py-2 bg-yellow-50 border-b border-yellow-200">
+              <p className="text-[10px] font-medium text-yellow-800 mb-1">Conexión Acero:</p>
               <div className="flex gap-1">
-                {(["bridado", "roscado", "soldado"] as ConexionAcero[]).map((t) => (
-                  <button key={t} onClick={() => setConexionAcero(t)} className={`text-[10px] px-3 py-1 rounded transition-colors ${conexionAcero === t ? "bg-[#1C3D5A] text-white" : "bg-white border border-gray-200 text-gray-600"}`}>
-                    {t === "bridado" ? "Bridado" : t === "roscado" ? "Roscado" : "Soldado"}
-                  </button>
+                {(["bridado", "roscado", "soldado"] as const).map((t) => (
+                  <button key={t} onClick={() => setConexionAcero(t)} className={`text-[10px] px-3 py-1 rounded ${conexionAcero === t ? "bg-[#1C3D5A] text-white" : "bg-white border border-gray-200"}`}>{t}</button>
                 ))}
               </div>
-              {conexionAcero === "roscado" && dnMm > 100 && (
-                <p className="text-[9px] text-yellow-700 mt-1">La conexión roscada no es común en DNs mayores a 4". Se recomienda bridada o soldada.</p>
-              )}
-              {conexionAcero === "soldado" && (
-                <p className="text-[9px] text-yellow-700 mt-1">Las válvulas bridadas requieren bridas de transición soldadas. Consultar con distribuidor.</p>
-              )}
-              {conexionAcero === "roscado" && (
-                <p className="text-[9px] text-gray-500 mt-1">Conexión roscada NPT — sin kit de brida</p>
-              )}
+              {conexionAcero !== "bridado" && <p className="text-[9px] text-yellow-700 mt-1">{conexionAcero === "roscado" ? "Roscada NPT — sin kit brida" : "Soldada — sin kit brida"}</p>}
             </div>
           )}
 
           {/* Piezas */}
-          {items.piezas.length > 0 && (
+          {piezas.length > 0 && (
             <div>
-              <div className="px-3 py-1.5 bg-gray-50 dark:bg-gray-700 text-[10px] font-semibold text-gray-500 uppercase tracking-wider">Piezas principales</div>
-              {items.piezas.map((item, i) => (
-                <div key={`p-${i}`} className="flex items-center justify-between px-3 py-2 border-b border-gray-100 dark:border-gray-700 text-xs">
-                  <span className={`font-mono w-28 ${item.sku === "CONF" ? "text-yellow-600" : "text-[#1C3D5A] dark:text-blue-300"}`}>{item.sku === "CONF" ? "[CONF]" : item.sku}</span>
-                  <span className="flex-1 text-gray-600 dark:text-gray-400 ml-2">{item.descripcion}</span>
+              <div className="px-3 py-1.5 bg-gray-50 text-[10px] font-semibold text-gray-500 uppercase tracking-wider">Piezas principales</div>
+              {piezas.map((item, i) => (
+                <div key={`p-${i}`} className="flex items-center justify-between px-3 py-2 border-b border-gray-100 text-xs">
+                  <span className={`font-mono w-28 ${item.sku === "CONF" ? "text-yellow-600" : "text-[#1C3D5A]"}`}>{item.sku === "CONF" ? "[CONF]" : item.sku}</span>
+                  <span className="flex-1 text-gray-600 ml-2">{item.descripcion}</span>
                   <span className="font-mono text-gray-500 ml-2">×{item.cantidad}</span>
                 </div>
               ))}
             </div>
           )}
 
-          {/* Kit de bridas with A/B toggle */}
-          {necesitaKit && items.kit.length > 0 && (
+          {/* Kit bridas */}
+          {necesitaKit && kit.length > 0 && (
             <div>
-              <div className="px-3 py-1.5 bg-gray-50 dark:bg-gray-700 flex items-center justify-between">
-                <span className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider">Kit conexión ({items.totalBridas} bridas) — Op. {efectivoOp}</span>
+              <div className="px-3 py-1.5 bg-gray-50 flex items-center justify-between">
+                <span className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider">Kit conexión ({totalBridas} bridas) — Op. {efectivoOp}</span>
                 {abuAvail && (
                   <div className="flex gap-1">
-                    <button onClick={() => setKitOpcion("A")} className={`text-[9px] px-2 py-0.5 rounded ${efectivoOp === "A" ? "bg-[#1C3D5A] text-white" : "bg-gray-200 text-gray-500"}`}>A: ABU</button>
-                    <button onClick={() => setKitOpcion("B")} className={`text-[9px] px-2 py-0.5 rounded ${efectivoOp === "B" ? "bg-[#1C3D5A] text-white" : "bg-gray-200 text-gray-500"}`}>B: Ext+Gib</button>
+                    <button onClick={() => setKitOpcion("A")} className={`text-[9px] px-2 py-0.5 rounded ${efectivoOp === "A" ? "bg-[#1C3D5A] text-white" : "bg-gray-200"}`}>A: ABU</button>
+                    <button onClick={() => setKitOpcion("B")} className={`text-[9px] px-2 py-0.5 rounded ${efectivoOp === "B" ? "bg-[#1C3D5A] text-white" : "bg-gray-200"}`}>B: Ext+Gib</button>
                   </div>
                 )}
               </div>
-              {!abuAvail && <p className="px-3 py-1 text-[9px] text-yellow-600 bg-yellow-50">No existe ABU para este DN/material — Extremidad Bridada + Gibault</p>}
-              {items.kit.map((item, i) => (
-                <div key={`k-${i}`} className="flex items-center justify-between px-3 py-1.5 border-b border-gray-50 dark:border-gray-700 text-xs text-gray-400">
+              {kit.map((item, i) => (
+                <div key={`k-${i}`} className="flex items-center justify-between px-3 py-1.5 border-b border-gray-50 text-xs text-gray-400">
                   <span className="font-mono w-28">{item.sku}</span>
                   <span className="flex-1 ml-2">{item.descripcion}</span>
                   <span className="font-mono ml-2">×{item.cantidad}</span>
@@ -321,9 +336,37 @@ export function MaterialesSIMEXTable({ dnMm, materialName, accesorios, hidden, o
             </div>
           )}
 
-          {!necesitaKit && (
-            <div className="px-3 py-2 text-[10px] text-gray-500 bg-gray-50">
-              {conexionAcero === "roscado" ? "Conexión roscada NPT — sin kit de brida. Verificar con proveedor." : "Conexión soldada — sin kit de brida. Las uniones las realiza el soldador."}
+          {/* Loss detail table */}
+          {lossDetail.length > 0 && (
+            <div>
+              <div className="px-3 py-1.5 bg-gray-50 text-[10px] font-semibold text-gray-500 uppercase tracking-wider">Pérdidas hidráulicas — Crane TP-410 / AWWA</div>
+              <table className="w-full text-[11px]">
+                <thead>
+                  <tr className="border-b border-gray-200 text-gray-400">
+                    <th className="text-left px-3 py-1 font-medium">Accesorio</th>
+                    <th className="text-center px-2 py-1 font-medium">Le/D</th>
+                    <th className="text-center px-2 py-1 font-medium">Le (m)</th>
+                    <th className="text-center px-2 py-1 font-medium">ΔhF (m)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {lossDetail.map((d, i) => (
+                    <tr key={i} className="border-b border-gray-100">
+                      <td className="px-3 py-1 text-gray-600">{d.label}</td>
+                      <td className="px-2 py-1 text-center text-gray-400 font-mono">{d.leD}</td>
+                      <td className="px-2 py-1 text-center font-mono">{d.Le.toFixed(2)}</td>
+                      <td className="px-2 py-1 text-center font-mono text-red-500">{d.dH.toFixed(3)}</td>
+                    </tr>
+                  ))}
+                  <tr className="border-t-2 border-gray-300 font-semibold">
+                    <td className="px-3 py-1">TOTAL</td>
+                    <td></td>
+                    <td className="px-2 py-1 text-center font-mono">{lossDetail.reduce((s, d) => s + d.Le, 0).toFixed(2)}</td>
+                    <td className="px-2 py-1 text-center font-mono text-red-500">{lossDetail.reduce((s, d) => s + d.dH, 0).toFixed(3)}</td>
+                  </tr>
+                </tbody>
+              </table>
+              <p className="px-3 py-1 text-[9px] text-gray-400">Le = Le/D × D × cant. ΔhF = J × Le donde J = hf/L</p>
             </div>
           )}
 

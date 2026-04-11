@@ -564,6 +564,8 @@ export default function TramoSimplePage() {
                   accesorios={simexAccesorios}
                   hidden={hideSimexList}
                   onToggleHidden={() => setHideSimexList(!hideSimexList)}
+                  hf={results?.hf ?? undefined}
+                  longitud={inputs.L ?? undefined}
                 />
               )}
             </>

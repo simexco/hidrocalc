@@ -13,3 +13,31 @@ body {
 h1, h2, h3, h4, h5, h6 {
   font-family: 'Inter', 'Source Sans 3', system-ui, sans-serif;
 }
+
+@media print {
+  nav, header, aside, footer, .no-print, button:not(.keep-print) {
+    display: none !important;
+  }
+  .simex-print-area {
+    display: block !important;
+    border: none !important;
+  }
+  .simex-print-area::before {
+    content: 'ESPECIFICACIÓN TÉCNICA DE MATERIALES — SIMEX S.H.I. de México';
+    display: block;
+    font-size: 14px;
+    font-weight: bold;
+    margin-bottom: 8px;
+    border-bottom: 2px solid #000;
+    padding-bottom: 6px;
+  }
+  .simex-print-area::after {
+    content: 'COTIZA CON TU DISTRIBUIDOR AUTORIZADO SIMEX · GDL 33-3145-2626 · CDMX 55-2124-0024 · MTY 818-3377-4448 · simexco.com.mx';
+    display: block;
+    font-size: 10px;
+    margin-top: 16px;
+    padding: 8px;
+    border: 2px solid #000;
+    text-align: center;
+  }
+}

@@ -7,7 +7,8 @@
       "emp": "JI-ENE-4",
       "tor": "DN-TOR-5/83",
       "bolts": 8,
-      "gib": "JN-JGI-127"
+      "gib": "JN-JGI-127",
+      "ext_od": 122
     },
     "4\"|HD AWWA": {
       "od": 122,
@@ -16,7 +17,8 @@
       "emp": "JI-ENE-4",
       "tor": "DN-TOR-5/83",
       "bolts": 8,
-      "gib": "JN-JGI-127"
+      "gib": "JN-JGI-127",
+      "ext_od": 122
     },
     "6\"|PVC AWWA C900": {
       "od": 175,
@@ -25,7 +27,8 @@
       "emp": "JI-ENE-6",
       "tor": "DN-TOR-3/431/2",
       "bolts": 8,
-      "gib": "JN-JGI-180"
+      "gib": "JN-JGI-180",
+      "ext_od": 175
     },
     "6\"|HD AWWA": {
       "od": 175,
@@ -34,7 +37,8 @@
       "emp": "JI-ENE-6",
       "tor": "DN-TOR-3/431/2",
       "bolts": 8,
-      "gib": "JN-JGI-180"
+      "gib": "JN-JGI-180",
+      "ext_od": 175
     },
     "8\"|PVC AWWA C900": {
       "od": 230,
@@ -43,7 +47,8 @@
       "emp": "JI-ENE-8",
       "tor": "DN-TOR-3/431/2",
       "bolts": 8,
-      "gib": "JN-JGI-235"
+      "gib": "JN-JGI-235",
+      "ext_od": 230
     },
     "8\"|HD AWWA": {
       "od": 230,
@@ -52,7 +57,8 @@
       "emp": "JI-ENE-8",
       "tor": "DN-TOR-3/431/2",
       "bolts": 8,
-      "gib": "JN-JGI-235"
+      "gib": "JN-JGI-235",
+      "ext_od": 230
     },
     "10\"|PVC AWWA C900": {
       "od": 282,
@@ -61,7 +67,8 @@
       "emp": "JI-ENE-10",
       "tor": "DN-TOR-7/84",
       "bolts": 12,
-      "gib": "JN-JGI-287"
+      "gib": "JN-JGI-287",
+      "ext_od": 282
     },
     "10\"|HD AWWA": {
       "od": 282,
@@ -70,7 +77,8 @@
       "emp": "JI-ENE-10",
       "tor": "DN-TOR-7/84",
       "bolts": 12,
-      "gib": "JN-JGI-287"
+      "gib": "JN-JGI-287",
+      "ext_od": 282
     },
     "12\"|PVC AWWA C900": {
       "od": 335,
@@ -79,7 +87,8 @@
       "emp": "JI-ENE-12",
       "tor": "DN-TOR-7/84",
       "bolts": 12,
-      "gib": "JN-JGI-340"
+      "gib": "JN-JGI-340",
+      "ext_od": 335
     },
     "12\"|HD AWWA": {
       "od": 335,
@@ -88,7 +97,8 @@
       "emp": "JI-ENE-12",
       "tor": "DN-TOR-7/84",
       "bolts": 12,
-      "gib": "JN-JGI-340"
+      "gib": "JN-JGI-340",
+      "ext_od": 335
     }
   },
   "conexiones": [
@@ -417,5 +427,34 @@
       "sku": "VI-VAC-6",
       "tipo": "combinada"
     }
-  ]
+  ],
+  "tapa_ciega": {
+    "2\"": "CI-BCF-2",
+    "3\"": "CI-BCF-3",
+    "4\"": "CI-BCF-4",
+    "6\"": "CI-BCF-6",
+    "8\"": "CI-BCF-8",
+    "10\"": "CI-BCF-10",
+    "12\"": "CI-BCF-12",
+    "14\"": "CI-BCF-14",
+    "16\"": "CI-BCF-16",
+    "18\"": "CI-BCF-18",
+    "20\"": "CI-BCF-20",
+    "24\"": "CI-BCF-24",
+    "30\"": "CI-BCF-30",
+    "36\"": "CI-BCF-36"
+  },
+  "cople_desmontaje": {
+    "3\"": "CI-CDM-3",
+    "4\"": "CI-CDM-4",
+    "6\"": "CI-CDM-6",
+    "8\"": "CI-CDM-8",
+    "10\"": "CI-CDM-10",
+    "12\"": "CI-CDM-12",
+    "14\"": "CI-CDM-14",
+    "16\"": "CI-CDM-16",
+    "18\"": "CI-CDM-18",
+    "20\"": "CI-CDM-20",
+    "24\"": "CI-CDM-24"
+  }
 }
