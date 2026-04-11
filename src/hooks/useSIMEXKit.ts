@@ -1,6 +1,58 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import catalog from "@/data/simex_catalog.json";
 
+// ── Equivalent lengths Le/D for hm calculation (AWWA / Crane TP-410) ──
+export const LONGITUD_EQUIV: Record<string, number> = {
+  "codo-90": 30,
+  "codo-45": 16,
+  "codo-22": 8,
+  "codo-11": 4,
+  "tee-directo": 20,
+  "tee-lateral": 60,
+  "reduccion": 10,
+  "valvula-compuerta": 13,
+  "valvula-mariposa": 45,
+  "check-resilente": 150,
+  "fin-linea": 0,
+};
+
+export interface AccesorioCalc {
+  id: string;
+  tipo: string;        // key in LONGITUD_EQUIV
+  label: string;       // display name
+  cantidad: number;
+  angulo?: string;
+  dn2?: string;
+}
+
+/** Calculate real hm using equivalent length method */
+export function calcHmReal(accesorios: AccesorioCalc[], L: number, D_m: number, hf: number): number {
+  if (accesorios.length === 0 || L <= 0 || D_m <= 0) return 0;
+  const sumLe = accesorios.reduce((sum, acc) => {
+    const factor = LONGITUD_EQUIV[acc.tipo] ?? 0;
+    return sum + factor * D_m * acc.cantidad;
+  }, 0);
+  return hf * (sumLe / L);
+}
+
+// ── Material name mapping HidroCalc → SIMEX catalog ──
+export const MATERIAL_MAP: Record<string, string> = {
+  "PVC — AWWA C900/C905": "PVC AWWA C900",
+  "PVC — Métrico ISO 4422": "PVC Métrico",
+  "PVC — Ingles ASTM D2241": "PVC Inglés",
+  "HDPE — AWWA C906": "PEAD",
+  "Hierro dúctil": "HD AWWA",
+  "Acero nuevo": "Acero",
+  "Acero (10+ años)": "Acero",
+  "Asbesto cemento": "Asbesto A7",
+};
+
+export const DN_MM_TO_STR: Record<number, string> = {
+  50: '2"', 75: '3"', 100: '4"', 150: '6"', 200: '8"',
+  250: '10"', 300: '12"', 350: '14"', 400: '16"',
+  450: '18"', 500: '20"', 600: '24"', 750: '30"', 900: '36"',
+};
+
 export interface KitItem {
   sku: string;
   descripcion: string;

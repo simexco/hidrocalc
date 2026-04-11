@@ -1,17 +1,17 @@
 "use client";
 
-import { useEffect, useCallback, useRef } from "react";
+import { useEffect, useCallback, useRef, useState } from "react";
 import { useSinglePipeStore } from "@/store/calculationStore";
 import { InputField } from "@/components/ui/InputField";
 import { MetricCard } from "@/components/ui/MetricCard";
 import { AlertBanner } from "@/components/ui/AlertBanner";
 import { ModeSelector } from "@/components/ui/ModeSelector";
 import { DataStatusBanner } from "@/components/ui/DataStatusBanner";
-import { FittingsTable } from "@/components/hydraulic/FittingsTable";
 import { HydraulicProfileChart } from "@/components/hydraulic/HydraulicProfileChart";
 import { DiameterComparisonTable } from "@/components/hydraulic/DiameterComparisonTable";
 import { ExportPDFButton } from "@/components/ui/ExportPDFButton";
-import { ListaMaterialesSIMEX } from "@/components/ListaMaterialesSIMEX";
+import { AccesoriosSection, MaterialesSIMEXTable } from "@/components/ListaMaterialesSIMEX";
+import { type AccesorioCalc, calcHmReal } from "@/hooks/useSIMEXKit";
 import { calculateHazenWilliams, findMaxFlow, compareDiameters } from "@/lib/calculations/hazen-williams";
 import { flowToM3s, m3sToFlow, formatNumber, mcaToKgcm2 } from "@/lib/calculations/conversions";
 import { STANDARD_DNS, STANDARD_DNS_LABELED, MATERIALS, DEFAULTS } from "@/lib/constants";
@@ -19,7 +19,8 @@ import { saveFormState, loadFormState } from "@/lib/storage/form-persistence";
 import type { CalcMode, FlowUnit, AssumedValue, Alert } from "@/types/hydraulic";
 
 export default function TramoSimplePage() {
-  const { inputs, results, setInput, setResults, addFitting, removeFitting, updateFitting } = useSinglePipeStore();
+  const { inputs, results, setInput, setResults } = useSinglePipeStore();
+  const [simexAccesorios, setSimexAccesorios] = useState<AccesorioCalc[]>([]);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
   const persistRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
@@ -54,27 +55,48 @@ export default function TramoSimplePage() {
     if (z2 === 0) assumed.push({ field: "z2", value: 0, label: "Cota salida: 0 m (terreno plano)" });
 
     if (mode === "A") {
-      // Mode A: Verify outlet pressure
       if (rawQ == null || DN == null || L == null || rawQ <= 0 || L <= 0) {
         setResults(null);
         return;
       }
       const Q = flowToM3s(rawQ, flowUnit);
       const D = DN / 1000;
-      const hasFittings = fittings.length > 0;
+      const hasAccesorios = simexAccesorios.length > 0;
+
+      // Calculate base result without fittings to get hf first
       const result = calculateHazenWilliams({
-        Q, D, L, C, P1, z1, z2, fittings: hasFittings ? fittings : undefined,
-        useEstimatedHm: !hasFittings,
+        Q, D, L, C, P1, z1, z2, useEstimatedHm: !hasAccesorios,
       });
 
-      if (!hasFittings && result.hmEstimated) {
-        assumed.push({ field: "hm", value: result.hm, label: `Accesorios asumidos: hm = 10% de hf (${formatNumber(result.hm, 3)} m)` });
+      // If user added accessories, calculate real hm using Le/D method
+      let hm = result.hm;
+      let hmEstimated = result.hmEstimated;
+      if (hasAccesorios) {
+        hm = calcHmReal(simexAccesorios, L, D, result.hf);
+        hmEstimated = false;
+      }
+
+      // Recalculate H2 and P2 with real hm
+      let H1 = result.H1;
+      let H2 = result.H2;
+      let P2 = result.P2;
+      let P2_kPa = result.P2_kPa;
+      const velocityHead = result.V * result.V / (2 * 9.81);
+      if (P1 != null) {
+        H1 = z1 + P1 + velocityHead;
+        H2 = H1 - result.hf - hm;
+        P2 = H2 - z2 - velocityHead;
+        P2_kPa = P2 * 9.81;
+      }
+
+      if (!hasAccesorios && hmEstimated) {
+        assumed.push({ field: "hm", value: hm, label: `Accesorios asumidos: hm = 10% de hf (${formatNumber(hm, 3)} m)` });
       }
 
       setResults({
-        A: result.A, V: result.V, hf: result.hf, hm: result.hm,
-        hmEstimated: result.hmEstimated,
-        H1: result.H1, H2: result.H2, P2: result.P2, P2_kPa: result.P2_kPa,
+        A: result.A, V: result.V, hf: result.hf, hm,
+        hmEstimated,
+        H1, H2, P2, P2_kPa,
         J: result.J, J_km: result.J_km, Re: result.Re,
         alerts: result.alerts,
         dataStatus: P1 != null ? (assumed.length > 0 ? "estimated" : "calculated") : "estimated",
@@ -138,7 +160,7 @@ export default function TramoSimplePage() {
         Qmax: null, diameterComparison: rows, recommendedDN,
       });
     }
-  }, [inputs, setResults]);
+  }, [inputs, simexAccesorios, setResults]);
 
   useEffect(() => {
     clearTimeout(debounceRef.current);
@@ -353,17 +375,15 @@ export default function TramoSimplePage() {
             </div>
           </div>
 
-          {/* Fittings table — only in Mode A */}
-          {inputs.mode === "A" && (
-            <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5">
-              <FittingsTable
-                fittings={inputs.fittings}
-                velocity={results?.V ?? null}
-                onAdd={addFitting}
-                onRemove={removeFitting}
-                onUpdate={updateFitting}
-              />
-            </div>
+          {/* Accessories section — Mode A */}
+          {inputs.mode === "A" && inputs.DN && (
+            <AccesoriosSection
+              dnMm={inputs.DN}
+              materialName={inputs.materialName}
+              accesorios={simexAccesorios}
+              onAddAccesorio={(acc) => setSimexAccesorios((prev) => [...prev, acc])}
+              onRemoveAccesorio={(id) => setSimexAccesorios((prev) => prev.filter((a) => a.id !== id))}
+            />
           )}
         </div>
 
@@ -534,14 +554,12 @@ export default function TramoSimplePage() {
                   title="Perfil Hidráulico"
                 />
               )}
-              {/* SIMEX Materials */}
-              {inputs.DN && inputs.materialName && (
-                <ListaMaterialesSIMEX
-                  dn={(() => {
-                    const dnMap: Record<number, string> = { 50: '2"', 75: '3"', 100: '4"', 150: '6"', 200: '8"', 250: '10"', 300: '12"', 350: '14"', 400: '16"', 450: '18"', 500: '20"', 600: '24"', 750: '30"', 900: '36"' };
-                    return dnMap[inputs.DN!] || `${inputs.DN}`;
-                  })()}
-                  material={inputs.materialName.includes("C900") ? "PVC AWWA C900" : inputs.materialName.includes("dúctil") ? "HD AWWA" : inputs.materialName.includes("HDPE") ? "PEAD" : inputs.materialName.includes("Acero") ? "Acero" : "PVC Inglés"}
+              {/* SIMEX Materials Table */}
+              {inputs.DN && simexAccesorios.length > 0 && (
+                <MaterialesSIMEXTable
+                  dnMm={inputs.DN}
+                  materialName={inputs.materialName}
+                  accesorios={simexAccesorios}
                 />
               )}
             </>
