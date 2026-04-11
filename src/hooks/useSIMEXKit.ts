@@ -14,6 +14,11 @@ export const LONGITUD_EQUIV: Record<string, number> = {
   "valvula-mariposa": 45,
   "check-resilente": 150,
   "fin-linea": 0,
+  "medidor-woltmann": 50,
+  "vrp": 50,
+  "valvula-alivio": 50,
+  "cople-desmontaje": 5,
+  "abrazadera": 0,
 };
 
 export interface AccesorioCalc {
@@ -64,7 +69,7 @@ export function getKit(dn: string, material: string) {
   const key = `${dn}|${material}`;
   const entry = (catalog.kit as any)[key];
   if (!entry) return null;
-  return { od: entry.od, abu: entry.abu, ext: entry.ext, emp: entry.emp, tor: entry.tor, bolts: entry.bolts || 8 };
+  return { od: entry.od, abu: entry.abu, ext: entry.ext, gib: entry.gib, emp: entry.emp, tor: entry.tor, bolts: entry.bolts || 8 };
 }
 
 export function getConexionSKU(tipo: string, dn1: string, dn2?: string): { sku: string; bridas: number; desc: string } | null {
@@ -93,19 +98,33 @@ export function getValvulaAireSKU(dn: string, tipo?: string) {
   return match?.sku || null;
 }
 
-export function buildKitBrida(dn: string, material: string, nBridas: number): KitItem[] {
+export type KitOpcion = "A" | "B";
+
+/** Check if ABU exists for this DN/material combination */
+export function hasABU(dn: string, material: string): boolean {
+  const kit = getKit(dn, material);
+  return kit?.abu != null;
+}
+
+export function buildKitBrida(dn: string, material: string, nBridas: number, opcion: KitOpcion = "A"): KitItem[] {
   const kit = getKit(dn, material);
   if (!kit || nBridas === 0) return [];
   const items: KitItem[] = [];
-  const mainSKU = kit.abu || kit.ext;
-  if (mainSKU) {
-    items.push({
-      sku: mainSKU,
-      descripcion: kit.abu ? `Adaptador Bridado Universal ${dn}` : `Extremidad Bridada ${dn} OD ${kit.od}mm`,
-      cantidad: nBridas,
-      tipo: "kit_brida",
-    });
+
+  if (opcion === "A" && kit.abu) {
+    // Opción A: ABU
+    items.push({ sku: kit.abu, descripcion: `Adapt. Bridado Universal ${dn}`, cantidad: nBridas, tipo: "kit_brida" });
+  } else {
+    // Opción B: Extremidad + Gibault (or fallback when no ABU)
+    if (kit.ext) {
+      items.push({ sku: kit.ext, descripcion: `Extremidad Bridada ${dn} OD ${kit.od}mm`, cantidad: nBridas, tipo: "kit_brida" });
+    }
+    const gibSKU = kit.gib;
+    if (gibSKU) {
+      items.push({ sku: gibSKU, descripcion: `Junta Gibault ${kit.od}mm`, cantidad: nBridas, tipo: "kit_brida" });
+    }
   }
+
   if (kit.emp) {
     items.push({ sku: kit.emp, descripcion: `Empaque Neopreno DN ${dn}`, cantidad: nBridas, tipo: "kit_brida" });
   }

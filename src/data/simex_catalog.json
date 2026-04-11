@@ -6,7 +6,8 @@
       "ext": "CN-EXT-4120",
       "emp": "JI-ENE-4",
       "tor": "DN-TOR-5/83",
-      "bolts": 8
+      "bolts": 8,
+      "gib": "JN-JGI-127"
     },
     "4\"|HD AWWA": {
       "od": 122,
@@ -14,7 +15,8 @@
       "ext": "CN-EXT-4120",
       "emp": "JI-ENE-4",
       "tor": "DN-TOR-5/83",
-      "bolts": 8
+      "bolts": 8,
+      "gib": "JN-JGI-127"
     },
     "6\"|PVC AWWA C900": {
       "od": 175,
@@ -22,7 +24,8 @@
       "ext": "CN-EXT-6175",
       "emp": "JI-ENE-6",
       "tor": "DN-TOR-3/431/2",
-      "bolts": 8
+      "bolts": 8,
+      "gib": "JN-JGI-180"
     },
     "6\"|HD AWWA": {
       "od": 175,
@@ -30,7 +33,8 @@
       "ext": "CN-EXT-6175",
       "emp": "JI-ENE-6",
       "tor": "DN-TOR-3/431/2",
-      "bolts": 8
+      "bolts": 8,
+      "gib": "JN-JGI-180"
     },
     "8\"|PVC AWWA C900": {
       "od": 230,
@@ -38,7 +42,8 @@
       "ext": "CN-EXT-8230",
       "emp": "JI-ENE-8",
       "tor": "DN-TOR-3/431/2",
-      "bolts": 8
+      "bolts": 8,
+      "gib": "JN-JGI-235"
     },
     "8\"|HD AWWA": {
       "od": 230,
@@ -46,7 +51,8 @@
       "ext": "CN-EXT-8230",
       "emp": "JI-ENE-8",
       "tor": "DN-TOR-3/431/2",
-      "bolts": 8
+      "bolts": 8,
+      "gib": "JN-JGI-235"
     },
     "10\"|PVC AWWA C900": {
       "od": 282,
@@ -54,7 +60,8 @@
       "ext": "CN-EXT-10280",
       "emp": "JI-ENE-10",
       "tor": "DN-TOR-7/84",
-      "bolts": 12
+      "bolts": 12,
+      "gib": "JN-JGI-287"
     },
     "10\"|HD AWWA": {
       "od": 282,
@@ -62,7 +69,8 @@
       "ext": "CN-EXT-10280",
       "emp": "JI-ENE-10",
       "tor": "DN-TOR-7/84",
-      "bolts": 12
+      "bolts": 12,
+      "gib": "JN-JGI-287"
     },
     "12\"|PVC AWWA C900": {
       "od": 335,
@@ -70,7 +78,8 @@
       "ext": "CN-EXT-12335",
       "emp": "JI-ENE-12",
       "tor": "DN-TOR-7/84",
-      "bolts": 12
+      "bolts": 12,
+      "gib": "JN-JGI-340"
     },
     "12\"|HD AWWA": {
       "od": 335,
@@ -78,7 +87,8 @@
       "ext": "CN-EXT-12335",
       "emp": "JI-ENE-12",
       "tor": "DN-TOR-7/84",
-      "bolts": 12
+      "bolts": 12,
+      "gib": "JN-JGI-340"
     }
   },
   "conexiones": [

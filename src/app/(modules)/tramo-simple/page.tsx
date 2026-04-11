@@ -21,6 +21,7 @@ import type { CalcMode, FlowUnit, AssumedValue, Alert } from "@/types/hydraulic"
 export default function TramoSimplePage() {
   const { inputs, results, setInput, setResults } = useSinglePipeStore();
   const [simexAccesorios, setSimexAccesorios] = useState<AccesorioCalc[]>([]);
+  const [hideSimexList, setHideSimexList] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
   const persistRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
@@ -383,6 +384,7 @@ export default function TramoSimplePage() {
               accesorios={simexAccesorios}
               onAddAccesorio={(acc) => setSimexAccesorios((prev) => [...prev, acc])}
               onRemoveAccesorio={(id) => setSimexAccesorios((prev) => prev.filter((a) => a.id !== id))}
+              onClearAll={() => setSimexAccesorios([])}
             />
           )}
         </div>
@@ -560,6 +562,8 @@ export default function TramoSimplePage() {
                   dnMm={inputs.DN}
                   materialName={inputs.materialName}
                   accesorios={simexAccesorios}
+                  hidden={hideSimexList}
+                  onToggleHidden={() => setHideSimexList(!hideSimexList)}
                 />
               )}
             </>
