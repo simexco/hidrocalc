@@ -2,8 +2,8 @@ import Link from "next/link";
 
 const modules = [
   {
-    title: "Tramo Simple",
-    desc: "Verificación de presión, caudal máximo o diámetro recomendado para un tramo de tubería.",
+    title: "Verificar presión",
+    desc: "Presión de salida, caudal máximo o diámetro recomendado para un tramo.",
     href: "/tramo-simple",
     icon: (
       <svg viewBox="0 0 24 24" className="w-7 h-7" fill="none" stroke="currentColor" strokeWidth={1.5}>
@@ -12,8 +12,8 @@ const modules = [
     ),
   },
   {
-    title: "Tuberías en Serie",
-    desc: "Análisis en cascada para líneas con cambios de diámetro, material o pendiente.",
+    title: "Línea con varios tramos",
+    desc: "Análisis de líneas con cambios de diámetro, material o pendiente.",
     href: "/en-serie",
     icon: (
       <svg viewBox="0 0 24 24" className="w-7 h-7" fill="none" stroke="currentColor" strokeWidth={1.5}>
@@ -22,8 +22,8 @@ const modules = [
     ),
   },
   {
-    title: "Golpe de Ariete",
-    desc: "Sobrepresión transitoria por cierre de válvulas y recomendación de clase de tubería.",
+    title: "Golpe de ariete",
+    desc: "Sobrepresión por cierre de válvulas y clase de tubería requerida.",
     href: "/golpe-ariete",
     icon: (
       <svg viewBox="0 0 24 24" className="w-7 h-7" fill="none" stroke="currentColor" strokeWidth={1.5}>
@@ -32,8 +32,8 @@ const modules = [
     ),
   },
   {
-    title: "Punto de Operación",
-    desc: "Intersección de la curva del sistema con la curva de la bomba.",
+    title: "Mi bomba",
+    desc: "Punto real de trabajo de la bomba en el sistema hidráulico.",
     href: "/bombeo",
     icon: (
       <svg viewBox="0 0 24 24" className="w-7 h-7" fill="none" stroke="currentColor" strokeWidth={1.5}>
@@ -42,8 +42,8 @@ const modules = [
     ),
   },
   {
-    title: "Dimensionamiento",
-    desc: "Tabla comparativa de todos los diámetros estándar para seleccionar el óptimo.",
+    title: "Elegir diámetro",
+    desc: "Compara todos los diámetros estándar y encuentra el óptimo.",
     href: "/dimensionamiento",
     icon: (
       <svg viewBox="0 0 24 24" className="w-7 h-7" fill="none" stroke="currentColor" strokeWidth={1.5}>
@@ -52,8 +52,8 @@ const modules = [
     ),
   },
   {
-    title: "Válvulas de Aire",
-    desc: "Ubicación y dimensionamiento de válvulas de admisión, expulsión y eliminadoras.",
+    title: "Válvulas de aire",
+    desc: "Ubicación y dimensionamiento en los puntos críticos de la línea.",
     href: "/valvulas-aire",
     icon: (
       <svg viewBox="0 0 24 24" className="w-7 h-7" fill="none" stroke="currentColor" strokeWidth={1.5}>
@@ -62,8 +62,8 @@ const modules = [
     ),
   },
   {
-    title: "Mis Proyectos",
-    desc: "Guardar, duplicar, exportar e importar cálculos realizados.",
+    title: "Mis proyectos",
+    desc: "Guarda, organiza y exporta todos tus cálculos.",
     href: "/proyectos",
     icon: (
       <svg viewBox="0 0 24 24" className="w-7 h-7" fill="none" stroke="currentColor" strokeWidth={1.5}>
@@ -142,13 +142,13 @@ export default function Home() {
           <p className="text-xs text-white/40 text-center mb-6">Selecciona segun tu situacion</p>
           <div className="space-y-3">
             {[
-              { situation: "Tengo una linea y quiero saber si la presión llega al final", module: "Tramo Simple (Modo A)", data: "Q, DN, L, P1", href: "/tramo-simple" },
-              { situation: "Quiero saber cuanto caudal puede pasar sin bajar la presion", module: "Tramo Simple (Modo B)", data: "DN, L, P1, P2 minima", href: "/tramo-simple" },
-              { situation: "No se que diámetro usar para un caudal dado", module: "Dimensionamiento", data: "Q, L, P1", href: "/dimensionamiento" },
-              { situation: "Mi linea cambia de diámetro o material en el trayecto", module: "Tuberías en Serie", data: "Q global, tramos con L/DN/C", href: "/en-serie" },
-              { situation: "Quiero saber que clase de tubería aguanta el cierre de una valvula", module: "Golpe de Ariete", data: "V0, D interno, espesor, material, Tc", href: "/golpe-ariete" },
-              { situation: "Tengo una bomba y quiero saber en que punto opera", module: "Punto de Operación", data: "Hg, L, DN, curva de bomba", href: "/bombeo" },
-              { situation: "Necesito ubicar válvulas de aire en una línea", module: "Válvulas de Aire", data: "Q, DN, perfil de cotas", href: "/valvulas-aire" },
+              { situation: "¿La presión llega al final de mi tubería?", module: "Verificar presión (Modo A)", data: "Q, DN, L, P1", href: "/tramo-simple" },
+              { situation: "¿Cuánto caudal puede pasar sin bajar la presión?", module: "Verificar presión (Modo B)", data: "DN, L, P1, P2 mínima", href: "/tramo-simple" },
+              { situation: "No sé qué diámetro usar para mi caudal", module: "Elegir diámetro", data: "Q, L, P1", href: "/dimensionamiento" },
+              { situation: "Mi línea cambia de diámetro o material en el trayecto", module: "Varios tramos", data: "Q global, tramos con L/DN/C", href: "/en-serie" },
+              { situation: "¿Qué clase de tubería aguanta el golpe de cierre de una válvula?", module: "Golpe de ariete", data: "V0, D interno, espesor, material, Tc", href: "/golpe-ariete" },
+              { situation: "¿En qué punto opera mi bomba en este sistema?", module: "Mi bomba", data: "Hg, L, DN, curva de bomba", href: "/bombeo" },
+              { situation: "¿Dónde pongo las válvulas de aire en mi línea?", module: "Válvulas de aire", data: "Q, DN, perfil de cotas", href: "/valvulas-aire" },
             ].map((r) => (
               <Link key={r.module} href={r.href} className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4 bg-white/5 hover:bg-white/10 border border-white/5 rounded-lg px-4 py-3 transition-colors group">
                 <p className="text-sm text-white/80 flex-1 group-hover:text-white">{r.situation}</p>

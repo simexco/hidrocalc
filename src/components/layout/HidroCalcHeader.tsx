@@ -5,13 +5,13 @@ import Link from "next/link";
 import { HelpButton } from "@/components/ui/HelpModal";
 
 const moduleNames: Record<string, string> = {
-  "/tramo-simple": "Analisis de Tramo Simple",
-  "/en-serie": "Tuberías en Serie",
-  "/golpe-ariete": "Golpe de Ariete",
-  "/bombeo": "Punto de Operacion de Bomba",
-  "/dimensionamiento": "Dimensionamiento de Tubería",
-  "/valvulas-aire": "Válvulas de Aire",
-  "/proyectos": "Mis Proyectos",
+  "/tramo-simple": "Verificar presión",
+  "/en-serie": "Línea con varios tramos",
+  "/golpe-ariete": "Golpe de ariete",
+  "/bombeo": "Mi bomba",
+  "/dimensionamiento": "Elegir diámetro",
+  "/valvulas-aire": "Válvulas de aire",
+  "/proyectos": "Mis proyectos",
 };
 
 const moduleHelp: Record<string, { title: string; sections: { title: string; content: string }[] }> = {

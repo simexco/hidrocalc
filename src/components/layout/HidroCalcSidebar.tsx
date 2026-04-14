@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation";
 const modules = [
   {
     href: "/tramo-simple",
-    label: "Tramo Simple",
+    label: "Verificar presión",
     icon: (
       <svg viewBox="0 0 24 24" className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={1.8}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
@@ -15,7 +15,7 @@ const modules = [
   },
   {
     href: "/en-serie",
-    label: "En Serie",
+    label: "Varios tramos",
     icon: (
       <svg viewBox="0 0 24 24" className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={1.8}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M4 12h4m4 0h4m4 0h0M8 12a2 2 0 100-4 2 2 0 000 4zm8 0a2 2 0 100-4 2 2 0 000 4z" />
@@ -24,7 +24,7 @@ const modules = [
   },
   {
     href: "/golpe-ariete",
-    label: "Golpe de Ariete",
+    label: "Golpe de ariete",
     icon: (
       <svg viewBox="0 0 24 24" className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={1.8}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
@@ -33,7 +33,7 @@ const modules = [
   },
   {
     href: "/bombeo",
-    label: "Bombeo",
+    label: "Mi bomba",
     icon: (
       <svg viewBox="0 0 24 24" className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={1.8}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M12 8c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm0 0V4m0 16v-4m8-4h-4M4 12h4" />
@@ -42,7 +42,7 @@ const modules = [
   },
   {
     href: "/dimensionamiento",
-    label: "Dimensionamiento",
+    label: "Elegir diámetro",
     icon: (
       <svg viewBox="0 0 24 24" className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={1.8}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M9 7h6m-6 4h6m-6 4h4M5 3h14a2 2 0 012 2v14a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2z" />
@@ -51,7 +51,7 @@ const modules = [
   },
   {
     href: "/valvulas-aire",
-    label: "Válvulas de Aire",
+    label: "Válvulas de aire",
     icon: (
       <svg viewBox="0 0 24 24" className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={1.8}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M5 15l7-7 7 7" />
