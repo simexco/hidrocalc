@@ -365,7 +365,14 @@ export default function TramoSimplePage() {
             </div>
           </div>
 
-          {/* Accessories handled by SIMEX component below results */}
+          {/* SIMEX Materials — left panel */}
+          <ListaMaterialesSIMEX
+            dnMM={inputs.DN ?? undefined}
+            materialRaw={inputs.materialName}
+            hf={results?.hf ?? undefined}
+            velocidad={results?.V ?? undefined}
+            longitud={inputs.L ?? undefined}
+          />
         </div>
 
         {/* ── RIGHT: Results (60%) ── */}
@@ -535,14 +542,7 @@ export default function TramoSimplePage() {
                   title="Perfil Hidráulico"
                 />
               )}
-              {/* SIMEX Materials */}
-              <ListaMaterialesSIMEX
-                dnMM={inputs.DN ?? undefined}
-                materialRaw={inputs.materialName}
-                hf={results?.hf ?? undefined}
-                velocidad={results?.V ?? undefined}
-                longitud={inputs.L ?? undefined}
-              />
+              {/* SIMEX moved to left panel */}
             </>
           )}
         </div>
