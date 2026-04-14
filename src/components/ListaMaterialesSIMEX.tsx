@@ -595,415 +595,88 @@ export default function ListaMaterialesSIMEX({
 
   if(!dn) return null
 
-  // ── estilos ──────────────────────────────────────────────────
-  const C = {
-    card:  { border:'1px solid var(--color-border-tertiary)', borderRadius:8, overflow:'hidden' as const },
-    hdr:   { background:'var(--color-background-secondary)', padding:'5px 12px', fontSize:10,
-             fontWeight:500 as const, color:'var(--color-text-secondary)',
-             textTransform:'uppercase' as const, letterSpacing:'.06em' },
-    row:   { display:'flex', alignItems:'center', gap:10, padding:'7px 12px',
-             borderBottom:'1px solid var(--color-border-tertiary)' },
-    rowKit:{ display:'flex', alignItems:'center', gap:10, padding:'6px 12px',
-             borderBottom:'1px solid var(--color-border-tertiary)',
-             background:'var(--color-background-secondary)' },
-    btn:   { padding:'6px 12px', borderRadius:6, border:'1px solid var(--color-border-secondary)',
-             background:'var(--color-background-primary)', cursor:'pointer', fontSize:12 },
-    btnOn: { padding:'6px 12px', borderRadius:6, border:'2px solid var(--color-border-info)',
-             background:'var(--color-background-info)', cursor:'pointer', fontSize:12, fontWeight:500 as const },
-    sku:   { fontFamily:'monospace', fontSize:12, color:'var(--color-text-info)', flexShrink:0 },
-    chip:  { display:'inline-flex', alignItems:'center', gap:4, background:'var(--color-background-secondary)',
-             border:'1px solid var(--color-border-tertiary)', borderRadius:6, padding:'3px 8px', fontSize:11 },
-    box:   { padding:'10px 12px', background:'var(--color-background-secondary)', borderRadius:8, marginBottom:10 },
-    lbl:   { fontSize:12, fontWeight:500 as const, marginBottom:8, margin:0 },
-  }
-
   return (
-    <div style={{marginTop:'1.5rem',paddingTop:'1.5rem',borderTop:'1px solid var(--color-border-tertiary)'}}>
-
-      {/* ENCABEZADO */}
-      <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:12}}>
+    <div className="mt-6 pt-5 border-t border-gray-200 dark:border-gray-700">
+      <div className="flex items-start justify-between mb-4">
         <div>
-          <h3 style={{fontSize:15,fontWeight:500,margin:0}}>Accesorios del tramo</h3>
-          <p style={{fontSize:11,color:'var(--color-text-secondary)',margin:'3px 0 0'}}>
-            {accs.length===0
-              ? 'Agrega accesorios para calcular hm real y generar la lista de materiales SIMEX'
-              : `${accs.length} accesorio(s) · hm = ${hmReal} m · ΣLe = ${sumaLe.toFixed(1)} m equiv.`}
+          <h3 className="text-[15px] font-semibold text-gray-800 dark:text-gray-200">Accesorios del tramo</h3>
+          <p className="text-[11px] text-gray-400 mt-0.5">
+            {accs.length===0 ? 'Agrega accesorios para calcular hm real y generar la lista de materiales SIMEX' : `${accs.length} accesorio(s) · hm = ${hmReal} m · ΣLe = ${sumaLe.toFixed(1)} m equiv.`}
           </p>
         </div>
-        <div style={{display:'flex',gap:6,flexShrink:0}}>
-          {accs.length>0 && <button style={C.btn} onClick={clear}>Limpiar ×</button>}
-          <button style={C.btn} onClick={()=>setVisible(v=>!v)}>
-            {visible?'Ocultar ◌':'Mostrar ○'}
-          </button>
+        <div className="flex gap-2 shrink-0">
+          {accs.length>0 && <button onClick={clear} className="text-[11px] text-red-400 hover:text-red-600 px-2 py-1 rounded border border-red-200 hover:border-red-400 transition-colors">Limpiar ×</button>}
+          <button onClick={()=>setVisible(v=>!v)} className="text-[11px] text-gray-400 hover:text-gray-600 px-2 py-1 rounded border border-gray-200 hover:border-gray-400 transition-colors">{visible?'Ocultar':'Mostrar'}</button>
         </div>
       </div>
 
-      {/* SELECTOR ACERO */}
       {esAcero && (
-        <div style={C.box}>
-          <p style={{...C.lbl,marginBottom:8}}>Tipo de conexión — tubería de acero:</p>
-          <div style={{display:'flex',gap:8}}>
+        <div className="mb-3 p-3 bg-yellow-50 dark:bg-yellow-900/10 border border-yellow-200 dark:border-yellow-800 rounded-lg">
+          <p className="text-xs font-medium text-yellow-800 mb-2">Tipo de conexión (tubería de acero):</p>
+          <div className="flex gap-2">
             {(['bridado','roscado','soldado'] as const).map(t=>(
-              <button key={t} style={aceroTipo===t?C.btnOn:C.btn} onClick={()=>setAceroTipo(t)}>
-                {t.charAt(0).toUpperCase()+t.slice(1)}
-              </button>
+              <button key={t} onClick={()=>setAceroTipo(t)} className={`text-xs px-3 py-1.5 rounded-lg transition-colors ${aceroTipo===t?'bg-[#1C3D5A] text-white font-medium':'bg-white border border-gray-200 text-gray-600 hover:border-[#1C3D5A]'}`}>{t.charAt(0).toUpperCase()+t.slice(1)}</button>
             ))}
           </div>
-          {aceroTipo==='roscado' && (
-            <p style={{fontSize:11,color:'var(--color-text-warning)',marginTop:6}}>
-              ⚠ Solo recomendado en DN ≤ 4". Sin kit de brida SIMEX.
-            </p>
-          )}
-          {aceroTipo==='soldado' && (
-            <p style={{fontSize:11,color:'var(--color-text-secondary)',marginTop:6}}>
-              Soldadura directa — sin ABU ni extremidades. Válvulas bridadas requieren bridas de transición.
-            </p>
-          )}
+          {aceroTipo==='roscado' && <p className="text-[10px] text-yellow-700 mt-2">Solo recomendado en DN 4" o menor. Sin kit de brida.</p>}
+          {aceroTipo==='soldado' && <p className="text-[10px] text-gray-500 mt-2">Soldadura directa — sin ABU ni extremidades.</p>}
         </div>
       )}
 
-      {/* BOTONES FUNCIÓN */}
-      <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:8,marginBottom:10}}>
-        {[
-          {k:'codo',   i:'↩',  l:'Cambio dirección', s:'Codo 11°–90°'},
-          {k:'bifurc', i:'⑂',  l:'Bifurcación',       s:'Tee o Cruz'},
-          {k:'secc',   i:'⊕',  l:'Seccionamiento',    s:'5 tipos válvula'},
-          {k:'reducc', i:'▷',  l:'Reducción',          s:'Cambio de DN'},
-          {k:'check',  i:'→|', l:'Antiretorno',        s:'Check / Duo Check'},
-          {k:'fin',    i:'◉',  l:'Fin de línea',       s:`Tapa Ciega ${dn}`},
-        ].map(b=>(
-          <button key={b.k} onClick={()=>setSub(x=>x===b.k?null:b.k)}
-            style={{padding:'11px 8px',borderRadius:8,cursor:'pointer',textAlign:'center',
-              border:sub===b.k?'2px solid var(--color-border-info)':'1px solid var(--color-border-secondary)',
-              background:sub===b.k?'var(--color-background-info)':'var(--color-background-primary)'}}>
-            <div style={{fontSize:18,marginBottom:3}}>{b.i}</div>
-            <div style={{fontSize:11,fontWeight:500}}>{b.l}</div>
-            <div style={{fontSize:10,color:'var(--color-text-secondary)'}}>{b.s}</div>
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-3">
+        {[{k:'codo',i:'↩',l:'Cambio dirección',s:'Codo 11°–90°'},{k:'bifurc',i:'⑂',l:'Bifurcación',s:'Tee o Cruz'},{k:'secc',i:'⊕',l:'Seccionamiento',s:'5 tipos válvula'},{k:'reducc',i:'▷',l:'Reducción',s:'Cambio de DN'},{k:'check',i:'→|',l:'Antiretorno',s:'Check / Duo Check'},{k:'fin',i:'◉',l:'Fin de línea',s:`Tapa Ciega ${dn}`}].map(b=>(
+          <button key={b.k} onClick={()=>setSub(x=>x===b.k?null:b.k)} className={`p-3 rounded-xl border text-center transition-all ${sub===b.k?'border-[#1C3D5A] bg-[#1C3D5A]/5 ring-1 ring-[#1C3D5A]/30 shadow-sm':'border-gray-200 dark:border-gray-600 hover:border-[#1C3D5A]/40 hover:shadow-sm'}`}>
+            <div className="text-xl mb-1">{b.i}</div>
+            <div className="text-[11px] font-semibold text-gray-700 dark:text-gray-300">{b.l}</div>
+            <div className="text-[10px] text-gray-400">{b.s}</div>
           </button>
         ))}
       </div>
 
-      {/* ACCESORIOS DE OBRA */}
-      <div style={{display:'flex',gap:6,alignItems:'center',marginBottom:12,flexWrap:'wrap'}}>
-        <span style={{fontSize:11,color:'var(--color-text-secondary)'}}>Accesorios de obra:</span>
-        <button style={C.btn} onClick={addCople}>⚙ Carrete de desmontaje {dn}</button>
-        <button style={C.btn} onClick={addMarco}>⬜ Marco con tapa AI-MCT-D</button>
+      <div className="flex gap-2 items-center mb-3 flex-wrap">
+        <span className="text-[10px] text-gray-400">Accesorios de obra:</span>
+        <button onClick={addCople} className="text-[10px] px-2.5 py-1 rounded-lg border border-gray-200 dark:border-gray-600 hover:border-[#1C3D5A] hover:bg-[#1C3D5A]/5 transition-colors">⚙ Carrete de desmontaje {dn}</button>
+        <button onClick={addMarco} className="text-[10px] px-2.5 py-1 rounded-lg border border-gray-200 dark:border-gray-600 hover:border-[#1C3D5A] hover:bg-[#1C3D5A]/5 transition-colors">⬜ Marco con tapa AI-MCT-D</button>
       </div>
 
-      {/* SUB — CODO */}
-      {sub==='codo' && (
-        <div style={C.box}>
-          <p style={{...C.lbl,marginBottom:8}}>Ángulo del codo:</p>
-          <div style={{display:'flex',gap:8}}>
-            {['11°','22°','45°','90°'].map(a=>(
-              <button key={a} style={{...C.btn,fontSize:13,fontWeight:500,padding:'8px 18px'}}
-                onClick={()=>addCodo(a.replace('°',''))}>{a}</button>
-            ))}
-          </div>
+      {sub==='codo' && (<div className="bg-gray-50 dark:bg-gray-700 rounded-xl p-4 mb-3 space-y-2"><p className="text-xs font-medium text-gray-600 dark:text-gray-300">Ángulo del codo:</p><div className="flex gap-2">{['11','22','45','90'].map(a=>(<button key={a} onClick={()=>addCodo(a)} className="px-5 py-2.5 text-sm font-medium rounded-lg border border-gray-200 dark:border-gray-600 hover:bg-[#1C3D5A] hover:text-white hover:border-[#1C3D5A] transition-colors">{a}°</button>))}</div></div>)}
+
+      {sub==='bifurc' && (<div className="bg-gray-50 dark:bg-gray-700 rounded-xl p-4 mb-3 space-y-3"><p className="text-xs font-medium text-gray-600 dark:text-gray-300">Tipo de bifurcación:</p><div className="flex gap-2">{[['tee','Tee — 1 ramal (3 bridas)'],['cruz','Cruz — 2 ramales (4 bridas)']].map(([k,l])=>(<button key={k} onClick={()=>setBifTipo(t=>t===k?null:k)} className={`flex-1 p-2.5 rounded-lg border text-left text-xs transition-colors ${bifTipo===k?'border-[#1C3D5A] bg-[#1C3D5A]/5 font-medium':'border-gray-200 dark:border-gray-600 hover:border-[#1C3D5A]'}`}>{l}</button>))}</div>{bifTipo && (<div><p className="text-[11px] text-gray-500 mb-2">¿Ramal igual o reducido?</p><div className="flex flex-wrap gap-1.5"><button onClick={()=>addBif(bifTipo as 'tee'|'cruz',true)} className="px-3 py-1.5 text-xs rounded-lg border border-gray-200 hover:bg-[#1C3D5A] hover:text-white transition-colors">Igual ({dn})</button>{DNS_MENORES.map(d=>(<button key={d} onClick={()=>addBif(bifTipo as 'tee'|'cruz',false,d)} className="px-2.5 py-1 text-[11px] rounded-lg border border-gray-200 hover:bg-[#1C3D5A] hover:text-white transition-colors">{d}</button>))}</div></div>)}</div>)}
+
+      {sub==='secc' && (<div className="bg-gray-50 dark:bg-gray-700 rounded-xl p-4 mb-3 space-y-2"><p className="text-xs font-medium text-gray-600 dark:text-gray-300">Tipo de válvula:</p><div className="grid grid-cols-2 sm:grid-cols-3 gap-2">{(['vcg-r','vcg-b','vmb-c','vmb-dex','vmb-w'] as const).map(tipo=>{const disp=!!VALV[tipo]?.[dn];return(<button key={tipo} disabled={!disp} onClick={()=>disp&&addValv(tipo)} className={`p-2.5 rounded-lg border text-center transition-all ${disp?'border-gray-200 hover:border-[#1C3D5A] hover:shadow-sm cursor-pointer':'border-gray-100 opacity-40 cursor-not-allowed'}`}><div className="text-xs font-semibold text-gray-700 dark:text-gray-300">{VALV_LABEL[tipo]}</div><div className="text-[9px] text-gray-400 mt-0.5">{VALV_NORMA[tipo]}</div><div className="text-[9px] text-gray-400">{VALV_RANGO[tipo]}</div>{!disp && <div className="text-[9px] text-red-400 mt-1">No disponible en {dn}</div>}</button>)})}</div></div>)}
+
+      {sub==='reducc' && (<div className="bg-gray-50 dark:bg-gray-700 rounded-xl p-4 mb-3 space-y-3"><p className="text-xs font-medium text-gray-600 dark:text-gray-300">¿Cómo reduce este tramo?</p><div className="grid grid-cols-3 gap-2">{[['linea','En línea','Cambio DN'],['deriv','Derivación','Tee reducida'],['bifurca','Bifurca + reduce','Tee + Red.']].map(([k,l,s])=>(<button key={k} onClick={()=>setRedTipo(r=>r===k?null:k)} className={`p-2 rounded-lg border text-left text-xs transition-colors ${redTipo===k?'border-[#1C3D5A] bg-[#1C3D5A]/5 font-medium':'border-gray-200 dark:border-gray-600 hover:border-[#1C3D5A]'}`}><span className="font-semibold block">{l}</span><span className="text-[10px] text-gray-400">{s}</span></button>))}</div>{redTipo && (<div className="flex flex-wrap gap-1.5">{DNS_MENORES.map(d=>(<button key={d} onClick={()=>addReduc(redTipo,d)} className="px-3 py-1.5 text-xs rounded-lg border border-gray-200 hover:bg-[#1C3D5A] hover:text-white transition-colors">{d}</button>))}</div>)}</div>)}
+
+      {sub==='check' && (<div className="bg-gray-50 dark:bg-gray-700 rounded-xl p-4 mb-3"><p className="text-xs font-medium text-gray-600 dark:text-gray-300 mb-2">Tipo de check:</p><div className="grid grid-cols-2 gap-2"><button onClick={()=>addCheck('check')} className="p-3 rounded-lg border border-gray-200 hover:border-[#1C3D5A] text-left transition-colors"><span className="text-xs font-semibold block">Check Resilente C508</span><span className="text-[9px] text-gray-400">2 bridas · 250 PSI</span></button><button onClick={()=>addCheck('duo-check')} className="p-3 rounded-lg border border-gray-200 hover:border-[#1C3D5A] text-left transition-colors"><span className="text-xs font-semibold block">Duo Check Wafer</span><span className="text-[9px] text-gray-400">Entre bridas · 150 PSI</span></button></div></div>)}
+
+      {sub==='fin' && (<div className="bg-gray-50 dark:bg-gray-700 rounded-xl p-4 mb-3"><button onClick={addFin} className="px-4 py-2 text-xs font-medium rounded-lg border border-gray-200 hover:bg-[#1C3D5A] hover:text-white transition-colors">Agregar Tapa Ciega HD {dn} — {TAPA[dn]||'confirmar SKU'}</button></div>)}
+
+      {accs.length>0 && (<div className="flex flex-wrap gap-1.5 mb-3">{accs.map(a=>(<span key={a.id} className="text-[11px] bg-[#E9EFF5] text-[#1C3D5A] px-2.5 py-1 rounded-lg flex items-center gap-1.5 font-medium">{a.label} ×{a.qty}<button onClick={()=>del(a.id)} className="text-[#1C3D5A]/40 hover:text-red-500 transition-colors">✕</button></span>))}</div>)}
+
+      {sugEnterrada && (<div onClick={addMarco} className="p-3 bg-yellow-50 dark:bg-yellow-900/10 border border-yellow-200 rounded-lg mb-3 text-xs text-yellow-700 cursor-pointer hover:bg-yellow-100 transition-colors">💡 ¿Esta válvula va enterrada? → Clic para agregar Marco con Tapa Dúctil AI-MCT-D</div>)}
+
+      {visible && (<div className="space-y-3">
+        {kitData && (<div className="flex items-center gap-3 flex-wrap"><span className="text-xs text-gray-500">Kit de conexión:</span><div className="flex rounded-lg border border-gray-200 dark:border-gray-600 overflow-hidden"><button onClick={()=>setOpcion('A')} className={`px-4 py-1.5 text-xs transition-colors ${opcion==='A'?'bg-[#1C3D5A] text-white font-medium':'bg-white dark:bg-gray-800 text-gray-600 hover:bg-gray-50'}`}>A — ABU</button><button onClick={()=>!noABU&&setOpcion('B')} disabled={noABU} className={`px-4 py-1.5 text-xs transition-colors ${noABU?'opacity-40 cursor-not-allowed':'cursor-pointer'} ${opcion==='B'?'bg-[#1C3D5A] text-white font-medium':'bg-white dark:bg-gray-800 text-gray-600 hover:bg-gray-50'}`}>B — Ext + Gibault</button></div>{noABU && <span className="text-[10px] text-gray-400">Sin ABU — solo Opción B</span>}</div>)}
+
+        <div className="rounded-xl border border-[#1C3D5A]/20 overflow-hidden simex-print-area">
+          {piezasPrinc.length>0 && (<><div className="bg-[#1C3D5A] px-4 py-2 text-[10px] font-semibold text-white uppercase tracking-wider">Piezas principales</div>{piezasPrinc.map(a=>(<div key={a.id} className="flex items-center gap-3 px-4 py-2.5 border-b border-gray-100 dark:border-gray-700"><span className="font-mono text-xs text-[#1C3D5A] dark:text-blue-300 w-28 shrink-0">{a.sku}</span><span className="flex-1 text-[13px] font-medium text-gray-700 dark:text-gray-300">{a.label}</span><span className="text-sm font-semibold text-gray-600 w-8 text-center">×{a.qty}</span><span className="text-[10px] text-gray-400 w-20 text-right">{a.norma}</span>{a.isWafer && <span className="text-[10px] text-yellow-600 bg-yellow-100 px-1.5 py-0.5 rounded">⚠ wafer</span>}</div>))}</>)}
+
+          {kitItems.length>0 && (<><div className="bg-gray-100 dark:bg-gray-700 px-4 py-2 text-[10px] font-semibold text-gray-500 uppercase tracking-wider">Kit de conexión — {opcion==='A'?'Adaptador Bridado Universal':'Extremidad + Gibault'}{totalBridas>0?` · ${totalBridas} bridas totales`:' · (agregar accesorios)'}</div>{kitItems.map((k,i)=>(<div key={i} className="flex items-center gap-3 px-4 py-2 border-b border-gray-50 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/30"><span className="font-mono text-xs text-[#1C3D5A]/70 w-28 shrink-0">{k.sku}</span><span className="flex-1 text-xs text-gray-500">{k.desc}</span><span className="text-xs font-medium text-gray-500 w-8 text-center">{k.qty===0?'×?':`×${k.qty}`}</span><span className="text-[10px] text-gray-400 w-20 text-right">{k.norma}</span></div>))}</>)}
+
+          {piezasObra.length>0 && (<><div className="bg-blue-50 dark:bg-blue-900/10 px-4 py-2 text-[10px] font-semibold text-blue-500 uppercase tracking-wider">Accesorios de obra</div>{piezasObra.map(a=>(<div key={a.id} className="flex items-center gap-3 px-4 py-2 border-b border-blue-100 dark:border-blue-900/20 bg-blue-50/50"><span className="font-mono text-xs text-blue-600 w-28 shrink-0">{a.sku}</span><span className="flex-1 text-xs text-blue-700">{a.label}</span><span className="text-xs font-medium w-8 text-center">×{a.qty}</span><span className="text-[10px] text-blue-400 w-20 text-right">{a.norma}</span></div>))}</>)}
+
+          {detalleHm.length>0 && (<><div className="bg-gray-100 dark:bg-gray-700 px-4 py-2 text-[10px] font-semibold text-gray-500 uppercase tracking-wider">Pérdidas por accesorio — Crane TP-410 / AWWA</div><div className="px-4 py-2"><table className="w-full text-[11px]"><thead><tr className="border-b border-gray-200 text-gray-400"><th className="text-left px-1 py-1 font-medium">Accesorio</th><th className="text-center px-1 py-1 font-medium">Le/D</th><th className="text-center px-1 py-1 font-medium">Le (m)</th><th className="text-center px-1 py-1 font-medium">ΔhF (m)</th></tr></thead><tbody>{detalleHm.map((d,i)=>(<tr key={i} className="border-b border-gray-100"><td className="px-1 py-1 text-gray-600">{d.label}</td><td className="px-1 py-1 text-center text-gray-400 font-mono">{d.leD}</td><td className="px-1 py-1 text-center font-mono">{d.Le.toFixed(2)}</td><td className="px-1 py-1 text-center font-mono text-red-500">{d.dH.toFixed(3)}</td></tr>))}<tr className="border-t-2 border-gray-300 font-semibold"><td className="px-1 py-1.5">TOTAL</td><td></td><td className="px-1 py-1.5 text-center font-mono">{sumaLe.toFixed(2)}</td><td className="px-1 py-1.5 text-center font-mono text-red-500">{hmReal}</td></tr></tbody></table><p className="text-[9px] text-gray-400 mt-1">hm = J × ΣLe · J = hf/L = {hf&&L_m?(hf/L_m).toFixed(4):'—'} m/m</p></div></>)}
+
+          {accs.length===0 && (<div className="p-8 text-center text-gray-400 text-sm">Agrega accesorios para ver la lista de materiales SIMEX</div>)}
         </div>
-      )}
 
-      {/* SUB — BIFURCACIÓN */}
-      {sub==='bifurc' && (
-        <div style={C.box}>
-          <p style={{...C.lbl,marginBottom:8}}>Tipo de bifurcación:</p>
-          <div style={{display:'flex',gap:8,marginBottom:10}}>
-            <button style={bifTipo==='tee'?C.btnOn:C.btn} onClick={()=>setBifTipo(t=>t==='tee'?null:'tee')}>
-              Tee — 1 ramal (3 bridas)
-            </button>
-            <button style={bifTipo==='cruz'?C.btnOn:C.btn} onClick={()=>setBifTipo(t=>t==='cruz'?null:'cruz')}>
-              Cruz — 2 ramales (4 bridas)
-            </button>
-          </div>
-          {bifTipo && (
-            <>
-              <p style={{fontSize:11,marginBottom:6}}>¿El ramal es igual DN o reducido?</p>
-              <div style={{display:'flex',gap:6,flexWrap:'wrap'}}>
-                <button style={C.btn} onClick={()=>addBif(bifTipo as 'tee'|'cruz',true)}>
-                  Igual {dn}
-                </button>
-                {DNS_MENORES.map(d=>(
-                  <button key={d} style={C.btn} onClick={()=>addBif(bifTipo as 'tee'|'cruz',false,d)}>
-                    Ramal {d}
-                  </button>
-                ))}
-              </div>
-            </>
-          )}
+        <div className="flex gap-2 flex-wrap">
+          <button onClick={()=>window.print()} className="px-4 py-2 rounded-lg bg-[#1C3D5A] text-white text-xs font-medium hover:bg-[#0F2438] transition-colors shadow-sm">Generar PDF para distribuidor</button>
+          <button onClick={()=>{const lines=['SKU\tDescripción\tCantidad\tNorma'];piezasPrinc.forEach(a=>lines.push(`${a.sku}\t${a.label}\t${a.qty}\t${a.norma}`));kitItems.forEach(k=>lines.push(`${k.sku}\t${k.desc}\t${k.qty||'?'}\t${k.norma}`));piezasObra.forEach(a=>lines.push(`${a.sku}\t${a.label}\t${a.qty}\t${a.norma}`));navigator.clipboard.writeText(lines.join('\n')).then(()=>alert('Lista copiada'))}} className="px-4 py-2 rounded-lg border border-gray-200 text-xs text-gray-600 hover:bg-gray-50 transition-colors">Copiar SKUs</button>
         </div>
-      )}
 
-      {/* SUB — SECCIONAMIENTO */}
-      {sub==='secc' && (
-        <div style={C.box}>
-          <p style={{...C.lbl,marginBottom:8}}>Tipo de válvula de seccionamiento:</p>
-          <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:8}}>
-            {(['vcg-r','vcg-b','vmb-c','vmb-dex','vmb-w'] as const).map(tipo=>{
-              const disp=!!VALV[tipo]?.[dn]
-              return (
-                <button key={tipo} disabled={!disp}
-                  onClick={()=>disp&&addValv(tipo)}
-                  style={{...C.btn,padding:'10px 8px',textAlign:'center',
-                    opacity:disp?1:0.38,cursor:disp?'pointer':'not-allowed'}}>
-                  <div style={{fontWeight:500,marginBottom:2}}>{VALV_LABEL[tipo]}</div>
-                  <div style={{fontSize:10,color:'var(--color-text-secondary)'}}>{VALV_NORMA[tipo]}</div>
-                  <div style={{fontSize:10,color:'var(--color-text-secondary)'}}>{VALV_RANGO[tipo]}</div>
-                  {!disp && (
-                    <div style={{fontSize:10,color:'var(--color-text-danger)',marginTop:3}}>
-                      No disponible en {dn}
-                    </div>
-                  )}
-                </button>
-              )
-            })}
-          </div>
-        </div>
-      )}
-
-      {/* SUB — REDUCCIÓN */}
-      {sub==='reducc' && (
-        <div style={C.box}>
-          <p style={{...C.lbl,marginBottom:8}}>¿Cómo reduce este tramo?</p>
-          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:8,marginBottom:10}}>
-            {[
-              {k:'linea',   l:'En línea',            d:`La línea ${dn} cambia de DN`},
-              {k:'deriv',   l:'Derivación reducida',  d:`Línea ${dn} sigue + ramal menor`},
-              {k:'bifurca', l:'Bifurca igual + reduce',d:'Tee igual y luego reduce'},
-            ].map(o=>(
-              <button key={o.k} style={redTipo===o.k?C.btnOn:C.btn}
-                onClick={()=>setRedTipo(r=>r===o.k?null:o.k)}>
-                <div style={{fontWeight:500}}>{o.l}</div>
-                <div style={{fontSize:10,color:'var(--color-text-secondary)'}}>{o.d}</div>
-              </button>
-            ))}
-          </div>
-          {redTipo && (
-            <>
-              <p style={{fontSize:11,marginBottom:6}}>DN de reducción:</p>
-              <div style={{display:'flex',gap:6,flexWrap:'wrap'}}>
-                {DNS_MENORES.map(d=>(
-                  <button key={d} style={C.btn} onClick={()=>addReduc(redTipo,d)}>{d}</button>
-                ))}
-              </div>
-            </>
-          )}
-        </div>
-      )}
-
-      {/* SUB — CHECK */}
-      {sub==='check' && (
-        <div style={C.box}>
-          <p style={{...C.lbl,marginBottom:8}}>Tipo de válvula check:</p>
-          <div style={{display:'flex',gap:8}}>
-            <button style={{...C.btn,padding:'10px 16px'}} onClick={()=>addCheck('check')}>
-              <div style={{fontWeight:500}}>Check Resilente C508</div>
-              <div style={{fontSize:10,color:'var(--color-text-secondary)'}}>2"–16" · 250 PSI · con bridas</div>
-            </button>
-            <button style={{...C.btn,padding:'10px 16px'}} onClick={()=>addCheck('duo-check')}>
-              <div style={{fontWeight:500}}>Duo Check Wafer</div>
-              <div style={{fontSize:10,color:'var(--color-text-secondary)'}}>2"–36" · 150 PSI · entre bridas ⚠</div>
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* SUB — FIN LÍNEA */}
-      {sub==='fin' && (
-        <div style={C.box}>
-          <button style={{...C.btn,padding:'8px 16px'}} onClick={addFin}>
-            Agregar Tapa Ciega HD {dn} — {TAPA[dn]??'← confirmar SKU'}
-          </button>
-        </div>
-      )}
-
-      {/* CHIPS ACCESORIOS AGREGADOS */}
-      {accs.length>0 && (
-        <div style={{display:'flex',flexWrap:'wrap',gap:6,marginBottom:12}}>
-          {accs.map(a=>(
-            <span key={a.id} style={C.chip}>
-              {a.label} ×{a.qty}
-              <button onClick={()=>del(a.id)}
-                style={{background:'none',border:'none',cursor:'pointer',fontSize:13,padding:0,
-                  color:'var(--color-text-secondary)'}}>×</button>
-            </span>
-          ))}
-        </div>
-      )}
-
-      {/* SUGERENCIA ENTERRADA */}
-      {sugEnterrada && (
-        <div onClick={addMarco}
-          style={{padding:'8px 12px',background:'var(--color-background-warning)',borderRadius:6,
-            marginBottom:10,fontSize:12,color:'var(--color-text-warning)',cursor:'pointer'}}>
-          💡 ¿Esta válvula va enterrada? → Clic para agregar Marco con Tapa Dúctil AI-MCT-D
-        </div>
-      )}
-
-      {/* LISTA DE MATERIALES */}
-      {visible && (
-        <div>
-          {/* TOGGLE A / B */}
-          {kitData && (
-            <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:10,flexWrap:'wrap'}}>
-              <span style={{fontSize:12,color:'var(--color-text-secondary)'}}>Kit de conexión:</span>
-              <div style={{display:'flex',border:'1px solid var(--color-border-secondary)',
-                borderRadius:6,overflow:'hidden'}}>
-                <button onClick={()=>setOpcion('A')}
-                  style={{padding:'4px 14px',fontSize:12,border:'none',cursor:'pointer',
-                    background:opcion==='A'?'var(--color-text-primary)':'var(--color-background-primary)',
-                    color:opcion==='A'?'var(--color-background-primary)':'var(--color-text-primary)'}}>
-                  A — ABU
-                </button>
-                <button onClick={()=>!noABU&&setOpcion('B')} disabled={noABU}
-                  style={{padding:'4px 14px',fontSize:12,border:'none',
-                    cursor:noABU?'not-allowed':'pointer',opacity:noABU?0.38:1,
-                    background:opcion==='B'?'var(--color-text-primary)':'var(--color-background-primary)',
-                    color:opcion==='B'?'var(--color-background-primary)':'var(--color-text-primary)'}}>
-                  B — Ext + Gibault
-                </button>
-              </div>
-              {noABU && (
-                <span style={{fontSize:11,color:'var(--color-text-secondary)'}}>
-                  Sin ABU para este material — usando solo Opción B
-                </span>
-              )}
-            </div>
-          )}
-
-          {/* TABLA */}
-          <div style={C.card}>
-
-            {piezasPrinc.length>0 && (
-              <>
-                <div style={C.hdr}>Piezas principales</div>
-                {piezasPrinc.map(a=>(
-                  <div key={a.id} style={C.row}>
-                    <span style={C.sku}>{a.sku}</span>
-                    <span style={{flex:1,fontSize:13,fontWeight:500}}>{a.label}</span>
-                    <span style={{minWidth:28,textAlign:'center',fontWeight:500}}>×{a.qty}</span>
-                    <span style={{fontSize:10,color:'var(--color-text-secondary)',
-                      minWidth:75,textAlign:'right'}}>{a.norma}</span>
-                    {a.isWafer && (
-                      <span style={{fontSize:10,color:'var(--color-text-warning)'}}>⚠ wafer</span>
-                    )}
-                  </div>
-                ))}
-              </>
-            )}
-
-            {kitItems.length>0 && (
-              <>
-                <div style={C.hdr}>
-                  Kit de conexión — {opcion==='A'?'Adaptador Bridado Universal':'Extremidad + Gibault'}
-                  {totalBridas>0?` · ${totalBridas} bridas totales`:' · (agregar accesorios para calcular cantidad)'}
-                </div>
-                {kitItems.map((k,i)=>(
-                  <div key={i} style={C.rowKit}>
-                    <span style={C.sku}>{k.sku}</span>
-                    <span style={{flex:1,fontSize:12,color:'var(--color-text-secondary)'}}>{k.desc}</span>
-                    <span style={{minWidth:28,textAlign:'center',fontSize:12,fontWeight:500}}>
-                      {k.qty===0?'×?':`×${k.qty}`}
-                    </span>
-                    <span style={{fontSize:10,color:'var(--color-text-secondary)',
-                      minWidth:75,textAlign:'right'}}>{k.norma}</span>
-                  </div>
-                ))}
-              </>
-            )}
-
-            {piezasObra.length>0 && (
-              <>
-                <div style={C.hdr}>Accesorios de obra</div>
-                {piezasObra.map(a=>(
-                  <div key={a.id} style={{...C.row,background:'var(--color-background-info)',opacity:.9}}>
-                    <span style={C.sku}>{a.sku}</span>
-                    <span style={{flex:1,fontSize:12}}>{a.label}</span>
-                    <span style={{minWidth:28,textAlign:'center',fontWeight:500}}>×{a.qty}</span>
-                    <span style={{fontSize:10,color:'var(--color-text-secondary)',
-                      minWidth:75,textAlign:'right'}}>{a.norma}</span>
-                  </div>
-                ))}
-              </>
-            )}
-
-            {/* TABLA PÉRDIDAS HIDRÁULICAS */}
-            {detalleHm.length>0 && (
-              <>
-                <div style={C.hdr}>Pérdidas por accesorio — Crane TP-410 / AWWA</div>
-                <div style={{padding:'8px 12px'}}>
-                  <table style={{width:'100%',borderCollapse:'collapse',fontSize:12}}>
-                    <thead>
-                      <tr style={{borderBottom:'1px solid var(--color-border-tertiary)'}}>
-                        {['Accesorio','Le/D','Le (m)','ΔhF (m)'].map(h=>(
-                          <th key={h} style={{textAlign:h==='Accesorio'?'left':'center',
-                            padding:'4px 6px',fontSize:10,fontWeight:500,
-                            color:'var(--color-text-secondary)'}}>{h}</th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {detalleHm.map((d,i)=>(
-                        <tr key={i} style={{borderBottom:'1px solid var(--color-border-tertiary)'}}>
-                          <td style={{padding:'4px 6px'}}>{d.label}</td>
-                          <td style={{padding:'4px 6px',textAlign:'center',
-                            color:'var(--color-text-secondary)'}}>{d.leD}</td>
-                          <td style={{padding:'4px 6px',textAlign:'center',
-                            fontFamily:'monospace'}}>{d.Le.toFixed(2)}</td>
-                          <td style={{padding:'4px 6px',textAlign:'center',
-                            fontFamily:'monospace',color:'var(--color-text-danger)'}}>{d.dH.toFixed(3)}</td>
-                        </tr>
-                      ))}
-                      <tr style={{borderTop:'2px solid var(--color-border-secondary)',fontWeight:500}}>
-                        <td style={{padding:'5px 6px'}}>TOTAL</td>
-                        <td/>
-                        <td style={{padding:'5px 6px',textAlign:'center',
-                          fontFamily:'monospace'}}>{sumaLe.toFixed(2)}</td>
-                        <td style={{padding:'5px 6px',textAlign:'center',
-                          fontFamily:'monospace',color:'var(--color-text-danger)'}}>{hmReal}</td>
-                      </tr>
-                    </tbody>
-                  </table>
-                  <p style={{fontSize:10,color:'var(--color-text-secondary)',marginTop:4}}>
-                    {'hm = J × ΣLe · J = hf/L = '}
-                    {hf&&L_m?(hf/L_m).toFixed(4):'—'}
-                    {' m/m · Le = (Le/D) × D(m) × cant.'}
-                  </p>
-                </div>
-              </>
-            )}
-
-            {accs.length===0 && (
-              <div style={{padding:'2rem',textAlign:'center',
-                color:'var(--color-text-secondary)',fontSize:13}}>
-                Agrega accesorios para ver la lista de materiales SIMEX
-              </div>
-            )}
-          </div>
-
-          {/* BOTONES */}
-          <div style={{display:'flex',gap:8,marginTop:10,flexWrap:'wrap'}}>
-            <button
-              onClick={()=>window.print()}
-              style={{padding:'8px 16px',borderRadius:6,border:'none',cursor:'pointer',fontWeight:500,
-                background:'var(--color-text-primary)',color:'var(--color-background-primary)',fontSize:13}}>
-              Generar PDF para distribuidor
-            </button>
-            <button style={C.btn} onClick={()=>{
-              const lines=['SKU\tDescripción\tCantidad\tNorma']
-              piezasPrinc.forEach(a=>lines.push(`${a.sku}\t${a.label}\t${a.qty}\t${a.norma}`))
-              kitItems.forEach(k=>lines.push(`${k.sku}\t${k.desc}\t${k.qty||'?'}\t${k.norma}`))
-              piezasObra.forEach(a=>lines.push(`${a.sku}\t${a.label}\t${a.qty}\t${a.norma}`))
-              navigator.clipboard.writeText(lines.join('\n')).then(()=>alert('Lista copiada'))
-            }}>Copiar SKUs</button>
-          </div>
-
-          <p style={{fontSize:10,color:'var(--color-text-secondary)',marginTop:8,paddingTop:8,
-            borderTop:'1px solid var(--color-border-tertiary)'}}>
-            ℹ Para hidrantes, collarines de toma y medidores, consultar con tu distribuidor SIMEX. ·
-            GDL 33 3145-2626 · CDMX 55 2124-0024 · MTY 818 3377-4448 · MÉR 999 983-6089 · simexco.com.mx
-          </p>
-        </div>
-      )}
+        <p className="text-[9px] text-gray-400 pt-2 border-t border-gray-100">ℹ Para hidrantes, collarines de toma y medidores, consultar con tu distribuidor SIMEX. · GDL 33 3145-2626 · CDMX 55 2124-0024 · MTY 818 3377-4448 · MÉR 999 983-6089 · simexco.com.mx</p>
+      </div>)}
     </div>
   )
 }
