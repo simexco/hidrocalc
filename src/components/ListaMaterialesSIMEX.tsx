@@ -484,10 +484,6 @@ export default function ListaMaterialesSIMEX({
   const kitData = KIT[kitKey] ?? null
   const esAcero = matCat === 'Acero'
 
-  // Debug temporal
-  if (typeof window !== 'undefined') {
-    console.log('[SIMEX DEBUG]', { dnMM, dn, matCat, kitKey, kitDataExists: !!kitData })
-  }
 
   const [accs,         setAccs]         = useState<Acc[]>([])
   const [opcion,       setOpcion]       = useState<'A'|'B'>('A')
@@ -591,11 +587,6 @@ export default function ListaMaterialesSIMEX({
     }
     if(kitData.em) kitItems.push({sku:kitData.em, desc:`Empaque DN ${dn}`, qty:totalBridas, norma:'—'})
     if(kitData.t)  kitItems.push({sku:kitData.t,  desc:`Tornillo DN ${dn}`, qty:totalBridas*(kitData.b??8), norma:'—'})
-  }
-
-  // Debug 2
-  if (typeof window !== 'undefined' && accs.length > 0) {
-    console.log('[SIMEX KIT]', { totalBridas, kitItemsCount: kitItems.length, needsKit, accs: accs.map(a=>({label:a.label,bridas:a.bridas,isWafer:a.isWafer,isObra:a.isObra})) })
   }
 
   const piezasPrinc = accs.filter(a=>!a.isObra)
