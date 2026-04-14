@@ -10,8 +10,7 @@ import { DataStatusBanner } from "@/components/ui/DataStatusBanner";
 import { HydraulicProfileChart } from "@/components/hydraulic/HydraulicProfileChart";
 import { DiameterComparisonTable } from "@/components/hydraulic/DiameterComparisonTable";
 import { ExportPDFButton } from "@/components/ui/ExportPDFButton";
-import { AccesoriosSection, MaterialesSIMEXTable } from "@/components/ListaMaterialesSIMEX";
-import { type AccesorioCalc, calcHmReal } from "@/hooks/useSIMEXKit";
+import ListaMaterialesSIMEX from "@/components/ListaMaterialesSIMEX";
 import { calculateHazenWilliams, findMaxFlow, compareDiameters } from "@/lib/calculations/hazen-williams";
 import { flowToM3s, m3sToFlow, formatNumber, mcaToKgcm2 } from "@/lib/calculations/conversions";
 import { STANDARD_DNS, STANDARD_DNS_LABELED, MATERIALS, DEFAULTS } from "@/lib/constants";
@@ -20,8 +19,7 @@ import type { CalcMode, FlowUnit, AssumedValue, Alert } from "@/types/hydraulic"
 
 export default function TramoSimplePage() {
   const { inputs, results, setInput, setResults } = useSinglePipeStore();
-  const [simexAccesorios, setSimexAccesorios] = useState<AccesorioCalc[]>([]);
-  const [hideSimexList, setHideSimexList] = useState(false);
+  // SIMEX component handles its own state internally
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
   const persistRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
@@ -62,22 +60,13 @@ export default function TramoSimplePage() {
       }
       const Q = flowToM3s(rawQ, flowUnit);
       const D = DN / 1000;
-      const hasAccesorios = simexAccesorios.length > 0;
-
-      // Calculate base result without fittings to get hf first
       const result = calculateHazenWilliams({
-        Q, D, L, C, P1, z1, z2, useEstimatedHm: !hasAccesorios,
+        Q, D, L, C, P1, z1, z2, useEstimatedHm: true,
       });
 
-      // If user added accessories, calculate real hm using Le/D method
       let hm = result.hm;
       let hmEstimated = result.hmEstimated;
-      if (hasAccesorios) {
-        hm = calcHmReal(simexAccesorios, L, D, result.hf);
-        hmEstimated = false;
-      }
 
-      // Recalculate H2 and P2 with real hm
       let H1 = result.H1;
       let H2 = result.H2;
       let P2 = result.P2;
@@ -90,7 +79,7 @@ export default function TramoSimplePage() {
         P2_kPa = P2 * 9.81;
       }
 
-      if (!hasAccesorios && hmEstimated) {
+      if (hmEstimated) {
         assumed.push({ field: "hm", value: hm, label: `Accesorios asumidos: hm = 10% de hf (${formatNumber(hm, 3)} m)` });
       }
 
@@ -161,7 +150,7 @@ export default function TramoSimplePage() {
         Qmax: null, diameterComparison: rows, recommendedDN,
       });
     }
-  }, [inputs, simexAccesorios, setResults]);
+  }, [inputs, setResults]);
 
   useEffect(() => {
     clearTimeout(debounceRef.current);
@@ -376,17 +365,7 @@ export default function TramoSimplePage() {
             </div>
           </div>
 
-          {/* Accessories section — Mode A */}
-          {inputs.mode === "A" && inputs.DN && (
-            <AccesoriosSection
-              dnMm={inputs.DN}
-              materialName={inputs.materialName}
-              accesorios={simexAccesorios}
-              onAddAccesorio={(acc) => setSimexAccesorios((prev) => [...prev, acc])}
-              onRemoveAccesorio={(id) => setSimexAccesorios((prev) => prev.filter((a) => a.id !== id))}
-              onClearAll={() => setSimexAccesorios([])}
-            />
-          )}
+          {/* Accessories handled by SIMEX component below results */}
         </div>
 
         {/* ── RIGHT: Results (60%) ── */}
@@ -556,18 +535,14 @@ export default function TramoSimplePage() {
                   title="Perfil Hidráulico"
                 />
               )}
-              {/* SIMEX Materials Table */}
-              {inputs.DN && simexAccesorios.length > 0 && (
-                <MaterialesSIMEXTable
-                  dnMm={inputs.DN}
-                  materialName={inputs.materialName}
-                  accesorios={simexAccesorios}
-                  hidden={hideSimexList}
-                  onToggleHidden={() => setHideSimexList(!hideSimexList)}
-                  hf={results?.hf ?? undefined}
-                  longitud={inputs.L ?? undefined}
-                />
-              )}
+              {/* SIMEX Materials */}
+              <ListaMaterialesSIMEX
+                dnMM={inputs.DN ?? undefined}
+                materialRaw={inputs.materialName}
+                hf={results?.hf ?? undefined}
+                velocidad={results?.V ?? undefined}
+                longitud={inputs.L ?? undefined}
+              />
             </>
           )}
         </div>
