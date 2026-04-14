@@ -10,7 +10,7 @@ import { DataStatusBanner } from "@/components/ui/DataStatusBanner";
 import { HydraulicProfileChart } from "@/components/hydraulic/HydraulicProfileChart";
 import { DiameterComparisonTable } from "@/components/hydraulic/DiameterComparisonTable";
 import { ExportPDFButton } from "@/components/ui/ExportPDFButton";
-import ListaMaterialesSIMEX from "@/components/ListaMaterialesSIMEX";
+import ListaMaterialesSIMEX, { type SIMEXAcc } from "@/components/ListaMaterialesSIMEX";
 import { calculateHazenWilliams, findMaxFlow, compareDiameters } from "@/lib/calculations/hazen-williams";
 import { flowToM3s, m3sToFlow, formatNumber, mcaToKgcm2 } from "@/lib/calculations/conversions";
 import { STANDARD_DNS, STANDARD_DNS_LABELED, MATERIALS, DEFAULTS } from "@/lib/constants";
@@ -19,7 +19,7 @@ import type { CalcMode, FlowUnit, AssumedValue, Alert } from "@/types/hydraulic"
 
 export default function TramoSimplePage() {
   const { inputs, results, setInput, setResults } = useSinglePipeStore();
-  // SIMEX component handles its own state internally
+  const [simexAccs, setSimexAccs] = useState<SIMEXAcc[]>([]);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
   const persistRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
@@ -365,7 +365,18 @@ export default function TramoSimplePage() {
             </div>
           </div>
 
-          {/* SIMEX in right panel */}
+          {/* SIMEX Selector — left panel */}
+          {inputs.DN && (
+            <ListaMaterialesSIMEX
+              mode="selector"
+              dnMM={inputs.DN ?? undefined}
+              materialRaw={inputs.materialName}
+              hf={results?.hf ?? undefined}
+              longitud={inputs.L ?? undefined}
+              externalAccs={simexAccs}
+              onAccsChange={setSimexAccs}
+            />
+          )}
         </div>
 
         {/* ── RIGHT: Results (60%) ── */}
@@ -535,14 +546,18 @@ export default function TramoSimplePage() {
                   title="Perfil Hidráulico"
                 />
               )}
-              {/* SIMEX Materials */}
-              <ListaMaterialesSIMEX
-                dnMM={inputs.DN ?? undefined}
-                materialRaw={inputs.materialName}
-                hf={results?.hf ?? undefined}
-                velocidad={results?.V ?? undefined}
-                longitud={inputs.L ?? undefined}
-              />
+              {/* SIMEX Materials Table — right panel */}
+              {inputs.DN && simexAccs.length > 0 && (
+                <ListaMaterialesSIMEX
+                  mode="table"
+                  dnMM={inputs.DN ?? undefined}
+                  materialRaw={inputs.materialName}
+                  hf={results?.hf ?? undefined}
+                  longitud={inputs.L ?? undefined}
+                  externalAccs={simexAccs}
+                  onAccsChange={setSimexAccs}
+                />
+              )}
             </>
           )}
         </div>
