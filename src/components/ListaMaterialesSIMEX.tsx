@@ -461,11 +461,33 @@ export default function ListaMaterialesSIMEX({
   dnMM, dnStr, materialRaw, hf, longitud, onHmChange
 }: Props) {
 
-  const dn     = dnStr ?? (dnMM ? DN_MM[dnMM] ?? '' : '')
+  // Resolver DN — acepta número en mm O string con comillas
+  let dn = ''
+  if (dnStr) {
+    dn = dnStr
+  } else if (dnMM) {
+    dn = DN_MM[dnMM] ?? ''
+    if (!dn) {
+      const fallbacks: Record<number,string> = {
+        50:'2"',63:'2"',75:'3"',100:'4"',150:'6"',200:'8"',
+        250:'10"',300:'12"',350:'14"',400:'16"',450:'18"',
+        500:'20"',600:'24"',750:'30"',900:'36"'
+      }
+      dn = fallbacks[dnMM] ?? fallbacks[Math.round(dnMM/25)*25] ?? ''
+    }
+  }
+
+  // Resolver material — mapear desde el string del selector
   const matCat = materialRaw ? (MAT_MAP[materialRaw] ?? materialRaw) : ''
+
   const kitKey = `${dn}|${matCat}`
   const kitData = KIT[kitKey] ?? null
   const esAcero = matCat === 'Acero'
+
+  // Debug temporal — quitar después de verificar
+  if (typeof window !== 'undefined') {
+    console.log('[SIMEX DEBUG]', { dnMM, dn, matCat, kitKey, kitDataExists: !!kitData })
+  }
 
   const [accs,         setAccs]         = useState<Acc[]>([])
   const [opcion,       setOpcion]       = useState<'A'|'B'>('A')
