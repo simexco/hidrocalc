@@ -11,7 +11,7 @@ import { HydraulicProfileChart } from "@/components/hydraulic/HydraulicProfileCh
 import { ExportPDFButton } from "@/components/ui/ExportPDFButton";
 import { calculateSeriesPipes } from "@/lib/calculations/series-pipes";
 import { flowToM3s, formatNumber, mcaToKgcm2 } from "@/lib/calculations/conversions";
-import { STANDARD_DNS, MATERIALS, FITTINGS_CATALOG } from "@/lib/constants";
+import { STANDARD_DNS, MATERIALS } from "@/lib/constants";
 import { saveFormState, loadFormState } from "@/lib/storage/form-persistence";
 import ListaMaterialesSIMEX, { type SIMEXAcc } from "@/components/ListaMaterialesSIMEX";
 import type { FlowUnit, SeriesTramo, AssumedValue } from "@/types/hydraulic";
@@ -226,78 +226,28 @@ export default function EnSeriePage() {
                     </select>
                   </div>
                   <InputField label="Cota final" value={t.zEnd} onChange={(v) => updateTramo(t.id, { zEnd: parseFloat(v) || 0 })} unit="m" tooltip="Elevacion al final de este tramo (m.s.n.m.)" />
-
-                  {/* Accesorios per tramo */}
-                  <div className="col-span-2 space-y-1">
-                    <div className="flex items-center justify-between">
-                      <label className="text-xs font-medium text-gray-600 dark:text-gray-400">Accesorios</label>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const cat = FITTINGS_CATALOG[0];
-                          const newFittings = [...(t.fittings || []), { type: cat.type, k: cat.k, qty: 1 }];
-                          updateTramo(t.id, { fittings: newFittings, lossMode: "accesorios" as const });
-                        }}
-                        className="text-[10px] bg-[#1C3D5A] text-white px-2 py-0.5 rounded hover:bg-[#0F2438] transition-colors"
-                      >
-                        + Agregar
-                      </button>
-                    </div>
-                    {(!t.fittings || t.fittings.length === 0) && (
-                      <p className="text-[10px] text-yellow-600 bg-yellow-50 dark:bg-yellow-900/20 rounded px-2 py-1">
-                        Sin accesorios — hm = 10% de hf (estimado)
-                      </p>
-                    )}
-                    {t.fittings && t.fittings.length > 0 && (
-                      <div className="space-y-1">
-                        {t.fittings.map((f, fi) => (
-                          <div key={fi} className="flex items-center gap-1">
-                            <select
-                              value={f.type}
-                              onChange={(e) => {
-                                const cat = FITTINGS_CATALOG.find((c) => c.type === e.target.value);
-                                if (!cat) return;
-                                const updated = [...t.fittings];
-                                updated[fi] = { ...updated[fi], type: cat.type, k: cat.k };
-                                updateTramo(t.id, { fittings: updated });
-                              }}
-                              className="flex-1 text-[10px] bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded px-1 py-0.5"
-                            >
-                              {FITTINGS_CATALOG.map((c) => (
-                                <option key={c.type} value={c.type}>{c.type} (K={c.k})</option>
-                              ))}
-                            </select>
-                            <input
-                              type="number"
-                              value={f.qty}
-                              min={1}
-                              onChange={(e) => {
-                                const updated = [...t.fittings];
-                                updated[fi] = { ...updated[fi], qty: parseInt(e.target.value) || 1 };
-                                updateTramo(t.id, { fittings: updated });
-                              }}
-                              className="w-10 text-center text-[10px] bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded px-0.5 py-0.5"
-                            />
-                            <button
-                              type="button"
-                              onClick={() => {
-                                const updated = t.fittings.filter((_, idx) => idx !== fi);
-                                updateTramo(t.id, { fittings: updated });
-                              }}
-                              className="text-red-400 hover:text-red-600 text-[10px]"
-                            >{"\u2717"}</button>
-                          </div>
-                        ))}
-                        <p className="text-[10px] text-gray-400 font-mono">
-                          K total: {t.fittings.reduce((s, f) => s + f.k * f.qty, 0).toFixed(2)}
-                        </p>
-                      </div>
-                    )}
-                  </div>
                   {inputs.variableFlow && (
                     <InputField label="Q (L/s)" value={t.Q} onChange={(v) => updateTramo(t.id, { Q: v === "" ? null : flowToM3s(parseFloat(v), inputs.flowUnit) })} />
                   )}
                 </div>
+
+                {/* SIMEX Accessory Selector — integrated in tramo card */}
+                {t.DN && (
+                  <div className="mt-2 pt-2 border-t border-gray-100 dark:border-gray-700">
+                    <ListaMaterialesSIMEX
+                      mode="selector"
+                      dnMM={t.DN}
+                      materialRaw={MATERIALS.find(m => m.c === t.C)?.name}
+                      externalAccs={simexPorTramo[t.id] || []}
+                      onAccsChange={(accs) => setSimexPorTramo(prev => ({...prev, [t.id]: accs}))}
+                    />
+                    {(simexPorTramo[t.id]?.length ?? 0) > 0 && (
+                      <p className="text-[10px] text-[#1C3D5A]/60 dark:text-blue-300/50 mt-1 font-medium">
+                        {simexPorTramo[t.id].reduce((s, a) => s + a.qty, 0)} pza{simexPorTramo[t.id].reduce((s, a) => s + a.qty, 0) !== 1 ? 's' : ''} seleccionada{simexPorTramo[t.id].reduce((s, a) => s + a.qty, 0) !== 1 ? 's' : ''}
+                      </p>
+                    )}
+                  </div>
+                )}
               </div>
             ))}
           </div>
@@ -403,41 +353,40 @@ export default function EnSeriePage() {
                 <HydraulicProfileChart points={profilePoints} title="Perfil Hidráulico Completo" />
               )}
 
-              {/* SIMEX Materials per tramo — same as Tramo Simple */}
-              {inputs.tramos.map((t, i) => {
-                if (!t.DN) return null;
-                const r = results?.tramoResults[i];
-                const matName = MATERIALS.find(m => m.c === t.C)?.name;
-                return (
-                  <div key={`simex-${t.id}`} className="space-y-3">
-                    <h4 className="text-sm font-semibold text-[#1C3D5A] dark:text-blue-300 border-b border-gray-200 dark:border-gray-700 pb-2 mt-2">
-                      Accesorios SIMEX — {t.name}
-                    </h4>
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                      <ListaMaterialesSIMEX
-                        mode="selector"
-                        dnMM={t.DN}
-                        materialRaw={matName}
-                        hf={r?.hf ?? undefined}
-                        longitud={t.L ?? undefined}
-                        externalAccs={simexPorTramo[t.id] || []}
-                        onAccsChange={(accs) => setSimexPorTramo(prev => ({...prev, [t.id]: accs}))}
-                      />
-                      {(simexPorTramo[t.id]?.length ?? 0) > 0 && (
-                        <ListaMaterialesSIMEX
-                          mode="table"
-                          dnMM={t.DN}
-                          materialRaw={matName}
-                          hf={r?.hf ?? undefined}
-                          longitud={t.L ?? undefined}
-                          externalAccs={simexPorTramo[t.id] || []}
-                          onAccsChange={(accs) => setSimexPorTramo(prev => ({...prev, [t.id]: accs}))}
-                        />
-                      )}
-                    </div>
+              {/* SIMEX Material Tables — one per tramo with accessories */}
+              {inputs.tramos.some(t => (simexPorTramo[t.id]?.length ?? 0) > 0) && (
+                <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+                  <div className="bg-gradient-to-r from-[#1C3D5A] to-[#2A5A7A] px-5 py-3">
+                    <h3 className="text-sm font-semibold text-white tracking-wide">Lista de Materiales SIMEX</h3>
+                    <p className="text-[10px] text-white/50 mt-0.5">Generada desde los accesorios seleccionados por tramo</p>
                   </div>
-                );
-              })}
+                  <div className="divide-y divide-gray-100 dark:divide-gray-700">
+                    {inputs.tramos.map((t, i) => {
+                      if (!t.DN || (simexPorTramo[t.id]?.length ?? 0) === 0) return null;
+                      const r = results?.tramoResults[i];
+                      const matName = MATERIALS.find(m => m.c === t.C)?.name;
+                      return (
+                        <div key={`simex-table-${t.id}`} className="p-4">
+                          <div className="flex items-center gap-2 mb-3">
+                            <span className="w-6 h-6 rounded-full bg-[#1C3D5A]/10 text-[#1C3D5A] dark:bg-blue-900/30 dark:text-blue-300 flex items-center justify-center text-[10px] font-bold">{i + 1}</span>
+                            <h4 className="text-xs font-semibold text-[#1C3D5A] dark:text-blue-300">{t.name}</h4>
+                            <span className="text-[10px] text-gray-400 ml-auto">DN {t.DN} mm</span>
+                          </div>
+                          <ListaMaterialesSIMEX
+                            mode="table"
+                            dnMM={t.DN}
+                            materialRaw={matName}
+                            hf={r?.hf ?? undefined}
+                            longitud={t.L ?? undefined}
+                            externalAccs={simexPorTramo[t.id] || []}
+                            onAccsChange={(accs) => setSimexPorTramo(prev => ({...prev, [t.id]: accs}))}
+                          />
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
             </>
           )}
         </div>
