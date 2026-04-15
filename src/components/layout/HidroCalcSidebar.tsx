@@ -59,6 +59,15 @@ const modules = [
     ),
   },
   {
+    href: "/vrp",
+    label: "Valvula reductora",
+    icon: (
+      <svg viewBox="0 0 24 24" className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={1.8}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+      </svg>
+    ),
+  },
+  {
     href: "/proyectos",
     label: "Proyectos",
     icon: (

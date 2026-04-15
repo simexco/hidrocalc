@@ -11,6 +11,7 @@ const moduleNames: Record<string, string> = {
   "/bombeo": "Mi bomba",
   "/dimensionamiento": "Elegir diámetro",
   "/valvulas-aire": "Válvulas de aire",
+  "/vrp": "Valvula reductora",
   "/proyectos": "Mis proyectos",
 };
 
@@ -64,6 +65,15 @@ const moduleHelp: Record<string, { title: string; sections: { title: string; con
       { title: "Tipos de válvulas", content: "VA-C (Combinada): Para puntos altos, inicio y fin de línea. Permite entrada y salida de grandes volúmenes de aire.\nVA-A (Admisión/Expulsión): Para pendientes descendentes pronunciadas. Evita vacío durante vaciado rápido.\nVA-E (Eliminadora): Para tramos rectos largos. Expulsa aire acumulado en operación normal." },
       { title: "Paso a paso", content: "1. Ingresa Q, DN y material de la línea\n2. Ingresa P₀ si la conoces (activa cálculo de presiones)\n3. En la tabla de perfil, agrega los vértices del trazo:\n   → Primer vértice: distancia=0, cota del inicio\n   → Incluye TODOS los puntos altos y bajos\n   → Último vértice: punto final\n4. Los resultados aparecen automáticamente\n5. Revisa puntos en rojo (presión crítica)\n6. Exporta el PDF" },
       { title: "Interpretación", content: "VA-C azul: ubicación crítica — instalación obligatoria\nVA-A amarilla: necesaria para vaciado seguro\nVA-E verde: mantenimiento de aire en operación\nFondo rojo: presión insuficiente — revisar diseño\nLínea piezométrica: nunca debe cruzar el perfil del terreno" },
+    ],
+  },
+  "/vrp": {
+    title: "Valvula Reductora de Presion — Guia de uso",
+    sections: [
+      { title: "Cuando usar?", content: "Para seleccionar el tamano correcto de valvula reductora de presion (VRP) en una linea donde se necesita reducir la presion aguas abajo. Comun en redes de distribucion con zonas de diferente presion." },
+      { title: "Datos que necesitas", content: "- Caudal maximo Q: demanda pico de la zona aguas abajo\n- Caudal minimo Q (opcional): demanda minima para verificar estabilidad\n- Presion aguas arriba P1: medida con manometro antes de la VRP\n- Presion objetivo P2: la presion deseada despues de la VRP\n- DN de la linea: diametro de la tuberia donde se instalara" },
+      { title: "Paso a paso", content: "1. Ingresa el caudal maximo Q de diseno\n2. Opcionalmente ingresa Q minimo\n3. Ingresa P1 (presion de entrada) y P2 (presion deseada)\n4. Selecciona el DN de la linea\n5. Los resultados aparecen automaticamente\n6. Revisa la tabla de seleccion y las advertencias" },
+      { title: "Interpretacion", content: "Optimo: apertura entre 35-65% a Q max — operacion estable\nFuncional: apertura entre 20-75% — aceptable\nLimite: apertura >75% — valvula demasiado chica\nInsuficiente: Cv de la valvula no alcanza\nIndice cavitacion sigma < 0.5: riesgo de dano\nRelacion P1/P2 > 3:1: considerar dos VRP en serie" },
     ],
   },
 };

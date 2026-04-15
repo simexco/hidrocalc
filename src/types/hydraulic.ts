@@ -244,6 +244,49 @@ export interface PipeSizingResults {
   dataStatus: DataStatus;
 }
 
+// ── Module 7 — VRP (Pressure Reducing Valve) ──
+export interface VRPInputs {
+  projectName: string;
+  qMax: number | null;        // L/s
+  qMin: number | null;        // L/s (optional)
+  flowUnit: FlowUnit;
+  rawQMax: number | null;     // user-entered value
+  rawQMin: number | null;
+  P1: number | null;          // kg/cm²
+  P2: number | null;          // kg/cm²
+  DN: number | null;          // mm (pipe diameter)
+}
+
+export interface VRPSelectionRow {
+  dn: string;
+  dn_mm: number;
+  cv_max: number;
+  pct_max: number;            // % aperture at Q_max
+  pct_min: number;            // % aperture at Q_min
+  status: "optimo" | "funcional" | "limite" | "insuficiente";
+  isRecommended: boolean;
+}
+
+export interface VRPResults {
+  Cv_max_req: number;
+  Cv_min_req: number;
+  deltaP_bar: number;
+  Q_max_m3h: number;
+  Q_min_m3h: number;
+  sigma: number;              // cavitation index
+  riesgoCavitacion: boolean;
+  relacionPresion: number;    // P1/P2
+  dobleEtapa: boolean;        // P1/P2 > 3
+  v_aguas_abajo: number;      // m/s
+  recommendedDN: string | null;
+  recommendedDN_mm: number | null;
+  pct_apertura_max: number | null;
+  pct_apertura_min: number | null;
+  selectionTable: VRPSelectionRow[];
+  alerts: Alert[];
+  dataStatus: DataStatus;
+}
+
 // ── Project ──
 export interface Project {
   id: string;

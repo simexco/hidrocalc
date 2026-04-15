@@ -62,8 +62,18 @@ const modules = [
     ),
   },
   {
+    title: "Valvula reductora",
+    desc: "Selecciona el tamano correcto de VRP para tu linea.",
+    href: "/vrp",
+    icon: (
+      <svg viewBox="0 0 24 24" className="w-7 h-7" fill="none" stroke="currentColor" strokeWidth={1.5}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+      </svg>
+    ),
+  },
+  {
     title: "Mis proyectos",
-    desc: "Guarda, organiza y exporta todos tus cálculos.",
+    desc: "Guarda, organiza y exporta todos tus calculos.",
     href: "/proyectos",
     icon: (
       <svg viewBox="0 0 24 24" className="w-7 h-7" fill="none" stroke="currentColor" strokeWidth={1.5}>
@@ -149,6 +159,7 @@ export default function Home() {
               { situation: "¿Qué clase de tubería aguanta el golpe de cierre de una válvula?", module: "Golpe de ariete", data: "V0, D interno, espesor, material, Tc", href: "/golpe-ariete" },
               { situation: "¿En qué punto opera mi bomba en este sistema?", module: "Mi bomba", data: "Hg, L, DN, curva de bomba", href: "/bombeo" },
               { situation: "¿Dónde pongo las válvulas de aire en mi línea?", module: "Válvulas de aire", data: "Q, DN, perfil de cotas", href: "/valvulas-aire" },
+              { situation: "Necesito reducir la presion en una zona de mi red", module: "Valvula reductora", data: "Q, P1, P2, DN", href: "/vrp" },
             ].map((r) => (
               <Link key={r.module} href={r.href} className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4 bg-white/5 hover:bg-white/10 border border-white/5 rounded-lg px-4 py-3 transition-colors group">
                 <p className="text-sm text-white/80 flex-1 group-hover:text-white">{r.situation}</p>

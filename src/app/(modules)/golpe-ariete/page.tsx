@@ -455,6 +455,91 @@ export default function GolpeArietePage() {
               {results.alerts.filter((a) => a.level !== "OK").map((a, i) => (
                 <AlertBanner key={i} level={a.level} message={a.message} />
               ))}
+
+              {/* Relief valve recommendation */}
+              {results.deltaP_bar != null && results.deltaP_bar > 0 && inputs.D != null && inputs.V0 != null && (() => {
+                // Calculate relief valve sizing
+                const CV_TABLE = [
+                  { dn: '2"',  dn_mm: 50,  cv_max: 15  },
+                  { dn: '3"',  dn_mm: 75,  cv_max: 38  },
+                  { dn: '4"',  dn_mm: 100, cv_max: 72  },
+                  { dn: '6"',  dn_mm: 150, cv_max: 165 },
+                  { dn: '8"',  dn_mm: 200, cv_max: 295 },
+                  { dn: '10"', dn_mm: 250, cv_max: 460 },
+                  { dn: '12"', dn_mm: 300, cv_max: 665 },
+                ];
+
+                const dInt_m = (inputs.D) / 1000;
+                const A_linea = Math.PI * Math.pow(dInt_m / 2, 2);
+                const Q_linea_m3h = inputs.V0 * A_linea * 3600;
+
+                // P0 in kg/cm² (inputs.P0 is already in kg/cm²)
+                const p0 = inputs.P0 ?? 0;
+                const pMax_kgcm2 = results.Pmax != null ? mcaToKgcm2(results.Pmax) : 0;
+                const pSet = p0 > 0 ? p0 * 1.10 : pMax_kgcm2 * 0.85;
+
+                const deltaP_valv_bar = (pMax_kgcm2 - pSet) * 0.9807;
+                const Cv_requerido = deltaP_valv_bar > 0
+                  ? Q_linea_m3h / Math.sqrt(deltaP_valv_bar)
+                  : 0;
+
+                const valv_recomendada = CV_TABLE.find(v => v.cv_max * 0.75 >= Cv_requerido);
+                const pct_apertura = valv_recomendada
+                  ? Math.round((Cv_requerido / valv_recomendada.cv_max) * 100)
+                  : null;
+                const pct_dn = valv_recomendada
+                  ? Math.round((valv_recomendada.dn_mm / (dInt_m * 1000)) * 100)
+                  : null;
+
+                if (Cv_requerido <= 0) return null;
+
+                return (
+                  <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl p-5 space-y-3">
+                    <h3 className="text-sm font-semibold text-amber-800 dark:text-amber-300">
+                      {"\u26A0"} Proteccion recomendada — Valvula de alivio/anticipacion
+                    </h3>
+
+                    {valv_recomendada ? (
+                      <>
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                          <div>
+                            <div className="text-[11px] text-amber-600 dark:text-amber-400">DN valvula</div>
+                            <div className="text-xl font-semibold text-amber-900 dark:text-amber-200">{valv_recomendada.dn}</div>
+                          </div>
+                          <div>
+                            <div className="text-[11px] text-amber-600 dark:text-amber-400">Cv requerido</div>
+                            <div className="text-xl font-semibold text-amber-900 dark:text-amber-200">{formatNumber(Cv_requerido, 1)}</div>
+                          </div>
+                          <div>
+                            <div className="text-[11px] text-amber-600 dark:text-amber-400">Apertura estimada</div>
+                            <div className="text-xl font-semibold text-amber-900 dark:text-amber-200">{pct_apertura}%</div>
+                          </div>
+                          <div>
+                            <div className="text-[11px] text-amber-600 dark:text-amber-400">Relacion DN</div>
+                            <div className="text-xl font-semibold text-amber-900 dark:text-amber-200">{pct_dn}% de la linea</div>
+                          </div>
+                        </div>
+
+                        <p className="text-xs text-amber-700 dark:text-amber-300">
+                          Presion de ajuste sugerida (Pset): <strong>{formatNumber(pSet, 2)} kg/cm2</strong>
+                          {" "}{"\u2014"} La valvula debe abrirse cuando P supere este valor
+                        </p>
+                      </>
+                    ) : (
+                      <p className="text-xs text-red-600 dark:text-red-400">
+                        El caudal de alivio requerido (Cv={formatNumber(Cv_requerido, 1)}) excede los tamanos estandar de catalogo.
+                        Consultar directamente con el fabricante.
+                      </p>
+                    )}
+
+                    <p className="text-[10px] text-amber-600/70 dark:text-amber-400/60">
+                      Recomendacion preliminar basada en Joukowsky/Crane TP-410.
+                      Verificar con el fabricante para instalacion final.
+                      Valvula piloto-operada tipo alivio/anticipacion (surge relief).
+                    </p>
+                  </div>
+                );
+              })()}
             </>
           )}
         </div>

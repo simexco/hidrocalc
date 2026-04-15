@@ -12,6 +12,8 @@ import type {
   PumpOperationResults,
   PipeSizingInputs,
   PipeSizingResults,
+  VRPInputs,
+  VRPResults,
   CalcMode,
   FlowUnit,
   Fitting,
@@ -239,4 +241,35 @@ export const usePipeSizingStore = create<PipeSizingState>((set) => ({
     },
     results: null,
   }),
+}));
+
+// ── VRP Store ──
+interface VRPState {
+  inputs: VRPInputs;
+  results: VRPResults | null;
+  setInput: <K extends keyof VRPInputs>(key: K, value: VRPInputs[K]) => void;
+  setResults: (results: VRPResults | null) => void;
+  reset: () => void;
+}
+
+const vrpDefaults: VRPInputs = {
+  projectName: "Válvula reductora",
+  qMax: null,
+  qMin: null,
+  flowUnit: "L/s",
+  rawQMax: null,
+  rawQMin: null,
+  P1: null,
+  P2: null,
+  DN: 150,
+};
+
+export const useVRPStore = create<VRPState>((set) => ({
+  inputs: { ...vrpDefaults },
+  results: null,
+  setInput: (key, value) => set((state) => ({
+    inputs: { ...state.inputs, [key]: value },
+  })),
+  setResults: (results) => set({ results }),
+  reset: () => set({ inputs: { ...vrpDefaults }, results: null }),
 }));
