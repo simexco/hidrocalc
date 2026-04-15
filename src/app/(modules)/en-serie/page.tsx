@@ -13,11 +13,12 @@ import { calculateSeriesPipes } from "@/lib/calculations/series-pipes";
 import { flowToM3s, formatNumber, mcaToKgcm2 } from "@/lib/calculations/conversions";
 import { STANDARD_DNS, MATERIALS, FITTINGS_CATALOG } from "@/lib/constants";
 import { saveFormState, loadFormState } from "@/lib/storage/form-persistence";
-import ListaSIMEXSerie from "@/components/ListaSIMEXSerie";
+import ListaMaterialesSIMEX, { type SIMEXAcc } from "@/components/ListaMaterialesSIMEX";
 import type { FlowUnit, SeriesTramo, AssumedValue } from "@/types/hydraulic";
 
 export default function EnSeriePage() {
   const { inputs, results, setInput, setResults, addTramo, removeTramo, updateTramo } = useSeriesPipeStore();
+  const [simexPorTramo, setSimexPorTramo] = useState<Record<string, SIMEXAcc[]>>({});
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
   const persistRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
@@ -402,8 +403,41 @@ export default function EnSeriePage() {
                 <HydraulicProfileChart points={profilePoints} title="Perfil Hidráulico Completo" />
               )}
 
-              {/* SIMEX Materials — auto-generated from K/Le accessories */}
-              <ListaSIMEXSerie tramos={inputs.tramos} materials={MATERIALS} />
+              {/* SIMEX Materials per tramo — same as Tramo Simple */}
+              {inputs.tramos.map((t, i) => {
+                if (!t.DN) return null;
+                const r = results?.tramoResults[i];
+                const matName = MATERIALS.find(m => m.c === t.C)?.name;
+                return (
+                  <div key={`simex-${t.id}`} className="space-y-3">
+                    <h4 className="text-sm font-semibold text-[#1C3D5A] dark:text-blue-300 border-b border-gray-200 dark:border-gray-700 pb-2 mt-2">
+                      Accesorios SIMEX — {t.name}
+                    </h4>
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                      <ListaMaterialesSIMEX
+                        mode="selector"
+                        dnMM={t.DN}
+                        materialRaw={matName}
+                        hf={r?.hf ?? undefined}
+                        longitud={t.L ?? undefined}
+                        externalAccs={simexPorTramo[t.id] || []}
+                        onAccsChange={(accs) => setSimexPorTramo(prev => ({...prev, [t.id]: accs}))}
+                      />
+                      {(simexPorTramo[t.id]?.length ?? 0) > 0 && (
+                        <ListaMaterialesSIMEX
+                          mode="table"
+                          dnMM={t.DN}
+                          materialRaw={matName}
+                          hf={r?.hf ?? undefined}
+                          longitud={t.L ?? undefined}
+                          externalAccs={simexPorTramo[t.id] || []}
+                          onAccsChange={(accs) => setSimexPorTramo(prev => ({...prev, [t.id]: accs}))}
+                        />
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
             </>
           )}
         </div>
