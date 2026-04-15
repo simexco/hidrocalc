@@ -211,7 +211,19 @@ export default function EnSeriePage() {
                       {STANDARD_DNS.map((dn) => <option key={dn} value={dn}>{dn}</option>)}
                     </select>
                   </div>
-                  <InputField label="Coef. C" value={t.C} onChange={(v) => updateTramo(t.id, { C: parseFloat(v) || 140 })} tooltip="Coeficiente de rugosidad del material. PVC=150, Hierro dúctil=130, Acero=120. Para C=140 usar Personalizado." />
+                  <div className="space-y-1">
+                    <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Material</label>
+                    <select
+                      value={MATERIALS.find(m => m.c === t.C)?.name || "Personalizado"}
+                      onChange={(e) => {
+                        const mat = MATERIALS.find(m => m.name === e.target.value);
+                        if (mat) updateTramo(t.id, { C: mat.c });
+                      }}
+                      className="w-full px-2 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 dark:text-white"
+                    >
+                      {MATERIALS.map((m) => <option key={m.name} value={m.name}>{m.name} (C={m.c})</option>)}
+                    </select>
+                  </div>
                   <InputField label="Cota final" value={t.zEnd} onChange={(v) => updateTramo(t.id, { zEnd: parseFloat(v) || 0 })} unit="m" tooltip="Elevacion al final de este tramo (m.s.n.m.)" />
 
                   {/* Accesorios per tramo */}
