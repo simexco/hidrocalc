@@ -12,20 +12,23 @@ const MAT_MAP: Record<string,string> = {
   'Hierro dúctil':'HD AWWA','Acero nuevo':'Acero','Acero (10+ años)':'Acero',
 }
 
-// Mapping from fitting type label → SIMEX search params
-const FITTING_MAP: Record<string, { search: string; bridas: number }> = {
-  'Codo 90° radio corto': { search: 'codo-90', bridas: 2 },
-  'Codo 90° radio largo': { search: 'codo-90', bridas: 2 },
-  'Codo 45°': { search: 'codo-45', bridas: 2 },
-  'Codo 22.5°': { search: 'codo-22', bridas: 2 },
-  'Tee paso directo': { search: 'tee', bridas: 3 },
-  'Tee derivación': { search: 'tee', bridas: 3 },
-  'Válvula compuerta abierta': { search: 'vcg', bridas: 2 },
-  'Válvula mariposa abierta': { search: 'vmb', bridas: 2 },
-  'Válvula check (retención)': { search: 'check', bridas: 2 },
-  'Reducción gradual (cono)': { search: 'red', bridas: 2 },
-  'Reducción brusca': { search: 'red', bridas: 2 },
-}
+// Mapping from fitting type keywords → SIMEX search params
+// Uses includes() matching so accents and exact wording don't matter
+const FITTING_MAP: Array<{ match: string; search: string; bridas: number }> = [
+  { match: 'codo 90', search: 'codo-90', bridas: 2 },
+  { match: 'codo 45', search: 'codo-45', bridas: 2 },
+  { match: 'codo 22', search: 'codo-22', bridas: 2 },
+  { match: 'tee paso', search: 'tee', bridas: 3 },
+  { match: 'tee deriv', search: 'tee', bridas: 3 },
+  { match: 'tee', search: 'tee', bridas: 3 },
+  { match: 'compuerta', search: 'vcg', bridas: 2 },
+  { match: 'mariposa', search: 'vmb', bridas: 2 },
+  { match: 'check', search: 'check', bridas: 2 },
+  { match: 'retenci', search: 'check', bridas: 2 },
+  { match: 'reducci', search: 'red', bridas: 2 },
+  { match: 'medidor', search: 'medidor', bridas: 2 },
+  { match: 'aire', search: 'aire', bridas: 0 },
+]
 
 // Minimal KIT data for brida calculation (same as ListaMaterialesSIMEX)
 const KIT: Record<string,{a?:string,e?:string,eo?:number,g?:string,em?:string,t?:string,b?:number}> = {
@@ -78,10 +81,10 @@ export default function ListaSIMEXSerie({ tramos, materials }: Props) {
     let totalBridas = 0
 
     for (const f of t.fittings) {
-      // Find matching SIMEX mapping
-      const mapKey = Object.keys(FITTING_MAP).find(k => f.type.startsWith(k))
-      if (!mapKey) continue
-      const map = FITTING_MAP[mapKey]
+      // Find matching SIMEX mapping using case-insensitive includes
+      const fLower = f.type.toLowerCase()
+      const map = FITTING_MAP.find(m => fLower.includes(m.match))
+      if (!map) continue
 
       // Get SKU
       let sku = ''
