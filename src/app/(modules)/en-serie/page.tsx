@@ -13,15 +13,11 @@ import { calculateSeriesPipes } from "@/lib/calculations/series-pipes";
 import { flowToM3s, formatNumber, mcaToKgcm2 } from "@/lib/calculations/conversions";
 import { STANDARD_DNS, MATERIALS, FITTINGS_CATALOG } from "@/lib/constants";
 import { saveFormState, loadFormState } from "@/lib/storage/form-persistence";
-import ListaMaterialesSIMEX, { type SIMEXAcc } from "@/components/ListaMaterialesSIMEX";
+import ListaSIMEXSerie from "@/components/ListaSIMEXSerie";
 import type { FlowUnit, SeriesTramo, AssumedValue } from "@/types/hydraulic";
-
-// DN mm → inch label for SIMEX
-const DN_INCH: Record<number,string> = {50:'2"',75:'3"',100:'4"',150:'6"',200:'8"',250:'10"',300:'12"',350:'14"',400:'16"',450:'18"',500:'20"',600:'24"',750:'30"',900:'36"'};
 
 export default function EnSeriePage() {
   const { inputs, results, setInput, setResults, addTramo, removeTramo, updateTramo } = useSeriesPipeStore();
-  const [accsPorTramo, setAccsPorTramo] = useState<Record<string, SIMEXAcc[]>>({});
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
   const persistRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
@@ -384,41 +380,6 @@ export default function EnSeriePage() {
                 </div>
               </div>
 
-              {/* SIMEX per tramo */}
-              {inputs.tramos.map((t, i) => {
-                const r = results?.tramoResults[i];
-                if (!t.DN) return null;
-                return (
-                  <div key={`simex-${t.id}`} className="space-y-3">
-                    <h4 className="text-xs font-semibold text-[#1C3D5A] dark:text-blue-300 border-b border-gray-100 dark:border-gray-700 pb-1">
-                      Accesorios — {t.name} ({DN_INCH[t.DN] || t.DN + 'mm'})
-                    </h4>
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                      <ListaMaterialesSIMEX
-                        mode="selector"
-                        dnMM={t.DN}
-                        materialRaw={MATERIALS.find(m => m.c === t.C)?.name}
-                        hf={r?.hf ?? undefined}
-                        longitud={t.L ?? undefined}
-                        externalAccs={accsPorTramo[t.id] || []}
-                        onAccsChange={(accs) => setAccsPorTramo(prev => ({...prev, [t.id]: accs}))}
-                      />
-                      {(accsPorTramo[t.id]?.length ?? 0) > 0 && (
-                        <ListaMaterialesSIMEX
-                          mode="table"
-                          dnMM={t.DN}
-                          materialRaw={MATERIALS.find(m => m.c === t.C)?.name}
-                          hf={r?.hf ?? undefined}
-                          longitud={t.L ?? undefined}
-                          externalAccs={accsPorTramo[t.id] || []}
-                          onAccsChange={(accs) => setAccsPorTramo(prev => ({...prev, [t.id]: accs}))}
-                        />
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-
               {/* Alerts */}
               {results.alerts.filter((a) => a.level !== "OK").map((a, i) => (
                 <AlertBanner key={i} level={a.level} message={a.message} />
@@ -428,6 +389,9 @@ export default function EnSeriePage() {
               {profilePoints.length >= 2 && (
                 <HydraulicProfileChart points={profilePoints} title="Perfil Hidráulico Completo" />
               )}
+
+              {/* SIMEX Materials — auto-generated from K/Le accessories */}
+              <ListaSIMEXSerie tramos={inputs.tramos} materials={MATERIALS} />
             </>
           )}
         </div>
