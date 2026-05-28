@@ -519,10 +519,26 @@ export default function ListaMaterialesSIMEX({
 
   // ── agregar / eliminar ───────────────────────────────────────
   function add(a: Omit<Acc,'id'>) {
-    const newAccs = [...accs, {...a, id:Date.now()}]
+    // If same accessory exists (same sku+dn+dn2), increment qty instead of duplicating
+    const existing = accs.find(e => e.sku === a.sku && e.dn === a.dn && e.dn2 === a.dn2 && e.label === a.label)
+    let newAccs: Acc[]
+    if (existing) {
+      newAccs = accs.map(e => e.id === existing.id ? {...e, qty: e.qty + 1} : e)
+    } else {
+      newAccs = [...accs, {...a, id:Date.now()}]
+    }
     if (onAccsChange) onAccsChange(newAccs); else setInternalAccs(newAccs)
     setSub(null); setBifTipo(null); setRedTipo(null)
     onHmChange?.(hmReal)
+  }
+  function updateQty(id:number, delta:number) {
+    const newAccs = accs.map(a => a.id === id ? {...a, qty: Math.max(1, a.qty + delta)} : a)
+    if (onAccsChange) onAccsChange(newAccs); else setInternalAccs(newAccs)
+  }
+  function setQty(id:number, qty:number) {
+    const q = Math.max(1, Math.min(999, qty))
+    const newAccs = accs.map(a => a.id === id ? {...a, qty: q} : a)
+    if (onAccsChange) onAccsChange(newAccs); else setInternalAccs(newAccs)
   }
   function del(id:number) {
     const newAccs = accs.filter(a=>a.id!==id)
@@ -644,7 +660,15 @@ export default function ListaMaterialesSIMEX({
       {sub==='reducc' && (<div className="bg-gray-50 dark:bg-gray-700 rounded-xl p-4 space-y-3"><div className="grid grid-cols-2 gap-2">{[['linea','En línea'],['deriv','Derivación reducida']].map(([k,l])=>(<button key={k} onClick={()=>setRedTipo(r=>r===k?null:k)} className={`p-2 rounded-lg border text-xs ${redTipo===k?'border-[#1C3D5A] bg-[#1C3D5A]/5 font-medium':'border-gray-200'}`}>{l}</button>))}</div>{redTipo && (<div className="flex flex-wrap gap-1.5">{DNS_MENORES.map(d=>(<button key={d} onClick={()=>addReduc(redTipo,d)} className="px-3 py-1.5 text-xs rounded-lg border border-gray-200 hover:bg-[#1C3D5A] hover:text-white">{d}</button>))}</div>)}</div>)}
       {sub==='check' && (<div className="bg-gray-50 dark:bg-gray-700 rounded-xl p-4"><div className="grid grid-cols-2 gap-2"><button onClick={()=>addCheck('check')} className="p-3 rounded-lg border border-gray-200 hover:border-[#1C3D5A] text-left"><span className="text-xs font-semibold block">Check Resilente</span><span className="text-[9px] text-gray-400">2 bridas · 250 PSI</span></button><button onClick={()=>addCheck('duo-check')} className="p-3 rounded-lg border border-gray-200 hover:border-[#1C3D5A] text-left"><span className="text-xs font-semibold block">Duo Check Wafer</span><span className="text-[9px] text-gray-400">Entre bridas · 150 PSI</span></button></div></div>)}
       {sub==='fin' && (<div className="bg-gray-50 dark:bg-gray-700 rounded-xl p-4"><button onClick={addFin} className="px-4 py-2 text-xs rounded-lg border border-gray-200 hover:bg-[#1C3D5A] hover:text-white">Tapa Ciega {dn} — {TAPA[dn]||'confirmar SKU'}</button></div>)}
-      {accs.length>0 && (<div className="flex flex-wrap gap-1.5">{accs.map(a=>(<span key={a.id} className="text-[11px] bg-[#E9EFF5] text-[#1C3D5A] px-2.5 py-1 rounded-lg flex items-center gap-1.5 font-medium">{a.label} ×{a.qty}<button onClick={()=>del(a.id)} className="text-[#1C3D5A]/40 hover:text-red-500">✕</button></span>))}</div>)}
+      {accs.length>0 && (<div className="flex flex-wrap gap-1.5">{accs.map(a=>(<span key={a.id} className="text-[11px] bg-[#E9EFF5] text-[#1C3D5A] rounded-lg flex items-center font-medium overflow-hidden">
+        <span className="px-2 py-1">{a.label}</span>
+        <span className="flex items-center bg-[#1C3D5A]/10 rounded-md mx-0.5">
+          <button onClick={()=>updateQty(a.id,-1)} className="px-1.5 py-0.5 hover:bg-[#1C3D5A]/20 rounded-l text-[#1C3D5A]/60 hover:text-[#1C3D5A] transition-colors font-bold">−</button>
+          <input type="number" value={a.qty} onChange={e=>setQty(a.id,parseInt(e.target.value)||1)} className="w-7 text-center text-[11px] font-bold bg-transparent border-none outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" />
+          <button onClick={()=>updateQty(a.id,+1)} className="px-1.5 py-0.5 hover:bg-[#1C3D5A]/20 rounded-r text-[#1C3D5A]/60 hover:text-[#1C3D5A] transition-colors font-bold">+</button>
+        </span>
+        <button onClick={()=>del(a.id)} className="px-1.5 py-1 text-[#1C3D5A]/30 hover:text-red-500 hover:bg-red-50 transition-colors">✕</button>
+      </span>))}</div>)}
       {sugEnterrada && (<div onClick={addMarco} className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg text-xs text-yellow-700 cursor-pointer hover:bg-yellow-100">💡 ¿Válvula enterrada? → Agregar Marco con Tapa</div>)}
     </div>
   )
@@ -706,7 +730,15 @@ export default function ListaMaterialesSIMEX({
 
       {sub==='fin' && (<div className="bg-gray-50 dark:bg-gray-700 rounded-xl p-4 mb-3"><button onClick={addFin} className="px-4 py-2 text-xs font-medium rounded-lg border border-gray-200 hover:bg-[#1C3D5A] hover:text-white transition-colors">Agregar Tapa Ciega HD {dn} — {TAPA[dn]||'confirmar SKU'}</button></div>)}
 
-      {accs.length>0 && (<div className="flex flex-wrap gap-1.5 mb-3">{accs.map(a=>(<span key={a.id} className="text-[11px] bg-[#E9EFF5] text-[#1C3D5A] px-2.5 py-1 rounded-lg flex items-center gap-1.5 font-medium">{a.label} ×{a.qty}<button onClick={()=>del(a.id)} className="text-[#1C3D5A]/40 hover:text-red-500 transition-colors">✕</button></span>))}</div>)}
+      {accs.length>0 && (<div className="flex flex-wrap gap-1.5 mb-3">{accs.map(a=>(<span key={a.id} className="text-[11px] bg-[#E9EFF5] text-[#1C3D5A] rounded-lg flex items-center font-medium overflow-hidden">
+        <span className="px-2 py-1">{a.label}</span>
+        <span className="flex items-center bg-[#1C3D5A]/10 rounded-md mx-0.5">
+          <button onClick={()=>updateQty(a.id,-1)} className="px-1.5 py-0.5 hover:bg-[#1C3D5A]/20 rounded-l text-[#1C3D5A]/60 hover:text-[#1C3D5A] transition-colors font-bold">−</button>
+          <input type="number" value={a.qty} onChange={e=>setQty(a.id,parseInt(e.target.value)||1)} className="w-7 text-center text-[11px] font-bold bg-transparent border-none outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" />
+          <button onClick={()=>updateQty(a.id,+1)} className="px-1.5 py-0.5 hover:bg-[#1C3D5A]/20 rounded-r text-[#1C3D5A]/60 hover:text-[#1C3D5A] transition-colors font-bold">+</button>
+        </span>
+        <button onClick={()=>del(a.id)} className="px-1.5 py-1 text-[#1C3D5A]/30 hover:text-red-500 hover:bg-red-50 transition-colors">✕</button>
+      </span>))}</div>)}
 
       {sugEnterrada && (<div onClick={addMarco} className="p-3 bg-yellow-50 dark:bg-yellow-900/10 border border-yellow-200 rounded-lg mb-3 text-xs text-yellow-700 cursor-pointer hover:bg-yellow-100 transition-colors">💡 ¿Esta válvula va enterrada? → Clic para agregar Marco con Tapa Dúctil AI-MCT-D</div>)}
 
