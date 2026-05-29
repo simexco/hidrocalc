@@ -631,7 +631,7 @@ export default function ListaMaterialesSIMEX({
         kitItems.push({sku:kd.e, desc:`Extremidad Bridada ${dnKit} OD ${extOD}mm Sigma Flow`, qty:nBridas, norma:'AWWA C110', dnKit})
         if(kd.g) kitItems.push({sku:kd.g, desc:`Junta Gibault ${gibOD}mm Sigma Flow`, qty:nBridas, norma:'AWWA', dnKit})
       }
-      if(kd.em) kitItems.push({sku:kd.em, desc:`Empaque ${dnKit}`, qty:nBridas, norma:'—', dnKit})
+      if(kd.em) kitItems.push({sku:kd.em, desc:`Empaque SBR ${dnKit} Sigma Flow`, qty:nBridas, norma:'—', dnKit})
       if(kd.t) kitItems.push({sku:kd.t, desc:`${TOR_DESC[kd.t]??`Tornillo ${dnKit}`}`, qty:nBridas*(kd.b??8), norma:'—', dnKit})
     })
   }
