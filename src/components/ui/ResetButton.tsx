@@ -18,7 +18,7 @@ export function ResetButton({ moduleKey, onReset }: ResetButtonProps) {
     <button
       type="button"
       onClick={handleReset}
-      className="text-[11px] text-gray-400 hover:text-[#1C3D5A] border border-gray-200 dark:border-gray-600 hover:border-[#1C3D5A]/40 px-2.5 py-1 rounded-lg transition-colors"
+      className="text-[11px] text-white bg-[#1C3D5A] hover:bg-[#0F2438] px-3 py-1.5 rounded-lg transition-colors font-medium shadow-sm"
     >
       Nuevo calculo
     </button>
