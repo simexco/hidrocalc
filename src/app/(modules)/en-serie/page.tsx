@@ -13,11 +13,12 @@ import { calculateSeriesPipes } from "@/lib/calculations/series-pipes";
 import { flowToM3s, formatNumber, mcaToKgcm2 } from "@/lib/calculations/conversions";
 import { STANDARD_DNS, MATERIALS } from "@/lib/constants";
 import { saveFormState, loadFormState } from "@/lib/storage/form-persistence";
+import { ResetButton } from "@/components/ui/ResetButton";
 import ListaMaterialesSIMEX, { type SIMEXAcc } from "@/components/ListaMaterialesSIMEX";
 import type { FlowUnit, SeriesTramo, AssumedValue } from "@/types/hydraulic";
 
 export default function EnSeriePage() {
-  const { inputs, results, setInput, setResults, addTramo, removeTramo, updateTramo } = useSeriesPipeStore();
+  const { inputs, results, setInput, setResults, addTramo, removeTramo, updateTramo, reset } = useSeriesPipeStore();
   const [simexPorTramo, setSimexPorTramo] = useState<Record<string, SIMEXAcc[]>>({});
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
   const persistRef = useRef<ReturnType<typeof setTimeout>>(undefined);
@@ -115,9 +116,10 @@ export default function EnSeriePage() {
         {/* Form */}
         <div className="lg:col-span-2 space-y-5">
           <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 space-y-4">
-            <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 border-b border-gray-100 dark:border-gray-700 pb-2">
-              Datos globales
-            </h2>
+            <div className="flex items-center justify-between border-b border-gray-100 dark:border-gray-700 pb-2">
+              <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300">Datos globales</h2>
+              <ResetButton moduleKey="en-serie" onReset={() => { reset(); setSimexPorTramo({}); }} />
+            </div>
             <InputField label="Nombre del proyecto" value={inputs.projectName} onChange={(v) => setInput("projectName", v)} type="text" />
 
             <div className="flex items-end gap-2">

@@ -10,6 +10,7 @@ import { calculateAirValves, type AirValveVertex, type AirValveInputs, type AirV
 import { flowToM3s, formatNumber } from "@/lib/calculations/conversions";
 import { STANDARD_DNS_LABELED, MATERIALS } from "@/lib/constants";
 import { saveFormState, loadFormState } from "@/lib/storage/form-persistence";
+import { ResetButton } from "@/components/ui/ResetButton";
 import { ComposedChart, Line, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine, Dot } from "recharts";
 import type { FlowUnit } from "@/types/hydraulic";
 
@@ -82,6 +83,23 @@ export default function ValvulasAirePage() {
     setVertices(vertices.map((v) => v.id === id ? { ...v, ...updates } : v));
   };
 
+  const handleReset = () => {
+    setProjectName("Línea de conducción");
+    setRawQ(null);
+    setFlowUnit("L/s");
+    setDN(150);
+    setMaterialName(MATERIALS[0].name);
+    setC(MATERIALS[0].c);
+    setP0(3);
+    setPressureMin(5);
+    setMaxSpacing(600);
+    setVertices([
+      { id: uuid(), dist: 0, cota: 100, desc: "Inicio" },
+      { id: uuid(), dist: 1000, cota: 110, desc: "Fin" },
+    ]);
+    setResults(null);
+  };
+
   const handleMaterial = (name: string) => {
     const mat = MATERIALS.find((m) => m.name === name);
     setMaterialName(name);
@@ -111,7 +129,10 @@ export default function ValvulasAirePage() {
         <div className="lg:col-span-2 space-y-5">
           {/* Global data */}
           <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 space-y-4">
-            <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 border-b border-gray-100 dark:border-gray-700 pb-2">Datos globales</h2>
+            <div className="flex items-center justify-between border-b border-gray-100 dark:border-gray-700 pb-2">
+              <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300">Datos globales</h2>
+              <ResetButton moduleKey="valvulas-aire" onReset={handleReset} />
+            </div>
             <InputField label="Nombre del proyecto" value={projectName} onChange={setProjectName} type="text" />
             <div className="flex items-end gap-2">
               <div className="flex-1">

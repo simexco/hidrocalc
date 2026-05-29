@@ -11,10 +11,11 @@ import { calculateWaterHammer } from "@/lib/calculations/water-hammer";
 import { formatNumber, mcaToKgcm2 } from "@/lib/calculations/conversions";
 import { PIPE_ELASTICITY, THICKNESS_BY_MATERIAL, PIPE_CLASSES_BY_MATERIAL, PVC_THICKNESS, getPVCClasses, PVC_SYSTEM_LABELS, type PVCSystem, PIPE_CATALOG, type PipeCatalogGroup } from "@/lib/constants";
 import { saveFormState, loadFormState } from "@/lib/storage/form-persistence";
+import { ResetButton } from "@/components/ui/ResetButton";
 import type { AssumedValue } from "@/types/hydraulic";
 
 export default function GolpeArietePage() {
-  const { inputs, results, setInput, setResults } = useWaterHammerStore();
+  const { inputs, results, setInput, setResults, reset } = useWaterHammerStore();
   const singlePipe = useSinglePipeStore();
   const [showThicknessRef, setShowThicknessRef] = useState(false);
   const [pvcSystem, setPvcSystem] = useState<PVCSystem>("métrico");
@@ -158,14 +159,17 @@ export default function GolpeArietePage() {
           <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 space-y-4">
             <div className="flex items-center justify-between border-b border-gray-100 dark:border-gray-700 pb-2">
               <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300">Datos de entrada</h2>
-              {singlePipe.results?.V != null && (
-                <button
-                  onClick={handleImportFromMod1}
-                  className="text-xs bg-[#E9EFF5] text-[#1C3D5A] px-2 py-1 rounded hover:bg-[#1C3D5A] hover:text-white transition-colors"
-                >
-                  Importar de Módulo 1
-                </button>
-              )}
+              <div className="flex items-center gap-2">
+                {singlePipe.results?.V != null && (
+                  <button
+                    onClick={handleImportFromMod1}
+                    className="text-xs bg-[#E9EFF5] text-[#1C3D5A] px-2 py-1 rounded hover:bg-[#1C3D5A] hover:text-white transition-colors"
+                  >
+                    Importar de Módulo 1
+                  </button>
+                )}
+                <ResetButton moduleKey="golpe-ariete" onReset={reset} />
+              </div>
             </div>
 
             <InputField label="Nombre del proyecto" value={inputs.projectName} onChange={(v) => setInput("projectName", v)} type="text" />

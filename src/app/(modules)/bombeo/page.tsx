@@ -12,10 +12,11 @@ import { calculatePumpOperation } from "@/lib/calculations/pump-operation";
 import { formatNumber } from "@/lib/calculations/conversions";
 import { STANDARD_DNS, MATERIALS } from "@/lib/constants";
 import { saveFormState, loadFormState } from "@/lib/storage/form-persistence";
+import { ResetButton } from "@/components/ui/ResetButton";
 import type { PumpInputMethod, PumpPoint } from "@/types/hydraulic";
 
 export default function BombeoPage() {
-  const { inputs, results, setInput, setResults, addPumpPoint, removePumpPoint, updatePumpPoint } = usePumpOperationStore();
+  const { inputs, results, setInput, setResults, addPumpPoint, removePumpPoint, updatePumpPoint, reset } = usePumpOperationStore();
   const [p2Req, setP2Req] = useState<number>(0); // kg/cm² — pressure required at delivery
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
   const persistRef = useRef<ReturnType<typeof setTimeout>>(undefined);
@@ -70,9 +71,10 @@ export default function BombeoPage() {
         <div className="lg:col-span-2 space-y-5">
           {/* System inputs */}
           <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 space-y-4">
-            <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 border-b border-gray-100 dark:border-gray-700 pb-2">
-              Sistema
-            </h2>
+            <div className="flex items-center justify-between border-b border-gray-100 dark:border-gray-700 pb-2">
+              <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300">Sistema</h2>
+              <ResetButton moduleKey="bombeo" onReset={reset} />
+            </div>
             <InputField label="Nombre del proyecto" value={inputs.projectName} onChange={(v) => setInput("projectName", v)} type="text" />
             <InputField label="Altura geométrica Hg" value={inputs.Hg} onChange={(v) => handleNum("Hg", v)} unit="m" required tooltip="Diferencia de elevacion entre la succion y la descarga de la bomba (z2 - z1)" />
             <InputField label="Presión remanente P2" value={p2Req} onChange={(v) => setP2Req(parseFloat(v) || 0)} unit="kg/cm2" tooltip="Presión minima requerida en el punto de entrega (tanque, red). Si descarga a tanque atmosferico, usar 0." />

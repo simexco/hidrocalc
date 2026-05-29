@@ -15,10 +15,11 @@ import { calculateHazenWilliams, findMaxFlow, compareDiameters } from "@/lib/cal
 import { flowToM3s, m3sToFlow, formatNumber, mcaToKgcm2 } from "@/lib/calculations/conversions";
 import { STANDARD_DNS, STANDARD_DNS_LABELED, MATERIALS, DEFAULTS } from "@/lib/constants";
 import { saveFormState, loadFormState } from "@/lib/storage/form-persistence";
+import { ResetButton } from "@/components/ui/ResetButton";
 import type { CalcMode, FlowUnit, AssumedValue, Alert } from "@/types/hydraulic";
 
 export default function TramoSimplePage() {
-  const { inputs, results, setInput, setResults } = useSinglePipeStore();
+  const { inputs, results, setInput, setResults, reset } = useSinglePipeStore();
   const [simexAccs, setSimexAccs] = useState<SIMEXAcc[]>([]);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
   const persistRef = useRef<ReturnType<typeof setTimeout>>(undefined);
@@ -208,9 +209,10 @@ export default function TramoSimplePage() {
         {/* ── LEFT: Form (40%) ── */}
         <div className="lg:col-span-2 space-y-5">
           <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 space-y-4">
-            <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 border-b border-gray-100 dark:border-gray-700 pb-2">
-              Datos de entrada
-            </h2>
+            <div className="flex items-center justify-between border-b border-gray-100 dark:border-gray-700 pb-2">
+              <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300">Datos de entrada</h2>
+              <ResetButton moduleKey="tramo-simple" onReset={reset} />
+            </div>
 
             <InputField
               label="Nombre del proyecto"

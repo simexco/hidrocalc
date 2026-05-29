@@ -11,10 +11,11 @@ import { calculatePipeSizing } from "@/lib/calculations/diameter-sizing";
 import { flowToM3s, mcaToKgcm2 } from "@/lib/calculations/conversions";
 import { MATERIALS, DEFAULTS } from "@/lib/constants";
 import { saveFormState, loadFormState } from "@/lib/storage/form-persistence";
+import { ResetButton } from "@/components/ui/ResetButton";
 import type { FlowUnit, AssumedValue } from "@/types/hydraulic";
 
 export default function DimensionamientoPage() {
-  const { inputs, results, setInput, setResults } = usePipeSizingStore();
+  const { inputs, results, setInput, setResults, reset } = usePipeSizingStore();
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
   const persistRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
@@ -91,9 +92,10 @@ export default function DimensionamientoPage() {
         {/* Form */}
         <div className="space-y-5">
           <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 space-y-4">
-            <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 border-b border-gray-100 dark:border-gray-700 pb-2">
-              Datos de entrada
-            </h2>
+            <div className="flex items-center justify-between border-b border-gray-100 dark:border-gray-700 pb-2">
+              <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300">Datos de entrada</h2>
+              <ResetButton moduleKey="dimensionamiento" onReset={reset} />
+            </div>
 
             <InputField label="Nombre del proyecto" value={inputs.projectName} onChange={(v) => setInput("projectName", v)} type="text" />
 
