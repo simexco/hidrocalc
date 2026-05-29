@@ -423,18 +423,18 @@ const VALV_NORMA: Record<string,string> = {
   'vcg-r':'AWWA C515','vcg-b':'AWWA C500','vmb-c':'AWWA C504','vmb-dex':'AWWA C504','vmb-w':'ISO 5752'
 }
 const VALV_LABEL: Record<string,string> = {
-  'vcg-r':'V. Compuerta Resilente C515 Sigma','vcg-b':'V. Compuerta Bronce C500 Sigma',
-  'vmb-c':'V. Mariposa C504 Sigma','vmb-dex':'V. Mariposa Doble Exc. Sigma','vmb-w':'V. Mariposa Wafer Sigma'
+  'vcg-r':'V. Compuerta Resilente C515 Sigma Flow','vcg-b':'V. Compuerta Bronce C500 Sigma Flow',
+  'vmb-c':'V. Mariposa C504 Sigma Flow','vmb-dex':'V. Mariposa Doble Exc. Sigma Flow','vmb-w':'V. Mariposa Wafer Sigma Flow'
 }
 // Tornillo SKU → medida comercial
 const TOR_DESC: Record<string,string> = {
-  'DN-TOR-5/821/2':'Tornillo T-Head 5/8" x 2-1/2"',
-  'DN-TOR-5/83':'Tornillo T-Head 5/8" x 3"',
-  'DN-TOR-3/431/2':'Tornillo T-Head 3/4" x 3-1/2"',
-  'DN-TOR-7/84':'Tornillo T-Head 7/8" x 4"',
-  'DN-TOR-141/2':'Tornillo T-Head 1" x 4-1/2"',
-  'DN-TOR-11/85':'Tornillo T-Head 1-1/8" x 5"',
-  'DN-TOR-11/451/2':'Tornillo T-Head 1-1/4" x 5-1/2"',
+  'DN-TOR-5/821/2':'Tornillo 5/8" x 2-1/2"',
+  'DN-TOR-5/83':'Tornillo 5/8" x 3"',
+  'DN-TOR-3/431/2':'Tornillo 3/4" x 3-1/2"',
+  'DN-TOR-7/84':'Tornillo 7/8" x 4"',
+  'DN-TOR-141/2':'Tornillo 1" x 4-1/2"',
+  'DN-TOR-11/85':'Tornillo 1-1/8" x 5"',
+  'DN-TOR-11/451/2':'Tornillo 1-1/4" x 5-1/2"',
 }
 const VALV_RANGO: Record<string,string> = {
   'vcg-r':'2"-36" · 250 PSI','vcg-b':'2"-24" · 250 PSI',
@@ -590,7 +590,7 @@ export default function ListaMaterialesSIMEX({
   }
   function addCheck(tipo:'check'|'duo-check') {
     const isWafer=tipo==='duo-check'
-    add({ label:`${isWafer?'Duo Check Wafer':'Check Resilente C508'} ${dn} Sigma`,
+    add({ label:`${isWafer?'Duo Check Wafer':'Check Resilente C508'} ${dn} Sigma Flow`,
       sku:'← CONF', dn, bridas:isWafer?0:2, leKey:tipo, norma:'AWWA C508', isWafer, qty:1 })
   }
   function addFin() {
@@ -598,7 +598,7 @@ export default function ListaMaterialesSIMEX({
       dn, bridas:1, leKey:'tapa-ciega', norma:'AWWA C110', qty:1 })
   }
   function addCople() {
-    add({ label:`Carrete de Desmontaje ${dn} Sigma`, sku:CDM[dn]??'← CONF',
+    add({ label:`Carrete de Desmontaje ${dn} Sigma Flow`, sku:CDM[dn]??'← CONF',
       dn, bridas:2, leKey:'cople', norma:'AWWA', qty:1 })
   }
   function addMarco() {
@@ -626,13 +626,13 @@ export default function ListaMaterialesSIMEX({
       const extOD=kd.eo??kd.od??''
       const gibOD=kd.g?.replace('JN-JGI-','')??''
       if(opcion==='A'&&kd.a) {
-        kitItems.push({sku:kd.a, desc:`Adaptador Bridado Universal ${dnKit} Sigma`, qty:nBridas, norma:'EN 14525', dnKit})
+        kitItems.push({sku:kd.a, desc:`Adaptador Bridado Universal ${dnKit} Sigma Flow`, qty:nBridas, norma:'EN 14525', dnKit})
       } else if(kd.e) {
-        kitItems.push({sku:kd.e, desc:`Extremidad Bridada ${dnKit} OD ${extOD}mm Sigma`, qty:nBridas, norma:'AWWA C110', dnKit})
-        if(kd.g) kitItems.push({sku:kd.g, desc:`Junta Gibault ${gibOD}mm Sigma`, qty:nBridas, norma:'AWWA', dnKit})
+        kitItems.push({sku:kd.e, desc:`Extremidad Bridada ${dnKit} OD ${extOD}mm Sigma Flow`, qty:nBridas, norma:'AWWA C110', dnKit})
+        if(kd.g) kitItems.push({sku:kd.g, desc:`Junta Gibault ${gibOD}mm Sigma Flow`, qty:nBridas, norma:'AWWA', dnKit})
       }
-      if(kd.em) kitItems.push({sku:kd.em, desc:`Empaque ${dnKit} Sigma`, qty:nBridas, norma:'—', dnKit})
-      if(kd.t) kitItems.push({sku:kd.t, desc:`${TOR_DESC[kd.t]??`Tornillo ${dnKit}`} Sigma`, qty:nBridas*(kd.b??8), norma:'—', dnKit})
+      if(kd.em) kitItems.push({sku:kd.em, desc:`Empaque ${dnKit}`, qty:nBridas, norma:'—', dnKit})
+      if(kd.t) kitItems.push({sku:kd.t, desc:`${TOR_DESC[kd.t]??`Tornillo ${dnKit}`}`, qty:nBridas*(kd.b??8), norma:'—', dnKit})
     })
   }
 
