@@ -627,7 +627,9 @@ export default function ListaMaterialesSIMEX({
   }
   function addCheck(tipo:'check'|'duo-check') {
     const isWafer=tipo==='duo-check'
-    add({ label:`${isWafer?'Duo Check Wafer':'Check Resilente C508'} ${dn} Sigma Flow`,
+    const bigDN = DN_ORDER.indexOf(dn) >= DN_ORDER.indexOf('18"')
+    const checkLabel = isWafer ? 'Duo Check Wafer' : bigDN ? 'Check Compuerta Bronce' : 'Check Resilente C508'
+    add({ label:`${checkLabel} ${dn} Sigma Flow`,
       sku:'← CONF', dn, bridas:isWafer?0:2, leKey:tipo, norma:'AWWA C508', isWafer, qty:1 })
   }
   function addFin() {
