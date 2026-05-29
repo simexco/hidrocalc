@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 
 interface InputFieldProps {
   label: string;
@@ -41,6 +41,56 @@ export function InputField({
 }: InputFieldProps) {
   const [showTooltip, setShowTooltip] = useState(false);
 
+  // Local string state — the input always edits this, never the store directly
+  const [localValue, setLocalValue] = useState(() =>
+    value != null ? String(value) : ""
+  );
+  const isFocused = useRef(false);
+  const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
+
+  // Sync from parent → local ONLY when not focused (external changes like reset, import, etc.)
+  useEffect(() => {
+    if (!isFocused.current) {
+      setLocalValue(value != null ? String(value) : "");
+    }
+  }, [value]);
+
+  // Debounced push to parent store (150ms after last keystroke)
+  const pushToStore = useCallback(
+    (raw: string) => {
+      clearTimeout(debounceRef.current);
+      debounceRef.current = setTimeout(() => {
+        onChange(raw);
+      }, 150);
+    },
+    [onChange]
+  );
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const raw = e.target.value;
+    setLocalValue(raw); // instant local update — no lag
+    pushToStore(raw);   // debounced store update
+  };
+
+  const handleFocus = () => {
+    isFocused.current = true;
+  };
+
+  const handleBlur = () => {
+    isFocused.current = false;
+    // Flush immediately on blur — clean up value
+    clearTimeout(debounceRef.current);
+    onChange(localValue);
+
+    // For number fields: clean display (strip leading zeros, etc.)
+    if (type === "number" && localValue !== "") {
+      const num = parseFloat(localValue);
+      if (!isNaN(num)) {
+        setLocalValue(String(num));
+      }
+    }
+  };
+
   const borderClass = error
     ? "border-red-400 focus:ring-red-300"
     : assumed
@@ -78,8 +128,10 @@ export function InputField({
       <div className="flex items-center gap-1">
         <input
           type={type}
-          value={value ?? ""}
-          onChange={(e) => onChange(e.target.value)}
+          value={localValue}
+          onChange={handleChange}
+          onFocus={handleFocus}
+          onBlur={handleBlur}
           placeholder={placeholder}
           disabled={disabled}
           min={min}
