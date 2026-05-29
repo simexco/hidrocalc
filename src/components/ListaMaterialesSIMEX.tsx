@@ -628,9 +628,19 @@ export default function ListaMaterialesSIMEX({
   function addCheck(tipo:'check'|'duo-check') {
     const isWafer=tipo==='duo-check'
     const bigDN = DN_ORDER.indexOf(dn) >= DN_ORDER.indexOf('18"')
-    const checkLabel = isWafer ? 'Duo Check Wafer' : bigDN ? 'Check Compuerta Bronce' : 'Check Resilente C508'
-    add({ label:`${checkLabel} ${dn} Sigma Flow`,
-      sku:'← CONF', dn, bridas:isWafer?0:2, leKey:tipo, norma:'AWWA C508', isWafer, qty:1 })
+    const dnNum = dn.replace('"','').replace('½','.5')
+    let checkLabel:string, checkSku:string
+    if (isWafer) {
+      checkLabel = `Duo Check Wafer ${dn} Sigma Flow`
+      checkSku = `VI-DCK-${dnNum}`
+    } else if (bigDN) {
+      checkLabel = `Check Compuerta Bronce ${dn} Sigma Flow`
+      checkSku = `VI-CHK-${dnNum}`
+    } else {
+      checkLabel = `Check Resilente C508 ${dn} Sigma Flow`
+      checkSku = `VI-CHK-R${dnNum}`
+    }
+    add({ label:checkLabel, sku:checkSku, dn, bridas:isWafer?0:2, leKey:tipo, norma:'AWWA C508', isWafer, qty:1 })
   }
   function addFin() {
     add({ label:`Tapa Ciega HD ${dn} Sigma`, sku:TAPA[dn]??'← CONF',
