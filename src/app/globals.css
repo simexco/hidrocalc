@@ -15,29 +15,48 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 @media print {
-  nav, header, aside, footer, .no-print, button:not(.keep-print) {
-    display: none !important;
+  /* Hide everything by default */
+  body * {
+    visibility: hidden;
+  }
+  /* Show only the SIMEX print area and its children */
+  .simex-print-area,
+  .simex-print-area * {
+    visibility: visible !important;
   }
   .simex-print-area {
-    display: block !important;
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
     border: none !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
   }
+  /* Header */
   .simex-print-area::before {
-    content: 'ESPECIFICACIÓN TÉCNICA DE MATERIALES — SIMEX S.H.I. de México';
+    content: 'LISTA DE MATERIALES — SIMEX · Soluciones en Infraestructura Hidraulica';
     display: block;
     font-size: 14px;
     font-weight: bold;
-    margin-bottom: 8px;
-    border-bottom: 2px solid #000;
-    padding-bottom: 6px;
+    margin-bottom: 12px;
+    border-bottom: 2px solid #1C3D5A;
+    padding-bottom: 8px;
+    color: #1C3D5A;
   }
+  /* Footer */
   .simex-print-area::after {
     content: 'COTIZA CON TU DISTRIBUIDOR AUTORIZADO SIMEX · GDL 33-3145-2626 · CDMX 55-2124-0024 · MTY 818-3377-4448 · simexco.com.mx';
     display: block;
     font-size: 10px;
     margin-top: 16px;
-    padding: 8px;
-    border: 2px solid #000;
+    padding: 10px;
+    border: 2px solid #1C3D5A;
     text-align: center;
+    color: #1C3D5A;
+  }
+  /* Clean up print styles */
+  .simex-print-area div {
+    break-inside: avoid;
   }
 }

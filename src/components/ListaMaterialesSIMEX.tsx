@@ -664,9 +664,23 @@ export default function ListaMaterialesSIMEX({
           <span className="text-[10px] text-blue-400 w-20 text-right">{a.norma}</span><button onClick={()=>del(a.id)} className="text-blue-300 hover:text-red-500 transition-colors text-xs ml-1">✕</button></div>))}</>)}
         {detalleHm.length>0 && (<><div className="bg-gray-100 dark:bg-gray-700 px-4 py-2 text-[10px] font-semibold text-gray-500 uppercase tracking-wider">Pérdidas por accesorio — Crane TP-410 / AWWA</div><div className="px-4 py-2"><table className="w-full text-[11px]"><thead><tr className="border-b border-gray-200 text-gray-400"><th className="text-left px-1 py-1 font-medium">Accesorio</th><th className="text-center px-1 py-1 font-medium">Le/D</th><th className="text-center px-1 py-1 font-medium">Le (m)</th><th className="text-center px-1 py-1 font-medium">ΔhF (m)</th></tr></thead><tbody>{detalleHm.map((d,i)=>(<tr key={i} className="border-b border-gray-100"><td className="px-1 py-1 text-gray-600">{d.label}</td><td className="px-1 py-1 text-center text-gray-400 font-mono">{d.leD}</td><td className="px-1 py-1 text-center font-mono">{d.Le.toFixed(2)}</td><td className="px-1 py-1 text-center font-mono text-red-500">{d.dH.toFixed(3)}</td></tr>))}<tr className="border-t-2 border-gray-300 font-semibold"><td className="px-1 py-1.5">TOTAL</td><td></td><td className="px-1 py-1.5 text-center font-mono">{sumaLe.toFixed(2)}</td><td className="px-1 py-1.5 text-center font-mono text-red-500">{hmReal}</td></tr></tbody></table></div></>)}
         {accs.length===0 && (<div className="p-8 text-center text-gray-400 text-sm">Agrega accesorios en el panel izquierdo</div>)}
+        {/* Items pending confirmation */}
+        {accs.some(a=>a.sku==='← CONF') && (
+          <div className="bg-amber-50 dark:bg-amber-900/10 px-4 py-3 border-t border-amber-200">
+            <p className="text-xs font-semibold text-amber-700 mb-1">{"⚠"} Materiales por confirmar</p>
+            <p className="text-[11px] text-amber-600 leading-relaxed">Los articulos marcados con {"«"}CONF{"»"} requieren confirmacion de SKU con tu distribuidor SIMEX. Agregarlos a tu cotizacion para que el asesor los incluya.</p>
+          </div>
+        )}
+        {/* CTA */}
+        {accs.length>0 && (
+          <div className="bg-[#1C3D5A] px-4 py-3 text-center">
+            <p className="text-[11px] text-white/90 mb-1">No encuentras algun material? Agregalo a tu cotizacion</p>
+            <p className="text-[10px] text-white/50">Tu distribuidor SIMEX puede confirmar disponibilidad y precios de toda la lista</p>
+          </div>
+        )}
       </div>
       <div className="flex gap-2 flex-wrap"><button onClick={()=>window.print()} className="px-4 py-2 rounded-lg bg-[#1C3D5A] text-white text-xs font-medium hover:bg-[#0F2438] transition-colors shadow-sm">Generar PDF para distribuidor</button><button onClick={()=>{const lines=['SKU\tDescripción\tCantidad\tNorma'];piezasPrinc.forEach(a=>lines.push(`${a.sku}\t${a.label}\t${a.qty}\t${a.norma}`));kitItems.forEach(k=>lines.push(`${k.sku}\t${k.desc}\t${k.qty||'?'}\t${k.norma}`));piezasObra.forEach(a=>lines.push(`${a.sku}\t${a.label}\t${a.qty}\t${a.norma}`));navigator.clipboard.writeText(lines.join('\n')).then(()=>alert('Lista copiada'))}} className="px-4 py-2 rounded-lg border border-gray-200 text-xs text-gray-600 hover:bg-gray-50 transition-colors">Copiar SKUs</button></div>
-      <p className="text-[9px] text-gray-400 pt-2 border-t border-gray-100">ℹ Contacte a su distribuidor SIMEX autorizado · simexco.com.mx</p>
+      <p className="text-[9px] text-gray-400 pt-2 border-t border-gray-100">Contacte a su distribuidor SIMEX autorizado · simexco.com.mx</p>
     </div>
   )
 
@@ -776,6 +790,18 @@ export default function ListaMaterialesSIMEX({
           {detalleHm.length>0 && (<><div className="bg-gray-100 dark:bg-gray-700 px-4 py-2 text-[10px] font-semibold text-gray-500 uppercase tracking-wider">Pérdidas por accesorio — Crane TP-410 / AWWA</div><div className="px-4 py-2"><table className="w-full text-[11px]"><thead><tr className="border-b border-gray-200 text-gray-400"><th className="text-left px-1 py-1 font-medium">Accesorio</th><th className="text-center px-1 py-1 font-medium">Le/D</th><th className="text-center px-1 py-1 font-medium">Le (m)</th><th className="text-center px-1 py-1 font-medium">ΔhF (m)</th></tr></thead><tbody>{detalleHm.map((d,i)=>(<tr key={i} className="border-b border-gray-100"><td className="px-1 py-1 text-gray-600">{d.label}</td><td className="px-1 py-1 text-center text-gray-400 font-mono">{d.leD}</td><td className="px-1 py-1 text-center font-mono">{d.Le.toFixed(2)}</td><td className="px-1 py-1 text-center font-mono text-red-500">{d.dH.toFixed(3)}</td></tr>))}<tr className="border-t-2 border-gray-300 font-semibold"><td className="px-1 py-1.5">TOTAL</td><td></td><td className="px-1 py-1.5 text-center font-mono">{sumaLe.toFixed(2)}</td><td className="px-1 py-1.5 text-center font-mono text-red-500">{hmReal}</td></tr></tbody></table><p className="text-[9px] text-gray-400 mt-1">hm = J × ΣLe · J = hf/L = {hf&&L_m?(hf/L_m).toFixed(4):'—'} m/m</p></div></>)}
 
           {accs.length===0 && (<div className="p-8 text-center text-gray-400 text-sm">Agrega accesorios para ver la lista de materiales SIMEX</div>)}
+          {accs.some(a=>a.sku==='← CONF') && (
+            <div className="bg-amber-50 dark:bg-amber-900/10 px-4 py-3 border-t border-amber-200">
+              <p className="text-xs font-semibold text-amber-700 mb-1">{"⚠"} Materiales por confirmar</p>
+              <p className="text-[11px] text-amber-600 leading-relaxed">Los articulos marcados con {"«"}CONF{"»"} requieren confirmacion de SKU con tu distribuidor SIMEX. Agregarlos a tu cotizacion para que el asesor los incluya.</p>
+            </div>
+          )}
+          {accs.length>0 && (
+            <div className="bg-[#1C3D5A] px-4 py-3 text-center">
+              <p className="text-[11px] text-white/90 mb-1">No encuentras algun material? Agregalo a tu cotizacion</p>
+              <p className="text-[10px] text-white/50">Tu distribuidor SIMEX puede confirmar disponibilidad y precios de toda la lista</p>
+            </div>
+          )}
         </div>
 
         <div className="flex gap-2 flex-wrap">
