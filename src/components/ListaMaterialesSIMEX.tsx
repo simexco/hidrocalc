@@ -423,8 +423,18 @@ const VALV_NORMA: Record<string,string> = {
   'vcg-r':'AWWA C515','vcg-b':'AWWA C500','vmb-c':'AWWA C504','vmb-dex':'AWWA C504','vmb-w':'ISO 5752'
 }
 const VALV_LABEL: Record<string,string> = {
-  'vcg-r':'Comp. Resilente C515','vcg-b':'Comp. Bronce C500',
-  'vmb-c':'Mariposa C504','vmb-dex':'Mariposa D.Exc.','vmb-w':'Mariposa Wafer'
+  'vcg-r':'V. Compuerta Resilente C515 Sigma','vcg-b':'V. Compuerta Bronce C500 Sigma',
+  'vmb-c':'V. Mariposa C504 Sigma','vmb-dex':'V. Mariposa Doble Exc. Sigma','vmb-w':'V. Mariposa Wafer Sigma'
+}
+// Tornillo SKU → medida comercial
+const TOR_DESC: Record<string,string> = {
+  'DN-TOR-5/821/2':'Tornillo T-Head 5/8" x 2-1/2"',
+  'DN-TOR-5/83':'Tornillo T-Head 5/8" x 3"',
+  'DN-TOR-3/431/2':'Tornillo T-Head 3/4" x 3-1/2"',
+  'DN-TOR-7/84':'Tornillo T-Head 7/8" x 4"',
+  'DN-TOR-141/2':'Tornillo T-Head 1" x 4-1/2"',
+  'DN-TOR-11/85':'Tornillo T-Head 1-1/8" x 5"',
+  'DN-TOR-11/451/2':'Tornillo T-Head 1-1/4" x 5-1/2"',
 }
 const VALV_RANGO: Record<string,string> = {
   'vcg-r':'2"-36" · 250 PSI','vcg-b':'2"-24" · 250 PSI',
@@ -549,7 +559,7 @@ export default function ListaMaterialesSIMEX({
   // ── handlers ─────────────────────────────────────────────────
   function addCodo(ang:string) {
     const c = findConn('Codo',dn,ang+'°')
-    add({ label:`Codo ${dn}×${ang}°`, sku:c?.sk??`CI-CFB-${dn.replace('"','').replace('½','.5')}${ang}`,
+    add({ label:`Codo ${dn}×${ang}° Sigma`, sku:c?.sk??`CI-CFB-${dn.replace('"','').replace('½','.5')}${ang}`,
       dn, bridas:2, leKey:`codo-${ang}`, norma:'AWWA C110', qty:1 })
   }
   function addBif(tipo:'tee'|'cruz', igual:boolean, dn2?:string) {
@@ -557,7 +567,7 @@ export default function ListaMaterialesSIMEX({
     const c=findConn(tipo==='tee'?'Tee':'Cruz',dn,d2)
     const bridasP = igual ? (tipo==='tee'?3:4) : (tipo==='tee'?2:2)
     const bridasS = igual ? 0 : (tipo==='tee'?1:2)
-    add({ label:`${tipo==='tee'?'Tee':'Cruz'} ${dn}${igual?'':'×'+d2}`,
+    add({ label:`${tipo==='tee'?'Tee':'Cruz'} ${dn}${igual?'':'×'+d2} Sigma`,
       sku:c?.sk??'← CONF', dn, dn2:igual?undefined:d2, bridas:bridasP, bridas2:bridasS,
       leKey:'tee-lateral', norma:'AWWA C110', qty:1 })
   }
@@ -566,12 +576,13 @@ export default function ListaMaterialesSIMEX({
     const isWafer=tipo==='vmb-w'
     add({ label:`${VALV_LABEL[tipo]??tipo} ${dn}`, sku, dn,
       bridas:isWafer?0:2, leKey:tipo, norma:VALV_NORMA[tipo]??'AWWA', isWafer, qty:1 })
+    // Note: VALV_LABEL already includes "Sigma"
     if(!isWafer) setSugEnterrada(true)
   }
   function addReduc(tipo:string, dn2:string) {
     if(tipo==='linea') {
       const c=findConn('Redu',dn,dn2)
-      add({ label:`Reducción ${dn}×${dn2}`, sku:c?.sk??'← CONF',
+      add({ label:`Reducción ${dn}×${dn2} Sigma`, sku:c?.sk??'← CONF',
         dn, dn2, bridas:2, leKey:'reduccion', norma:'AWWA C110', qty:1 })
     } else if(tipo==='deriv') {
       addBif('tee',false,dn2)
@@ -579,15 +590,15 @@ export default function ListaMaterialesSIMEX({
   }
   function addCheck(tipo:'check'|'duo-check') {
     const isWafer=tipo==='duo-check'
-    add({ label:`${isWafer?'Duo Check Wafer':'Check Resilente C508'} ${dn}`,
+    add({ label:`${isWafer?'Duo Check Wafer':'Check Resilente C508'} ${dn} Sigma`,
       sku:'← CONF', dn, bridas:isWafer?0:2, leKey:tipo, norma:'AWWA C508', isWafer, qty:1 })
   }
   function addFin() {
-    add({ label:`Tapa Ciega HD ${dn}`, sku:TAPA[dn]??'← CONF',
+    add({ label:`Tapa Ciega HD ${dn} Sigma`, sku:TAPA[dn]??'← CONF',
       dn, bridas:1, leKey:'tapa-ciega', norma:'AWWA C110', qty:1 })
   }
   function addCople() {
-    add({ label:`Carrete de Desmontaje ${dn}`, sku:CDM[dn]??'← CONF',
+    add({ label:`Carrete de Desmontaje ${dn} Sigma`, sku:CDM[dn]??'← CONF',
       dn, bridas:2, leKey:'cople', norma:'AWWA', qty:1 })
   }
   function addMarco() {
@@ -615,13 +626,13 @@ export default function ListaMaterialesSIMEX({
       const extOD=kd.eo??kd.od??''
       const gibOD=kd.g?.replace('JN-JGI-','')??''
       if(opcion==='A'&&kd.a) {
-        kitItems.push({sku:kd.a, desc:`Adaptador Bridado Universal ${dnKit}`, qty:nBridas, norma:'EN 14525', dnKit})
+        kitItems.push({sku:kd.a, desc:`Adaptador Bridado Universal ${dnKit} Sigma`, qty:nBridas, norma:'EN 14525', dnKit})
       } else if(kd.e) {
-        kitItems.push({sku:kd.e, desc:`Extremidad Bridada ${dnKit} (OD ${extOD}mm)`, qty:nBridas, norma:'AWWA C110', dnKit})
-        if(kd.g) kitItems.push({sku:kd.g, desc:`Junta Gibault ${gibOD}mm`, qty:nBridas, norma:'AWWA', dnKit})
+        kitItems.push({sku:kd.e, desc:`Extremidad Bridada ${dnKit} OD ${extOD}mm Sigma`, qty:nBridas, norma:'AWWA C110', dnKit})
+        if(kd.g) kitItems.push({sku:kd.g, desc:`Junta Gibault ${gibOD}mm Sigma`, qty:nBridas, norma:'AWWA', dnKit})
       }
-      if(kd.em) kitItems.push({sku:kd.em, desc:`Empaque DN ${dnKit}`, qty:nBridas, norma:'—', dnKit})
-      if(kd.t) kitItems.push({sku:kd.t, desc:`Tornillo DN ${dnKit}`, qty:nBridas*(kd.b??8), norma:'—', dnKit})
+      if(kd.em) kitItems.push({sku:kd.em, desc:`Empaque ${dnKit} Sigma`, qty:nBridas, norma:'—', dnKit})
+      if(kd.t) kitItems.push({sku:kd.t, desc:`${TOR_DESC[kd.t]??`Tornillo ${dnKit}`} Sigma`, qty:nBridas*(kd.b??8), norma:'—', dnKit})
     })
   }
 
