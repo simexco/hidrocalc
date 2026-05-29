@@ -436,6 +436,24 @@ const TOR_DESC: Record<string,string> = {
   'DN-TOR-11/85':'Tornillo 1-1/8" x 5"',
   'DN-TOR-11/451/2':'Tornillo 1-1/4" x 5-1/2"',
 }
+// ABU SKU → rango OD en mm
+const ABU_RANGO: Record<string,string> = {
+  'CI-ABU-2':'2"','CI-ABU-24860':'2" (48-60mm)',
+  'CI-ABU-257285':'2-1/2" (72-85mm)',
+  'CI-ABU-3':'3"','CI-ABU-496116':'3"-4" (96-116mm)',
+  'CI-ABU-4109130':'4" (109-130mm)','CI-ABU-4107135':'4" (107-135mm)',
+  'CI-ABU-6159184':'6" (159-184mm)',
+  'CI-ABU-8I':'8" Ingles','CI-ABU-8M':'8" Metrico','CI-ABU-8214249':'8" (214-249mm)',
+  'CI-ABU-10AC':'10" Acero/IPS','CI-ABU-10272308':'10" (272-308mm)','CI-ABU-10245267':'10" (245-267mm)',
+  'CI-ABU-12':'12"','CI-ABU-12322342':'12" (322-342mm)','CI-ABU-12324365':'12" (324-365mm)',
+  'CI-ABU-14':'14"','CI-ABU-14374391':'14" (374-391mm)',
+  'CI-ABU-16':'16"','CI-ABU-16425442':'16" (425-442mm)','CI-ABU-16390435':'16" (390-435mm)',
+  'CI-ABU-18445472':'18" (445-472mm)','CI-ABU-18480510':'18" (480-510mm)',
+  'CI-ABU-20500532':'20" (500-532mm)','CI-ABU-20527544':'20" (527-544mm)',
+  'CI-ABU-24':'24"','CI-ABU-24645680':'24" (645-680mm)',
+  'CI-ABP-EAD3':'3" PEAD','CI-ABP-EAD4':'4" PEAD','CI-ABP-EAD6':'6" PEAD',
+  'CI-ABP-EAD8':'8" PEAD','CI-ABP-EAD10':'10" PEAD','CI-ABP-EAD12':'12" PEAD',
+}
 const VALV_RANGO: Record<string,string> = {
   'vcg-r':'2"-36" · 250 PSI','vcg-b':'2"-24" · 250 PSI',
   'vmb-c':'3"-24" · 250 PSI','vmb-dex':'30"-36" · 150 PSI','vmb-w':'2"-12" · 150 PSI'
@@ -626,7 +644,8 @@ export default function ListaMaterialesSIMEX({
       const extOD=kd.eo??kd.od??''
       const gibOD=kd.g?.replace('JN-JGI-','')??''
       if(opcion==='A'&&kd.a) {
-        kitItems.push({sku:kd.a, desc:`Adaptador Bridado Universal ${dnKit} Sigma Flow`, qty:nBridas, norma:'EN 14525', dnKit})
+        const abuRango = ABU_RANGO[kd.a] || dnKit
+        kitItems.push({sku:kd.a, desc:`Adaptador Bridado Universal ${abuRango} Sigma Flow`, qty:nBridas, norma:'EN 14525', dnKit})
       } else if(kd.e) {
         kitItems.push({sku:kd.e, desc:`Extremidad Bridada ${dnKit} OD ${extOD}mm Sigma Flow`, qty:nBridas, norma:'AWWA C110', dnKit})
         if(kd.g) kitItems.push({sku:kd.g, desc:`Junta Gibault ${gibOD}mm Sigma Flow`, qty:nBridas, norma:'AWWA', dnKit})
