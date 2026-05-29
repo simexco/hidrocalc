@@ -437,22 +437,41 @@ const TOR_DESC: Record<string,string> = {
   'DN-TOR-11/451/2':'Tornillo 1-1/4" x 5-1/2"',
 }
 // ABU SKU → rango OD en mm
-const ABU_RANGO: Record<string,string> = {
-  'CI-ABU-2':'2"','CI-ABU-24860':'2" (48-60mm)',
-  'CI-ABU-257285':'2-1/2" (72-85mm)',
-  'CI-ABU-3':'3"','CI-ABU-496116':'3"-4" (96-116mm)',
-  'CI-ABU-4109130':'4" (109-130mm)','CI-ABU-4107135':'4" (107-135mm)',
-  'CI-ABU-6159184':'6" (159-184mm)',
-  'CI-ABU-8I':'8" Ingles','CI-ABU-8M':'8" Metrico','CI-ABU-8214249':'8" (214-249mm)',
-  'CI-ABU-10AC':'10" Acero/IPS','CI-ABU-10272308':'10" (272-308mm)','CI-ABU-10245267':'10" (245-267mm)',
-  'CI-ABU-12':'12"','CI-ABU-12322342':'12" (322-342mm)','CI-ABU-12324365':'12" (324-365mm)',
-  'CI-ABU-14':'14"','CI-ABU-14374391':'14" (374-391mm)',
-  'CI-ABU-16':'16"','CI-ABU-16425442':'16" (425-442mm)','CI-ABU-16390435':'16" (390-435mm)',
-  'CI-ABU-18445472':'18" (445-472mm)','CI-ABU-18480510':'18" (480-510mm)',
-  'CI-ABU-20500532':'20" (500-532mm)','CI-ABU-20527544':'20" (527-544mm)',
-  'CI-ABU-24':'24"','CI-ABU-24645680':'24" (645-680mm)',
-  'CI-ABP-EAD3':'3" PEAD','CI-ABP-EAD4':'4" PEAD','CI-ABP-EAD6':'6" PEAD',
-  'CI-ABP-EAD8':'8" PEAD','CI-ABP-EAD10':'10" PEAD','CI-ABP-EAD12':'12" PEAD',
+const ABU_DESC: Record<string,string> = {
+  'CI-ABU-2':'Adaptador de Brida Universal de 2" de 59 a 72 mm Sigma Flow',
+  'CI-ABU-24860':'Adaptador de Brida Universal de 2" de 48 a 60 mm Sigma Flow',
+  'CI-ABU-257285':'Adaptador de Brida Universal de 2.5" de 72 a 85 mm Sigma Flow',
+  'CI-ABU-3':'Adaptador de Brida Universal de 3" de 88 a 103 mm Sigma Flow',
+  'CI-ABU-496116':'Adaptador de Brida Universal de 4" de 96 a 116 mm Sigma Flow',
+  'CI-ABU-4109130':'Adaptador de Brida Universal de 4" de 109 a 130 mm Sigma Flow',
+  'CI-ABU-4107135':'Adaptador de Brida Universal de 4" de 107 a 135 mm Sigma Flow',
+  'CI-ABU-6159184':'Adaptador de Brida Universal de 6" de 159 a 184 mm Sigma Flow',
+  'CI-ABU-8I':'Adaptador de Brida Universal de 8" Ingles Sigma Flow',
+  'CI-ABU-8M':'Adaptador de Brida Universal de 8" Metrico Sigma Flow',
+  'CI-ABU-8214249':'Adaptador de Brida Universal de 8" de 214 a 249 mm Sigma Flow',
+  'CI-ABU-10AC':'Adaptador de Brida Universal de 10" de 272 a 289 mm Sigma Flow',
+  'CI-ABU-10272308':'Adaptador de Brida Universal de 10" de 272 a 308 mm Sigma Flow',
+  'CI-ABU-10245267':'Adaptador de Brida Universal de 10" de 245 a 267 mm Sigma Flow',
+  'CI-ABU-12':'Adaptador de Brida Universal de 12" de 315 a 332 mm Sigma Flow',
+  'CI-ABU-12322342':'Adaptador de Brida Universal de 12" de 322 a 342 mm Sigma Flow',
+  'CI-ABU-12324365':'Adaptador de Brida Universal de 12" de 324 a 365 mm Sigma Flow',
+  'CI-ABU-14':'Adaptador de Brida Universal de 14" de 351 a 378 mm Sigma Flow',
+  'CI-ABU-14374391':'Adaptador de Brida Universal de 14" de 374 a 391 mm Sigma Flow',
+  'CI-ABU-16':'Adaptador de Brida Universal de 16" de 390 a 410 mm Sigma Flow',
+  'CI-ABU-16425442':'Adaptador de Brida Universal de 16" de 425 a 442 mm Sigma Flow',
+  'CI-ABU-16390435':'Adaptador de Brida Universal de 16" de 390 a 435 mm Sigma Flow',
+  'CI-ABU-18445472':'Adaptador de Brida Universal de 18" de 445 a 472 mm Sigma Flow',
+  'CI-ABU-18480510':'Adaptador de Brida Universal de 18" de 480 a 510 mm Sigma Flow',
+  'CI-ABU-20500532':'Adaptador de Brida Universal de 20" de 500 a 532 mm Sigma Flow',
+  'CI-ABU-20527544':'Adaptador de Brida Universal de 20" de 527 a 544 mm Sigma Flow',
+  'CI-ABU-24':'Adaptador de Brida Universal de 24" de 608 a 636 mm Sigma Flow',
+  'CI-ABU-24645680':'Adaptador de Brida Universal de 24" de 645 a 680 mm Sigma Flow',
+  'CI-ABP-EAD3':'Adaptador de Brida Universal de 3" PEAD Sigma Flow',
+  'CI-ABP-EAD4':'Adaptador de Brida Universal de 4" PEAD Sigma Flow',
+  'CI-ABP-EAD6':'Adaptador de Brida Universal de 6" PEAD Sigma Flow',
+  'CI-ABP-EAD8':'Adaptador de Brida Universal de 8" PEAD Sigma Flow',
+  'CI-ABP-EAD10':'Adaptador de Brida Universal de 10" PEAD Sigma Flow',
+  'CI-ABP-EAD12':'Adaptador de Brida Universal de 12" PEAD Sigma Flow',
 }
 const VALV_RANGO: Record<string,string> = {
   'vcg-r':'2"-36" · 250 PSI','vcg-b':'2"-24" · 250 PSI',
@@ -644,8 +663,7 @@ export default function ListaMaterialesSIMEX({
       const extOD=kd.eo??kd.od??''
       const gibOD=kd.g?.replace('JN-JGI-','')??''
       if(opcion==='A'&&kd.a) {
-        const abuRango = ABU_RANGO[kd.a] || dnKit
-        kitItems.push({sku:kd.a, desc:`Adaptador Bridado Universal ${abuRango} Sigma Flow`, qty:nBridas, norma:'EN 14525', dnKit})
+        kitItems.push({sku:kd.a, desc:ABU_DESC[kd.a]||`Adaptador de Brida Universal ${dnKit} Sigma Flow`, qty:nBridas, norma:'EN 14525', dnKit})
       } else if(kd.e) {
         kitItems.push({sku:kd.e, desc:`Extremidad Bridada ${dnKit} OD ${extOD}mm Sigma Flow`, qty:nBridas, norma:'AWWA C110', dnKit})
         if(kd.g) kitItems.push({sku:kd.g, desc:`Junta Gibault ${gibOD}mm Sigma Flow`, qty:nBridas, norma:'AWWA', dnKit})
