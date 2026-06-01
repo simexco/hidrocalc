@@ -8,10 +8,10 @@ import { AlertBanner } from "@/components/ui/AlertBanner";
 import { DataStatusBanner } from "@/components/ui/DataStatusBanner";
 import { ExportPDFButton } from "@/components/ui/ExportPDFButton";
 import { ResetButton } from "@/components/ui/ResetButton";
-import { calculateProfile, type ProfileVertex, type ProfileResults } from "@/lib/calculations/hydraulic-profile";
-import { flowToM3s, formatNumber, mcaToKgcm2 } from "@/lib/calculations/conversions";
+import { calculateProfile, type ProfileVertex, type ProfileTramo, type ProfileResults } from "@/lib/calculations/hydraulic-profile";
+import { flowToM3s, formatNumber } from "@/lib/calculations/conversions";
 import { STANDARD_DNS, MATERIALS } from "@/lib/constants";
-import { saveFormState, loadFormState, clearFormState } from "@/lib/storage/form-persistence";
+import { saveFormState, loadFormState } from "@/lib/storage/form-persistence";
 import { ComposedChart, Line, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
 import type { FlowUnit } from "@/types/hydraulic";
 
@@ -19,14 +19,14 @@ export default function PerfilPage() {
   const [projectName, setProjectName] = useState("Perfil hidraulico");
   const [rawQ, setRawQ] = useState<number | null>(null);
   const [flowUnit, setFlowUnit] = useState<FlowUnit>("L/s");
-  const [DN, setDN] = useState(150);
-  const [materialName, setMaterialName] = useState(MATERIALS[0].name);
-  const [C, setC] = useState(MATERIALS[0].c);
   const [P1, setP1] = useState<number | null>(null);
   const [Pmin, setPmin] = useState(1.0);
   const [vertices, setVertices] = useState<ProfileVertex[]>([
     { id: uuid(), dist: 0, cota: 100, desc: "Inicio" },
     { id: uuid(), dist: 1000, cota: 95, desc: "Fin" },
+  ]);
+  const [tramos, setTramos] = useState<ProfileTramo[]>([
+    { id: uuid(), distFrom: 0, distTo: 1000, DN_mm: 150, C: MATERIALS[0].c, materialName: MATERIALS[0].name },
   ]);
   const [results, setResults] = useState<ProfileResults | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
@@ -36,33 +36,31 @@ export default function PerfilPage() {
   useEffect(() => {
     const saved = loadFormState<{
       projectName: string; rawQ: number | null; flowUnit: FlowUnit;
-      DN: number; materialName: string; C: number; P1: number | null;
-      Pmin: number; vertices: ProfileVertex[];
+      P1: number | null; Pmin: number;
+      vertices: ProfileVertex[]; tramos: ProfileTramo[];
     }>("perfil");
     if (saved) {
       if (saved.projectName) setProjectName(saved.projectName);
       if (saved.rawQ != null) setRawQ(saved.rawQ);
       if (saved.flowUnit) setFlowUnit(saved.flowUnit);
-      if (saved.DN) setDN(saved.DN);
-      if (saved.materialName) setMaterialName(saved.materialName);
-      if (saved.C) setC(saved.C);
       if (saved.P1 != null) setP1(saved.P1);
       if (saved.Pmin != null) setPmin(saved.Pmin);
       if (saved.vertices?.length >= 2) setVertices(saved.vertices);
+      if (saved.tramos?.length >= 1) setTramos(saved.tramos);
     }
   }, []);
 
   useEffect(() => {
-    const t = setTimeout(() => saveFormState("perfil", { projectName, rawQ, flowUnit, DN, materialName, C, P1, Pmin, vertices }), 1000);
+    const t = setTimeout(() => saveFormState("perfil", { projectName, rawQ, flowUnit, P1, Pmin, vertices, tramos }), 1000);
     return () => clearTimeout(t);
-  }, [projectName, rawQ, flowUnit, DN, materialName, C, P1, Pmin, vertices]);
+  }, [projectName, rawQ, flowUnit, P1, Pmin, vertices, tramos]);
 
   // Calculate
   const runCalc = useCallback(() => {
     const Q = rawQ != null ? flowToM3s(rawQ, flowUnit) : null;
-    const res = calculateProfile({ Q, DN_mm: DN, C, P1_kgcm2: P1, Pmin_kgcm2: Pmin, vertices });
+    const res = calculateProfile({ Q, P1_kgcm2: P1, Pmin_kgcm2: Pmin, vertices, tramos });
     setResults(res);
-  }, [rawQ, flowUnit, DN, C, P1, Pmin, vertices]);
+  }, [rawQ, flowUnit, P1, Pmin, vertices, tramos]);
 
   useEffect(() => {
     clearTimeout(debounceRef.current);
@@ -72,12 +70,13 @@ export default function PerfilPage() {
 
   const handleReset = () => {
     setProjectName("Perfil hidraulico");
-    setRawQ(null); setFlowUnit("L/s"); setDN(150);
-    setMaterialName(MATERIALS[0].name); setC(MATERIALS[0].c);
-    setP1(null); setPmin(1.0); setResults(null);
+    setRawQ(null); setFlowUnit("L/s"); setP1(null); setPmin(1.0); setResults(null);
     setVertices([
       { id: uuid(), dist: 0, cota: 100, desc: "Inicio" },
       { id: uuid(), dist: 1000, cota: 95, desc: "Fin" },
+    ]);
+    setTramos([
+      { id: uuid(), distFrom: 0, distTo: 1000, DN_mm: 150, C: MATERIALS[0].c, materialName: MATERIALS[0].name },
     ]);
   };
 
@@ -92,6 +91,20 @@ export default function PerfilPage() {
   };
   const updateVertex = (id: string, field: keyof ProfileVertex, value: string | number) => {
     setVertices(vertices.map(v => v.id === id ? { ...v, [field]: value } : v));
+  };
+
+  // Tramo management
+  const addTramo = () => {
+    const last = tramos[tramos.length - 1];
+    const from = last?.distTo ?? 0;
+    setTramos([...tramos, { id: uuid(), distFrom: from, distTo: from + 1000, DN_mm: last?.DN_mm ?? 150, C: last?.C ?? MATERIALS[0].c, materialName: last?.materialName ?? MATERIALS[0].name }]);
+  };
+  const removeTramo = (id: string) => {
+    if (tramos.length <= 1) return;
+    setTramos(tramos.filter(t => t.id !== id));
+  };
+  const updateTramo = (id: string, updates: Partial<ProfileTramo>) => {
+    setTramos(tramos.map(t => t.id === id ? { ...t, ...updates } : t));
   };
 
   // CSV Import
@@ -113,6 +126,11 @@ export default function PerfilPage() {
       }
       if (newVerts.length >= 2) {
         setVertices(newVerts);
+        // Auto-adjust first tramo to cover full profile
+        const maxDist = Math.max(...newVerts.map(v => v.dist));
+        if (tramos.length === 1) {
+          setTramos([{ ...tramos[0], distFrom: newVerts[0].dist, distTo: maxDist }]);
+        }
       } else {
         alert("El archivo debe tener al menos 2 filas con formato: distancia, cota (opcional: descripcion)");
       }
@@ -132,46 +150,68 @@ export default function PerfilPage() {
   if (rawQ == null) missing.push("caudal Q");
   if (P1 == null) missing.push("presion P1");
 
+  // Colors per tramo for the table
+  const tramoColors = ["#1C3D5A", "#2E7D32", "#C62828", "#F57F17", "#6A1B9A", "#00838F"];
+
   return (
     <div className="max-w-7xl mx-auto space-y-6">
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
         {/* Form */}
         <div className="lg:col-span-2 space-y-5">
+          {/* Global data */}
           <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 space-y-4">
             <div className="flex items-center justify-between border-b border-gray-100 dark:border-gray-700 pb-2">
               <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300">Datos de la linea</h2>
               <ResetButton moduleKey="perfil" onReset={handleReset} />
             </div>
-
             <InputField label="Nombre del proyecto" value={projectName} onChange={setProjectName} type="text" />
-
             <div className="flex items-end gap-2">
               <div className="flex-1">
-                <InputField label="Caudal Q" value={rawQ} onChange={(v) => setRawQ(v === "" ? null : parseFloat(v))} required tooltip="Caudal de diseno de la linea" />
+                <InputField label="Caudal Q" value={rawQ} onChange={(v) => setRawQ(v === "" ? null : parseFloat(v))} required tooltip="Caudal de diseno — se usa en todos los tramos" />
               </div>
               <select value={flowUnit} onChange={(e) => setFlowUnit(e.target.value as FlowUnit)} className="px-2 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 dark:text-white">
                 <option value="L/s">L/s</option>
                 <option value="m³/h">m3/h</option>
               </select>
             </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1">
-                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">DN (mm)</label>
-                <select value={DN} onChange={(e) => setDN(parseInt(e.target.value))} className="w-full px-2 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 dark:text-white">
-                  {STANDARD_DNS.map(dn => <option key={dn} value={dn}>{dn}</option>)}
-                </select>
-              </div>
-              <div className="space-y-1">
-                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Material</label>
-                <select value={materialName} onChange={(e) => { const m = MATERIALS.find(m => m.name === e.target.value); if (m) { setMaterialName(m.name); setC(m.c); } }} className="w-full px-2 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 dark:text-white">
-                  {MATERIALS.map(m => <option key={m.name} value={m.name}>{m.name} (C={m.c})</option>)}
-                </select>
-              </div>
-            </div>
-
             <InputField label="Presion de entrada P1" value={P1} onChange={(v) => setP1(v === "" ? null : parseFloat(v))} unit="kg/cm2" required tooltip="Presion disponible al inicio de la linea" />
-            <InputField label="Presion minima requerida" value={Pmin} onChange={(v) => setPmin(parseFloat(v) || 1)} unit="kg/cm2" tooltip="Presion minima aceptable en cualquier punto (default 1 kg/cm2)" />
+            <InputField label="Presion minima requerida" value={Pmin} onChange={(v) => setPmin(parseFloat(v) || 1)} unit="kg/cm2" tooltip="Presion minima aceptable en cualquier punto" />
+          </div>
+
+          {/* Tramos de tubería */}
+          <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 space-y-3">
+            <div className="flex items-center justify-between">
+              <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300">Tramos de tuberia</h2>
+              <button onClick={addTramo} className="text-xs bg-[#1C3D5A] text-white px-3 py-1.5 rounded-lg hover:bg-[#0F2438] transition-colors">+ Tramo</button>
+            </div>
+            <p className="text-[10px] text-gray-400">Define en que distancia cambia el diametro o material</p>
+
+            {tramos.map((t, i) => (
+              <div key={t.id} className="border border-gray-100 dark:border-gray-700 rounded-lg p-3 space-y-2" style={{ borderLeftColor: tramoColors[i % tramoColors.length], borderLeftWidth: 3 }}>
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-semibold text-gray-600 dark:text-gray-300">Tramo {i + 1}</span>
+                  {tramos.length > 1 && <button onClick={() => removeTramo(t.id)} className="text-red-400 hover:text-red-600 text-xs">{"✗"}</button>}
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <InputField label="Desde (m)" value={t.distFrom} onChange={(v) => updateTramo(t.id, { distFrom: parseFloat(v) || 0 })} />
+                  <InputField label="Hasta (m)" value={t.distTo} onChange={(v) => updateTramo(t.id, { distTo: parseFloat(v) || 0 })} />
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="space-y-1">
+                    <label className="text-sm font-medium text-gray-700 dark:text-gray-300">DN (mm)</label>
+                    <select value={t.DN_mm} onChange={(e) => updateTramo(t.id, { DN_mm: parseInt(e.target.value) })} className="w-full px-2 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 dark:text-white">
+                      {STANDARD_DNS.map(dn => <option key={dn} value={dn}>{dn}</option>)}
+                    </select>
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Material</label>
+                    <select value={t.materialName} onChange={(e) => { const m = MATERIALS.find(m => m.name === e.target.value); if (m) updateTramo(t.id, { materialName: m.name, C: m.c }); }} className="w-full px-2 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 dark:text-white">
+                      {MATERIALS.map(m => <option key={m.name} value={m.name}>{m.name} (C={m.c})</option>)}
+                    </select>
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
 
           {/* Profile table */}
@@ -188,32 +228,21 @@ export default function PerfilPage() {
               </div>
               <input ref={fileRef} type="file" accept=".csv,.txt,.tsv" onChange={handleCSVImport} className="hidden" />
             </div>
+            <p className="text-[10px] text-gray-400">CSV: distancia, cota, descripcion (opcional)</p>
 
-            <p className="text-[10px] text-gray-400">
-              Ingresa los vertices del perfil del terreno. Formato CSV: distancia, cota, descripcion (opcional)
-            </p>
-
-            {/* Column headers */}
             <div className="grid grid-cols-[1fr_1fr_1fr_24px] gap-2 text-[10px] text-gray-400 font-semibold uppercase px-1">
-              <span>Dist. (m)</span>
-              <span>Cota (m.s.n.m.)</span>
-              <span>Descripcion</span>
-              <span></span>
+              <span>Dist. (m)</span><span>Cota (m.s.n.m.)</span><span>Descripcion</span><span></span>
             </div>
-
-            <div className="space-y-1 max-h-[400px] overflow-y-auto">
+            <div className="space-y-1 max-h-[350px] overflow-y-auto">
               {vertices.map((v, i) => (
-                <div key={v.id} className={`grid grid-cols-[1fr_1fr_1fr_24px] gap-2 items-center ${results?.points[i]?.status === 'critical' ? 'bg-red-50 dark:bg-red-900/10 rounded px-1' : results?.points[i]?.status === 'low' ? 'bg-yellow-50 dark:bg-yellow-900/10 rounded px-1' : 'px-1'}`}>
+                <div key={v.id} className={`grid grid-cols-[1fr_1fr_1fr_24px] gap-2 items-center px-1 ${results?.points[i]?.status === 'critical' ? 'bg-red-50 dark:bg-red-900/10 rounded' : results?.points[i]?.status === 'low' ? 'bg-yellow-50 dark:bg-yellow-900/10 rounded' : ''}`}>
                   <input type="number" value={v.dist} onChange={(e) => updateVertex(v.id, "dist", parseFloat(e.target.value) || 0)} className="w-full px-2 py-1.5 text-xs border border-gray-200 dark:border-gray-600 rounded bg-white dark:bg-gray-800 dark:text-white" />
                   <input type="number" value={v.cota} onChange={(e) => updateVertex(v.id, "cota", parseFloat(e.target.value) || 0)} className="w-full px-2 py-1.5 text-xs border border-gray-200 dark:border-gray-600 rounded bg-white dark:bg-gray-800 dark:text-white" />
                   <input type="text" value={v.desc} onChange={(e) => updateVertex(v.id, "desc", e.target.value)} placeholder={i === 0 ? "Inicio" : ""} className="w-full px-2 py-1.5 text-xs border border-gray-200 dark:border-gray-600 rounded bg-white dark:bg-gray-800 dark:text-white" />
-                  {vertices.length > 2 ? (
-                    <button onClick={() => removeVertex(v.id)} className="text-red-400 hover:text-red-600 text-xs text-center">{"✗"}</button>
-                  ) : <span />}
+                  {vertices.length > 2 ? <button onClick={() => removeVertex(v.id)} className="text-red-400 hover:text-red-600 text-xs text-center">{"✗"}</button> : <span />}
                 </div>
               ))}
             </div>
-
             <p className="text-[10px] text-gray-400">{vertices.length} puntos</p>
           </div>
         </div>
@@ -225,7 +254,7 @@ export default function PerfilPage() {
               {missing.length > 0 ? (
                 <DataStatusBanner assumed={[]} missingRequired={missing} />
               ) : (
-                <DataStatusBanner assumed={P1 == null ? [{ field: "P1", value: 0, label: "Sin P1 — presiones no disponibles" }] : []} />
+                <DataStatusBanner assumed={[]} />
               )}
             </div>
             <ExportPDFButton
@@ -239,26 +268,24 @@ export default function PerfilPage() {
                   hasAssumedValues: false,
                   inputs: [
                     { label: "Q", value: rawQ != null ? `${rawQ} ${flowUnit}` : "--" },
-                    { label: "DN", value: `${DN} mm` },
-                    { label: "Material", value: `${materialName} (C=${C})` },
                     { label: "P1", value: P1 != null ? `${P1} kg/cm2` : "--" },
                     { label: "P min", value: `${Pmin} kg/cm2` },
-                    { label: "Puntos del perfil", value: `${vertices.length}` },
+                    { label: "Tramos", value: tramos.map((t, i) => `T${i + 1}: ${t.DN_mm}mm ${t.materialName}`).join(", ") },
+                    { label: "Puntos", value: `${vertices.length}` },
                   ],
                   results: [
                     { label: "Longitud total", value: formatNumber(results.totalLength, 0), unit: "m" },
                     { label: "hf total", value: formatNumber(results.totalHf, 3), unit: "m" },
-                    { label: "Velocidad", value: results.V != null ? formatNumber(results.V, 2) : "--", unit: "m/s" },
                     { label: "P final", value: results.finalPressure_kgcm2 != null ? formatNumber(results.finalPressure_kgcm2, 2) : "--", unit: "kg/cm2" },
                   ],
                   alerts: results.alerts.map(a => ({ level: a.level, message: a.message })),
                   tableData: {
-                    head: ["Dist (m)", "Cota", "Piezom.", "P (kg/cm2)", "Estado"],
+                    head: ["Dist", "Cota", "Piezo", "P (kg/cm2)", "DN", "V (m/s)", "Estado"],
                     body: results.points.map(p => [
-                      `${p.dist}`,
-                      `${p.cota}`,
+                      `${p.dist}`, formatNumber(p.cota, 1),
                       p.piezo != null ? formatNumber(p.piezo, 1) : "--",
                       p.pressure_kgcm2 != null ? formatNumber(p.pressure_kgcm2, 2) : "--",
+                      `${p.DN_mm}`, p.V != null ? formatNumber(p.V, 2) : "--",
                       p.status === "ok" ? "OK" : p.status === "low" ? "Baja" : "Critica",
                     ]),
                   },
@@ -272,7 +299,6 @@ export default function PerfilPage() {
               {/* Summary */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 <MetricCard label="Longitud total" value={formatNumber(results.totalLength, 0)} unit="m" dataStatus="calculated" />
-                <MetricCard label="Velocidad" value={results.V != null ? formatNumber(results.V, 2) : "--"} unit="m/s" alertLevel={results.V != null && results.V > 2.5 ? "WARN" : "OK"} dataStatus="calculated" />
                 <MetricCard label="hf total" value={formatNumber(results.totalHf, 2)} unit="m" dataStatus="calculated" />
                 <MetricCard
                   label="P final"
@@ -281,7 +307,27 @@ export default function PerfilPage() {
                   alertLevel={results.finalPressure_kgcm2 != null && results.finalPressure_kgcm2 < Pmin ? "ERROR" : "OK"}
                   dataStatus="calculated"
                 />
+                <MetricCard label="Puntos criticos" value={`${results.pointsCritical}`} alertLevel={results.pointsCritical > 0 ? "ERROR" : "OK"} dataStatus="calculated" />
               </div>
+
+              {/* Tramo summaries */}
+              {results.tramoSummaries.length > 1 && (
+                <div className="flex flex-wrap gap-2">
+                  {results.tramoSummaries.map((ts, i) => (
+                    <div key={ts.id} className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 text-xs" style={{ borderLeftColor: tramoColors[i % tramoColors.length], borderLeftWidth: 3 }}>
+                      <span className="font-semibold">T{i + 1}</span>
+                      <span className="text-gray-400 mx-1">|</span>
+                      <span>{ts.DN_mm}mm {ts.materialName}</span>
+                      <span className="text-gray-400 mx-1">|</span>
+                      <span>{formatNumber(ts.length, 0)}m</span>
+                      <span className="text-gray-400 mx-1">|</span>
+                      <span>V={ts.V != null ? formatNumber(ts.V, 2) : "--"} m/s</span>
+                      <span className="text-gray-400 mx-1">|</span>
+                      <span>hf={formatNumber(ts.hf, 2)}m</span>
+                    </div>
+                  ))}
+                </div>
+              )}
 
               {/* Critical point */}
               {results.criticalPoint && results.criticalPoint.pressure_kgcm2 < Pmin && (
@@ -317,33 +363,37 @@ export default function PerfilPage() {
                   <table className="w-full text-xs">
                     <thead>
                       <tr className="bg-gray-50 dark:bg-gray-700 text-gray-500">
-                        <th className="px-3 py-2 text-left">#</th>
-                        <th className="px-3 py-2 text-right">Dist (m)</th>
-                        <th className="px-3 py-2 text-right">Cota</th>
-                        <th className="px-3 py-2 text-right">Piezom.</th>
-                        <th className="px-3 py-2 text-right">P (kg/cm2)</th>
-                        <th className="px-3 py-2 text-right">hf acum (m)</th>
-                        <th className="px-3 py-2 text-center">Estado</th>
-                        <th className="px-3 py-2 text-left">Desc.</th>
+                        <th className="px-2 py-2 text-left">#</th>
+                        <th className="px-2 py-2 text-right">Dist (m)</th>
+                        <th className="px-2 py-2 text-right">Cota</th>
+                        <th className="px-2 py-2 text-right">Piezom.</th>
+                        <th className="px-2 py-2 text-right">P (kg/cm2)</th>
+                        <th className="px-2 py-2 text-right">hf (m)</th>
+                        <th className="px-2 py-2 text-center">DN</th>
+                        <th className="px-2 py-2 text-right">V (m/s)</th>
+                        <th className="px-2 py-2 text-center">Estado</th>
+                        <th className="px-2 py-2 text-left">Desc.</th>
                       </tr>
                     </thead>
                     <tbody>
                       {results.points.map((p, i) => (
                         <tr key={i} className={`border-b border-gray-100 dark:border-gray-700 ${p.status === 'critical' ? 'bg-red-50 dark:bg-red-900/10' : p.status === 'low' ? 'bg-yellow-50 dark:bg-yellow-900/10' : i % 2 ? 'bg-gray-50/50' : ''}`}>
-                          <td className="px-3 py-2 text-gray-400">{i + 1}</td>
-                          <td className="px-3 py-2 text-right font-mono">{formatNumber(p.dist, 0)}</td>
-                          <td className="px-3 py-2 text-right font-mono">{formatNumber(p.cota, 1)}</td>
-                          <td className="px-3 py-2 text-right font-mono">{p.piezo != null ? formatNumber(p.piezo, 1) : "--"}</td>
-                          <td className={`px-3 py-2 text-right font-mono font-semibold ${p.status === 'critical' ? 'text-red-600' : p.status === 'low' ? 'text-yellow-600' : ''}`}>
+                          <td className="px-2 py-1.5 text-gray-400">{i + 1}</td>
+                          <td className="px-2 py-1.5 text-right font-mono">{formatNumber(p.dist, 0)}</td>
+                          <td className="px-2 py-1.5 text-right font-mono">{formatNumber(p.cota, 1)}</td>
+                          <td className="px-2 py-1.5 text-right font-mono">{p.piezo != null ? formatNumber(p.piezo, 1) : "--"}</td>
+                          <td className={`px-2 py-1.5 text-right font-mono font-semibold ${p.status === 'critical' ? 'text-red-600' : p.status === 'low' ? 'text-yellow-600' : ''}`}>
                             {p.pressure_kgcm2 != null ? formatNumber(p.pressure_kgcm2, 2) : "--"}
                           </td>
-                          <td className="px-3 py-2 text-right font-mono text-gray-400">{formatNumber(p.hfAccum, 2)}</td>
-                          <td className="px-3 py-2 text-center">
+                          <td className="px-2 py-1.5 text-right font-mono text-gray-400">{formatNumber(p.hfAccum, 2)}</td>
+                          <td className="px-2 py-1.5 text-center" style={{ color: tramoColors[p.tramoIndex % tramoColors.length] }}>{p.DN_mm}</td>
+                          <td className="px-2 py-1.5 text-right font-mono">{p.V != null ? formatNumber(p.V, 2) : "--"}</td>
+                          <td className="px-2 py-1.5 text-center">
                             {p.status === "ok" && <span className="text-green-600">{"✓"}</span>}
                             {p.status === "low" && <span className="text-yellow-600">{"⚠"}</span>}
                             {p.status === "critical" && <span className="text-red-600">{"✗"}</span>}
                           </td>
-                          <td className="px-3 py-2 text-gray-500">{p.desc}</td>
+                          <td className="px-2 py-1.5 text-gray-500 truncate max-w-[100px]">{p.desc}</td>
                         </tr>
                       ))}
                     </tbody>

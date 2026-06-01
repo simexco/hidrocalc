@@ -1,6 +1,7 @@
 /* ════════════════════════════════════════
    Perfil Hidráulico — Análisis de presiones
    a lo largo de una línea de conducción
+   Soporta múltiples tramos (DN/material)
    ════════════════════════════════════════ */
 
 export interface ProfileVertex {
@@ -10,36 +11,46 @@ export interface ProfileVertex {
   desc: string;    // optional label
 }
 
+export interface ProfileTramo {
+  id: string;
+  distFrom: number;  // m — start distance
+  distTo: number;    // m — end distance
+  DN_mm: number;
+  C: number;
+  materialName: string;
+}
+
 export interface ProfilePointResult {
   dist: number;
   cota: number;
   desc: string;
-  hfAccum: number;        // accumulated friction loss (m)
-  piezo: number | null;   // piezometric elevation (m.s.n.m.)
-  pressure_mca: number | null;  // pressure at this point (m.c.a.)
+  hfAccum: number;
+  piezo: number | null;
+  pressure_mca: number | null;
   pressure_kgcm2: number | null;
-  status: "ok" | "low" | "critical";  // critical = negative, low = below min
+  status: "ok" | "low" | "critical";
+  tramoIndex: number;    // which tramo this point falls in
+  DN_mm: number;         // DN at this point
+  V: number | null;      // velocity at this point
 }
 
 export interface ProfileInputs {
   Q: number | null;        // m³/s
-  DN_mm: number;
-  C: number;
   P1_kgcm2: number | null;
-  Pmin_kgcm2: number;     // minimum required pressure
+  Pmin_kgcm2: number;
   vertices: ProfileVertex[];
+  tramos: ProfileTramo[];  // if empty, use single-pipe mode (first tramo covers all)
 }
 
 export interface ProfileResults {
   points: ProfilePointResult[];
   totalLength: number;
   totalHf: number;
-  V: number | null;        // velocity m/s
-  J: number | null;        // gradient m/m
   finalPressure_kgcm2: number | null;
   criticalPoint: { dist: number; pressure_kgcm2: number } | null;
   pointsBelowMin: number;
   pointsCritical: number;
+  tramoSummaries: { id: string; DN_mm: number; materialName: string; length: number; hf: number; V: number | null }[];
   alerts: { level: "WARN" | "ERROR"; message: string }[];
 }
 
@@ -49,26 +60,30 @@ function hfSegment(Q: number, D_m: number, C: number, L: number): number {
   return 10.67 * L * Math.pow(Q, 1.852) / (Math.pow(C, 1.852) * Math.pow(D_m, 4.87));
 }
 
+// Find which tramo a distance falls into
+function findTramo(dist: number, tramos: ProfileTramo[]): ProfileTramo | null {
+  for (const t of tramos) {
+    if (dist >= t.distFrom && dist <= t.distTo) return t;
+  }
+  // If between tramos, use the nearest one
+  let best: ProfileTramo | null = null;
+  let bestDist = Infinity;
+  for (const t of tramos) {
+    const d = dist < t.distFrom ? t.distFrom - dist : dist - t.distTo;
+    if (d < bestDist) { bestDist = d; best = t; }
+  }
+  return best;
+}
+
 export function calculateProfile(input: ProfileInputs): ProfileResults | null {
-  const { Q, DN_mm, C, P1_kgcm2, Pmin_kgcm2, vertices } = input;
+  const { Q, P1_kgcm2, Pmin_kgcm2, vertices, tramos } = input;
   if (vertices.length < 2) return null;
+  if (tramos.length === 0) return null;
 
   const sorted = [...vertices].sort((a, b) => a.dist - b.dist);
-  const D_m = DN_mm / 1000;
-  const A = Math.PI * Math.pow(D_m / 2, 2);
   const hasHydraulics = Q != null && Q > 0 && P1_kgcm2 != null;
 
-  // Velocity
-  const V = Q != null && Q > 0 ? Q / A : null;
-
-  // Total length
   const totalLength = sorted[sorted.length - 1].dist - sorted[0].dist;
-
-  // Total friction loss
-  const totalHf = hasHydraulics ? hfSegment(Q!, D_m, C, totalLength) : 0;
-
-  // Gradient
-  const J = totalLength > 0 && totalHf > 0 ? totalHf / totalLength : null;
 
   // Calculate pressure at each vertex
   const points: ProfilePointResult[] = [];
@@ -78,10 +93,25 @@ export function calculateProfile(input: ProfileInputs): ProfileResults | null {
   let pointsBelowMin = 0;
   let pointsCritical = 0;
 
+  // Track hf per tramo
+  const tramoHf: Record<string, number> = {};
+  for (const t of tramos) tramoHf[t.id] = 0;
+
   for (let i = 0; i < sorted.length; i++) {
+    // Find which tramo this segment belongs to
+    const midDist = i > 0 ? (sorted[i - 1].dist + sorted[i].dist) / 2 : sorted[0].dist;
+    const tramo = findTramo(midDist, tramos);
+    const DN_mm = tramo?.DN_mm ?? tramos[0].DN_mm;
+    const C = tramo?.C ?? tramos[0].C;
+    const D_m = DN_mm / 1000;
+    const A = Math.PI * Math.pow(D_m / 2, 2);
+    const V_point = Q != null && Q > 0 ? Q / A : null;
+
     if (i > 0 && hasHydraulics) {
       const segL = sorted[i].dist - sorted[i - 1].dist;
-      hfAccum += hfSegment(Q!, D_m, C, segL);
+      const segHf = hfSegment(Q!, D_m, C, segL);
+      hfAccum += segHf;
+      if (tramo) tramoHf[tramo.id] = (tramoHf[tramo.id] ?? 0) + segHf;
     }
 
     let pressure_mca: number | null = null;
@@ -89,8 +119,7 @@ export function calculateProfile(input: ProfileInputs): ProfileResults | null {
     let pressure_kgcm2: number | null = null;
 
     if (hasHydraulics) {
-      // Piezometric elevation at start
-      const piezoStart = sorted[0].cota + P1_kgcm2! * 10; // convert kg/cm² to m.c.a.
+      const piezoStart = sorted[0].cota + P1_kgcm2! * 10;
       piezo = piezoStart - hfAccum;
       pressure_mca = piezo - sorted[i].cota;
       pressure_kgcm2 = pressure_mca / 10;
@@ -107,6 +136,8 @@ export function calculateProfile(input: ProfileInputs): ProfileResults | null {
       else if (pressure_kgcm2 < Pmin_kgcm2) { status = "low"; pointsBelowMin++; }
     }
 
+    const tramoIdx = tramo ? tramos.indexOf(tramo) : 0;
+
     points.push({
       dist: sorted[i].dist,
       cota: sorted[i].cota,
@@ -116,16 +147,31 @@ export function calculateProfile(input: ProfileInputs): ProfileResults | null {
       pressure_mca,
       pressure_kgcm2,
       status,
+      tramoIndex: tramoIdx,
+      DN_mm,
+      V: V_point,
     });
   }
 
   const finalP = points[points.length - 1]?.pressure_kgcm2 ?? null;
+  const totalHf = hfAccum;
+
+  // Tramo summaries
+  const tramoSummaries = tramos.map(t => {
+    const D_m = t.DN_mm / 1000;
+    const A = Math.PI * Math.pow(D_m / 2, 2);
+    const V = Q != null && Q > 0 ? Q / A : null;
+    const length = t.distTo - t.distFrom;
+    return { id: t.id, DN_mm: t.DN_mm, materialName: t.materialName, length, hf: tramoHf[t.id] ?? 0, V };
+  });
 
   // Alerts
   const alerts: ProfileResults["alerts"] = [];
-  if (V != null && V > 2.5) alerts.push({ level: "WARN", message: `Velocidad elevada: ${V.toFixed(2)} m/s (max recomendado 2.5 m/s)` });
-  if (V != null && V < 0.3 && V > 0) alerts.push({ level: "WARN", message: `Velocidad baja: ${V.toFixed(2)} m/s (min recomendado 0.3 m/s — riesgo de sedimentacion)` });
-  if (pointsCritical > 0) alerts.push({ level: "ERROR", message: `${pointsCritical} punto(s) con presion negativa — la linea no funciona en esos tramos` });
+  for (const ts of tramoSummaries) {
+    if (ts.V != null && ts.V > 2.5) alerts.push({ level: "WARN", message: `Tramo ${ts.DN_mm}mm ${ts.materialName}: V=${ts.V.toFixed(2)} m/s (max 2.5)` });
+    if (ts.V != null && ts.V < 0.3 && ts.V > 0) alerts.push({ level: "WARN", message: `Tramo ${ts.DN_mm}mm ${ts.materialName}: V=${ts.V.toFixed(2)} m/s (min 0.3 — sedimentacion)` });
+  }
+  if (pointsCritical > 0) alerts.push({ level: "ERROR", message: `${pointsCritical} punto(s) con presion negativa` });
   if (pointsBelowMin > 0) alerts.push({ level: "WARN", message: `${pointsBelowMin} punto(s) con presion menor a ${Pmin_kgcm2} kg/cm2` });
   if (finalP != null && finalP < Pmin_kgcm2) alerts.push({ level: "ERROR", message: `Presion final (${finalP.toFixed(2)} kg/cm2) no cumple el minimo requerido` });
 
@@ -133,12 +179,11 @@ export function calculateProfile(input: ProfileInputs): ProfileResults | null {
     points,
     totalLength,
     totalHf,
-    V,
-    J,
     finalPressure_kgcm2: finalP,
     criticalPoint: criticalPoint && minPressure < Infinity ? criticalPoint : null,
     pointsBelowMin,
     pointsCritical,
+    tramoSummaries,
     alerts,
   };
 }
