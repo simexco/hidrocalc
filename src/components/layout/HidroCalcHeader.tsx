@@ -11,6 +11,7 @@ const moduleNames: Record<string, string> = {
   "/bombeo": "Mi bomba",
   "/dimensionamiento": "Elegir diámetro",
   "/valvulas-aire": "Válvulas de aire",
+  "/perfil": "Perfil hidraulico",
   "/vrp": "Valvula reductora",
   "/proyectos": "Mis proyectos",
 };
@@ -65,6 +66,15 @@ const moduleHelp: Record<string, { title: string; sections: { title: string; con
       { title: "Tipos de válvulas", content: "VA-C (Combinada): Para puntos altos, inicio y fin de línea. Permite entrada y salida de grandes volúmenes de aire.\nVA-A (Admisión/Expulsión): Para pendientes descendentes pronunciadas. Evita vacío durante vaciado rápido.\nVA-E (Eliminadora): Para tramos rectos largos. Expulsa aire acumulado en operación normal." },
       { title: "Paso a paso", content: "1. Ingresa Q, DN y material de la línea\n2. Ingresa P₀ si la conoces (activa cálculo de presiones)\n3. En la tabla de perfil, agrega los vértices del trazo:\n   → Primer vértice: distancia=0, cota del inicio\n   → Incluye TODOS los puntos altos y bajos\n   → Último vértice: punto final\n4. Los resultados aparecen automáticamente\n5. Revisa puntos en rojo (presión crítica)\n6. Exporta el PDF" },
       { title: "Interpretación", content: "VA-C azul: ubicación crítica — instalación obligatoria\nVA-A amarilla: necesaria para vaciado seguro\nVA-E verde: mantenimiento de aire en operación\nFondo rojo: presión insuficiente — revisar diseño\nLínea piezométrica: nunca debe cruzar el perfil del terreno" },
+    ],
+  },
+  "/perfil": {
+    title: "Perfil Hidraulico — Guia de uso",
+    sections: [
+      { title: "Cuando usar?", content: "Para verificar que la presion es suficiente a lo largo de toda la linea de conduccion. Cargas el perfil topografico (distancia vs cota) y el modulo calcula la presion en cada punto." },
+      { title: "Datos que necesitas", content: "- Caudal Q de diseno\n- Diametro DN y material de la tuberia\n- Presion disponible P1 al inicio\n- Perfil topografico: pares de (distancia acumulada, cota del terreno)" },
+      { title: "Paso a paso", content: "1. Ingresa Q, DN, material y P1\n2. Agrega los vertices del perfil manualmente o importa un CSV\n3. El formato CSV es: distancia, cota, descripcion (opcional)\n4. Los resultados aparecen automaticamente\n5. Revisa puntos en rojo (presion critica) o amarillo (presion baja)" },
+      { title: "Interpretacion", content: "Verde (OK): presion cumple el minimo\nAmarillo (Baja): presion menor al minimo pero positiva\nRojo (Critica): presion negativa — la linea no funciona ahi\nLa linea piezometrica nunca debe cruzar el perfil del terreno" },
     ],
   },
   "/vrp": {

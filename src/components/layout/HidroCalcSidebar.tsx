@@ -59,6 +59,15 @@ const modules = [
     ),
   },
   {
+    href: "/perfil",
+    label: "Perfil hidraulico",
+    icon: (
+      <svg viewBox="0 0 24 24" className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={1.8}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M3 20l4-8 3 4 4-12 3 6 4-4" />
+      </svg>
+    ),
+  },
+  {
     href: "/vrp",
     label: "Valvula reductora",
     icon: (
