@@ -13,6 +13,7 @@ import { flowToM3s, formatNumber } from "@/lib/calculations/conversions";
 import { STANDARD_DNS, MATERIALS } from "@/lib/constants";
 import { saveFormState, loadFormState } from "@/lib/storage/form-persistence";
 import { ComposedChart, Line, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
+import ListaMaterialesSIMEX, { type SIMEXAcc } from "@/components/ListaMaterialesSIMEX";
 import type { FlowUnit } from "@/types/hydraulic";
 
 export default function PerfilPage() {
@@ -29,6 +30,7 @@ export default function PerfilPage() {
     { id: uuid(), distFrom: 0, distTo: 1000, DN_mm: 150, C: MATERIALS[0].c, materialName: MATERIALS[0].name },
   ]);
   const [results, setResults] = useState<ProfileResults | null>(null);
+  const [simexPorTramo, setSimexPorTramo] = useState<Record<string, SIMEXAcc[]>>({});
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -78,6 +80,7 @@ export default function PerfilPage() {
     setTramos([
       { id: uuid(), distFrom: 0, distTo: 1000, DN_mm: 150, C: MATERIALS[0].c, materialName: MATERIALS[0].name },
     ]);
+    setSimexPorTramo({});
   };
 
   // Vertex management
@@ -209,6 +212,21 @@ export default function PerfilPage() {
                       {MATERIALS.map(m => <option key={m.name} value={m.name}>{m.name} (C={m.c})</option>)}
                     </select>
                   </div>
+                </div>
+                {/* SIMEX Accessories */}
+                <div className="mt-2 pt-2 border-t border-gray-100 dark:border-gray-700">
+                  <ListaMaterialesSIMEX
+                    mode="selector"
+                    dnMM={t.DN_mm}
+                    materialRaw={t.materialName}
+                    externalAccs={simexPorTramo[t.id] || []}
+                    onAccsChange={(accs) => setSimexPorTramo(prev => ({...prev, [t.id]: accs}))}
+                  />
+                  {(simexPorTramo[t.id]?.length ?? 0) > 0 && (
+                    <p className="text-[10px] text-[#1C3D5A]/60 dark:text-blue-300/50 mt-1 font-medium">
+                      {simexPorTramo[t.id].reduce((s, a) => s + a.qty, 0)} pza(s) seleccionada(s)
+                    </p>
+                  )}
                 </div>
               </div>
             ))}
@@ -405,6 +423,37 @@ export default function PerfilPage() {
               {results.alerts.map((a, i) => (
                 <AlertBanner key={i} level={a.level} message={a.message} />
               ))}
+
+              {/* SIMEX Material Tables */}
+              {tramos.some(t => (simexPorTramo[t.id]?.length ?? 0) > 0) && (
+                <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+                  <div className="bg-gradient-to-r from-[#1C3D5A] to-[#2A5A7A] px-5 py-3">
+                    <h3 className="text-sm font-semibold text-white tracking-wide">Lista de Materiales SIMEX</h3>
+                    <p className="text-[10px] text-white/50 mt-0.5">Generada desde los accesorios seleccionados por tramo</p>
+                  </div>
+                  <div className="divide-y divide-gray-100 dark:divide-gray-700">
+                    {tramos.map((t, i) => {
+                      if ((simexPorTramo[t.id]?.length ?? 0) === 0) return null;
+                      return (
+                        <div key={`simex-${t.id}`} className="p-4">
+                          <div className="flex items-center gap-2 mb-3">
+                            <span className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold text-white" style={{ backgroundColor: tramoColors[i % tramoColors.length] }}>{i + 1}</span>
+                            <h4 className="text-xs font-semibold text-[#1C3D5A] dark:text-blue-300">Tramo {i + 1} — {t.DN_mm}mm {t.materialName}</h4>
+                            <span className="text-[10px] text-gray-400 ml-auto">{formatNumber(t.distFrom, 0)}m a {formatNumber(t.distTo, 0)}m</span>
+                          </div>
+                          <ListaMaterialesSIMEX
+                            mode="table"
+                            dnMM={t.DN_mm}
+                            materialRaw={t.materialName}
+                            externalAccs={simexPorTramo[t.id] || []}
+                            onAccsChange={(accs) => setSimexPorTramo(prev => ({...prev, [t.id]: accs}))}
+                          />
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
             </>
           )}
         </div>
