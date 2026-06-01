@@ -187,3 +187,22 @@ export function calculateProfile(input: ProfileInputs): ProfileResults | null {
     alerts,
   };
 }
+
+/**
+ * Inverse mode: calculate the required P1 so the most critical point
+ * has exactly Pmin_kgcm2.
+ * Since pressure is linear with P1, we run once with P1=0 and offset.
+ */
+export function calculateRequiredP1(
+  input: Omit<ProfileInputs, 'P1_kgcm2'> & { Pmin_kgcm2: number }
+): number | null {
+  const testResult = calculateProfile({ ...input, P1_kgcm2: 0 });
+  if (!testResult) return null;
+  const pressures = testResult.points
+    .filter(p => p.pressure_kgcm2 != null)
+    .map(p => p.pressure_kgcm2!);
+  if (pressures.length === 0) return null;
+  const minP = Math.min(...pressures);
+  if (!isFinite(minP)) return null;
+  return input.Pmin_kgcm2 - minP;
+}

@@ -8,7 +8,7 @@ import { AlertBanner } from "@/components/ui/AlertBanner";
 import { DataStatusBanner } from "@/components/ui/DataStatusBanner";
 import { ExportPDFButton } from "@/components/ui/ExportPDFButton";
 import { ResetButton } from "@/components/ui/ResetButton";
-import { calculateProfile, type ProfileVertex, type ProfileTramo, type ProfileResults } from "@/lib/calculations/hydraulic-profile";
+import { calculateProfile, calculateRequiredP1, type ProfileVertex, type ProfileTramo, type ProfileResults } from "@/lib/calculations/hydraulic-profile";
 import { flowToM3s, formatNumber } from "@/lib/calculations/conversions";
 import { STANDARD_DNS, STANDARD_DNS_LABELED, MATERIALS } from "@/lib/constants";
 import { saveFormState, loadFormState } from "@/lib/storage/form-persistence";
@@ -65,8 +65,16 @@ export default function PerfilPage() {
   ]);
   const [results, setResults] = useState<ProfileResults | null>(null);
   const [simexPorTramo, setSimexPorTramo] = useState<Record<string, SIMEXAcc[]>>({});
+  const [calcMode, setCalcMode] = useState<'verificar' | 'calcularP1'>('verificar');
+  const [computedP1, setComputedP1] = useState<number | null>(null);
+  const [showScenarioB, setShowScenarioB] = useState(false);
+  const [tramosB, setTramosB] = useState<ProfileTramo[]>([
+    { id: uuid(), distFrom: 0, distTo: 1000, DN_mm: 150, C: MATERIALS[0].c, materialName: MATERIALS[0].name },
+  ]);
+  const [resultsB, setResultsB] = useState<ProfileResults | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
   const fileRef = useRef<HTMLInputElement>(null);
+  const xlsxRef = useRef<HTMLInputElement>(null);
 
   // Persist
   useEffect(() => {
@@ -94,9 +102,27 @@ export default function PerfilPage() {
   // Calculate
   const runCalc = useCallback(() => {
     const Q = rawQ != null ? flowToM3s(rawQ, flowUnit) : null;
-    const res = calculateProfile({ Q, P1_kgcm2: P1, Pmin_kgcm2: Pmin, vertices, tramos });
+
+    let effectiveP1 = P1;
+    if (calcMode === 'calcularP1' && Q != null && Q > 0) {
+      const reqP1 = calculateRequiredP1({ Q, Pmin_kgcm2: Pmin, vertices, tramos });
+      setComputedP1(reqP1);
+      effectiveP1 = reqP1;
+    } else {
+      setComputedP1(null);
+    }
+
+    const res = calculateProfile({ Q, P1_kgcm2: effectiveP1, Pmin_kgcm2: Pmin, vertices, tramos });
     setResults(res);
-  }, [rawQ, flowUnit, P1, Pmin, vertices, tramos]);
+
+    // Scenario B
+    if (showScenarioB) {
+      const resB = calculateProfile({ Q, P1_kgcm2: effectiveP1, Pmin_kgcm2: Pmin, vertices, tramos: tramosB });
+      setResultsB(resB);
+    } else {
+      setResultsB(null);
+    }
+  }, [rawQ, flowUnit, P1, Pmin, vertices, tramos, calcMode, showScenarioB, tramosB]);
 
   useEffect(() => {
     clearTimeout(debounceRef.current);
@@ -115,6 +141,11 @@ export default function PerfilPage() {
       { id: uuid(), distFrom: 0, distTo: 1000, DN_mm: 150, C: MATERIALS[0].c, materialName: MATERIALS[0].name },
     ]);
     setSimexPorTramo({});
+    setCalcMode('verificar');
+    setComputedP1(null);
+    setShowScenarioB(false);
+    setTramosB([{ id: uuid(), distFrom: 0, distTo: 1000, DN_mm: 150, C: MATERIALS[0].c, materialName: MATERIALS[0].name }]);
+    setResultsB(null);
   };
 
   // Vertex management
@@ -176,16 +207,98 @@ export default function PerfilPage() {
     e.target.value = "";
   };
 
-  // Chart data
-  const chartData = results?.points.map(p => ({
-    dist: p.dist,
-    Terreno: p.cota,
-    Piezometrica: p.piezo,
-  })) ?? [];
+  // Tramo B management
+  const addTramoB = () => {
+    const last = tramosB[tramosB.length - 1];
+    const from = last?.distTo ?? 0;
+    setTramosB([...tramosB, { id: uuid(), distFrom: from, distTo: from + 1000, DN_mm: last?.DN_mm ?? 150, C: last?.C ?? MATERIALS[0].c, materialName: last?.materialName ?? MATERIALS[0].name }]);
+  };
+  const removeTramoB = (id: string) => {
+    if (tramosB.length <= 1) return;
+    setTramosB(tramosB.filter(t => t.id !== id));
+  };
+  const updateTramoB = (id: string, updates: Partial<ProfileTramo>) => {
+    setTramosB(tramosB.map(t => t.id === id ? { ...t, ...updates } : t));
+  };
+
+  // Excel Template Download
+  const downloadTemplate = async () => {
+    const ExcelJS = (await import('exceljs')).default;
+    const wb = new ExcelJS.Workbook();
+    const ws = wb.addWorksheet('Perfil');
+    const headerRow = ws.addRow(['Distancia (m)', 'Cota (m.s.n.m.)', 'Descripcion']);
+    headerRow.eachCell((cell) => {
+      cell.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1C3D5A' } };
+      cell.alignment = { horizontal: 'center' };
+    });
+    ws.addRow([0, 100, 'Inicio']);
+    ws.addRow([1000, 95, 'Fin']);
+    ws.getColumn(1).width = 16;
+    ws.getColumn(2).width = 18;
+    ws.getColumn(3).width = 20;
+    const buffer = await wb.xlsx.writeBuffer();
+    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'Plantilla_Perfil_HidroCalc.xlsx';
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  // Excel Import
+  const handleXLSXImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const ExcelJS = (await import('exceljs')).default;
+    const wb = new ExcelJS.Workbook();
+    await wb.xlsx.load(await file.arrayBuffer());
+    const ws = wb.worksheets[0];
+    if (!ws) { alert("No se encontro ninguna hoja en el archivo"); return; }
+    const newVerts: ProfileVertex[] = [];
+    ws.eachRow((row, rowNum) => {
+      if (rowNum === 1) return;
+      const dist = parseFloat(String(row.getCell(1).value));
+      const cota = parseFloat(String(row.getCell(2).value));
+      if (isNaN(dist) || isNaN(cota)) return;
+      newVerts.push({ id: uuid(), dist, cota, desc: String(row.getCell(3).value || '') });
+    });
+    if (newVerts.length >= 2) {
+      setVertices(newVerts);
+      const maxDist = Math.max(...newVerts.map(v => v.dist));
+      if (tramos.length === 1) {
+        setTramos([{ ...tramos[0], distFrom: newVerts[0].dist, distTo: maxDist }]);
+      }
+    } else {
+      alert("El archivo debe tener al menos 2 filas con formato: distancia, cota (opcional: descripcion)");
+    }
+    e.target.value = "";
+  };
+
+  // Chart data — merge scenario A and B by distance
+  const chartData = (() => {
+    if (!results) return [];
+    const base = results.points.map(p => ({
+      dist: p.dist,
+      Terreno: p.cota,
+      "Piezometrica A": p.piezo,
+      "Piezometrica B": undefined as number | undefined,
+    }));
+    if (showScenarioB && resultsB) {
+      // Build a map of B's piezo by distance for merging
+      const bMap = new Map(resultsB.points.map(p => [p.dist, p.piezo]));
+      for (const row of base) {
+        const bVal = bMap.get(row.dist);
+        if (bVal != null) row["Piezometrica B"] = bVal;
+      }
+    }
+    return base;
+  })();
 
   const missing: string[] = [];
   if (rawQ == null) missing.push("caudal Q");
-  if (P1 == null) missing.push("presion P1");
+  if (calcMode === 'verificar' && P1 == null) missing.push("presion P1");
 
   // Colors per tramo for the table
   const tramoColors = ["#1C3D5A", "#2E7D32", "#C62828", "#F57F17", "#6A1B9A", "#00838F"];
@@ -211,7 +324,34 @@ export default function PerfilPage() {
                 <option value="m³/h">m3/h</option>
               </select>
             </div>
-            <InputField label="Presion de entrada P1" value={P1} onChange={(v) => setP1(v === "" ? null : parseFloat(v))} unit="kg/cm2" required tooltip="Presion disponible al inicio de la linea" />
+            {/* Mode toggle */}
+            <div className="space-y-1">
+              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Modo de calculo</label>
+              <div className="flex rounded-lg border border-gray-200 dark:border-gray-600 overflow-hidden">
+                <button
+                  onClick={() => setCalcMode('verificar')}
+                  className={`flex-1 text-xs py-2 px-3 transition-colors ${calcMode === 'verificar' ? 'bg-[#1C3D5A] text-white font-semibold' : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'}`}
+                >
+                  Verificar presion
+                </button>
+                <button
+                  onClick={() => setCalcMode('calcularP1')}
+                  className={`flex-1 text-xs py-2 px-3 transition-colors ${calcMode === 'calcularP1' ? 'bg-[#1C3D5A] text-white font-semibold' : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'}`}
+                >
+                  Calcular P1 requerida
+                </button>
+              </div>
+            </div>
+            {calcMode === 'verificar' ? (
+              <InputField label="Presion de entrada P1" value={P1} onChange={(v) => setP1(v === "" ? null : parseFloat(v))} unit="kg/cm2" required tooltip="Presion disponible al inicio de la linea" />
+            ) : (
+              <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3 text-center">
+                <p className="text-[10px] text-blue-500 dark:text-blue-400 mb-1">P1 requerida para cumplir Pmin</p>
+                <p className="text-xl font-bold text-[#1C3D5A] dark:text-blue-300">
+                  {computedP1 != null ? formatNumber(computedP1, 2) : "--"} <span className="text-sm font-normal">kg/cm2</span>
+                </p>
+              </div>
+            )}
             <InputField label="Presion minima requerida" value={Pmin} onChange={(v) => setPmin(parseFloat(v) || 1)} unit="kg/cm2" tooltip="Presion minima aceptable en cualquier punto" />
           </div>
 
@@ -266,11 +406,62 @@ export default function PerfilPage() {
             ))}
           </div>
 
+          {/* Scenario B toggle + tramos */}
+          <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 space-y-3">
+            <div className="flex items-center justify-between">
+              <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300">Comparacion de escenarios</h2>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <span className="text-xs text-gray-500">Escenario B</span>
+                <input type="checkbox" checked={showScenarioB} onChange={(e) => setShowScenarioB(e.target.checked)} className="w-4 h-4 rounded border-gray-300 text-[#1C3D5A] focus:ring-[#1C3D5A]" />
+              </label>
+            </div>
+            {showScenarioB && (
+              <>
+                <p className="text-[10px] text-gray-400">Define tramos alternativos (mismo perfil y caudal)</p>
+                <div className="flex items-center justify-end">
+                  <button onClick={addTramoB} className="text-xs bg-orange-500 text-white px-3 py-1.5 rounded-lg hover:bg-orange-600 transition-colors">+ Tramo B</button>
+                </div>
+                {tramosB.map((t, i) => (
+                  <div key={t.id} className="border border-orange-200 dark:border-orange-800 rounded-lg p-3 space-y-2" style={{ borderLeftColor: '#F97316', borderLeftWidth: 3 }}>
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-semibold text-orange-600 dark:text-orange-400">Tramo B{i + 1}</span>
+                      {tramosB.length > 1 && <button onClick={() => removeTramoB(t.id)} className="text-red-400 hover:text-red-600 text-xs">{"✗"}</button>}
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <InputField label="Desde (m)" value={t.distFrom} onChange={(v) => updateTramoB(t.id, { distFrom: parseFloat(v) || 0 })} />
+                      <InputField label="Hasta (m)" value={t.distTo} onChange={(v) => updateTramoB(t.id, { distTo: parseFloat(v) || 0 })} />
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="space-y-1">
+                        <label className="text-sm font-medium text-gray-700 dark:text-gray-300">DN (mm)</label>
+                        <select value={t.DN_mm} onChange={(e) => updateTramoB(t.id, { DN_mm: parseInt(e.target.value) })} className="w-full px-2 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 dark:text-white">
+                          {STANDARD_DNS_LABELED.map(d => <option key={d.dn} value={d.dn}>{d.label}</option>)}
+                        </select>
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Material</label>
+                        <select value={t.materialName} onChange={(e) => { const m = MATERIALS.find(mt => mt.name === e.target.value); if (m) updateTramoB(t.id, { materialName: m.name, C: m.c }); }} className="w-full px-2 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 dark:text-white">
+                          {MATERIALS.map(m => <option key={m.name} value={m.name}>{m.name} (C={m.c})</option>)}
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </>
+            )}
+          </div>
+
           {/* Profile table */}
           <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 space-y-3">
             <div className="flex items-center justify-between">
               <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300">Perfil topografico</h2>
               <div className="flex gap-2">
+                <button onClick={downloadTemplate} className="text-[10px] text-[#1C3D5A] border border-[#1C3D5A]/30 px-2 py-1 rounded hover:bg-[#1C3D5A]/10 transition-colors">
+                  Plantilla .xlsx
+                </button>
+                <button onClick={() => xlsxRef.current?.click()} className="text-[10px] text-[#1C3D5A] border border-[#1C3D5A]/30 px-2 py-1 rounded hover:bg-[#1C3D5A]/10 transition-colors">
+                  Importar Excel
+                </button>
                 <button onClick={() => fileRef.current?.click()} className="text-[10px] text-[#1C3D5A] border border-[#1C3D5A]/30 px-2 py-1 rounded hover:bg-[#1C3D5A]/10 transition-colors">
                   Importar CSV
                 </button>
@@ -279,6 +470,7 @@ export default function PerfilPage() {
                 </button>
               </div>
               <input ref={fileRef} type="file" accept=".csv,.txt,.tsv" onChange={handleCSVImport} className="hidden" />
+              <input ref={xlsxRef} type="file" accept=".xlsx" onChange={handleXLSXImport} className="hidden" />
             </div>
             <p className="text-[10px] text-gray-400">CSV: distancia, cota, descripcion (opcional)</p>
 
@@ -320,7 +512,7 @@ export default function PerfilPage() {
                   hasAssumedValues: false,
                   inputs: [
                     { label: "Q", value: rawQ != null ? `${rawQ} ${flowUnit}` : "--" },
-                    { label: "P1", value: P1 != null ? `${P1} kg/cm2` : "--" },
+                    { label: "P1", value: calcMode === 'calcularP1' && computedP1 != null ? `${formatNumber(computedP1, 2)} kg/cm2 (calculada)` : P1 != null ? `${P1} kg/cm2` : "--" },
                     { label: "P min", value: `${Pmin} kg/cm2` },
                     { label: "Tramos", value: tramos.map((t, i) => `T${i + 1}: ${t.DN_mm}mm ${t.materialName}`).join(", ") },
                     { label: "Puntos", value: `${vertices.length}` },
@@ -361,6 +553,12 @@ export default function PerfilPage() {
                 />
                 <MetricCard label="Puntos criticos" value={`${results.pointsCritical}`} alertLevel={results.pointsCritical > 0 ? "ERROR" : "OK"} dataStatus="calculated" />
               </div>
+              {calcMode === 'calcularP1' && computedP1 != null && (
+                <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-4 text-center">
+                  <span className="text-xs text-blue-500">P1 requerida para Pmin = {Pmin} kg/cm2:</span>
+                  <span className="ml-2 text-lg font-bold text-[#1C3D5A] dark:text-blue-300">{formatNumber(computedP1, 2)} kg/cm2</span>
+                </div>
+              )}
 
               {/* Tramo summaries */}
               {results.tramoSummaries.length > 1 && (
@@ -388,6 +586,30 @@ export default function PerfilPage() {
                 </div>
               )}
 
+              {/* Scenario comparison summary */}
+              {showScenarioB && resultsB && (
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="bg-white dark:bg-gray-800 rounded-xl border-2 border-[#1C3D5A]/30 p-4 space-y-2">
+                    <h4 className="text-xs font-bold text-[#1C3D5A] dark:text-blue-300">Escenario A</h4>
+                    <div className="text-xs space-y-1 text-gray-600 dark:text-gray-300">
+                      <p>hf total: <span className="font-mono font-semibold">{formatNumber(results.totalHf, 2)} m</span></p>
+                      <p>P final: <span className="font-mono font-semibold">{results.finalPressure_kgcm2 != null ? formatNumber(results.finalPressure_kgcm2, 2) : "--"} kg/cm2</span></p>
+                      <p>Puntos criticos: <span className="font-mono font-semibold">{results.pointsCritical}</span></p>
+                      <p>Puntos bajo Pmin: <span className="font-mono font-semibold">{results.pointsBelowMin}</span></p>
+                    </div>
+                  </div>
+                  <div className="bg-white dark:bg-gray-800 rounded-xl border-2 border-orange-300 p-4 space-y-2">
+                    <h4 className="text-xs font-bold text-orange-600 dark:text-orange-400">Escenario B</h4>
+                    <div className="text-xs space-y-1 text-gray-600 dark:text-gray-300">
+                      <p>hf total: <span className="font-mono font-semibold">{formatNumber(resultsB.totalHf, 2)} m</span></p>
+                      <p>P final: <span className="font-mono font-semibold">{resultsB.finalPressure_kgcm2 != null ? formatNumber(resultsB.finalPressure_kgcm2, 2) : "--"} kg/cm2</span></p>
+                      <p>Puntos criticos: <span className="font-mono font-semibold">{resultsB.pointsCritical}</span></p>
+                      <p>Puntos bajo Pmin: <span className="font-mono font-semibold">{resultsB.pointsBelowMin}</span></p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* Profile chart */}
               {chartData.length >= 2 && (
                 <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
@@ -400,7 +622,10 @@ export default function PerfilPage() {
                       <Tooltip formatter={(v: number) => [v?.toFixed(2), ""]} labelFormatter={(l) => `Dist: ${l} m`} />
                       <Legend wrapperStyle={{ fontSize: 11 }} />
                       <Area type="monotone" dataKey="Terreno" stroke="#8B7355" fill="#D2B48C" fillOpacity={0.3} strokeWidth={2} />
-                      <Line type="monotone" dataKey="Piezometrica" stroke="#1C3D5A" strokeWidth={2.5} dot={{ r: 3 }} strokeDasharray="8 4" />
+                      <Line type="monotone" dataKey="Piezometrica A" stroke="#1C3D5A" strokeWidth={2.5} dot={{ r: 3 }} strokeDasharray="8 4" />
+                      {showScenarioB && resultsB && (
+                        <Line type="monotone" dataKey="Piezometrica B" stroke="#F97316" strokeWidth={2} dot={{ r: 2 }} strokeDasharray="4 4" />
+                      )}
                     </ComposedChart>
                   </ResponsiveContainer>
                 </div>
