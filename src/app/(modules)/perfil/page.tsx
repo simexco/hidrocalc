@@ -16,6 +16,40 @@ import { ComposedChart, Line, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend
 import ListaMaterialesSIMEX, { type SIMEXAcc } from "@/components/ListaMaterialesSIMEX";
 import type { FlowUnit } from "@/types/hydraulic";
 
+// Compact numeric input with local state (no lag, no spinners)
+function NumInput({ value, onChange, className = "" }: { value: number; onChange: (v: number) => void; className?: string }) {
+  const [local, setLocal] = useState(String(value));
+  const focused = useRef(false);
+  const timer = useRef<ReturnType<typeof setTimeout>>(undefined);
+
+  useEffect(() => { if (!focused.current) setLocal(String(value)); }, [value]);
+
+  return (
+    <input
+      type="text"
+      inputMode="decimal"
+      value={local}
+      onFocus={() => { focused.current = true; }}
+      onBlur={() => {
+        focused.current = false;
+        clearTimeout(timer.current);
+        const n = parseFloat(local);
+        if (!isNaN(n)) { onChange(n); setLocal(String(n)); }
+        else setLocal(String(value));
+      }}
+      onChange={(e) => {
+        setLocal(e.target.value);
+        clearTimeout(timer.current);
+        timer.current = setTimeout(() => {
+          const n = parseFloat(e.target.value);
+          if (!isNaN(n)) onChange(n);
+        }, 200);
+      }}
+      className={`w-full px-2 py-1.5 text-xs border border-gray-200 dark:border-gray-600 rounded bg-white dark:bg-gray-800 dark:text-white ${className}`}
+    />
+  );
+}
+
 export default function PerfilPage() {
   const [projectName, setProjectName] = useState("Perfil hidraulico");
   const [rawQ, setRawQ] = useState<number | null>(null);
@@ -254,8 +288,8 @@ export default function PerfilPage() {
             <div className="space-y-1 max-h-[350px] overflow-y-auto">
               {vertices.map((v, i) => (
                 <div key={v.id} className={`grid grid-cols-[1fr_1fr_1fr_24px] gap-2 items-center px-1 ${results?.points[i]?.status === 'critical' ? 'bg-red-50 dark:bg-red-900/10 rounded' : results?.points[i]?.status === 'low' ? 'bg-yellow-50 dark:bg-yellow-900/10 rounded' : ''}`}>
-                  <input type="number" value={v.dist} onChange={(e) => updateVertex(v.id, "dist", parseFloat(e.target.value) || 0)} className="w-full px-2 py-1.5 text-xs border border-gray-200 dark:border-gray-600 rounded bg-white dark:bg-gray-800 dark:text-white" />
-                  <input type="number" value={v.cota} onChange={(e) => updateVertex(v.id, "cota", parseFloat(e.target.value) || 0)} className="w-full px-2 py-1.5 text-xs border border-gray-200 dark:border-gray-600 rounded bg-white dark:bg-gray-800 dark:text-white" />
+                  <NumInput value={v.dist} onChange={(n) => updateVertex(v.id, "dist", n)} />
+                  <NumInput value={v.cota} onChange={(n) => updateVertex(v.id, "cota", n)} />
                   <input type="text" value={v.desc} onChange={(e) => updateVertex(v.id, "desc", e.target.value)} placeholder={i === 0 ? "Inicio" : ""} className="w-full px-2 py-1.5 text-xs border border-gray-200 dark:border-gray-600 rounded bg-white dark:bg-gray-800 dark:text-white" />
                   {vertices.length > 2 ? <button onClick={() => removeVertex(v.id)} className="text-red-400 hover:text-red-600 text-xs text-center">{"✗"}</button> : <span />}
                 </div>
