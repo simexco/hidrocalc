@@ -9,7 +9,7 @@ import { DataStatusBanner } from "@/components/ui/DataStatusBanner";
 import { ExportPDFButton } from "@/components/ui/ExportPDFButton";
 import { calculateVRP } from "@/lib/calculations/vrp";
 import { formatNumber } from "@/lib/calculations/conversions";
-import { STANDARD_DNS } from "@/lib/constants";
+import { STANDARD_DNS, STANDARD_DNS_LABELED } from "@/lib/constants";
 import { saveFormState, loadFormState } from "@/lib/storage/form-persistence";
 import { ResetButton } from "@/components/ui/ResetButton";
 import type { FlowUnit, AssumedValue } from "@/types/hydraulic";
@@ -123,7 +123,7 @@ export default function VRPPage() {
                 onChange={(e) => setInput("DN", parseInt(e.target.value))}
                 className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 dark:text-white"
               >
-                {STANDARD_DNS.filter(dn => dn <= 600).map((dn) => <option key={dn} value={dn}>{dn}</option>)}
+                {STANDARD_DNS_LABELED.filter(d => d.dn <= 600).map((d) => <option key={d.dn} value={d.dn}>{d.label}</option>)}
               </select>
             </div>
           </div>

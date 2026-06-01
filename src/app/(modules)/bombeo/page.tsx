@@ -10,7 +10,7 @@ import { PumpCurveChart } from "@/components/hydraulic/PumpCurveChart";
 import { ExportPDFButton } from "@/components/ui/ExportPDFButton";
 import { calculatePumpOperation } from "@/lib/calculations/pump-operation";
 import { formatNumber } from "@/lib/calculations/conversions";
-import { STANDARD_DNS, MATERIALS } from "@/lib/constants";
+import { STANDARD_DNS, STANDARD_DNS_LABELED, MATERIALS } from "@/lib/constants";
 import { saveFormState, loadFormState } from "@/lib/storage/form-persistence";
 import { ResetButton } from "@/components/ui/ResetButton";
 import type { PumpInputMethod, PumpPoint } from "@/types/hydraulic";
@@ -88,7 +88,7 @@ export default function BombeoPage() {
                 onChange={(e) => setInput("DN", parseInt(e.target.value))}
                 className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 dark:text-white"
               >
-                {STANDARD_DNS.map((dn) => <option key={dn} value={dn}>{dn} mm</option>)}
+                {STANDARD_DNS_LABELED.map((d) => <option key={d.dn} value={d.dn}>{d.label}</option>)}
               </select>
             </div>
 

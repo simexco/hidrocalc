@@ -11,7 +11,7 @@ import { HydraulicProfileChart } from "@/components/hydraulic/HydraulicProfileCh
 import { ExportPDFButton } from "@/components/ui/ExportPDFButton";
 import { calculateSeriesPipes } from "@/lib/calculations/series-pipes";
 import { flowToM3s, formatNumber, mcaToKgcm2 } from "@/lib/calculations/conversions";
-import { STANDARD_DNS, MATERIALS } from "@/lib/constants";
+import { STANDARD_DNS, STANDARD_DNS_LABELED, MATERIALS } from "@/lib/constants";
 import { saveFormState, loadFormState } from "@/lib/storage/form-persistence";
 import { ResetButton } from "@/components/ui/ResetButton";
 import ListaMaterialesSIMEX, { type SIMEXAcc } from "@/components/ListaMaterialesSIMEX";
@@ -211,7 +211,7 @@ export default function EnSeriePage() {
                       onChange={(e) => updateTramo(t.id, { DN: parseInt(e.target.value) })}
                       className="w-full px-2 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 dark:text-white"
                     >
-                      {STANDARD_DNS.map((dn) => <option key={dn} value={dn}>{dn}</option>)}
+                      {STANDARD_DNS_LABELED.map((d) => <option key={d.dn} value={d.dn}>{d.label}</option>)}
                     </select>
                   </div>
                   <div className="space-y-1">

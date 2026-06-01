@@ -10,7 +10,7 @@ import { ExportPDFButton } from "@/components/ui/ExportPDFButton";
 import { ResetButton } from "@/components/ui/ResetButton";
 import { calculateProfile, type ProfileVertex, type ProfileTramo, type ProfileResults } from "@/lib/calculations/hydraulic-profile";
 import { flowToM3s, formatNumber } from "@/lib/calculations/conversions";
-import { STANDARD_DNS, MATERIALS } from "@/lib/constants";
+import { STANDARD_DNS, STANDARD_DNS_LABELED, MATERIALS } from "@/lib/constants";
 import { saveFormState, loadFormState } from "@/lib/storage/form-persistence";
 import { ComposedChart, Line, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
 import ListaMaterialesSIMEX, { type SIMEXAcc } from "@/components/ListaMaterialesSIMEX";
@@ -237,7 +237,7 @@ export default function PerfilPage() {
                   <div className="space-y-1">
                     <label className="text-sm font-medium text-gray-700 dark:text-gray-300">DN (mm)</label>
                     <select value={t.DN_mm} onChange={(e) => updateTramo(t.id, { DN_mm: parseInt(e.target.value) })} className="w-full px-2 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 dark:text-white">
-                      {STANDARD_DNS.map(dn => <option key={dn} value={dn}>{dn}</option>)}
+                      {STANDARD_DNS_LABELED.map(d => <option key={d.dn} value={d.dn}>{d.label}</option>)}
                     </select>
                   </div>
                   <div className="space-y-1">
