@@ -276,6 +276,43 @@ export default function PerfilPage() {
     e.target.value = "";
   };
 
+  // DN Recommendation: find optimal DN for current Q
+  const Q_m3s = rawQ != null ? flowToM3s(rawQ, flowUnit) : null;
+  const recommendedDN = (() => {
+    if (!Q_m3s || Q_m3s <= 0) return null;
+    for (const d of STANDARD_DNS) {
+      const D_m = d / 1000;
+      const A = Math.PI * Math.pow(D_m / 2, 2);
+      const V = Q_m3s / A;
+      if (V >= 0.6 && V <= 1.5) return { dn: d, V, label: STANDARD_DNS_LABELED.find(x => x.dn === d)?.label ?? `${d}` };
+    }
+    for (const d of STANDARD_DNS) {
+      const D_m = d / 1000;
+      const A = Math.PI * Math.pow(D_m / 2, 2);
+      const V = Q_m3s / A;
+      if (V <= 2.5) return { dn: d, V, label: STANDARD_DNS_LABELED.find(x => x.dn === d)?.label ?? `${d}` };
+    }
+    return null;
+  })();
+
+  function getTramoVelocity(DN_mm: number): { V: number; status: 'optimo' | 'aceptable' | 'alto' | 'bajo' } | null {
+    if (!Q_m3s || Q_m3s <= 0) return null;
+    const D_m = DN_mm / 1000;
+    const A = Math.PI * Math.pow(D_m / 2, 2);
+    const V = Q_m3s / A;
+    let status: 'optimo' | 'aceptable' | 'alto' | 'bajo';
+    if (V >= 0.6 && V <= 1.5) status = 'optimo';
+    else if (V > 1.5 && V <= 2.5) status = 'aceptable';
+    else if (V > 2.5) status = 'alto';
+    else status = 'bajo';
+    return { V, status };
+  }
+
+  const applyRecommendedDN = () => {
+    if (!recommendedDN) return;
+    setTramos(tramos.map(t => ({ ...t, DN_mm: recommendedDN.dn })));
+  };
+
   // Chart data — merge scenario A and B by distance
   const chartData = (() => {
     if (!results) return [];
@@ -363,7 +400,24 @@ export default function PerfilPage() {
             </div>
             <p className="text-[10px] text-gray-400">Define en que distancia cambia el diametro o material</p>
 
-            {tramos.map((t, i) => (
+            {/* DN Recommendation banner */}
+            {recommendedDN && (
+              <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-3 space-y-2">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-xs font-semibold text-green-800 dark:text-green-300">DN recomendado para Q={rawQ} {flowUnit}</p>
+                    <p className="text-lg font-bold text-green-900 dark:text-green-200">{recommendedDN.label} <span className="text-xs font-normal text-green-600">V={formatNumber(recommendedDN.V, 2)} m/s</span></p>
+                  </div>
+                  <button onClick={applyRecommendedDN} className="text-xs bg-green-600 text-white px-3 py-2 rounded-lg hover:bg-green-700 transition-colors font-medium shadow-sm">
+                    Aplicar a todos
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {tramos.map((t, i) => {
+              const vel = getTramoVelocity(t.DN_mm);
+              return (
               <div key={t.id} className="border border-gray-100 dark:border-gray-700 rounded-lg p-3 space-y-2" style={{ borderLeftColor: tramoColors[i % tramoColors.length], borderLeftWidth: 3 }}>
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-semibold text-gray-600 dark:text-gray-300">Tramo {i + 1}</span>
@@ -387,6 +441,33 @@ export default function PerfilPage() {
                     </select>
                   </div>
                 </div>
+                {/* Velocity indicator */}
+                {vel && (
+                  <div className={`flex items-center gap-2 px-2 py-1.5 rounded-lg text-xs ${
+                    vel.status === 'optimo' ? 'bg-green-50 dark:bg-green-900/10 text-green-700 dark:text-green-400' :
+                    vel.status === 'aceptable' ? 'bg-blue-50 dark:bg-blue-900/10 text-blue-700 dark:text-blue-400' :
+                    vel.status === 'alto' ? 'bg-red-50 dark:bg-red-900/10 text-red-700 dark:text-red-400' :
+                    'bg-yellow-50 dark:bg-yellow-900/10 text-yellow-700 dark:text-yellow-400'
+                  }`}>
+                    <span className={`w-2 h-2 rounded-full ${
+                      vel.status === 'optimo' ? 'bg-green-500' :
+                      vel.status === 'aceptable' ? 'bg-blue-500' :
+                      vel.status === 'alto' ? 'bg-red-500' : 'bg-yellow-500'
+                    }`} />
+                    <span>V = {formatNumber(vel.V, 2)} m/s</span>
+                    <span className="text-[10px] opacity-70">
+                      {vel.status === 'optimo' && '— Optimo'}
+                      {vel.status === 'aceptable' && '— Aceptable'}
+                      {vel.status === 'alto' && '— Muy alto (>2.5)'}
+                      {vel.status === 'bajo' && '— Muy bajo (<0.3)'}
+                    </span>
+                    {vel.status !== 'optimo' && recommendedDN && recommendedDN.dn !== t.DN_mm && (
+                      <button onClick={() => updateTramo(t.id, { DN_mm: recommendedDN.dn })} className="ml-auto text-[10px] underline opacity-70 hover:opacity-100">
+                        Cambiar a {recommendedDN.label}
+                      </button>
+                    )}
+                  </div>
+                )}
                 {/* SIMEX Accessories */}
                 <div className="mt-2 pt-2 border-t border-gray-100 dark:border-gray-700">
                   <ListaMaterialesSIMEX
@@ -403,7 +484,7 @@ export default function PerfilPage() {
                   )}
                 </div>
               </div>
-            ))}
+            );})}
           </div>
 
           {/* Scenario B toggle + tramos */}
