@@ -10,7 +10,7 @@ import { PumpCurveChart } from "@/components/hydraulic/PumpCurveChart";
 import { ExportPDFButton } from "@/components/ui/ExportPDFButton";
 import { calculatePumpOperation } from "@/lib/calculations/pump-operation";
 import { formatNumber } from "@/lib/calculations/conversions";
-import { STANDARD_DNS, STANDARD_DNS_LABELED, MATERIALS } from "@/lib/constants";
+import { STANDARD_DNS, STANDARD_DNS_LABELED, MATERIALS, getPipeClassesForMaterial } from "@/lib/constants";
 import { saveFormState, loadFormState } from "@/lib/storage/form-persistence";
 import { ResetButton } from "@/components/ui/ResetButton";
 import type { PumpInputMethod, PumpPoint } from "@/types/hydraulic";
@@ -18,23 +18,30 @@ import type { PumpInputMethod, PumpPoint } from "@/types/hydraulic";
 export default function BombeoPage() {
   const { inputs, results, setInput, setResults, addPumpPoint, removePumpPoint, updatePumpPoint, reset } = usePumpOperationStore();
   const [p2Req, setP2Req] = useState<number>(0); // kg/cm² — pressure required at delivery
+  const [materialName, setMaterialName] = useState(MATERIALS[0].name);
+  const [pipeClass, setPipeClass] = useState("");
+  const [PNBar, setPNBar] = useState<number | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
   const persistRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   useEffect(() => {
-    const saved = loadFormState<typeof inputs>("bombeo");
+    const saved = loadFormState<typeof inputs & { materialName?: string; pipeClass?: string; PNBar?: number | null }>("bombeo");
     if (saved) {
-      Object.entries(saved).forEach(([key, value]) => {
+      const { materialName: savedMat, pipeClass: savedClass, PNBar: savedPN, ...rest } = saved;
+      Object.entries(rest).forEach(([key, value]) => {
         setInput(key as keyof typeof inputs, value as never);
       });
+      if (savedMat) setMaterialName(savedMat);
+      if (savedClass) setPipeClass(savedClass);
+      if (savedPN != null) setPNBar(savedPN);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
     clearTimeout(persistRef.current);
-    persistRef.current = setTimeout(() => saveFormState("bombeo", inputs), 1000);
-  }, [inputs]);
+    persistRef.current = setTimeout(() => saveFormState("bombeo", { ...inputs, materialName, pipeClass, PNBar }), 1000);
+  }, [inputs, materialName, pipeClass, PNBar]);
 
   const runCalc = useCallback(() => {
     // Hs = Hg + P2_requerida (converted to m.c.a.)
@@ -56,6 +63,9 @@ export default function BombeoPage() {
   const handleMaterial = (name: string) => {
     const mat = MATERIALS.find((m) => m.name === name);
     if (mat) setInput("C", mat.c);
+    setMaterialName(name);
+    setPipeClass("");
+    setPNBar(null);
   };
 
   const missing: string[] = [];
@@ -73,7 +83,7 @@ export default function BombeoPage() {
           <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 space-y-4">
             <div className="flex items-center justify-between border-b border-gray-100 dark:border-gray-700 pb-2">
               <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300">Sistema</h2>
-              <ResetButton moduleKey="bombeo" onReset={reset} />
+              <ResetButton moduleKey="bombeo" onReset={() => { reset(); setMaterialName(MATERIALS[0].name); setPipeClass(""); setPNBar(null); }} />
             </div>
             <InputField label="Nombre del proyecto" value={inputs.projectName} onChange={(v) => setInput("projectName", v)} type="text" />
             <InputField label="Altura geométrica Hg" value={inputs.Hg} onChange={(v) => handleNum("Hg", v)} unit="m" required tooltip="Diferencia de elevacion entre la succion y la descarga de la bomba (z2 - z1)" />
@@ -95,12 +105,41 @@ export default function BombeoPage() {
             <div className="space-y-1">
               <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Material</label>
               <select
+                value={materialName}
                 onChange={(e) => handleMaterial(e.target.value)}
                 className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 dark:text-white"
               >
                 {MATERIALS.map((m) => <option key={m.name} value={m.name}>{m.name}</option>)}
               </select>
             </div>
+
+            {/* Pipe class selector */}
+            {(() => {
+              const classes = getPipeClassesForMaterial(materialName);
+              if (!classes) return null;
+              return (
+                <div className="space-y-1">
+                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Clase de tuberia</label>
+                  <select
+                    value={pipeClass}
+                    onChange={(e) => {
+                      const sel = classes.classes.find(c => c.clase === e.target.value);
+                      setPipeClass(sel?.clase ?? '');
+                      setPNBar(sel?.pn ?? null);
+                    }}
+                    className={`w-full px-3 py-2 text-sm border rounded-lg bg-white dark:bg-gray-800 dark:text-white ${
+                      !pipeClass ? 'border-yellow-300 bg-yellow-50' : 'border-gray-300 dark:border-gray-600'
+                    }`}
+                  >
+                    <option value="">-- Seleccionar clase --</option>
+                    {classes.classes.map(c => (
+                      <option key={c.clase} value={c.clase}>{c.clase} (PN {c.pn} bar = {(c.pn / 0.9807).toFixed(1)} kg/cm²)</option>
+                    ))}
+                  </select>
+                  {!pipeClass && <p className="text-[10px] text-yellow-600">Selecciona la clase para verificar resistencia</p>}
+                </div>
+              );
+            })()}
 
             <InputField label="K total accesorios" value={inputs.kTotal} onChange={(v) => setInput("kTotal", parseFloat(v) || 0)} tooltip="Suma de todos los coeficientes K de pérdidas menores (codos, válvulas, tees, etc.). Si no lo conoces, déjalo en 0 y se estimará como 10% de las pérdidas por fricción" />
           </div>
@@ -201,6 +240,11 @@ export default function BombeoPage() {
               }}
             />
           </div>
+
+          {/* Pipe class pressure warning */}
+          {pipeClass && PNBar && results?.Hop != null && (results.Hop / 10) > (PNBar / 0.9807) && (
+            <AlertBanner level="ERROR" message={`La presion maxima (${(results.Hop / 10).toFixed(1)} kg/cm²) excede la capacidad de ${pipeClass} (PN ${PNBar} bar = ${(PNBar / 0.9807).toFixed(1)} kg/cm²). Usar una clase superior.`} />
+          )}
 
           {results && (
             <>

@@ -8,7 +8,7 @@ import { AlertBanner } from "@/components/ui/AlertBanner";
 import { ExportPDFButton } from "@/components/ui/ExportPDFButton";
 import { calculateAirValves, type AirValveVertex, type AirValveInputs, type AirValveOutputs } from "@/lib/calculations/air-valves";
 import { flowToM3s, formatNumber } from "@/lib/calculations/conversions";
-import { STANDARD_DNS_LABELED, MATERIALS } from "@/lib/constants";
+import { STANDARD_DNS_LABELED, MATERIALS, getPipeClassesForMaterial } from "@/lib/constants";
 import { saveFormState, loadFormState } from "@/lib/storage/form-persistence";
 import { ResetButton } from "@/components/ui/ResetButton";
 import { ComposedChart, Line, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine, Dot } from "recharts";
@@ -23,6 +23,8 @@ export default function ValvulasAirePage() {
   const [DN, setDN] = useState(150);
   const [materialName, setMaterialName] = useState(MATERIALS[0].name);
   const [C, setC] = useState(MATERIALS[0].c);
+  const [pipeClass, setPipeClass] = useState("");
+  const [PNBar, setPNBar] = useState<number | null>(null);
   const [P0, setP0] = useState<number | null>(3);
   const [pressureMin, setPressureMin] = useState(5);
   const [maxSpacing, setMaxSpacing] = useState(600);
@@ -35,7 +37,7 @@ export default function ValvulasAirePage() {
 
   // Persist
   useEffect(() => {
-    const saved = loadFormState<{ projectName: string; rawQ: number | null; flowUnit: FlowUnit; DN: number; C: number; P0: number | null; pressureMin: number; maxSpacing: number; vertices: AirValveVertex[] }>("valvulas-aire");
+    const saved = loadFormState<{ projectName: string; rawQ: number | null; flowUnit: FlowUnit; DN: number; C: number; P0: number | null; pressureMin: number; maxSpacing: number; vertices: AirValveVertex[]; materialName?: string; pipeClass?: string; PNBar?: number | null }>("valvulas-aire");
     if (saved) {
       if (saved.projectName) setProjectName(saved.projectName);
       if (saved.rawQ != null) setRawQ(saved.rawQ);
@@ -46,13 +48,16 @@ export default function ValvulasAirePage() {
       if (saved.pressureMin) setPressureMin(saved.pressureMin);
       if (saved.maxSpacing) setMaxSpacing(saved.maxSpacing);
       if (saved.vertices?.length >= 2) setVertices(saved.vertices);
+      if (saved.materialName) setMaterialName(saved.materialName);
+      if (saved.pipeClass) setPipeClass(saved.pipeClass);
+      if (saved.PNBar != null) setPNBar(saved.PNBar);
     }
   }, []);
 
   useEffect(() => {
-    const t = setTimeout(() => saveFormState("valvulas-aire", { projectName, rawQ, flowUnit, DN, C, P0, pressureMin, maxSpacing, vertices }), 1000);
+    const t = setTimeout(() => saveFormState("valvulas-aire", { projectName, rawQ, flowUnit, DN, C, P0, pressureMin, maxSpacing, vertices, materialName, pipeClass, PNBar }), 1000);
     return () => clearTimeout(t);
-  }, [projectName, rawQ, flowUnit, DN, C, P0, pressureMin, maxSpacing, vertices]);
+  }, [projectName, rawQ, flowUnit, DN, C, P0, pressureMin, maxSpacing, vertices, materialName, pipeClass, PNBar]);
 
   // Calculate
   const runCalc = useCallback(() => {
@@ -90,6 +95,8 @@ export default function ValvulasAirePage() {
     setDN(150);
     setMaterialName(MATERIALS[0].name);
     setC(MATERIALS[0].c);
+    setPipeClass("");
+    setPNBar(null);
     setP0(3);
     setPressureMin(5);
     setMaxSpacing(600);
@@ -104,6 +111,8 @@ export default function ValvulasAirePage() {
     const mat = MATERIALS.find((m) => m.name === name);
     setMaterialName(name);
     if (mat && name !== "Personalizado") setC(mat.c);
+    setPipeClass("");
+    setPNBar(null);
   };
 
   // Chart data
@@ -155,6 +164,35 @@ export default function ValvulasAirePage() {
                 {MATERIALS.map((m) => <option key={m.name} value={m.name}>{m.name} (C={m.c})</option>)}
               </select>
             </div>
+
+            {/* Pipe class selector */}
+            {(() => {
+              const classes = getPipeClassesForMaterial(materialName);
+              if (!classes) return null;
+              return (
+                <div className="space-y-1">
+                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Clase de tuberia</label>
+                  <select
+                    value={pipeClass}
+                    onChange={(e) => {
+                      const sel = classes.classes.find(c => c.clase === e.target.value);
+                      setPipeClass(sel?.clase ?? '');
+                      setPNBar(sel?.pn ?? null);
+                    }}
+                    className={`w-full px-3 py-2 text-sm border rounded-lg bg-white dark:bg-gray-800 dark:text-white ${
+                      !pipeClass ? 'border-yellow-300 bg-yellow-50' : 'border-gray-300 dark:border-gray-600'
+                    }`}
+                  >
+                    <option value="">-- Seleccionar clase --</option>
+                    {classes.classes.map(c => (
+                      <option key={c.clase} value={c.clase}>{c.clase} (PN {c.pn} bar = {(c.pn / 0.9807).toFixed(1)} kg/cm²)</option>
+                    ))}
+                  </select>
+                  {!pipeClass && <p className="text-[10px] text-yellow-600">Selecciona la clase para verificar resistencia</p>}
+                </div>
+              );
+            })()}
+
             <InputField label="Presión de operación P₀" value={P0} onChange={(v) => setP0(v === "" ? null : parseFloat(v))} unit="kg/cm²" tooltip="Presión al inicio de la línea. Si no la conoces, se calculará solo geometría." />
             <InputField label="Presión mínima normativa" value={pressureMin} onChange={(v) => setPressureMin(parseFloat(v) || 5)} unit="m.c.a." tooltip="NOM-001-CONAGUA: mínimo absoluto 5 m.c.a. (0.5 kg/cm²), recomendado 10 m.c.a." />
             <InputField label="Espaciado máximo VA-E" value={maxSpacing} onChange={(v) => setMaxSpacing(parseFloat(v) || 600)} unit="m" tooltip="Distancia máxima entre válvulas eliminadoras en tramos rectos. AWWA M51: 500-800 m." />
@@ -238,6 +276,11 @@ export default function ValvulasAirePage() {
               }}
             />
           </div>
+
+          {/* Pipe class pressure warning */}
+          {pipeClass && PNBar && P0 != null && P0 > (PNBar / 0.9807) && (
+            <AlertBanner level="ERROR" message={`La presion maxima (${P0.toFixed(1)} kg/cm²) excede la capacidad de ${pipeClass} (PN ${PNBar} bar = ${(PNBar / 0.9807).toFixed(1)} kg/cm²). Usar una clase superior.`} />
+          )}
 
           {/* Alerts */}
           {results?.alerts.map((a, i) => (

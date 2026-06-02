@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useCallback, useRef } from "react";
+import { useEffect, useCallback, useRef, useState } from "react";
 import { usePipeSizingStore } from "@/store/calculationStore";
 import { InputField } from "@/components/ui/InputField";
 import { DataStatusBanner } from "@/components/ui/DataStatusBanner";
@@ -9,30 +9,35 @@ import { DiameterComparisonTable } from "@/components/hydraulic/DiameterComparis
 import { ExportPDFButton } from "@/components/ui/ExportPDFButton";
 import { calculatePipeSizing } from "@/lib/calculations/diameter-sizing";
 import { flowToM3s, mcaToKgcm2 } from "@/lib/calculations/conversions";
-import { MATERIALS, DEFAULTS } from "@/lib/constants";
+import { MATERIALS, DEFAULTS, getPipeClassesForMaterial } from "@/lib/constants";
 import { saveFormState, loadFormState } from "@/lib/storage/form-persistence";
 import { ResetButton } from "@/components/ui/ResetButton";
 import type { FlowUnit, AssumedValue } from "@/types/hydraulic";
 
 export default function DimensionamientoPage() {
   const { inputs, results, setInput, setResults, reset } = usePipeSizingStore();
+  const [pipeClass, setPipeClass] = useState("");
+  const [PNBar, setPNBar] = useState<number | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
   const persistRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   useEffect(() => {
-    const saved = loadFormState<typeof inputs>("dimensionamiento");
+    const saved = loadFormState<typeof inputs & { pipeClass?: string; PNBar?: number | null }>("dimensionamiento");
     if (saved) {
-      Object.entries(saved).forEach(([key, value]) => {
+      const { pipeClass: savedClass, PNBar: savedPN, ...rest } = saved;
+      Object.entries(rest).forEach(([key, value]) => {
         setInput(key as keyof typeof inputs, value as never);
       });
+      if (savedClass) setPipeClass(savedClass);
+      if (savedPN != null) setPNBar(savedPN);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
     clearTimeout(persistRef.current);
-    persistRef.current = setTimeout(() => saveFormState("dimensionamiento", inputs), 1000);
-  }, [inputs]);
+    persistRef.current = setTimeout(() => saveFormState("dimensionamiento", { ...inputs, pipeClass, PNBar }), 1000);
+  }, [inputs, pipeClass, PNBar]);
 
   const runCalc = useCallback(() => {
     if (inputs.rawQ == null || inputs.L == null || inputs.rawQ <= 0 || inputs.L <= 0) {
@@ -61,6 +66,8 @@ export default function DimensionamientoPage() {
     const mat = MATERIALS.find((m) => m.name === name);
     setInput("materialName", name);
     if (mat && name !== "Personalizado") setInput("C", mat.c);
+    setPipeClass("");
+    setPNBar(null);
   };
 
   const missing: string[] = [];
@@ -94,7 +101,7 @@ export default function DimensionamientoPage() {
           <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 space-y-4">
             <div className="flex items-center justify-between border-b border-gray-100 dark:border-gray-700 pb-2">
               <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300">Datos de entrada</h2>
-              <ResetButton moduleKey="dimensionamiento" onReset={reset} />
+              <ResetButton moduleKey="dimensionamiento" onReset={() => { reset(); setPipeClass(""); setPNBar(null); }} />
             </div>
 
             <InputField label="Nombre del proyecto" value={inputs.projectName} onChange={(v) => setInput("projectName", v)} type="text" />
@@ -131,6 +138,34 @@ export default function DimensionamientoPage() {
                 Para mayor precisión en líneas existentes en buen estado usar C=140 con la opción Personalizado.
               </p>
             </div>
+
+            {/* Pipe class selector */}
+            {(() => {
+              const classes = getPipeClassesForMaterial(inputs.materialName);
+              if (!classes) return null;
+              return (
+                <div className="space-y-1">
+                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Clase de tuberia</label>
+                  <select
+                    value={pipeClass}
+                    onChange={(e) => {
+                      const sel = classes.classes.find(c => c.clase === e.target.value);
+                      setPipeClass(sel?.clase ?? '');
+                      setPNBar(sel?.pn ?? null);
+                    }}
+                    className={`w-full px-3 py-2 text-sm border rounded-lg bg-white dark:bg-gray-800 dark:text-white ${
+                      !pipeClass ? 'border-yellow-300 bg-yellow-50' : 'border-gray-300 dark:border-gray-600'
+                    }`}
+                  >
+                    <option value="">-- Seleccionar clase --</option>
+                    {classes.classes.map(c => (
+                      <option key={c.clase} value={c.clase}>{c.clase} (PN {c.pn} bar = {(c.pn / 0.9807).toFixed(1)} kg/cm²)</option>
+                    ))}
+                  </select>
+                  {!pipeClass && <p className="text-[10px] text-yellow-600">Selecciona la clase para verificar resistencia</p>}
+                </div>
+              );
+            })()}
 
             <InputField label="Presión entrada P₁" value={inputs.P1} onChange={(v) => handleNum("P1", v)} unit="kg/cm²" tooltip="Presión disponible al inicio de la tubería. Si no la conoces, la tabla mostrará solo velocidad y pérdidas, pero no podrá verificar presión de salida" />
             <InputField label="P₂ mínima requerida" value={inputs.P2min} onChange={(v) => setInput("P2min", parseFloat(v) || DEFAULTS.P2min)} unit="kg/cm²" tooltip="Presión mínima que necesitas al final de la tubería. CONAGUA establece 10 kg/cm² como mínimo para agua potable" />
@@ -185,6 +220,11 @@ export default function DimensionamientoPage() {
               }}
             />
           </div>
+
+          {/* Pipe class pressure warning */}
+          {pipeClass && PNBar && inputs.P1 != null && inputs.P1 > (PNBar / 0.9807) && (
+            <AlertBanner level="ERROR" message={`La presion maxima (${inputs.P1.toFixed(1)} kg/cm²) excede la capacidad de ${pipeClass} (PN ${PNBar} bar = ${(PNBar / 0.9807).toFixed(1)} kg/cm²). Usar una clase superior.`} />
+          )}
 
           {results && (
             <>

@@ -13,7 +13,7 @@ import { ExportPDFButton } from "@/components/ui/ExportPDFButton";
 import ListaMaterialesSIMEX, { type SIMEXAcc } from "@/components/ListaMaterialesSIMEX";
 import { calculateHazenWilliams, findMaxFlow, compareDiameters } from "@/lib/calculations/hazen-williams";
 import { flowToM3s, m3sToFlow, formatNumber, mcaToKgcm2 } from "@/lib/calculations/conversions";
-import { STANDARD_DNS, STANDARD_DNS_LABELED, MATERIALS, DEFAULTS } from "@/lib/constants";
+import { STANDARD_DNS, STANDARD_DNS_LABELED, MATERIALS, DEFAULTS, getPipeClassesForMaterial } from "@/lib/constants";
 import { saveFormState, loadFormState } from "@/lib/storage/form-persistence";
 import { ResetButton } from "@/components/ui/ResetButton";
 import type { CalcMode, FlowUnit, AssumedValue, Alert } from "@/types/hydraulic";
@@ -21,16 +21,21 @@ import type { CalcMode, FlowUnit, AssumedValue, Alert } from "@/types/hydraulic"
 export default function TramoSimplePage() {
   const { inputs, results, setInput, setResults, reset } = useSinglePipeStore();
   const [simexAccs, setSimexAccs] = useState<SIMEXAcc[]>([]);
+  const [pipeClass, setPipeClass] = useState("");
+  const [PNBar, setPNBar] = useState<number | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
   const persistRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   // Load persisted state
   useEffect(() => {
-    const saved = loadFormState<typeof inputs>("tramo-simple");
+    const saved = loadFormState<typeof inputs & { pipeClass?: string; PNBar?: number | null }>("tramo-simple");
     if (saved) {
-      Object.entries(saved).forEach(([key, value]) => {
+      const { pipeClass: savedClass, PNBar: savedPN, ...rest } = saved;
+      Object.entries(rest).forEach(([key, value]) => {
         setInput(key as keyof typeof inputs, value as never);
       });
+      if (savedClass) setPipeClass(savedClass);
+      if (savedPN != null) setPNBar(savedPN);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -38,8 +43,8 @@ export default function TramoSimplePage() {
   // Persist with debounce
   useEffect(() => {
     clearTimeout(persistRef.current);
-    persistRef.current = setTimeout(() => saveFormState("tramo-simple", inputs), 1000);
-  }, [inputs]);
+    persistRef.current = setTimeout(() => saveFormState("tramo-simple", { ...inputs, pipeClass, PNBar }), 1000);
+  }, [inputs, pipeClass, PNBar]);
 
   // Reactive calculation with debounce
   const runCalculation = useCallback(() => {
@@ -172,6 +177,8 @@ export default function TramoSimplePage() {
     const mat = MATERIALS.find((m) => m.name === name);
     setInput("materialName", name);
     if (mat && name !== "Personalizado") setInput("C", mat.c);
+    setPipeClass("");
+    setPNBar(null);
   };
 
   // Determine missing required fields
@@ -211,7 +218,7 @@ export default function TramoSimplePage() {
           <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 space-y-4">
             <div className="flex items-center justify-between border-b border-gray-100 dark:border-gray-700 pb-2">
               <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300">Datos de entrada</h2>
-              <ResetButton moduleKey="tramo-simple" onReset={reset} />
+              <ResetButton moduleKey="tramo-simple" onReset={() => { reset(); setPipeClass(""); setPNBar(null); }} />
             </div>
 
             <InputField
@@ -315,6 +322,34 @@ export default function TramoSimplePage() {
                 />
               )}
             </div>
+
+            {/* Pipe class selector */}
+            {(() => {
+              const classes = getPipeClassesForMaterial(inputs.materialName);
+              if (!classes) return null;
+              return (
+                <div className="space-y-1">
+                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Clase de tuberia</label>
+                  <select
+                    value={pipeClass}
+                    onChange={(e) => {
+                      const sel = classes.classes.find(c => c.clase === e.target.value);
+                      setPipeClass(sel?.clase ?? '');
+                      setPNBar(sel?.pn ?? null);
+                    }}
+                    className={`w-full px-3 py-2 text-sm border rounded-lg bg-white dark:bg-gray-800 dark:text-white ${
+                      !pipeClass ? 'border-yellow-300 bg-yellow-50' : 'border-gray-300 dark:border-gray-600'
+                    }`}
+                  >
+                    <option value="">-- Seleccionar clase --</option>
+                    {classes.classes.map(c => (
+                      <option key={c.clase} value={c.clase}>{c.clase} (PN {c.pn} bar = {(c.pn / 0.9807).toFixed(1)} kg/cm²)</option>
+                    ))}
+                  </select>
+                  {!pipeClass && <p className="text-[10px] text-yellow-600">Selecciona la clase para verificar resistencia</p>}
+                </div>
+              );
+            })()}
 
             <InputField
               label="Presión entrada P₁"
@@ -434,6 +469,11 @@ export default function TramoSimplePage() {
               }}
             />
           </div>
+
+          {/* Pipe class pressure warning */}
+          {pipeClass && PNBar && inputs.P1 != null && inputs.P1 > (PNBar / 0.9807) && (
+            <AlertBanner level="ERROR" message={`La presion maxima (${inputs.P1.toFixed(1)} kg/cm²) excede la capacidad de ${pipeClass} (PN ${PNBar} bar = ${(PNBar / 0.9807).toFixed(1)} kg/cm²). Usar una clase superior.`} />
+          )}
 
           {results && (
             <>
