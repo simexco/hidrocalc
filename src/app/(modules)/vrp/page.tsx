@@ -7,7 +7,9 @@ import { MetricCard } from "@/components/ui/MetricCard";
 import { AlertBanner } from "@/components/ui/AlertBanner";
 import { DataStatusBanner } from "@/components/ui/DataStatusBanner";
 import { ExportPDFButton } from "@/components/ui/ExportPDFButton";
+import { FormulaDetail, cvFormula } from "@/components/ui/FormulaDetail";
 import { calculateVRP } from "@/lib/calculations/vrp";
+import { validateHydraulicInputs, InputWarnings } from "@/components/ui/InputWarning";
 import { formatNumber } from "@/lib/calculations/conversions";
 import { STANDARD_DNS, STANDARD_DNS_LABELED } from "@/lib/constants";
 import { saveFormState, loadFormState } from "@/lib/storage/form-persistence";
@@ -126,6 +128,7 @@ export default function VRPPage() {
                 {STANDARD_DNS_LABELED.filter(d => d.dn <= 600).map((d) => <option key={d.dn} value={d.dn}>{d.label}</option>)}
               </select>
             </div>
+            <InputWarnings warnings={validateHydraulicInputs({ P1_kgcm2: inputs.P1 })} />
           </div>
 
           {/* Info card */}
@@ -222,6 +225,11 @@ export default function VRPPage() {
                 </div>
               ) : (
                 <AlertBanner level="ERROR" message="El Cv requerido excede los tamanos estandar de catalogo. Consultar directamente con el fabricante." />
+              )}
+
+              {/* Cv formula detail */}
+              {results.Q_max_m3h > 0 && results.deltaP_bar > 0 && (
+                <FormulaDetail {...cvFormula(results.Q_max_m3h, results.deltaP_bar, results.Cv_max_req)} />
               )}
 
               {/* System parameters */}

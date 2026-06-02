@@ -8,6 +8,7 @@ import { AlertBanner } from "@/components/ui/AlertBanner";
 import { DataStatusBanner } from "@/components/ui/DataStatusBanner";
 import { ExportPDFButton } from "@/components/ui/ExportPDFButton";
 import { ResetButton } from "@/components/ui/ResetButton";
+import { validateHydraulicInputs, InputWarnings } from "@/components/ui/InputWarning";
 import { calculateProfile, calculateRequiredP1, type ProfileVertex, type ProfileTramo, type ProfileResults } from "@/lib/calculations/hydraulic-profile";
 import { flowToM3s, formatNumber } from "@/lib/calculations/conversions";
 import { STANDARD_DNS, STANDARD_DNS_LABELED, MATERIALS, getPipeClassesForMaterial } from "@/lib/constants";
@@ -390,6 +391,7 @@ export default function PerfilPage() {
               </div>
             )}
             <InputField label="Presion minima requerida" value={Pmin} onChange={(v) => setPmin(parseFloat(v) || 1)} unit="kg/cm2" tooltip="Presion minima aceptable en cualquier punto" />
+            <InputWarnings warnings={validateHydraulicInputs({ Q_ls: rawQ, P1_kgcm2: P1 })} />
           </div>
 
           {/* Tramos de tubería */}

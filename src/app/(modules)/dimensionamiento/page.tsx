@@ -7,6 +7,7 @@ import { DataStatusBanner } from "@/components/ui/DataStatusBanner";
 import { AlertBanner } from "@/components/ui/AlertBanner";
 import { DiameterComparisonTable } from "@/components/hydraulic/DiameterComparisonTable";
 import { ExportPDFButton } from "@/components/ui/ExportPDFButton";
+import { validateHydraulicInputs, InputWarnings } from "@/components/ui/InputWarning";
 import { calculatePipeSizing } from "@/lib/calculations/diameter-sizing";
 import { flowToM3s, mcaToKgcm2 } from "@/lib/calculations/conversions";
 import { MATERIALS, DEFAULTS, getPipeClassesForMaterial } from "@/lib/constants";
@@ -175,6 +176,7 @@ export default function DimensionamientoPage() {
               <InputField label="Cota z₁" value={inputs.z1} onChange={(v) => setInput("z1", parseFloat(v) || 0)} unit="m.s.n.m." assumed={inputs.z1 === 0} assumedLabel="0 m" tooltip="Elevación del punto de inicio sobre el nivel del mar. Si no la conoces, déjala en 0 (terreno plano)" />
               <InputField label="Cota z₂" value={inputs.z2} onChange={(v) => setInput("z2", parseFloat(v) || 0)} unit="m.s.n.m." assumed={inputs.z2 === 0} assumedLabel="0 m" tooltip="Elevación del punto final sobre el nivel del mar. Si es más alto que z1, el agua sube (más pérdida de presión)" />
             </div>
+            <InputWarnings warnings={validateHydraulicInputs({ Q_ls: inputs.rawQ, L: inputs.L, P1_kgcm2: inputs.P1, z1: inputs.z1, z2: inputs.z2 })} />
           </div>
         </div>
 

@@ -8,6 +8,7 @@ import { AlertBanner } from "@/components/ui/AlertBanner";
 import { DataStatusBanner } from "@/components/ui/DataStatusBanner";
 import { PumpCurveChart } from "@/components/hydraulic/PumpCurveChart";
 import { ExportPDFButton } from "@/components/ui/ExportPDFButton";
+import { validateHydraulicInputs, InputWarnings } from "@/components/ui/InputWarning";
 import { calculatePumpOperation } from "@/lib/calculations/pump-operation";
 import { formatNumber } from "@/lib/calculations/conversions";
 import { STANDARD_DNS, STANDARD_DNS_LABELED, MATERIALS, getPipeClassesForMaterial } from "@/lib/constants";
@@ -142,6 +143,7 @@ export default function BombeoPage() {
             })()}
 
             <InputField label="K total accesorios" value={inputs.kTotal} onChange={(v) => setInput("kTotal", parseFloat(v) || 0)} tooltip="Suma de todos los coeficientes K de pérdidas menores (codos, válvulas, tees, etc.). Si no lo conoces, déjalo en 0 y se estimará como 10% de las pérdidas por fricción" />
+            <InputWarnings warnings={validateHydraulicInputs({ DN_mm: inputs.DN, L: inputs.L })} />
           </div>
 
           {/* Pump inputs */}

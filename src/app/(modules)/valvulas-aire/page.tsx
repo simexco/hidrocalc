@@ -6,6 +6,7 @@ import { InputField } from "@/components/ui/InputField";
 import { MetricCard } from "@/components/ui/MetricCard";
 import { AlertBanner } from "@/components/ui/AlertBanner";
 import { ExportPDFButton } from "@/components/ui/ExportPDFButton";
+import { validateHydraulicInputs, InputWarnings } from "@/components/ui/InputWarning";
 import { calculateAirValves, type AirValveVertex, type AirValveInputs, type AirValveOutputs } from "@/lib/calculations/air-valves";
 import { flowToM3s, formatNumber } from "@/lib/calculations/conversions";
 import { STANDARD_DNS_LABELED, MATERIALS, getPipeClassesForMaterial } from "@/lib/constants";
@@ -196,6 +197,7 @@ export default function ValvulasAirePage() {
             <InputField label="Presión de operación P₀" value={P0} onChange={(v) => setP0(v === "" ? null : parseFloat(v))} unit="kg/cm²" tooltip="Presión al inicio de la línea. Si no la conoces, se calculará solo geometría." />
             <InputField label="Presión mínima normativa" value={pressureMin} onChange={(v) => setPressureMin(parseFloat(v) || 5)} unit="m.c.a." tooltip="NOM-001-CONAGUA: mínimo absoluto 5 m.c.a. (0.5 kg/cm²), recomendado 10 m.c.a." />
             <InputField label="Espaciado máximo VA-E" value={maxSpacing} onChange={(v) => setMaxSpacing(parseFloat(v) || 600)} unit="m" tooltip="Distancia máxima entre válvulas eliminadoras en tramos rectos. AWWA M51: 500-800 m." />
+            <InputWarnings warnings={validateHydraulicInputs({ Q_ls: rawQ, DN_mm: DN, P1_kgcm2: P0 })} />
           </div>
 
           {/* Profile table */}

@@ -7,6 +7,7 @@ import { MetricCard } from "@/components/ui/MetricCard";
 import { AlertBanner } from "@/components/ui/AlertBanner";
 import { DataStatusBanner } from "@/components/ui/DataStatusBanner";
 import { ExportPDFButton } from "@/components/ui/ExportPDFButton";
+import { FormulaDetail, waterHammerFormula, waveSpeedFormula } from "@/components/ui/FormulaDetail";
 import { calculateWaterHammer } from "@/lib/calculations/water-hammer";
 import { formatNumber, mcaToKgcm2 } from "@/lib/calculations/conversions";
 import { PIPE_ELASTICITY, THICKNESS_BY_MATERIAL, PIPE_CLASSES_BY_MATERIAL, PVC_THICKNESS, getPVCClasses, PVC_SYSTEM_LABELS, type PVCSystem, PIPE_CATALOG, type PipeCatalogGroup } from "@/lib/constants";
@@ -351,9 +352,19 @@ export default function GolpeArietePage() {
 
               {/* Metrics */}
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                <MetricCard label="Velocidad de onda a" value={formatNumber(results.a, 1)} unit="m/s" dataStatus={results.dataStatus} />
+                <div>
+                  <MetricCard label="Velocidad de onda a" value={formatNumber(results.a, 1)} unit="m/s" dataStatus={results.dataStatus} />
+                  {inputs.D != null && inputs.e != null && inputs.E != null && results.a != null && (
+                    <FormulaDetail {...waveSpeedFormula(inputs.D, inputs.e, inputs.E, results.a)} />
+                  )}
+                </div>
                 <MetricCard label="Período de fase T" value={formatNumber(results.Tphase, 2)} unit="s" dataStatus={results.dataStatus} />
-                <MetricCard label="Sobrepresión ΔH" value={formatNumber(mcaToKgcm2(results.deltaH ?? 0), 3)} unit="kg/cm²" dataStatus={results.dataStatus} />
+                <div>
+                  <MetricCard label="Sobrepresión ΔH" value={formatNumber(mcaToKgcm2(results.deltaH ?? 0), 3)} unit="kg/cm²" dataStatus={results.dataStatus} />
+                  {inputs.V0 != null && results.a != null && results.deltaH != null && (
+                    <FormulaDetail {...waterHammerFormula(inputs.V0, results.a, results.deltaH)} />
+                  )}
+                </div>
                 <MetricCard label="ΔP" value={formatNumber(results.deltaP_kPa, 1)} unit="kPa" dataStatus={results.dataStatus} />
                 <MetricCard label="ΔP" value={formatNumber(results.deltaP_bar, 2)} unit="bar" dataStatus={results.dataStatus} />
                 <MetricCard
