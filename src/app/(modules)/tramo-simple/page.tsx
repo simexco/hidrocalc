@@ -16,6 +16,8 @@ import { flowToM3s, m3sToFlow, formatNumber, mcaToKgcm2 } from "@/lib/calculatio
 import { STANDARD_DNS, STANDARD_DNS_LABELED, MATERIALS, DEFAULTS, getPipeClassesForMaterial } from "@/lib/constants";
 import { saveFormState, loadFormState } from "@/lib/storage/form-persistence";
 import { ResetButton } from "@/components/ui/ResetButton";
+import { FormulaDetail, velocityFormula, hazenWilliamsFormula, gradientFormula, pressureFormula } from "@/components/ui/FormulaDetail";
+import { validateHydraulicInputs, InputWarnings } from "@/components/ui/InputWarning";
 import type { CalcMode, FlowUnit, AssumedValue, Alert } from "@/types/hydraulic";
 
 export default function TramoSimplePage() {
@@ -407,6 +409,16 @@ export default function TramoSimplePage() {
                 assumedLabel="Valor por defecto: 0 m"
               />
             </div>
+
+            {/* Input validation warnings */}
+            <InputWarnings warnings={validateHydraulicInputs({
+              Q_ls: inputs.rawQ,
+              DN_mm: inputs.DN,
+              L: inputs.L,
+              P1_kgcm2: inputs.P1,
+              z1: inputs.z1,
+              z2: inputs.z2,
+            })} />
           </div>
 
           {/* SIMEX Selector — left panel */}
@@ -535,68 +547,93 @@ export default function TramoSimplePage() {
               )}
 
               {/* Metric Cards */}
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                <MetricCard
-                  label="Velocidad V"
-                  value={formatNumber(results.V, 3)}
-                  unit="m/s"
-                  alertLevel={alertFor("V")?.level}
-                  alertMessage={alertFor("V")?.message}
-                  dataStatus={results.dataStatus}
-                />
-                <MetricCard
-                  label="Pérdida fricción hf"
-                  value={formatNumber(results.hf, 3)}
-                  unit="m"
-                  dataStatus={results.dataStatus}
-                />
-                <MetricCard
-                  label="Pérdida accesorios hm"
-                  value={formatNumber(results.hm, 3)}
-                  unit="m"
-                  dataStatus={results.hmEstimated ? "estimated" : results.dataStatus}
-                />
-                <MetricCard
-                  label="Pérdida total hf+hm"
-                  value={formatNumber((results.hf ?? 0) + (results.hm ?? 0), 3)}
-                  unit="m"
-                  dataStatus={results.dataStatus}
-                />
-                <MetricCard
-                  label="Gradiente J"
-                  value={formatNumber(results.J_km, 2)}
-                  unit="m/km"
-                  alertLevel={alertFor("J")?.level}
-                  alertMessage={alertFor("J")?.message}
-                  dataStatus={results.dataStatus}
-                />
-                <MetricCard
-                  label="Carga H₁"
-                  value={results.H1 != null ? formatNumber(results.H1, 2) : "—"}
-                  unit="m"
-                  unavailableMessage={results.H1 == null ? "Requiere P₁" : undefined}
-                />
-                <MetricCard
-                  label="Carga H₂"
-                  value={results.H2 != null ? formatNumber(results.H2, 2) : "—"}
-                  unit="m"
-                  unavailableMessage={results.H2 == null ? "Requiere P₁" : undefined}
-                />
-                <MetricCard
-                  label="Presión salida P₂"
-                  value={results.P2 != null ? formatNumber(mcaToKgcm2(results.P2), 3) : "—"}
-                  unit="kg/cm²"
-                  alertLevel={alertFor("P2")?.level}
-                  alertMessage={alertFor("P2")?.message}
-                  unavailableMessage={results.P2 == null ? "Requiere P₁" : undefined}
-                />
-                <MetricCard
-                  label="P₂ (kPa)"
-                  value={results.P2_kPa != null ? formatNumber(results.P2_kPa, 1) : "—"}
-                  unit="kPa"
-                  unavailableMessage={results.P2_kPa == null ? "Requiere P₁" : undefined}
-                />
-              </div>
+              {(() => {
+                const Q_m3s = inputs.rawQ != null ? flowToM3s(inputs.rawQ, inputs.flowUnit) : null;
+                return (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                    <div>
+                      <MetricCard
+                        label="Velocidad V"
+                        value={formatNumber(results.V, 3)}
+                        unit="m/s"
+                        alertLevel={alertFor("V")?.level}
+                        alertMessage={alertFor("V")?.message}
+                        dataStatus={results.dataStatus}
+                      />
+                      {inputs.mode === "A" && results.V != null && Q_m3s != null && inputs.DN != null && (
+                        <FormulaDetail {...velocityFormula(Q_m3s, inputs.DN, results.V)} />
+                      )}
+                    </div>
+                    <div>
+                      <MetricCard
+                        label="Pérdida fricción hf"
+                        value={formatNumber(results.hf, 3)}
+                        unit="m"
+                        dataStatus={results.dataStatus}
+                      />
+                      {inputs.mode === "A" && results.hf != null && Q_m3s != null && inputs.DN != null && inputs.L != null && (
+                        <FormulaDetail {...hazenWilliamsFormula(Q_m3s, inputs.DN, inputs.L, inputs.C, results.hf)} />
+                      )}
+                    </div>
+                    <MetricCard
+                      label="Pérdida accesorios hm"
+                      value={formatNumber(results.hm, 3)}
+                      unit="m"
+                      dataStatus={results.hmEstimated ? "estimated" : results.dataStatus}
+                    />
+                    <MetricCard
+                      label="Pérdida total hf+hm"
+                      value={formatNumber((results.hf ?? 0) + (results.hm ?? 0), 3)}
+                      unit="m"
+                      dataStatus={results.dataStatus}
+                    />
+                    <div>
+                      <MetricCard
+                        label="Gradiente J"
+                        value={formatNumber(results.J_km, 2)}
+                        unit="m/km"
+                        alertLevel={alertFor("J")?.level}
+                        alertMessage={alertFor("J")?.message}
+                        dataStatus={results.dataStatus}
+                      />
+                      {inputs.mode === "A" && results.hf != null && results.J_km != null && inputs.L != null && (
+                        <FormulaDetail {...gradientFormula(results.hf, inputs.L, results.J_km)} />
+                      )}
+                    </div>
+                    <MetricCard
+                      label="Carga H₁"
+                      value={results.H1 != null ? formatNumber(results.H1, 2) : "—"}
+                      unit="m"
+                      unavailableMessage={results.H1 == null ? "Requiere P₁" : undefined}
+                    />
+                    <MetricCard
+                      label="Carga H₂"
+                      value={results.H2 != null ? formatNumber(results.H2, 2) : "—"}
+                      unit="m"
+                      unavailableMessage={results.H2 == null ? "Requiere P₁" : undefined}
+                    />
+                    <div>
+                      <MetricCard
+                        label="Presión salida P₂"
+                        value={results.P2 != null ? formatNumber(mcaToKgcm2(results.P2), 3) : "—"}
+                        unit="kg/cm²"
+                        alertLevel={alertFor("P2")?.level}
+                        alertMessage={alertFor("P2")?.message}
+                        unavailableMessage={results.P2 == null ? "Requiere P₁" : undefined}
+                      />
+                      {inputs.mode === "A" && results.P2 != null && inputs.P1 != null && results.hf != null && results.hm != null && (
+                        <FormulaDetail {...pressureFormula(inputs.P1, inputs.z1, inputs.z2, results.hf, results.hm, mcaToKgcm2(results.P2))} />
+                      )}
+                    </div>
+                    <MetricCard
+                      label="P₂ (kPa)"
+                      value={results.P2_kPa != null ? formatNumber(results.P2_kPa, 1) : "—"}
+                      unit="kPa"
+                      unavailableMessage={results.P2_kPa == null ? "Requiere P₁" : undefined}
+                    />
+                  </div>
+                );
+              })()}
 
               {/* Alerts — only those NOT already shown on metric cards */}
               {(() => {
