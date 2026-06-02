@@ -97,13 +97,14 @@ export function calculateHazenWilliams(input: HWInput): HWResult {
 /**
  * Mode B: Find maximum flow Q such that P2 >= P2min
  * Uses bisection method.
+ * Returns both the pressure-limited Qmax and gradient-limited Qmax.
  */
 export function findMaxFlow(
   D: number, L: number, C: number,
   P1: number, P2min: number,
   z1: number, z2: number,
   fittings?: Fitting[]
-): { Qmax: number; result: HWResult } | null {
+): { Qmax: number; QmaxGradient: number | null; result: HWResult } | null {
   if (P1 == null) return null;
 
   let Qlow = 0.0001;  // m³/s
@@ -112,13 +113,12 @@ export function findMaxFlow(
   const maxIter = 100;
 
   // First check if the high bound gives any pressure
-  let resultHigh = calculateHazenWilliams({ Q: Qhigh, D, L, C, P1, z1, z2, fittings, useEstimatedHm: true });
+  const resultHigh = calculateHazenWilliams({ Q: Qhigh, D, L, C, P1, z1, z2, fittings, useEstimatedHm: true });
   if (resultHigh.P2 != null && resultHigh.P2 >= P2min) {
-    // Even at max flow, pressure is OK — return max
-    return { Qmax: Qhigh, result: resultHigh };
+    return { Qmax: Qhigh, QmaxGradient: null, result: resultHigh };
   }
 
-  // Bisection
+  // Bisection for pressure limit
   for (let i = 0; i < maxIter; i++) {
     const Qmid = (Qlow + Qhigh) / 2;
     const result = calculateHazenWilliams({ Q: Qmid, D, L, C, P1, z1, z2, fittings, useEstimatedHm: true });
@@ -126,7 +126,9 @@ export function findMaxFlow(
     if (result.P2 == null) return null;
 
     if (Math.abs(result.P2 - P2min) < 0.01 || (Qhigh - Qlow) < tolerance) {
-      return { Qmax: Qmid, result };
+      // Also find Q where J = 10 m/km (gradient limit)
+      const QmaxGrad = findQForGradient(D, L, C, P1, z1, z2, 10, fittings);
+      return { Qmax: Qmid, QmaxGradient: QmaxGrad, result };
     }
 
     if (result.P2 > P2min) {
@@ -136,10 +138,31 @@ export function findMaxFlow(
     }
   }
 
-  // Return best result after max iterations
   const Qfinal = (Qlow + Qhigh) / 2;
   const finalResult = calculateHazenWilliams({ Q: Qfinal, D, L, C, P1, z1, z2, fittings, useEstimatedHm: true });
-  return { Qmax: Qfinal, result: finalResult };
+  const QmaxGrad = findQForGradient(D, L, C, P1, z1, z2, 10, fittings);
+  return { Qmax: Qfinal, QmaxGradient: QmaxGrad, result: finalResult };
+}
+
+/**
+ * Find Q where gradient J = targetJ_km (m/km).
+ * Uses bisection. Returns Q in m³/s or null.
+ */
+function findQForGradient(
+  D: number, L: number, C: number,
+  P1: number, z1: number, z2: number,
+  targetJ_km: number,
+  fittings?: Fitting[]
+): number | null {
+  let Qlow = 0.0001;
+  let Qhigh = 10;
+  for (let i = 0; i < 80; i++) {
+    const Qmid = (Qlow + Qhigh) / 2;
+    const r = calculateHazenWilliams({ Q: Qmid, D, L, C, P1, z1, z2, fittings, useEstimatedHm: true });
+    if (Math.abs(r.J_km - targetJ_km) < 0.05 || (Qhigh - Qlow) < 0.0001) return Qmid;
+    if (r.J_km < targetJ_km) Qlow = Qmid; else Qhigh = Qmid;
+  }
+  return (Qlow + Qhigh) / 2;
 }
 
 /**

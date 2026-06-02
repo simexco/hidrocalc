@@ -108,12 +108,19 @@ export default function TramoSimplePage() {
       const res = findMaxFlow(D, L, C, P1, P2min, z1, z2, fittings.length > 0 ? fittings : undefined);
       if (!res) { setResults(null); return; }
 
+      // Add gradient warning to alerts
+      const alerts = [...res.result.alerts];
+      if (res.result.J_km > 10) {
+        const qGradStr = res.QmaxGradient != null ? ` Q max por gradiente: ${(res.QmaxGradient * 1000).toFixed(1)} L/s` : '';
+        alerts.push({ level: "WARN", field: "J_grad", message: `El Q max por presion (${(res.Qmax * 1000).toFixed(1)} L/s) genera gradiente de ${res.result.J_km.toFixed(1)} m/km (max 10).${qGradStr}` });
+      }
+
       setResults({
         A: res.result.A, V: res.result.V, hf: res.result.hf, hm: res.result.hm,
         hmEstimated: res.result.hmEstimated,
         H1: res.result.H1, H2: res.result.H2, P2: res.result.P2, P2_kPa: res.result.P2_kPa,
         J: res.result.J, J_km: res.result.J_km, Re: res.result.Re,
-        alerts: res.result.alerts,
+        alerts,
         dataStatus: assumed.length > 0 ? "estimated" : "calculated",
         Qmax: res.Qmax, diameterComparison: null, recommendedDN: null,
       });
@@ -479,12 +486,17 @@ export default function TramoSimplePage() {
             <>
               {/* Mode B special: show max flow */}
               {inputs.mode === "B" && results.Qmax != null && (
-                <div className="bg-[#E9EFF5] dark:bg-[#1C3D5A]/20 border border-[#1C3D5A]/30 rounded-xl p-5 text-center">
-                  <p className="text-xs text-[#1C3D5A] dark:text-blue-300 font-medium mb-1">Caudal máximo</p>
+                <div className="bg-[#E9EFF5] dark:bg-[#1C3D5A]/20 border border-[#1C3D5A]/30 rounded-xl p-5 text-center space-y-2">
+                  <p className="text-xs text-[#1C3D5A] dark:text-blue-300 font-medium mb-1">Caudal maximo (por presion)</p>
                   <p className="text-3xl font-bold text-[#1C3D5A] dark:text-white">
                     {m3sToFlow(results.Qmax, inputs.flowUnit).toFixed(2)}
                     <span className="text-lg font-normal ml-1">{inputs.flowUnit}</span>
                   </p>
+                  {results.J_km != null && results.J_km > 10 && (
+                    <p className="text-xs text-red-600 font-medium mt-2">
+                      {"⚠"} Gradiente a este caudal: {formatNumber(results.J_km, 1)} m/km (max recomendado: 10)
+                    </p>
+                  )}
                 </div>
               )}
 
