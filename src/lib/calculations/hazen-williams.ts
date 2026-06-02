@@ -95,53 +95,84 @@ export function calculateHazenWilliams(input: HWInput): HWResult {
 }
 
 /**
- * Mode B: Find maximum flow Q such that P2 >= P2min
- * Uses bisection method.
- * Returns both the pressure-limited Qmax and gradient-limited Qmax.
+ * Mode B: Find practical maximum flow.
+ * Returns the minimum of three limits:
+ *   1. By pressure: P2 >= P2min
+ *   2. By gradient: J <= 10 m/km (NOM-001-CONAGUA)
+ *   3. By velocity: V <= 2.5 m/s
+ * The practical Qmax is the most restrictive (smallest).
  */
 export function findMaxFlow(
   D: number, L: number, C: number,
   P1: number, P2min: number,
   z1: number, z2: number,
   fittings?: Fitting[]
-): { Qmax: number; QmaxGradient: number | null; result: HWResult } | null {
+): { Qmax: number; QmaxPressure: number; QmaxGradient: number; QmaxVelocity: number; limitingFactor: string; result: HWResult } | null {
   if (P1 == null) return null;
 
-  let Qlow = 0.0001;  // m³/s
-  let Qhigh = 10;      // m³/s (very high initial bound)
-  const tolerance = 0.001; // m³/s
-  const maxIter = 100;
+  // 1. Q max by pressure (bisection: P2 >= P2min)
+  let QmaxP = bisectQ(D, L, C, P1, z1, z2, fittings, (r) => r.P2 != null && r.P2 >= P2min);
 
-  // First check if the high bound gives any pressure
-  const resultHigh = calculateHazenWilliams({ Q: Qhigh, D, L, C, P1, z1, z2, fittings, useEstimatedHm: true });
-  if (resultHigh.P2 != null && resultHigh.P2 >= P2min) {
-    return { Qmax: Qhigh, QmaxGradient: null, result: resultHigh };
-  }
+  // 2. Q max by gradient (J <= 10 m/km)
+  const QmaxJ = findQForLimit(D, L, C, P1, z1, z2, fittings, (r) => r.J_km, 10);
 
-  // Bisection for pressure limit
-  for (let i = 0; i < maxIter; i++) {
+  // 3. Q max by velocity (V <= 2.5 m/s) — simple: Q = V * A
+  const A = Math.PI * Math.pow(D / 2, 2);
+  const QmaxV = 2.5 * A; // m³/s
+
+  // Practical max = minimum of all three
+  const limits = [
+    { Q: QmaxP, name: "presion" },
+    { Q: QmaxJ, name: "gradiente (J <= 10 m/km)" },
+    { Q: QmaxV, name: "velocidad (V <= 2.5 m/s)" },
+  ].filter(l => l.Q > 0).sort((a, b) => a.Q - b.Q);
+
+  const practical = limits[0];
+  if (!practical) return null;
+
+  const Qmax = practical.Q;
+  const result = calculateHazenWilliams({ Q: Qmax, D, L, C, P1, z1, z2, fittings, useEstimatedHm: true });
+
+  return {
+    Qmax,
+    QmaxPressure: QmaxP,
+    QmaxGradient: QmaxJ,
+    QmaxVelocity: QmaxV,
+    limitingFactor: practical.name,
+    result,
+  };
+}
+
+/** Bisect to find max Q where condition is true */
+function bisectQ(
+  D: number, L: number, C: number, P1: number, z1: number, z2: number,
+  fittings: Fitting[] | undefined,
+  condition: (r: HWResult) => boolean
+): number {
+  let Qlow = 0.0001, Qhigh = 10;
+  for (let i = 0; i < 80; i++) {
     const Qmid = (Qlow + Qhigh) / 2;
-    const result = calculateHazenWilliams({ Q: Qmid, D, L, C, P1, z1, z2, fittings, useEstimatedHm: true });
-
-    if (result.P2 == null) return null;
-
-    if (Math.abs(result.P2 - P2min) < 0.01 || (Qhigh - Qlow) < tolerance) {
-      // Also find Q where J = 10 m/km (gradient limit)
-      const QmaxGrad = findQForGradient(D, L, C, P1, z1, z2, 10, fittings);
-      return { Qmax: Qmid, QmaxGradient: QmaxGrad, result };
-    }
-
-    if (result.P2 > P2min) {
-      Qlow = Qmid;
-    } else {
-      Qhigh = Qmid;
-    }
+    const r = calculateHazenWilliams({ Q: Qmid, D, L, C, P1, z1, z2, fittings, useEstimatedHm: true });
+    if (condition(r)) Qlow = Qmid; else Qhigh = Qmid;
+    if ((Qhigh - Qlow) < 0.0001) break;
   }
+  return (Qlow + Qhigh) / 2;
+}
 
-  const Qfinal = (Qlow + Qhigh) / 2;
-  const finalResult = calculateHazenWilliams({ Q: Qfinal, D, L, C, P1, z1, z2, fittings, useEstimatedHm: true });
-  const QmaxGrad = findQForGradient(D, L, C, P1, z1, z2, 10, fittings);
-  return { Qmax: Qfinal, QmaxGradient: QmaxGrad, result: finalResult };
+/** Bisect to find Q where a metric equals a target */
+function findQForLimit(
+  D: number, L: number, C: number, P1: number, z1: number, z2: number,
+  fittings: Fitting[] | undefined,
+  metric: (r: HWResult) => number, target: number
+): number {
+  let Qlow = 0.0001, Qhigh = 10;
+  for (let i = 0; i < 80; i++) {
+    const Qmid = (Qlow + Qhigh) / 2;
+    const r = calculateHazenWilliams({ Q: Qmid, D, L, C, P1, z1, z2, fittings, useEstimatedHm: true });
+    if (metric(r) < target) Qlow = Qmid; else Qhigh = Qmid;
+    if ((Qhigh - Qlow) < 0.0001) break;
+  }
+  return (Qlow + Qhigh) / 2;
 }
 
 /**

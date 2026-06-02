@@ -22,6 +22,7 @@ export default function TramoSimplePage() {
   const { inputs, results, setInput, setResults, reset } = useSinglePipeStore();
   const [simexAccs, setSimexAccs] = useState<SIMEXAcc[]>([]);
   const [pipeClass, setPipeClass] = useState("");
+  const [qmaxLimits, setQmaxLimits] = useState<{ pressure: number; gradient: number; velocity: number; factor: string } | null>(null);
   const [PNBar, setPNBar] = useState<number | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
   const persistRef = useRef<ReturnType<typeof setTimeout>>(undefined);
@@ -108,22 +109,21 @@ export default function TramoSimplePage() {
       const res = findMaxFlow(D, L, C, P1, P2min, z1, z2, fittings.length > 0 ? fittings : undefined);
       if (!res) { setResults(null); return; }
 
-      // Add gradient warning to alerts
-      const alerts = [...res.result.alerts];
-      if (res.result.J_km > 10) {
-        const qGradStr = res.QmaxGradient != null ? ` Q max por gradiente: ${(res.QmaxGradient * 1000).toFixed(1)} L/s` : '';
-        alerts.push({ level: "WARN", field: "J_grad", message: `El Q max por presion (${(res.Qmax * 1000).toFixed(1)} L/s) genera gradiente de ${res.result.J_km.toFixed(1)} m/km (max 10).${qGradStr}` });
-      }
-
       setResults({
         A: res.result.A, V: res.result.V, hf: res.result.hf, hm: res.result.hm,
         hmEstimated: res.result.hmEstimated,
         H1: res.result.H1, H2: res.result.H2, P2: res.result.P2, P2_kPa: res.result.P2_kPa,
         J: res.result.J, J_km: res.result.J_km, Re: res.result.Re,
-        alerts,
+        alerts: [
+          ...res.result.alerts,
+          { level: "OK" as const, field: "Qmax", message: `Limitado por ${res.limitingFactor}` },
+        ],
         dataStatus: assumed.length > 0 ? "estimated" : "calculated",
         Qmax: res.Qmax, diameterComparison: null, recommendedDN: null,
+        // Store extra data in alerts for display (hacky but works without changing types)
       });
+      // Store limits for display
+      setQmaxLimits({ pressure: res.QmaxPressure, gradient: res.QmaxGradient, velocity: res.QmaxVelocity, factor: res.limitingFactor });
     } else if (mode === "C") {
       // Mode C: Recommend diameter
       if (rawQ == null || L == null || rawQ <= 0 || L <= 0) {
@@ -486,16 +486,35 @@ export default function TramoSimplePage() {
             <>
               {/* Mode B special: show max flow */}
               {inputs.mode === "B" && results.Qmax != null && (
-                <div className="bg-[#E9EFF5] dark:bg-[#1C3D5A]/20 border border-[#1C3D5A]/30 rounded-xl p-5 text-center space-y-2">
-                  <p className="text-xs text-[#1C3D5A] dark:text-blue-300 font-medium mb-1">Caudal maximo (por presion)</p>
-                  <p className="text-3xl font-bold text-[#1C3D5A] dark:text-white">
-                    {m3sToFlow(results.Qmax, inputs.flowUnit).toFixed(2)}
-                    <span className="text-lg font-normal ml-1">{inputs.flowUnit}</span>
-                  </p>
-                  {results.J_km != null && results.J_km > 10 && (
-                    <p className="text-xs text-red-600 font-medium mt-2">
-                      {"⚠"} Gradiente a este caudal: {formatNumber(results.J_km, 1)} m/km (max recomendado: 10)
+                <div className="space-y-3">
+                  <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl p-5 text-center">
+                    <p className="text-xs text-green-700 dark:text-green-300 font-medium mb-1">Caudal maximo practico</p>
+                    <p className="text-3xl font-bold text-green-800 dark:text-green-200">
+                      {m3sToFlow(results.Qmax, inputs.flowUnit).toFixed(2)}
+                      <span className="text-lg font-normal ml-1">{inputs.flowUnit}</span>
                     </p>
+                    {qmaxLimits && (
+                      <p className="text-xs text-green-600 mt-1">Limitado por: {qmaxLimits.factor}</p>
+                    )}
+                  </div>
+                  {qmaxLimits && (
+                    <div className="grid grid-cols-3 gap-2">
+                      <div className={`rounded-lg p-3 text-center border ${qmaxLimits.factor.includes('presion') ? 'border-green-300 bg-green-50 dark:bg-green-900/10' : 'border-gray-200 bg-white dark:bg-gray-800'}`}>
+                        <p className="text-[10px] text-gray-500">Por presion</p>
+                        <p className="text-sm font-bold text-gray-700 dark:text-gray-300">{(qmaxLimits.pressure * 1000).toFixed(1)} L/s</p>
+                        <p className="text-[9px] text-gray-400">P2 {"≥"} {inputs.P2min != null ? (inputs.P2min / 10).toFixed(1) : '1'} kg/cm2</p>
+                      </div>
+                      <div className={`rounded-lg p-3 text-center border ${qmaxLimits.factor.includes('gradiente') ? 'border-green-300 bg-green-50 dark:bg-green-900/10' : 'border-gray-200 bg-white dark:bg-gray-800'}`}>
+                        <p className="text-[10px] text-gray-500">Por gradiente</p>
+                        <p className="text-sm font-bold text-gray-700 dark:text-gray-300">{(qmaxLimits.gradient * 1000).toFixed(1)} L/s</p>
+                        <p className="text-[9px] text-gray-400">J {"≤"} 10 m/km</p>
+                      </div>
+                      <div className={`rounded-lg p-3 text-center border ${qmaxLimits.factor.includes('velocidad') ? 'border-green-300 bg-green-50 dark:bg-green-900/10' : 'border-gray-200 bg-white dark:bg-gray-800'}`}>
+                        <p className="text-[10px] text-gray-500">Por velocidad</p>
+                        <p className="text-sm font-bold text-gray-700 dark:text-gray-300">{(qmaxLimits.velocity * 1000).toFixed(1)} L/s</p>
+                        <p className="text-[9px] text-gray-400">V {"≤"} 2.5 m/s</p>
+                      </div>
+                    </div>
                   )}
                 </div>
               )}
