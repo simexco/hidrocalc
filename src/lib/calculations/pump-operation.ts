@@ -213,6 +213,21 @@ export function calculatePumpOperation(input: PumpOperationInputs): PumpOperatio
   if (Qop != null && Qop > 0 && Hop != null && Hop > 0) {
     recommendation = generateRecommendation(Qop, Hop, Hg);
     alerts.push({ level: "OK", field: "Qop", message: `Punto de operación: ${Qop.toFixed(1)} L/s @ ${Hop.toFixed(1)} m` });
+
+    // Velocity and gradient at the operating point
+    const Qop_m3s = Qop / 1000;
+    const A = Math.PI * Math.pow(D / 2, 2);
+    const V_op = Qop_m3s / A;
+    const D_m = D; // already in metres
+    const J_op = 10.67 * Math.pow(Qop_m3s, 1.852) / (Math.pow(C, 1.852) * Math.pow(D_m, 4.87));
+    const J_km = J_op * 1000;
+
+    if (V_op > 2.5) {
+      alerts.push({ level: "WARN", field: "V_op", message: `Velocidad en punto de operacion: ${V_op.toFixed(2)} m/s (max 2.5)` });
+    }
+    if (J_km > 10) {
+      alerts.push({ level: "WARN", field: "J_op", message: `Gradiente en punto de operacion: ${J_km.toFixed(1)} m/km (max 10)` });
+    }
   } else if (Qop === null || Qop === 0) {
     alerts.push({ level: "ERROR", field: "Qop", message: "La curva del sistema no intersecta la curva de la bomba" });
   } else if (Hop != null && Hop < Hg) {

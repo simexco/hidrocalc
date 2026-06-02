@@ -499,6 +499,15 @@ export default function PerfilPage() {
                       vel.status === 'alto' ? 'bg-red-500' : 'bg-yellow-500'
                     }`} />
                     <span>V = {formatNumber(vel.V, 2)} m/s</span>
+                    {(() => {
+                      const ts = results?.tramoSummaries.find(s => s.id === t.id);
+                      if (ts && ts.J_km > 0) return (
+                        <span className={`font-semibold ${ts.J_km <= 5 ? 'text-green-600' : ts.J_km <= 10 ? 'text-yellow-600' : 'text-red-600'}`}>
+                          J={formatNumber(ts.J_km, 1)} m/km
+                        </span>
+                      );
+                      return null;
+                    })()}
                     <span className="text-[10px] opacity-70">
                       {vel.status === 'optimo' && '— Optimo'}
                       {vel.status === 'aceptable' && '— Aceptable'}
@@ -699,6 +708,8 @@ export default function PerfilPage() {
                       <span>V={ts.V != null ? formatNumber(ts.V, 2) : "--"} m/s</span>
                       <span className="text-gray-400 mx-1">|</span>
                       <span>hf={formatNumber(ts.hf, 2)}m</span>
+                      <span className="text-gray-400 mx-1">|</span>
+                      <span className={`font-semibold ${ts.J_km <= 5 ? 'text-green-600' : ts.J_km <= 10 ? 'text-yellow-600' : 'text-red-600'}`}>J={formatNumber(ts.J_km, 1)} m/km</span>
                     </div>
                   ))}
                 </div>

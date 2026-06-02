@@ -325,12 +325,15 @@ export default function EnSeriePage() {
                       {results.tramoResults.map((r, i) => {
                         const tramo = inputs.tramos[i];
                         const hasError = r.Pexit != null && r.Pexit < 0;
+                        const hasVelocityWarn = r.V != null && r.V > 2.5;
+                        const hasGradientWarn = r.alerts.some(a => a.message.toLowerCase().includes("gradiente"));
+                        const hasWarning = hasVelocityWarn || hasGradientWarn;
                         return (
-                          <tr key={r.id} className={`border-b border-gray-100 dark:border-gray-700 ${hasError ? "bg-red-50 dark:bg-red-900/10" : i % 2 === 0 ? "bg-white dark:bg-gray-800" : "bg-gray-50 dark:bg-gray-800/50"}`}>
+                          <tr key={r.id} className={`border-b border-gray-100 dark:border-gray-700 ${hasError ? "bg-red-50 dark:bg-red-900/10" : hasWarning ? "bg-yellow-50 dark:bg-yellow-900/10" : i % 2 === 0 ? "bg-white dark:bg-gray-800" : "bg-gray-50 dark:bg-gray-800/50"}`}>
                             <td className="px-3 py-2">{tramo?.name || r.id}</td>
                             <td className="px-3 py-2 text-right font-mono">{tramo?.DN}</td>
                             <td className="px-3 py-2 text-right font-mono">{tramo?.L}</td>
-                            <td className="px-3 py-2 text-right font-mono">{formatNumber(r.V, 3)}</td>
+                            <td className={`px-3 py-2 text-right font-mono ${hasVelocityWarn ? "text-red-600 font-bold" : ""}`}>{formatNumber(r.V, 3)}</td>
                             <td className="px-3 py-2 text-right font-mono">{formatNumber(r.hf, 3)}</td>
                             <td className="px-3 py-2 text-right font-mono">{formatNumber(r.hm, 3)}</td>
                             <td className="px-3 py-2 text-right font-mono">{r.Pentry != null ? formatNumber(mcaToKgcm2(r.Pentry), 2) : "—"}</td>

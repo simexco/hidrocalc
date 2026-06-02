@@ -52,7 +52,7 @@ export interface ProfileResults {
   criticalPoint: { dist: number; pressure_kgcm2: number } | null;
   pointsBelowMin: number;
   pointsCritical: number;
-  tramoSummaries: { id: string; DN_mm: number; materialName: string; length: number; hf: number; V: number | null; pipeClass?: string; PN_bar?: number; maxPressure_kgcm2: number; exceedsPN: boolean }[];
+  tramoSummaries: { id: string; DN_mm: number; materialName: string; length: number; hf: number; V: number | null; J_km: number; pipeClass?: string; PN_bar?: number; maxPressure_kgcm2: number; exceedsPN: boolean }[];
   alerts: { level: "WARN" | "ERROR"; message: string }[];
 }
 
@@ -169,7 +169,9 @@ export function calculateProfile(input: ProfileInputs): ProfileResults | null {
     const maxP = Math.max(0, ...tramoPoints.filter(p => p.pressure_kgcm2 != null).map(p => p.pressure_kgcm2!));
     const PN_kgcm2 = t.PN_bar ? t.PN_bar / 0.9807 : null;
     const exceedsPN = PN_kgcm2 != null && maxP > PN_kgcm2;
-    return { id: t.id, DN_mm: t.DN_mm, materialName: t.materialName, length, hf: tramoHf[t.id] ?? 0, V, pipeClass: t.pipeClass, PN_bar: t.PN_bar, maxPressure_kgcm2: maxP, exceedsPN };
+    const hf = tramoHf[t.id] ?? 0;
+    const J_km = length > 0 ? (hf / length) * 1000 : 0;
+    return { id: t.id, DN_mm: t.DN_mm, materialName: t.materialName, length, hf, V, J_km, pipeClass: t.pipeClass, PN_bar: t.PN_bar, maxPressure_kgcm2: maxP, exceedsPN };
   });
 
   // Alerts
@@ -177,6 +179,9 @@ export function calculateProfile(input: ProfileInputs): ProfileResults | null {
   for (const ts of tramoSummaries) {
     if (ts.V != null && ts.V > 2.5) alerts.push({ level: "WARN", message: `Tramo ${ts.DN_mm}mm ${ts.materialName}: V=${ts.V.toFixed(2)} m/s (max 2.5)` });
     if (ts.V != null && ts.V < 0.3 && ts.V > 0) alerts.push({ level: "WARN", message: `Tramo ${ts.DN_mm}mm ${ts.materialName}: V=${ts.V.toFixed(2)} m/s (min 0.3 — sedimentacion)` });
+  }
+  for (const ts of tramoSummaries) {
+    if (ts.J_km > 10) alerts.push({ level: "WARN", message: `Tramo ${ts.DN_mm}mm ${ts.materialName}: J=${ts.J_km.toFixed(1)} m/km (max 10)` });
   }
   for (const ts of tramoSummaries) {
     if (ts.exceedsPN && ts.PN_bar) {
