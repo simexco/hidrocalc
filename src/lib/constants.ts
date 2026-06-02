@@ -418,6 +418,30 @@ export const PIPE_CLASSES_BY_MATERIAL: Record<string, {
   Personalizado: null,
 };
 
+// ── Material name → pipe classes mapping (for profile module) ──
+export function getPipeClassesForMaterial(materialName: string): { title: string; classes: PipeClassRow[] } | null {
+  if (materialName.includes("C900") || materialName.includes("C905")) {
+    const isC905 = materialName.includes("C905");
+    // For C900/C905, combine both since the material name includes both
+    if (materialName.includes("C900/C905")) {
+      return {
+        title: "PVC AWWA C900/C905",
+        classes: [
+          { clase: "DR 25 (C900)", pn: 6.9 }, { clase: "DR 18 (C900)", pn: 10.3 }, { clase: "DR 14 (C900)", pn: 13.8 },
+          { clase: "DR 51 (C905)", pn: 4.8 }, { clase: "DR 41 (C905)", pn: 6.0 }, { clase: "DR 26 (C905)", pn: 9.5 },
+        ],
+      };
+    }
+    return isC905 ? getPVCClasses("c905", true) : getPVCClasses("c900", false);
+  }
+  if (materialName.includes("Métrico") || materialName.includes("Metrico")) return getPVCClasses("métrico", false);
+  if (materialName.includes("Ingles")) return getPVCClasses("ingles", false);
+  if (materialName.includes("HDPE")) return PIPE_CLASSES_BY_MATERIAL["HDPE"] ?? null;
+  if (materialName.includes("Hierro")) return PIPE_CLASSES_BY_MATERIAL["Hierro dúctil"] ?? null;
+  if (materialName.includes("Acero")) return PIPE_CLASSES_BY_MATERIAL["Acero"] ?? null;
+  return null;
+}
+
 // Legacy compatibility
 export const PIPE_CLASS_BY_PRESSURE = [
   { maxBar: 25, clase: "K9" },

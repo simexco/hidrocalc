@@ -18,6 +18,8 @@ export interface ProfileTramo {
   DN_mm: number;
   C: number;
   materialName: string;
+  pipeClass?: string;   // e.g. "SDR 26", "DR 18", "K9"
+  PN_bar?: number;      // max working pressure in bar (from class)
 }
 
 export interface ProfilePointResult {
@@ -50,7 +52,7 @@ export interface ProfileResults {
   criticalPoint: { dist: number; pressure_kgcm2: number } | null;
   pointsBelowMin: number;
   pointsCritical: number;
-  tramoSummaries: { id: string; DN_mm: number; materialName: string; length: number; hf: number; V: number | null }[];
+  tramoSummaries: { id: string; DN_mm: number; materialName: string; length: number; hf: number; V: number | null; pipeClass?: string; PN_bar?: number; maxPressure_kgcm2: number; exceedsPN: boolean }[];
   alerts: { level: "WARN" | "ERROR"; message: string }[];
 }
 
@@ -156,13 +158,18 @@ export function calculateProfile(input: ProfileInputs): ProfileResults | null {
   const finalP = points[points.length - 1]?.pressure_kgcm2 ?? null;
   const totalHf = hfAccum;
 
-  // Tramo summaries
+  // Tramo summaries with max pressure check
   const tramoSummaries = tramos.map(t => {
     const D_m = t.DN_mm / 1000;
     const A = Math.PI * Math.pow(D_m / 2, 2);
     const V = Q != null && Q > 0 ? Q / A : null;
     const length = t.distTo - t.distFrom;
-    return { id: t.id, DN_mm: t.DN_mm, materialName: t.materialName, length, hf: tramoHf[t.id] ?? 0, V };
+    // Find max pressure in this tramo's range
+    const tramoPoints = points.filter(p => p.dist >= t.distFrom && p.dist <= t.distTo);
+    const maxP = Math.max(0, ...tramoPoints.filter(p => p.pressure_kgcm2 != null).map(p => p.pressure_kgcm2!));
+    const PN_kgcm2 = t.PN_bar ? t.PN_bar / 0.9807 : null;
+    const exceedsPN = PN_kgcm2 != null && maxP > PN_kgcm2;
+    return { id: t.id, DN_mm: t.DN_mm, materialName: t.materialName, length, hf: tramoHf[t.id] ?? 0, V, pipeClass: t.pipeClass, PN_bar: t.PN_bar, maxPressure_kgcm2: maxP, exceedsPN };
   });
 
   // Alerts
@@ -170,6 +177,12 @@ export function calculateProfile(input: ProfileInputs): ProfileResults | null {
   for (const ts of tramoSummaries) {
     if (ts.V != null && ts.V > 2.5) alerts.push({ level: "WARN", message: `Tramo ${ts.DN_mm}mm ${ts.materialName}: V=${ts.V.toFixed(2)} m/s (max 2.5)` });
     if (ts.V != null && ts.V < 0.3 && ts.V > 0) alerts.push({ level: "WARN", message: `Tramo ${ts.DN_mm}mm ${ts.materialName}: V=${ts.V.toFixed(2)} m/s (min 0.3 — sedimentacion)` });
+  }
+  for (const ts of tramoSummaries) {
+    if (ts.exceedsPN && ts.PN_bar) {
+      const pnKg = (ts.PN_bar / 0.9807).toFixed(1);
+      alerts.push({ level: "ERROR", message: `Tramo ${ts.DN_mm}mm ${ts.materialName} ${ts.pipeClass ?? ''}: P max ${ts.maxPressure_kgcm2.toFixed(1)} kg/cm2 EXCEDE la capacidad de la tuberia (PN ${ts.PN_bar} bar = ${pnKg} kg/cm2)` });
+    }
   }
   if (pointsCritical > 0) alerts.push({ level: "ERROR", message: `${pointsCritical} punto(s) con presion negativa` });
   if (pointsBelowMin > 0) alerts.push({ level: "WARN", message: `${pointsBelowMin} punto(s) con presion menor a ${Pmin_kgcm2} kg/cm2` });

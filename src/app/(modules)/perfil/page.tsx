@@ -10,7 +10,7 @@ import { ExportPDFButton } from "@/components/ui/ExportPDFButton";
 import { ResetButton } from "@/components/ui/ResetButton";
 import { calculateProfile, calculateRequiredP1, type ProfileVertex, type ProfileTramo, type ProfileResults } from "@/lib/calculations/hydraulic-profile";
 import { flowToM3s, formatNumber } from "@/lib/calculations/conversions";
-import { STANDARD_DNS, STANDARD_DNS_LABELED, MATERIALS } from "@/lib/constants";
+import { STANDARD_DNS, STANDARD_DNS_LABELED, MATERIALS, getPipeClassesForMaterial } from "@/lib/constants";
 import { saveFormState, loadFormState } from "@/lib/storage/form-persistence";
 import { ComposedChart, Line, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
 import ListaMaterialesSIMEX, { type SIMEXAcc } from "@/components/ListaMaterialesSIMEX";
@@ -441,6 +441,50 @@ export default function PerfilPage() {
                     </select>
                   </div>
                 </div>
+                {/* Pipe class selector */}
+                {(() => {
+                  const classes = getPipeClassesForMaterial(t.materialName);
+                  if (!classes) return null;
+                  return (
+                    <div className="space-y-1">
+                      <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Clase de tuberia</label>
+                      <select
+                        value={t.pipeClass ?? ''}
+                        onChange={(e) => {
+                          const sel = classes.classes.find(c => c.clase === e.target.value);
+                          updateTramo(t.id, { pipeClass: sel?.clase, PN_bar: sel?.pn });
+                        }}
+                        className={`w-full px-2 py-2 text-sm border rounded-lg bg-white dark:bg-gray-800 dark:text-white ${
+                          !t.pipeClass ? 'border-yellow-300 bg-yellow-50 dark:bg-yellow-900/10' : 'border-gray-300 dark:border-gray-600'
+                        }`}
+                      >
+                        <option value="">-- Seleccionar clase --</option>
+                        {classes.classes.map(c => (
+                          <option key={c.clase} value={c.clase}>{c.clase} (PN {c.pn} bar = {(c.pn / 0.9807).toFixed(1)} kg/cm2)</option>
+                        ))}
+                      </select>
+                      {!t.pipeClass && <p className="text-[10px] text-yellow-600">Selecciona la clase para verificar que resista la presion</p>}
+                    </div>
+                  );
+                })()}
+
+                {/* PN exceeded warning per tramo */}
+                {(() => {
+                  const ts = results?.tramoSummaries.find(s => s.id === t.id);
+                  if (!ts?.exceedsPN || !ts.PN_bar) return null;
+                  const pnKg = (ts.PN_bar / 0.9807).toFixed(1);
+                  const classes = getPipeClassesForMaterial(t.materialName);
+                  const recommended = classes?.classes.find(c => (c.pn / 0.9807) >= ts.maxPressure_kgcm2);
+                  return (
+                    <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 rounded-lg px-3 py-2 text-xs text-red-700 dark:text-red-400 space-y-1">
+                      <p className="font-semibold">{"⚠"} Presion excede capacidad de la tuberia</p>
+                      <p>P max en este tramo: <strong>{ts.maxPressure_kgcm2.toFixed(1)} kg/cm2</strong> — Capacidad {t.pipeClass}: <strong>{pnKg} kg/cm2</strong></p>
+                      {recommended && <p>Clase minima requerida: <strong>{recommended.clase} (PN {recommended.pn} bar)</strong></p>}
+                      {!recommended && <p>Ninguna clase de {t.materialName} es suficiente — considerar Hierro ductil o Acero</p>}
+                    </div>
+                  );
+                })()}
+
                 {/* Velocity indicator */}
                 {vel && (
                   <div className={`flex items-center gap-2 px-2 py-1.5 rounded-lg text-xs ${
