@@ -172,6 +172,7 @@ export function compareDiameters(
     const meetsVmax = result.V <= maxVelocity;
     const meetsVelocity = meetsVmin && meetsVmax;
     const meetsPressure = result.P2 != null ? result.P2 >= P2min : null;
+    const meetsGradient = result.J_km <= 10; // NOM-001-CONAGUA: max 10 m/km
 
     return {
       dn,
@@ -184,14 +185,15 @@ export function compareDiameters(
       meetsVmax,
       meetsVelocity,
       meetsPressure,
+      meetsGradient,
       recommended: false,
     };
   });
 
-  // Find minimum DN that meets all criteria
+  // Find minimum DN that meets all criteria (velocity + pressure + gradient)
   let recommendedDN: number | null = null;
   for (const row of rows) {
-    const meetsAll = row.meetsVelocity && (row.meetsPressure === true || row.meetsPressure === null);
+    const meetsAll = row.meetsVelocity && row.meetsGradient && (row.meetsPressure === true || row.meetsPressure === null);
     if (meetsAll && recommendedDN === null) {
       row.recommended = true;
       recommendedDN = row.dn;

@@ -97,6 +97,7 @@ export interface DiameterComparisonRow {
   meetsVmax: boolean;
   meetsVelocity: boolean;
   meetsPressure: boolean | null;
+  meetsGradient: boolean;
   recommended: boolean;
 }
 

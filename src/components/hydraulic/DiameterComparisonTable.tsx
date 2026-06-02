@@ -21,13 +21,14 @@ export function DiameterComparisonTable({ rows, showPressure }: DiameterComparis
             {showPressure && <th className="px-2 py-2 text-right">P2 (kg/cm2)</th>}
             <th className="px-2 py-2 text-center" title="V >= 0.3 m/s">V min</th>
             <th className="px-2 py-2 text-center" title="V <= Vmax">V max</th>
+            <th className="px-2 py-2 text-center" title="J <= 10 m/km">J</th>
             {showPressure && <th className="px-2 py-2 text-center">Pres.</th>}
             <th className="px-2 py-2 text-center">Estado</th>
           </tr>
         </thead>
         <tbody>
           {rows.map((row, i) => {
-            const meetsAll = row.meetsVelocity && (row.meetsPressure === true || row.meetsPressure === null);
+            const meetsAll = row.meetsVelocity && row.meetsGradient && (row.meetsPressure === true || row.meetsPressure === null);
             const rowBg = row.recommended
               ? "bg-green-50 dark:bg-green-900/20 font-medium"
               : !meetsAll
@@ -48,13 +49,15 @@ export function DiameterComparisonTable({ rows, showPressure }: DiameterComparis
                 </td>
                 <td className={`px-2 py-2 text-right font-mono ${row.V >= 0.3 && row.V < 0.5 ? "text-yellow-600" : ""}`}>
                   {formatNumber(row.V, 3)}
-                  {row.V >= 0.3 && row.V < 0.5 && <span className="text-[8px] text-yellow-500 ml-0.5" title="Cumple mínimo (0.3) pero debajo del óptimo (0.5)">*</span>}
+                  {row.V >= 0.3 && row.V < 0.5 && <span className="text-[8px] text-yellow-500 ml-0.5" title="Cumple minimo (0.3) pero debajo del optimo (0.5)">*</span>}
                 </td>
                 <td className="px-2 py-2 text-right font-mono">{formatNumber(row.hf, 2)}</td>
-                <td className="px-2 py-2 text-right font-mono">{formatNumber(row.J_km, 2)}</td>
+                <td className={`px-2 py-2 text-right font-mono ${!row.meetsGradient ? "text-red-500 font-semibold" : row.J_km > 5 ? "text-yellow-600" : ""}`}>
+                  {formatNumber(row.J_km, 2)}
+                </td>
                 {showPressure && (
                   <td className="px-2 py-2 text-right font-mono">
-                    {row.P2 != null ? formatNumber(mcaToKgcm2(row.P2), 2) : "\u2014"}
+                    {row.P2 != null ? formatNumber(mcaToKgcm2(row.P2), 2) : "—"}
                   </td>
                 )}
                 <td className="px-2 py-2 text-center">
@@ -69,13 +72,19 @@ export function DiameterComparisonTable({ rows, showPressure }: DiameterComparis
                     : <span className="text-red-500">&#10005;</span>
                   }
                 </td>
+                <td className="px-2 py-2 text-center">
+                  {row.meetsGradient
+                    ? <span className="text-green-600">&#10003;</span>
+                    : <span className="text-red-500">&#10005;</span>
+                  }
+                </td>
                 {showPressure && (
                   <td className="px-2 py-2 text-center">
                     {row.meetsPressure === true
                       ? <span className="text-green-600">&#10003;</span>
                       : row.meetsPressure === false
                         ? <span className="text-red-500">&#10005;</span>
-                        : <span className="text-gray-400">\u2014</span>
+                        : <span className="text-gray-400">{"—"}</span>
                     }
                   </td>
                 )}
@@ -93,8 +102,8 @@ export function DiameterComparisonTable({ rows, showPressure }: DiameterComparis
         </tbody>
       </table>
       <div className="px-3 py-2 text-[10px] text-gray-400 border-t border-gray-100 dark:border-gray-700 space-y-0.5">
-        <p><strong>V min:</strong> V {"\u2265"} 0.3 m/s (mínimo absoluto NOM). <strong>V max:</strong> V {"\u2264"} velocidad máxima.</p>
-        <p><span className="text-yellow-600">*</span> Velocidad entre 0.3 y 0.5 m/s — cumple mínimo pero está por debajo del rango óptimo (0.5-2.5 m/s).</p>
+        <p><strong>V min:</strong> V {"≥"} 0.3 m/s. <strong>V max:</strong> V {"≤"} vel. maxima. <strong>J:</strong> Gradiente {"≤"} 10 m/km (NOM-001-CONAGUA).</p>
+        <p><span className="text-yellow-600">*</span> Velocidad entre 0.3 y 0.5 m/s — cumple minimo pero debajo del optimo (0.5-2.5 m/s).</p>
       </div>
     </div>
   );
