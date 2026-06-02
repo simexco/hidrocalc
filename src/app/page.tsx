@@ -12,12 +12,12 @@ const modules = [
     ),
   },
   {
-    title: "Línea con varios tramos",
-    desc: "Análisis de líneas con cambios de diámetro, material o pendiente.",
-    href: "/en-serie",
+    title: "Linea de conduccion",
+    desc: "Perfil topografico, tramos con diferente DN/material, presiones y materiales SIMEX.",
+    href: "/perfil",
     icon: (
       <svg viewBox="0 0 24 24" className="w-7 h-7" fill="none" stroke="currentColor" strokeWidth={1.5}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M4 12h4m4 0h4m4 0h0M8 12a2 2 0 100-4 2 2 0 000 4zm8 0a2 2 0 100-4 2 2 0 000 4z" />
+        <path strokeLinecap="round" strokeLinejoin="round" d="M3 20l4-8 3 4 4-12 3 6 4-4" />
       </svg>
     ),
   },
@@ -58,16 +58,6 @@ const modules = [
     icon: (
       <svg viewBox="0 0 24 24" className="w-7 h-7" fill="none" stroke="currentColor" strokeWidth={1.5}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M5 15l7-7 7 7" />
-      </svg>
-    ),
-  },
-  {
-    title: "Perfil hidraulico",
-    desc: "Carga un perfil topografico y revisa presiones a lo largo de la linea.",
-    href: "/perfil",
-    icon: (
-      <svg viewBox="0 0 24 24" className="w-7 h-7" fill="none" stroke="currentColor" strokeWidth={1.5}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M3 20l4-8 3 4 4-12 3 6 4-4" />
       </svg>
     ),
   },
@@ -165,11 +155,11 @@ export default function Home() {
               { situation: "¿La presión llega al final de mi tubería?", module: "Verificar presión (Modo A)", data: "Q, DN, L, P1", href: "/tramo-simple" },
               { situation: "¿Cuánto caudal puede pasar sin bajar la presión?", module: "Verificar presión (Modo B)", data: "DN, L, P1, P2 mínima", href: "/tramo-simple" },
               { situation: "No sé qué diámetro usar para mi caudal", module: "Elegir diámetro", data: "Q, L, P1", href: "/dimensionamiento" },
-              { situation: "Mi línea cambia de diámetro o material en el trayecto", module: "Varios tramos", data: "Q global, tramos con L/DN/C", href: "/en-serie" },
+              { situation: "Mi linea cambia de diametro o material en el trayecto", module: "Linea de conduccion", data: "Q, P1, perfil topografico, tramos", href: "/perfil" },
               { situation: "¿Qué clase de tubería aguanta el golpe de cierre de una válvula?", module: "Golpe de ariete", data: "V0, D interno, espesor, material, Tc", href: "/golpe-ariete" },
               { situation: "¿En qué punto opera mi bomba en este sistema?", module: "Mi bomba", data: "Hg, L, DN, curva de bomba", href: "/bombeo" },
               { situation: "¿Dónde pongo las válvulas de aire en mi línea?", module: "Válvulas de aire", data: "Q, DN, perfil de cotas", href: "/valvulas-aire" },
-              { situation: "Quiero ver si la presion llega a lo largo de todo el trazo", module: "Perfil hidraulico", data: "Q, DN, P1, perfil topografico", href: "/perfil" },
+              { situation: "Quiero ver si la presion llega a lo largo de todo el trazo", module: "Linea de conduccion", data: "Q, DN, P1, perfil topografico", href: "/perfil" },
               { situation: "Necesito reducir la presion en una zona de mi red", module: "Valvula reductora", data: "Q, P1, P2, DN", href: "/vrp" },
             ].map((r) => (
               <Link key={r.module} href={r.href} className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4 bg-white/5 hover:bg-white/10 border border-white/5 rounded-lg px-4 py-3 transition-colors group">

@@ -6,12 +6,11 @@ import { HelpButton } from "@/components/ui/HelpModal";
 
 const moduleNames: Record<string, string> = {
   "/tramo-simple": "Verificar presión",
-  "/en-serie": "Línea con varios tramos",
+  "/perfil": "Linea de conduccion",
   "/golpe-ariete": "Golpe de ariete",
   "/bombeo": "Mi bomba",
   "/dimensionamiento": "Elegir diámetro",
   "/valvulas-aire": "Válvulas de aire",
-  "/perfil": "Perfil hidraulico",
   "/vrp": "Valvula reductora",
   "/proyectos": "Mis proyectos",
 };
@@ -24,14 +23,6 @@ const moduleHelp: Record<string, { title: string; sections: { title: string; con
       { title: "Modos de calculo", content: "MODO A — Verificar presión de salida:\nConoces: Q, DN, L, P1. Obtienes: la presión al final del tramo.\nUsalo para: verificar si cumple norma (min 1.0 kg/cm2).\n\nMODO B — Calcular caudal maximo:\nConoces: DN, L, P1, P2 minima. Obtienes: el Q maximo sin bajar presión.\nUsalo para: determinar capacidad de una linea existente.\n\nMODO C — Recomendar diametro:\nConoces: Q, L, condiciones de presión. Obtienes: DN minimo que cumple.\nUsalo para: seleccionar diámetro en linea nueva." },
       { title: "Paso a paso (Modo A)", content: "1. Ingresa el caudal Q de diseño en L/s\n2. Selecciona el diámetro nominal DN\n3. Ingresa la longitud total en metros\n4. Selecciona material (C=130 para diseño nuevo)\n5. Ingresa presión disponible P1 en kg/cm2\n6. Si hay desnivel: ingresa cotas de inicio y fin\n7. Agrega accesorios si los conoces\n8. Los resultados aparecen automáticamente\n9. Verifica que P2 >= 1.0 kg/cm2" },
       { title: "Interpretación de resultados", content: "Velocidad V: debe estar entre 0.3 y 2.5 m/s\nGradiente J: óptimo < 5 m/km, aceptable hasta 10 m/km\nPresión salida P2: minimo 1.0 kg/cm2 (10 m.c.a.)\nPerfil hidráulico: la linea piezometrica nunca debe cruzar el terreno" },
-    ],
-  },
-  "/en-serie": {
-    title: "Tuberías en Serie — Guia de uso",
-    sections: [
-      { title: "Cuando usar?", content: "Cuando la linea tiene cambios de diametro, material o pendiente. Cada cambio es un 'tramo'." },
-      { title: "Paso a paso", content: "1. Ingresa el caudal Q global de la linea\n2. Ingresa la presión de entrada P1 si la conoces\n3. Clic en '+ Tramo' para agregar tramos\n4. Para cada tramo: longitud, DN, material y cota final\n5. Agrega accesorios por pieza con '+ Agregar'\n6. Los resultados muestran presión al final de cada tramo" },
-      { title: "Interpretación", content: "Si la presión en algun tramo cae a cero o negativo, ese punto es critico — rediseñar (aumentar DN o P1)." },
     ],
   },
   "/golpe-ariete": {
@@ -69,9 +60,9 @@ const moduleHelp: Record<string, { title: string; sections: { title: string; con
     ],
   },
   "/perfil": {
-    title: "Perfil Hidraulico — Guia de uso",
+    title: "Linea de Conduccion — Guia de uso",
     sections: [
-      { title: "Cuando usar?", content: "Para verificar que la presion es suficiente a lo largo de toda la linea de conduccion. Cargas el perfil topografico (distancia vs cota) y el modulo calcula la presion en cada punto." },
+      { title: "Cuando usar?", content: "Para disenar o verificar una linea de conduccion completa. Cargas el perfil topografico, defines los tramos de tuberia (DN y material) y el modulo calcula la presion en cada punto. Tambien puedes comparar escenarios y calcular la P1 requerida." },
       { title: "Datos que necesitas", content: "- Caudal Q de diseno\n- Diametro DN y material de la tuberia\n- Presion disponible P1 al inicio\n- Perfil topografico: pares de (distancia acumulada, cota del terreno)" },
       { title: "Paso a paso", content: "1. Ingresa Q, DN, material y P1\n2. Agrega los vertices del perfil manualmente o importa un CSV\n3. El formato CSV es: distancia, cota, descripcion (opcional)\n4. Los resultados aparecen automaticamente\n5. Revisa puntos en rojo (presion critica) o amarillo (presion baja)" },
       { title: "Interpretacion", content: "Verde (OK): presion cumple el minimo\nAmarillo (Baja): presion menor al minimo pero positiva\nRojo (Critica): presion negativa — la linea no funciona ahi\nLa linea piezometrica nunca debe cruzar el perfil del terreno" },
