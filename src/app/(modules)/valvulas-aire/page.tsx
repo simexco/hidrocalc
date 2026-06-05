@@ -266,7 +266,7 @@ export default function ValvulasAirePage() {
                   tableData: {
                     head: ["Dist (m)", "Cota (m)", "P (m.c.a.)", "Tipo", "Cuerpo", "Orificio", "PN", "Razón"],
                     body: results.valves.map((v) => [
-                      `${v.dist}`, `${v.cota}`, v.pressure != null ? `${v.pressure}` : "—",
+                      formatNumber(v.dist, 0), formatNumber(v.cota, 1), v.pressure != null ? formatNumber(v.pressure, 1) : "—",
                       v.type, v.bodySize, v.orificeSize, v.pn, v.reason,
                     ]),
                   },
@@ -370,8 +370,8 @@ export default function ValvulasAirePage() {
                     {results.valves.map((v, i) => (
                       <tr key={i} className={`border-b border-gray-100 dark:border-gray-700 ${v.alert === "critical" ? "bg-red-50 dark:bg-red-900/10" : v.alert === "low" ? "bg-yellow-50 dark:bg-yellow-900/10" : ""}`}>
                         <td className="px-2 py-1.5 text-gray-400">{i + 1}</td>
-                        <td className="px-2 py-1.5 text-right font-mono">{v.dist}</td>
-                        <td className="px-2 py-1.5 text-right font-mono">{v.cota}</td>
+                        <td className="px-2 py-1.5 text-right font-mono">{formatNumber(v.dist, 0)}</td>
+                        <td className="px-2 py-1.5 text-right font-mono">{formatNumber(v.cota, 1)}</td>
                         <td className="px-2 py-1.5 text-right font-mono">{v.pressure != null ? formatNumber(v.pressure, 1) : "—"}</td>
                         <td className="px-2 py-1.5 text-center"><span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${typeBadge(v.type)}`}>{v.type}</span></td>
                         <td className="px-2 py-1.5 text-center font-mono">{v.bodySize}</td>
