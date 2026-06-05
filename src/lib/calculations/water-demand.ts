@@ -107,7 +107,7 @@ export function calculateWaterDemand(input: WaterDemandInputs): WaterDemandResul
   if (dotacionAjustada < 75) alerts.push({ level: 'WARN', message: `Dotacion muy baja (${dotacionAjustada.toFixed(0)} L/hab/dia) — verificar que cubre necesidades basicas` });
   if (pobDiseno > pobActual * 5) alerts.push({ level: 'WARN', message: `La poblacion de diseno (${Math.round(pobDiseno)}) es ${(pobDiseno/pobActual).toFixed(1)}x la actual — verificar tasa de crecimiento y periodo` });
   if (tasaCrecimiento > 5) alerts.push({ level: 'WARN', message: `Tasa de crecimiento ${tasaCrecimiento}% es muy alta — el promedio nacional es 1-2%` });
-  if (periodoDiseno > 30) alerts.push({ level: 'WARN', message: `Periodo de diseno > 30 anos — CONAGUA recomienda 20-25 anos para agua potable` });
+  if (periodoDiseno > 30) alerts.push({ level: 'WARN', message: `Periodo de diseno > 30 años — CONAGUA recomienda 20-25 años para agua potable` });
 
   return {
     poblacionActual: Math.round(pobActual),

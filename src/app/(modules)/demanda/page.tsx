@@ -146,7 +146,7 @@ export default function DemandaPage() {
             {/* Growth */}
             <div className="grid grid-cols-2 gap-3">
               <InputField label="Tasa crecimiento" value={inputs.tasaCrecimiento} onChange={(v) => set("tasaCrecimiento", parseFloat(v) || 2)} unit="% anual" tooltip="Tasa de crecimiento poblacional. Promedio nacional INEGI: 1-2%. Si no la conoces, usa 2%." />
-              <InputField label="Periodo de diseno" value={inputs.periodoDiseno} onChange={(v) => set("periodoDiseno", parseFloat(v) || 20)} unit="anos" tooltip="CONAGUA recomienda 20-25 anos para sistemas de agua potable" />
+              <InputField label="Periodo de diseno" value={inputs.periodoDiseno} onChange={(v) => set("periodoDiseno", parseFloat(v) || 20)} unit="años" tooltip="CONAGUA recomienda 20-25 años para sistemas de agua potable" />
             </div>
 
             {/* Advanced */}
@@ -180,7 +180,7 @@ export default function DemandaPage() {
                     { label: "Tipo desarrollo", value: devType?.label ?? inputs.devType },
                     { label: "Clima", value: CLIMATE_TYPES.find(c => c.key === inputs.climaKey)?.label ?? inputs.climaKey },
                     { label: "Dotacion", value: `${inputs.dotacionBase} L/hab/dia (ajustada: ${results.dotacionAjustada.toFixed(0)})` },
-                    { label: "Crecimiento", value: `${inputs.tasaCrecimiento}% × ${inputs.periodoDiseno} anos` },
+                    { label: "Crecimiento", value: `${inputs.tasaCrecimiento}% × ${inputs.periodoDiseno} años` },
                     { label: "CVD / CVH", value: `${inputs.CVD} / ${inputs.CVH}` },
                   ],
                   results: [
@@ -305,7 +305,7 @@ export default function DemandaPage() {
                 <p>Dotaciones: CONAGUA — Manual de Agua Potable, Alcantarillado y Saneamiento (MAPAS)</p>
                 <p>Coeficientes de variacion: CONAGUA — Lineamientos Tecnicos para Factibilidades</p>
                 <p>Crecimiento poblacional: INEGI — Tasa de crecimiento intercensal</p>
-                <p>Periodo de diseno: CONAGUA — 20 a 25 anos para sistemas de agua potable</p>
+                <p>Periodo de diseno: CONAGUA — 20 a 25 años para sistemas de agua potable</p>
               </div>
             </>
           )}
