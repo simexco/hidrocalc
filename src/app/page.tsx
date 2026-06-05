@@ -2,6 +2,16 @@ import Link from "next/link";
 
 const modules = [
   {
+    title: "Demanda de agua",
+    desc: "Calcula el caudal de diseno por poblacion, viviendas o superficie.",
+    href: "/demanda",
+    icon: (
+      <svg viewBox="0 0 24 24" className="w-7 h-7" fill="none" stroke="currentColor" strokeWidth={1.5}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+      </svg>
+    ),
+  },
+  {
     title: "Verificar presión",
     desc: "Presión de salida, caudal máximo o diámetro recomendado para un tramo.",
     href: "/tramo-simple",
@@ -152,6 +162,7 @@ export default function Home() {
           <p className="text-xs text-white/40 text-center mb-6">Selecciona segun tu situacion</p>
           <div className="space-y-3">
             {[
+              { situation: "No se cuanto caudal necesito para mi proyecto", module: "Demanda de agua", data: "Poblacion o viviendas, tipo, clima", href: "/demanda" },
               { situation: "¿La presión llega al final de mi tubería?", module: "Verificar presión (Modo A)", data: "Q, DN, L, P1", href: "/tramo-simple" },
               { situation: "¿Cuánto caudal puede pasar sin bajar la presión?", module: "Verificar presión (Modo B)", data: "DN, L, P1, P2 mínima", href: "/tramo-simple" },
               { situation: "No sé qué diámetro usar para mi caudal", module: "Elegir diámetro", data: "Q, L, P1", href: "/dimensionamiento" },
