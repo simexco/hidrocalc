@@ -12,7 +12,7 @@ import { flowToM3s, formatNumber } from "@/lib/calculations/conversions";
 import { STANDARD_DNS_LABELED, MATERIALS, getPipeClassesForMaterial } from "@/lib/constants";
 import { saveFormState, loadFormState } from "@/lib/storage/form-persistence";
 import { ResetButton } from "@/components/ui/ResetButton";
-import { ComposedChart, Line, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine, ReferenceDot } from "recharts";
+import { ComposedChart, Line, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine } from "recharts";
 import { NumInput } from "@/components/ui/NumInput";
 import type { FlowUnit } from "@/types/hydraulic";
 
@@ -117,15 +117,31 @@ export default function ValvulasAirePage() {
     setPNBar(null);
   };
 
-  // Chart data
-  const chartData = results?.profilePoints.map((p) => ({
-    dist: p.dist,
-    cota: p.cota,
-    presion: p.pressure,
-  })) || [];
-
-  // Valve dots for chart
-  const valveDots = results?.valves || [];
+  // Chart data — include valve points so they can be plotted
+  const chartData = (() => {
+    if (!results) return [];
+    // Base profile points
+    const points = results.profilePoints.map(p => ({
+      dist: p.dist, cota: p.cota, presion: p.pressure,
+      valveType: null as string | null,
+      valveReason: null as string | null,
+    }));
+    // Add valve points that are interpolated (not on a vertex)
+    for (const v of results.valves) {
+      const exists = points.find(p => Math.abs(p.dist - v.dist) < 1);
+      if (exists) {
+        exists.valveType = v.type;
+        exists.valveReason = v.reason;
+      } else {
+        // Insert interpolated valve point
+        points.push({
+          dist: v.dist, cota: v.cota, presion: v.pressure,
+          valveType: v.type, valveReason: v.reason,
+        });
+      }
+    }
+    return points.sort((a, b) => a.dist - b.dist);
+  })();
 
   const typeBadge = (type: string) => {
     if (type === "VA-C") return "bg-blue-100 text-blue-700";
@@ -313,27 +329,25 @@ export default function ValvulasAirePage() {
                   />
                   <Tooltip />
                   <Legend />
-                  <Area type="monotone" dataKey="cota" stroke="#1C3D5A" fill="#1C3D5A" fillOpacity={0.15} strokeWidth={2} name="Terreno" />
+                  <Area type="monotone" dataKey="cota" stroke="#1C3D5A" fill="#1C3D5A" fillOpacity={0.15} strokeWidth={2} name="Terreno"
+                    dot={(props: Record<string, unknown>) => {
+                      const { cx, cy, payload } = props as { cx: number; cy: number; payload: { valveType?: string | null; valveReason?: string | null } };
+                      if (!payload?.valveType) return <circle key={`dot-${cx}`} cx={cx} cy={cy} r={0} />;
+                      const color = payload.valveType === "VA-C" ? "#3b82f6" : payload.valveType === "VA-A" ? "#f59e0b" : "#22c55e";
+                      return (
+                        <g key={`valve-${cx}-${cy}`}>
+                          <circle cx={cx} cy={cy} r={8} fill={color} stroke="#fff" strokeWidth={2.5} />
+                          <text x={cx} y={cy - 14} textAnchor="middle" fontSize={9} fontWeight="bold" fill={color}>
+                            {payload.valveType === "VA-C" ? "C" : payload.valveType === "VA-A" ? "A" : "E"}
+                          </text>
+                        </g>
+                      );
+                    }}
+                  />
                   {chartData.some((d) => d.presion != null) && (
-                    <Line type="monotone" dataKey="presion" stroke="#60a5fa" strokeWidth={1.5} strokeDasharray="5 3" dot={false} name="Presión (m.c.a.)" />
+                    <Line type="monotone" dataKey="presion" stroke="#60a5fa" strokeWidth={1.5} strokeDasharray="5 3" dot={false} name="Presion (m.c.a.)" />
                   )}
                   <ReferenceLine y={pressureMin} stroke="#f59e0b" strokeDasharray="3 3" label={{ value: `P min ${pressureMin}`, position: "right", style: { fontSize: 9 } }} />
-                  {/* Valve markers on the profile */}
-                  {results?.valves.map((v, i) => {
-                    const color = v.type === "VA-C" ? "#3b82f6" : v.type === "VA-A" ? "#f59e0b" : "#22c55e";
-                    return (
-                      <ReferenceDot
-                        key={`valve-${i}`}
-                        x={v.dist}
-                        y={v.cota}
-                        r={6}
-                        fill={color}
-                        stroke="#fff"
-                        strokeWidth={2}
-                        label={{ value: v.type.replace("VA-", ""), position: "top", style: { fontSize: 8, fontWeight: "bold", fill: color } }}
-                      />
-                    );
-                  })}
                 </ComposedChart>
               </ResponsiveContainer>
               {/* Valve legend */}

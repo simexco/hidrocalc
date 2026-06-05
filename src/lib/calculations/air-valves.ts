@@ -152,12 +152,17 @@ export function calculateAirValves(input: AirValveInputs): AirValveOutputs | nul
       candidates.push({ dist: sorted[i].dist, cota: sorted[i].cota, pressure: p, type: "VA-E", reason: "Cambio pendiente ascendente a descendente", alert: null });
     }
 
-    // Rule 4: Transition from downhill to uphill (valley) → VA-A at the low point
-    if (isLowPoint && i < slopes.length) {
-      // Only if significant slope change
-      if (slopes[i - 1] < -2 && slopes[i] > 2) {
-        candidates.push({ dist: sorted[i].dist, cota: sorted[i].cota, pressure: p, type: "VA-A", reason: "Punto bajo — riesgo de vacio en vaciado", alert: null });
+    // Rule 4: Transition from downhill to flat or uphill → VA-A at the low point
+    if (i < slopes.length && slopes[i - 1] < -3) {
+      // Descent followed by flat (slope >= -1) or uphill
+      if (slopes[i] >= -1) {
+        candidates.push({ dist: sorted[i].dist, cota: sorted[i].cota, pressure: p, type: "VA-A", reason: "Cambio de descenso a plano/ascenso — riesgo de vacio", alert: null });
       }
+    }
+
+    // Rule 4b: Transition from flat/descent to significant ascent → VA-E (air will migrate up)
+    if (i < slopes.length && slopes[i - 1] <= 1 && slopes[i] > 3 && !isHighPoint) {
+      candidates.push({ dist: sorted[i].dist, cota: sorted[i].cota, pressure: p, type: "VA-E", reason: "Inicio de ascenso — aire migra hacia arriba", alert: null });
     }
 
     // Rule 5: Low pressure point → VA-C
