@@ -12,7 +12,7 @@ import { flowToM3s, formatNumber } from "@/lib/calculations/conversions";
 import { STANDARD_DNS_LABELED, MATERIALS, getPipeClassesForMaterial } from "@/lib/constants";
 import { saveFormState, loadFormState } from "@/lib/storage/form-persistence";
 import { ResetButton } from "@/components/ui/ResetButton";
-import { ComposedChart, Line, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine, Dot } from "recharts";
+import { ComposedChart, Line, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine, ReferenceDot } from "recharts";
 import { NumInput } from "@/components/ui/NumInput";
 import type { FlowUnit } from "@/types/hydraulic";
 
@@ -207,7 +207,14 @@ export default function ValvulasAirePage() {
               <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300">Perfil topográfico</h2>
               <button onClick={addVertex} className="text-xs bg-[#1C3D5A] text-white px-3 py-1.5 rounded-lg hover:bg-[#0F2438] transition-colors">+ Vértice</button>
             </div>
-            <p className="text-[10px] text-gray-400">Ingresa cada punto donde cambia la pendiente, puntos altos, bajos y referencias importantes.</p>
+            <div className="bg-blue-50 dark:bg-blue-900/10 border border-blue-200 dark:border-blue-800 rounded-lg px-3 py-2 text-[11px] text-blue-700 dark:text-blue-300 space-y-1">
+              <p className="font-semibold">Como capturar el perfil:</p>
+              <p>Cada fila es un <strong>punto del terreno</strong>. Pon la distancia acumulada desde el inicio y la elevacion (cota) en ese punto.</p>
+              <div className="font-mono text-[10px] bg-white dark:bg-gray-800 rounded px-2 py-1 mt-1 text-gray-600 dark:text-gray-400">
+                Ej: Punto 1: 0m, cota 18m | Punto 2: 100m, cota 60m | Punto 3: 200m, cota 45m
+              </div>
+              <p className="text-[10px] opacity-70">Incluye todos los puntos altos, bajos y cambios de pendiente.</p>
+            </div>
             <div className="grid grid-cols-[24px_1fr_1fr_1.5fr_24px] gap-2 text-[10px] text-gray-400 font-semibold uppercase px-1">
               <span>#</span><span>Dist. (m)</span><span>Cota (m)</span><span>Descripcion</span><span></span>
             </div>
@@ -310,7 +317,23 @@ export default function ValvulasAirePage() {
                   {chartData.some((d) => d.presion != null) && (
                     <Line type="monotone" dataKey="presion" stroke="#60a5fa" strokeWidth={1.5} strokeDasharray="5 3" dot={false} name="Presión (m.c.a.)" />
                   )}
-                  <ReferenceLine y={pressureMin} stroke="#f59e0b" strokeDasharray="3 3" label={{ value: `P mín ${pressureMin}`, position: "right", style: { fontSize: 9 } }} />
+                  <ReferenceLine y={pressureMin} stroke="#f59e0b" strokeDasharray="3 3" label={{ value: `P min ${pressureMin}`, position: "right", style: { fontSize: 9 } }} />
+                  {/* Valve markers on the profile */}
+                  {results?.valves.map((v, i) => {
+                    const color = v.type === "VA-C" ? "#3b82f6" : v.type === "VA-A" ? "#f59e0b" : "#22c55e";
+                    return (
+                      <ReferenceDot
+                        key={`valve-${i}`}
+                        x={v.dist}
+                        y={v.cota}
+                        r={6}
+                        fill={color}
+                        stroke="#fff"
+                        strokeWidth={2}
+                        label={{ value: v.type.replace("VA-", ""), position: "top", style: { fontSize: 8, fontWeight: "bold", fill: color } }}
+                      />
+                    );
+                  })}
                 </ComposedChart>
               </ResponsiveContainer>
               {/* Valve legend */}
