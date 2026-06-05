@@ -1,5 +1,7 @@
 /* ════════════════════════════════════════
    Air Valve Location & Sizing Engine
+   Tipos: VA-C (Combinada), VA-A (Admisión/Expulsión), VA-E (Eliminadora)
+   Ref: CONAGUA MAPAS, AWWA M51, Val-Matic
    ════════════════════════════════════════ */
 
 import { G } from "@/lib/constants";
@@ -117,70 +119,85 @@ export function calculateAirValves(input: AirValveInputs): AirValveOutputs | nul
   // Profile points for chart
   const profilePoints = sorted.map((v, i) => ({ dist: v.dist, cota: v.cota, pressure: pressures[i] ?? null }));
 
-  // Step 2: Calculate slopes
+  // Step 2: Calculate slopes (%)
   const slopes: number[] = [];
   for (let i = 0; i < sorted.length - 1; i++) {
     const dz = sorted[i + 1].cota - sorted[i].cota;
     const dx = sorted[i + 1].dist - sorted[i].dist;
-    slopes[i] = dx > 0 ? (dz / dx) * 100 : 0; // percentage
+    slopes[i] = dx > 0 ? (dz / dx) * 100 : 0;
   }
 
   // Step 3: Apply rules — collect candidate valves
   type Candidate = { dist: number; cota: number; pressure: number | null; type: "VA-C" | "VA-A" | "VA-E"; reason: string; alert: "critical" | "low" | null };
   const candidates: Candidate[] = [];
 
-  // Rule 1: Start and end
-  candidates.push({ dist: sorted[0].dist, cota: sorted[0].cota, pressure: pressures[0], type: "VA-C", reason: "Inicio de línea", alert: null });
+  // Rule 1: Start and end — ALWAYS VA-C
+  candidates.push({ dist: sorted[0].dist, cota: sorted[0].cota, pressure: pressures[0], type: "VA-C", reason: "Inicio de linea", alert: null });
   const last = sorted.length - 1;
-  candidates.push({ dist: sorted[last].dist, cota: sorted[last].cota, pressure: pressures[last], type: "VA-C", reason: "Fin de línea", alert: null });
+  candidates.push({ dist: sorted[last].dist, cota: sorted[last].cota, pressure: pressures[last], type: "VA-C", reason: "Fin de linea", alert: null });
 
   for (let i = 1; i < sorted.length - 1; i++) {
-    const isHighPoint = sorted[i].cota > sorted[i - 1].cota && sorted[i].cota > sorted[i + 1].cota;
-    const isLowPoint = sorted[i].cota < sorted[i - 1].cota && sorted[i].cota < sorted[i + 1].cota;
+    const isHighPoint = sorted[i].cota > sorted[i - 1].cota && sorted[i].cota >= sorted[i + 1].cota;
+    const isLowPoint = sorted[i].cota < sorted[i - 1].cota && sorted[i].cota <= sorted[i + 1].cota;
     const p = pressures[i];
     const alert: "critical" | "low" | null = p != null && p < 0 ? "critical" : p != null && p < pressureMin ? "low" : null;
 
-    // Rule 2: High point
+    // Rule 2: High point → VA-C (air accumulates here)
     if (isHighPoint) {
-      candidates.push({ dist: sorted[i].dist, cota: sorted[i].cota, pressure: p, type: "VA-C", reason: "Punto alto local", alert });
+      candidates.push({ dist: sorted[i].dist, cota: sorted[i].cota, pressure: p, type: "VA-C", reason: "Punto alto — acumulacion de aire", alert });
     }
 
-    // Rule 3: Slope change + to -
-    if (i < slopes.length && slopes[i - 1] > 0 && slopes[i] < 0 && !isHighPoint) {
-      candidates.push({ dist: sorted[i].dist, cota: sorted[i].cota, pressure: p, type: "VA-E", reason: "Cambio de pendiente", alert: null });
+    // Rule 3: Transition from uphill to downhill (not a sharp peak) → VA-E
+    if (i < slopes.length && slopes[i - 1] > 1 && slopes[i] < -1 && !isHighPoint) {
+      candidates.push({ dist: sorted[i].dist, cota: sorted[i].cota, pressure: p, type: "VA-E", reason: "Cambio pendiente ascendente a descendente", alert: null });
     }
 
-    // Rule 5: Low pressure
+    // Rule 4: Transition from downhill to uphill (valley) → VA-A at the low point
+    if (isLowPoint && i < slopes.length) {
+      // Only if significant slope change
+      if (slopes[i - 1] < -2 && slopes[i] > 2) {
+        candidates.push({ dist: sorted[i].dist, cota: sorted[i].cota, pressure: p, type: "VA-A", reason: "Punto bajo — riesgo de vacio en vaciado", alert: null });
+      }
+    }
+
+    // Rule 5: Low pressure point → VA-C
     if (p != null && p < pressureMin && !isHighPoint) {
-      candidates.push({ dist: sorted[i].dist, cota: sorted[i].cota, pressure: p, type: "VA-C", reason: "Presión insuficiente", alert });
-    }
-
-    // Rule 7: Low point with reduced pressure
-    if (isLowPoint && p != null && p < 5) {
-      candidates.push({ dist: sorted[i].dist, cota: sorted[i].cota, pressure: p, type: "VA-C", reason: "Punto bajo con presión reducida", alert: "low" });
+      candidates.push({ dist: sorted[i].dist, cota: sorted[i].cota, pressure: p, type: "VA-C", reason: "Presion insuficiente", alert });
     }
   }
 
-  // Rule 4: Steep descents
+  // Rule 6: Steep descents (>5%) — VA-A for vacuum protection
   for (let i = 0; i < slopes.length; i++) {
-    if (slopes[i] < -10) {
+    if (slopes[i] < -5) {
       const L = sorted[i + 1].dist - sorted[i].dist;
-      if (L > 300) {
-        const insertDist = sorted[i].dist + L / 3;
-        const frac = 1 / 3;
+      // For moderate descents (5-15%), place VA-A at start of descent
+      if (L > 100) {
+        const insertDist = sorted[i].dist + 50; // near the top of the descent
+        const frac = 50 / L;
         const insertCota = sorted[i].cota + frac * (sorted[i + 1].cota - sorted[i].cota);
         const insertP = pressures[i] != null && pressures[i + 1] != null
           ? pressures[i]! + frac * (pressures[i + 1]! - pressures[i]!)
           : null;
-        candidates.push({ dist: insertDist, cota: insertCota, pressure: insertP, type: "VA-A", reason: "Descenso pronunciado", alert: null });
+        candidates.push({ dist: insertDist, cota: insertCota, pressure: insertP, type: "VA-A", reason: `Descenso ${Math.abs(slopes[i]).toFixed(1)}% — proteccion contra vacio`, alert: null });
+      }
+      // For very steep (>15%) or long descents, add another VA-A
+      if (slopes[i] < -15 && L > 500) {
+        const insertDist = sorted[i].dist + L / 2;
+        const frac = 0.5;
+        const insertCota = sorted[i].cota + frac * (sorted[i + 1].cota - sorted[i].cota);
+        const insertP = pressures[i] != null && pressures[i + 1] != null
+          ? pressures[i]! + frac * (pressures[i + 1]! - pressures[i]!)
+          : null;
+        candidates.push({ dist: insertDist, cota: insertCota, pressure: insertP, type: "VA-A", reason: `Descenso pronunciado ${Math.abs(slopes[i]).toFixed(1)}%`, alert: null });
       }
     }
   }
 
-  // Rule 6: Max spacing on flat tangents
+  // Rule 7: Long uphill segments — VA-E every maxSpacing
   for (let i = 0; i < slopes.length; i++) {
     const L = sorted[i + 1].dist - sorted[i].dist;
-    if (L > maxSpacing && Math.abs(slopes[i]) < 2) {
+    if (L > maxSpacing && slopes[i] > 0) {
+      // Uphill: air migrates to the top, need VA-E to purge
       const numVAE = Math.floor(L / maxSpacing);
       for (let j = 1; j <= numVAE; j++) {
         const insertDist = sorted[i].dist + j * maxSpacing;
@@ -190,54 +207,104 @@ export function calculateAirValves(input: AirValveInputs): AirValveOutputs | nul
         const insertP = pressures[i] != null && pressures[i + 1] != null
           ? pressures[i]! + frac * (pressures[i + 1]! - pressures[i]!)
           : null;
-        candidates.push({ dist: insertDist, cota: insertCota, pressure: insertP, type: "VA-E", reason: "Espaciado máximo", alert: null });
+        candidates.push({ dist: insertDist, cota: insertCota, pressure: insertP, type: "VA-E", reason: "Tramo ascendente largo — purga de aire", alert: null });
+      }
+    }
+    // Flat or gentle slopes: VA-E for maintenance
+    if (L > maxSpacing && Math.abs(slopes[i]) <= 2) {
+      const numVAE = Math.floor(L / maxSpacing);
+      for (let j = 1; j <= numVAE; j++) {
+        const insertDist = sorted[i].dist + j * maxSpacing;
+        if (insertDist >= sorted[i + 1].dist) break;
+        const frac = (insertDist - sorted[i].dist) / L;
+        const insertCota = sorted[i].cota + frac * (sorted[i + 1].cota - sorted[i].cota);
+        const insertP = pressures[i] != null && pressures[i + 1] != null
+          ? pressures[i]! + frac * (pressures[i + 1]! - pressures[i]!)
+          : null;
+        candidates.push({ dist: insertDist, cota: insertCota, pressure: insertP, type: "VA-E", reason: "Espaciado maximo — mantenimiento", alert: null });
+      }
+    }
+    // Long downhill: VA-A every maxSpacing for vacuum protection during drainage
+    if (L > maxSpacing && slopes[i] < -2) {
+      const numVAA = Math.floor(L / maxSpacing);
+      for (let j = 1; j <= numVAA; j++) {
+        const insertDist = sorted[i].dist + j * maxSpacing;
+        if (insertDist >= sorted[i + 1].dist) break;
+        const frac = (insertDist - sorted[i].dist) / L;
+        const insertCota = sorted[i].cota + frac * (sorted[i + 1].cota - sorted[i].cota);
+        const insertP = pressures[i] != null && pressures[i + 1] != null
+          ? pressures[i]! + frac * (pressures[i + 1]! - pressures[i]!)
+          : null;
+        candidates.push({ dist: insertDist, cota: insertCota, pressure: insertP, type: "VA-A", reason: "Tramo descendente largo — proteccion vacio", alert: null });
       }
     }
   }
 
-  // Step 4: Deduplicate — keep highest priority within 20m
-  const hierarchy = { "VA-C": 3, "VA-A": 2, "VA-E": 1 };
+  // Step 4: Deduplicate — within 30m, keep each type's highest priority
+  // But DON'T merge different types — a location can have both VA-C and VA-E
   const sortedCandidates = candidates.sort((a, b) => a.dist - b.dist);
   const deduped: Candidate[] = [];
 
   for (const c of sortedCandidates) {
-    const nearby = deduped.find((d) => Math.abs(d.dist - c.dist) < 20);
-    if (nearby) {
-      if (hierarchy[c.type] > hierarchy[nearby.type]) {
-        Object.assign(nearby, c);
-      }
+    // Check if there's already a valve of the SAME type within 30m
+    const nearbySameType = deduped.find(d => Math.abs(d.dist - c.dist) < 30 && d.type === c.type);
+    if (nearbySameType) continue; // skip duplicate of same type
+
+    // Check if there's a HIGHER priority type within 30m
+    const hierarchy: Record<string, number> = { "VA-C": 3, "VA-A": 2, "VA-E": 1 };
+    const nearbyHigher = deduped.find(d => Math.abs(d.dist - c.dist) < 30 && hierarchy[d.type] > hierarchy[c.type]);
+    if (nearbyHigher) {
+      // VA-C already covers VA-A and VA-E functions, skip lower types
+      continue;
+    }
+
+    // Check if we're adding a higher type near a lower one — replace
+    const nearbyLower = deduped.findIndex(d => Math.abs(d.dist - c.dist) < 30 && hierarchy[d.type] < hierarchy[c.type]);
+    if (nearbyLower >= 0) {
+      deduped[nearbyLower] = c; // replace with higher priority
     } else {
-      deduped.push({ ...c });
+      deduped.push(c);
     }
   }
 
-  // Build final results with sizing
-  const valves: AirValveResult[] = deduped.map((c) => ({
-    dist: Math.round(c.dist * 10) / 10,
-    cota: Math.round(c.cota * 10) / 10,
-    pressure: c.pressure != null ? Math.round(c.pressure * 10) / 10 : null,
-    type: c.type,
-    bodySize: c.type === "VA-E" ? getSize(VAE_SIZE, DN_mm) : c.type === "VA-A" ? getSize(VAA_SIZE, DN_mm) : getSize(VAC_BODY, DN_mm),
-    orificeSize: c.type === "VA-C" ? getSize(VAC_ORIFICE, DN_mm) : c.type === "VA-E" ? getSize(VAE_SIZE, DN_mm) : "—",
-    pn,
-    reason: c.reason,
-    alert: c.alert,
-    note: getNote(c.type, DN_mm),
-  }));
+  // Step 5: Convert to results with sizing
+  const valves: AirValveResult[] = deduped.map((c) => {
+    let bodySize: string;
+    let orificeSize: string;
 
-  // Alerts
-  const criticalPoints = valves.filter((v) => v.alert === "critical");
-  const lowPoints = valves.filter((v) => v.alert === "low");
-  if (criticalPoints.length > 0) alerts.push(`Presión negativa en ${criticalPoints.length} punto(s) — rediseño requerido.`);
-  if (lowPoints.length > 0) alerts.push(`${lowPoints.length} punto(s) con presión por debajo del mínimo (${pressureMin} m.c.a.) — revisar diseño.`);
-  if (!hasHydraulics) alerts.push("Sin datos hidráulicos — mostrando ubicación geométrica. Ingresa Q y P0 para ver presiones.");
+    if (c.type === "VA-C") {
+      bodySize = getSize(VAC_BODY, DN_mm);
+      orificeSize = getSize(VAC_ORIFICE, DN_mm);
+    } else if (c.type === "VA-A") {
+      bodySize = getSize(VAA_SIZE, DN_mm);
+      orificeSize = bodySize;
+    } else {
+      bodySize = getSize(VAE_SIZE, DN_mm);
+      orificeSize = bodySize;
+    }
 
-  return {
-    valves,
-    profilePoints,
-    totalVAC: valves.filter((v) => v.type === "VA-C").length,
-    totalVAA: valves.filter((v) => v.type === "VA-A").length,
-    totalVAE: valves.filter((v) => v.type === "VA-E").length,
-    alerts,
-  };
+    return {
+      dist: c.dist,
+      cota: c.cota,
+      pressure: c.pressure,
+      type: c.type,
+      bodySize,
+      orificeSize,
+      pn,
+      reason: c.reason,
+      alert: c.alert,
+      note: getNote(c.type, DN_mm),
+    };
+  }).sort((a, b) => a.dist - b.dist);
+
+  // Count
+  const totalVAC = valves.filter((v) => v.type === "VA-C").length;
+  const totalVAA = valves.filter((v) => v.type === "VA-A").length;
+  const totalVAE = valves.filter((v) => v.type === "VA-E").length;
+
+  if (totalVAC === 0 && totalVAA === 0 && totalVAE === 0) {
+    alerts.push("No se encontraron ubicaciones para valvulas de aire con el perfil ingresado.");
+  }
+
+  return { valves, profilePoints, totalVAC, totalVAA, totalVAE, alerts };
 }
