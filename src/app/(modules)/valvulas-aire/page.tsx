@@ -13,6 +13,7 @@ import { STANDARD_DNS_LABELED, MATERIALS, getPipeClassesForMaterial } from "@/li
 import { saveFormState, loadFormState } from "@/lib/storage/form-persistence";
 import { ResetButton } from "@/components/ui/ResetButton";
 import { ComposedChart, Line, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine, Dot } from "recharts";
+import { NumInput } from "@/components/ui/NumInput";
 import type { FlowUnit } from "@/types/hydraulic";
 
 const DN_LIST = STANDARD_DNS_LABELED;
@@ -207,35 +208,23 @@ export default function ValvulasAirePage() {
               <button onClick={addVertex} className="text-xs bg-[#1C3D5A] text-white px-3 py-1.5 rounded-lg hover:bg-[#0F2438] transition-colors">+ Vértice</button>
             </div>
             <p className="text-[10px] text-gray-400">Ingresa cada punto donde cambia la pendiente, puntos altos, bajos y referencias importantes.</p>
-            <div className="space-y-2">
+            <div className="grid grid-cols-[24px_1fr_1fr_1.5fr_24px] gap-2 text-[10px] text-gray-400 font-semibold uppercase px-1">
+              <span>#</span><span>Dist. (m)</span><span>Cota (m)</span><span>Descripcion</span><span></span>
+            </div>
+            <div className="space-y-1 max-h-[400px] overflow-y-auto">
               {vertices.map((v, i) => (
-                <div key={v.id} className="flex items-center gap-2 text-xs">
-                  <span className="w-5 text-gray-400 text-center">{i + 1}</span>
-                  <input
-                    type="number"
-                    defaultValue={v.dist}
-                    key={`dist-${v.id}-${v.dist}`}
-                    onBlur={(e) => updateVertex(v.id, { dist: parseFloat(e.target.value) || 0 })}
-                    onChange={(e) => updateVertex(v.id, { dist: parseFloat(e.target.value) || 0 })}
-                    placeholder="Dist (m)"
-                    className="w-20 px-2 py-1 border border-gray-200 dark:border-gray-600 rounded bg-white dark:bg-gray-800 dark:text-white text-xs"
-                  />
-                  <input
-                    type="number"
-                    defaultValue={v.cota}
-                    key={`cota-${v.id}-${v.cota}`}
-                    onBlur={(e) => updateVertex(v.id, { cota: parseFloat(e.target.value) || 0 })}
-                    onChange={(e) => updateVertex(v.id, { cota: parseFloat(e.target.value) || 0 })}
-                    placeholder="Cota (m)"
-                    className="w-20 px-2 py-1 border border-gray-200 dark:border-gray-600 rounded bg-white dark:bg-gray-800 dark:text-white text-xs"
-                  />
-                  <input type="text" value={v.desc} onChange={(e) => updateVertex(v.id, { desc: e.target.value })} placeholder="Descripción" className="flex-1 px-2 py-1 border border-gray-200 dark:border-gray-600 rounded bg-white dark:bg-gray-800 dark:text-white text-xs" />
-                  {vertices.length > 2 && (
-                    <button onClick={() => removeVertex(v.id)} className="text-red-400 hover:text-red-600">{"\u2717"}</button>
-                  )}
+                <div key={v.id} className="grid grid-cols-[24px_1fr_1fr_1.5fr_24px] gap-2 items-center px-1">
+                  <span className="text-[10px] text-gray-400 text-center">{i + 1}</span>
+                  <NumInput value={v.dist} onChange={(n) => updateVertex(v.id, { dist: n })} placeholder="Dist" />
+                  <NumInput value={v.cota} onChange={(n) => updateVertex(v.id, { cota: n })} placeholder="Cota" />
+                  <input type="text" value={v.desc} onChange={(e) => updateVertex(v.id, { desc: e.target.value })} placeholder="Descripcion" className="w-full px-2 py-1.5 text-xs border border-gray-200 dark:border-gray-600 rounded bg-white dark:bg-gray-800 dark:text-white" />
+                  {vertices.length > 2 ? (
+                    <button onClick={() => removeVertex(v.id)} className="text-red-400 hover:text-red-600 text-xs text-center">✗</button>
+                  ) : <span />}
                 </div>
               ))}
             </div>
+            <p className="text-[10px] text-gray-400">{vertices.length} vertices</p>
           </div>
         </div>
 

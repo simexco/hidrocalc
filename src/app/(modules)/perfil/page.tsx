@@ -15,41 +15,8 @@ import { STANDARD_DNS, STANDARD_DNS_LABELED, MATERIALS, getPipeClassesForMateria
 import { saveFormState, loadFormState } from "@/lib/storage/form-persistence";
 import { ComposedChart, Line, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
 import ListaMaterialesSIMEX, { type SIMEXAcc } from "@/components/ListaMaterialesSIMEX";
+import { NumInput } from "@/components/ui/NumInput";
 import type { FlowUnit } from "@/types/hydraulic";
-
-// Compact numeric input with local state (no lag, no spinners)
-function NumInput({ value, onChange, className = "" }: { value: number; onChange: (v: number) => void; className?: string }) {
-  const [local, setLocal] = useState(String(value));
-  const focused = useRef(false);
-  const timer = useRef<ReturnType<typeof setTimeout>>(undefined);
-
-  useEffect(() => { if (!focused.current) setLocal(String(value)); }, [value]);
-
-  return (
-    <input
-      type="text"
-      inputMode="decimal"
-      value={local}
-      onFocus={() => { focused.current = true; }}
-      onBlur={() => {
-        focused.current = false;
-        clearTimeout(timer.current);
-        const n = parseFloat(local);
-        if (!isNaN(n)) { onChange(n); setLocal(String(n)); }
-        else setLocal(String(value));
-      }}
-      onChange={(e) => {
-        setLocal(e.target.value);
-        clearTimeout(timer.current);
-        timer.current = setTimeout(() => {
-          const n = parseFloat(e.target.value);
-          if (!isNaN(n)) onChange(n);
-        }, 200);
-      }}
-      className={`w-full px-2 py-1.5 text-xs border border-gray-200 dark:border-gray-600 rounded bg-white dark:bg-gray-800 dark:text-white ${className}`}
-    />
-  );
-}
 
 export default function PerfilPage() {
   const [projectName, setProjectName] = useState("Perfil hidraulico");
