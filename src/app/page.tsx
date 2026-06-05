@@ -2,7 +2,7 @@ import Link from "next/link";
 
 const modules = [
   {
-    title: "Demanda de agua",
+    title: "Calculo de gasto",
     desc: "Calcula el caudal de diseno por poblacion, viviendas o superficie.",
     href: "/demanda",
     icon: (
@@ -162,7 +162,7 @@ export default function Home() {
           <p className="text-xs text-white/40 text-center mb-6">Selecciona segun tu situacion</p>
           <div className="space-y-3">
             {[
-              { situation: "No se cuanto caudal necesito para mi proyecto", module: "Demanda de agua", data: "Poblacion o viviendas, tipo, clima", href: "/demanda" },
+              { situation: "No se cuanto caudal necesito para mi proyecto", module: "Calculo de gasto", data: "Poblacion o viviendas, tipo, clima", href: "/demanda" },
               { situation: "¿La presión llega al final de mi tubería?", module: "Verificar presión (Modo A)", data: "Q, DN, L, P1", href: "/tramo-simple" },
               { situation: "¿Cuánto caudal puede pasar sin bajar la presión?", module: "Verificar presión (Modo B)", data: "DN, L, P1, P2 mínima", href: "/tramo-simple" },
               { situation: "No sé qué diámetro usar para mi caudal", module: "Elegir diámetro", data: "Q, L, P1", href: "/dimensionamiento" },
