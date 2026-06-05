@@ -32,6 +32,15 @@ const modules = [
     ),
   },
   {
+    href: "/impulsion",
+    label: "Linea de impulsion",
+    icon: (
+      <svg viewBox="0 0 24 24" className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={1.8}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M5 10l7-7m0 0l7 7m-7-7v18" />
+      </svg>
+    ),
+  },
+  {
     href: "/golpe-ariete",
     label: "Golpe de ariete",
     icon: (

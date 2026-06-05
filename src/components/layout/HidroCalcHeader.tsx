@@ -8,6 +8,7 @@ const moduleNames: Record<string, string> = {
   "/demanda": "Calculo de gasto",
   "/tramo-simple": "Verificar presión",
   "/perfil": "Linea de conduccion",
+  "/impulsion": "Linea de impulsion",
   "/golpe-ariete": "Golpe de ariete",
   "/bombeo": "Mi bomba",
   "/dimensionamiento": "Elegir diámetro",

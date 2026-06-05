@@ -32,6 +32,16 @@ const modules = [
     ),
   },
   {
+    title: "Linea de impulsion",
+    desc: "Bomba a tanque: CDT, diametro economico, potencia y costo de energia.",
+    href: "/impulsion",
+    icon: (
+      <svg viewBox="0 0 24 24" className="w-7 h-7" fill="none" stroke="currentColor" strokeWidth={1.5}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M5 10l7-7m0 0l7 7m-7-7v18" />
+      </svg>
+    ),
+  },
+  {
     title: "Golpe de ariete",
     desc: "Sobrepresión por cierre de válvulas y clase de tubería requerida.",
     href: "/golpe-ariete",
