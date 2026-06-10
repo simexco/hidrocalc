@@ -766,14 +766,16 @@ export default function PerfilPage() {
                           <td className="px-2 py-1.5 text-right font-mono">{p.piezo != null ? formatNumber(p.piezo, 1) : "--"}</td>
                           <td className={`px-2 py-1.5 text-right font-mono font-semibold ${p.status === 'critical' ? 'text-red-600' : p.status === 'low' ? 'text-yellow-600' : ''}`}>
                             {p.pressure_kgcm2 != null ? formatNumber(p.pressure_kgcm2, 2) : "--"}
+                            {p.exceedsPN && <span className="ml-1 text-[9px] text-red-600 font-bold">{"⚠ PN"}</span>}
                           </td>
                           <td className="px-2 py-1.5 text-right font-mono text-gray-400">{formatNumber(p.hfAccum, 2)}</td>
                           <td className="px-2 py-1.5 text-center" style={{ color: tramoColors[p.tramoIndex % tramoColors.length] }}>{p.DN_mm}</td>
                           <td className="px-2 py-1.5 text-right font-mono">{p.V != null ? formatNumber(p.V, 2) : "--"}</td>
                           <td className="px-2 py-1.5 text-center">
-                            {p.status === "ok" && <span className="text-green-600">{"✓"}</span>}
-                            {p.status === "low" && <span className="text-yellow-600">{"⚠"}</span>}
-                            {p.status === "critical" && <span className="text-red-600">{"✗"}</span>}
+                            {p.exceedsPN ? <span className="text-red-600" title="Excede PN de la tuberia">{"✗"}</span>
+                              : p.status === "ok" ? <span className="text-green-600">{"✓"}</span>
+                              : p.status === "low" ? <span className="text-yellow-600">{"⚠"}</span>
+                              : <span className="text-red-600">{"✗"}</span>}
                           </td>
                           <td className="px-2 py-1.5 text-gray-500 truncate max-w-[100px]">{p.desc}</td>
                         </tr>

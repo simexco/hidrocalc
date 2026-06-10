@@ -31,6 +31,7 @@ export interface ProfilePointResult {
   pressure_mca: number | null;
   pressure_kgcm2: number | null;
   status: "ok" | "low" | "critical";
+  exceedsPN: boolean;    // pressure exceeds the pipe class capacity at this point
   tramoIndex: number;    // which tramo this point falls in
   DN_mm: number;         // DN at this point
   V: number | null;      // velocity at this point
@@ -132,9 +133,14 @@ export function calculateProfile(input: ProfileInputs): ProfileResults | null {
       }
     }
 
+    // Check if pressure exceeds the pipe class capacity at this point
+    const tramoPN_kgcm2 = tramo?.PN_bar ? tramo.PN_bar / 0.9807 : null;
+    const exceedsPN = pressure_kgcm2 != null && tramoPN_kgcm2 != null && pressure_kgcm2 > tramoPN_kgcm2;
+
     let status: ProfilePointResult["status"] = "ok";
     if (pressure_kgcm2 != null) {
       if (pressure_kgcm2 < 0) { status = "critical"; pointsCritical++; }
+      else if (exceedsPN) { status = "critical"; }   // over-pressure is also critical
       else if (pressure_kgcm2 < Pmin_kgcm2) { status = "low"; pointsBelowMin++; }
     }
 
@@ -149,6 +155,7 @@ export function calculateProfile(input: ProfileInputs): ProfileResults | null {
       pressure_mca,
       pressure_kgcm2,
       status,
+      exceedsPN,
       tramoIndex: tramoIdx,
       DN_mm,
       V: V_point,
@@ -159,13 +166,15 @@ export function calculateProfile(input: ProfileInputs): ProfileResults | null {
   const totalHf = hfAccum;
 
   // Tramo summaries with max pressure check
-  const tramoSummaries = tramos.map(t => {
+  const tramoSummaries = tramos.map((t, tIdx) => {
     const D_m = t.DN_mm / 1000;
     const A = Math.PI * Math.pow(D_m / 2, 2);
     const V = Q != null && Q > 0 ? Q / A : null;
     const length = t.distTo - t.distFrom;
-    // Find max pressure in this tramo's range
-    const tramoPoints = points.filter(p => p.dist >= t.distFrom && p.dist <= t.distTo);
+    // Max pressure: use points ASSIGNED to this tramo (via tramoIndex/findTramo),
+    // not just those strictly inside [distFrom, distTo]. This catches profile
+    // points beyond the last tramo's range that get assigned to it.
+    const tramoPoints = points.filter(p => p.tramoIndex === tIdx);
     const maxP = Math.max(0, ...tramoPoints.filter(p => p.pressure_kgcm2 != null).map(p => p.pressure_kgcm2!));
     const PN_kgcm2 = t.PN_bar ? t.PN_bar / 0.9807 : null;
     const exceedsPN = PN_kgcm2 != null && maxP > PN_kgcm2;
@@ -173,6 +182,13 @@ export function calculateProfile(input: ProfileInputs): ProfileResults | null {
     const J_km = length > 0 ? (hf / length) * 1000 : 0;
     return { id: t.id, DN_mm: t.DN_mm, materialName: t.materialName, length, hf, V, J_km, pipeClass: t.pipeClass, PN_bar: t.PN_bar, maxPressure_kgcm2: maxP, exceedsPN };
   });
+
+  // Warn if the profile extends beyond the defined tramos
+  const lastTramoEnd = Math.max(...tramos.map(t => t.distTo));
+  const profileEnd = sorted[sorted.length - 1].dist;
+  const profileStart = sorted[0].dist;
+  const firstTramoStart = Math.min(...tramos.map(t => t.distFrom));
+  const uncovered = (profileEnd > lastTramoEnd + 1) || (profileStart < firstTramoStart - 1);
 
   // Alerts
   const alerts: ProfileResults["alerts"] = [];
@@ -189,6 +205,7 @@ export function calculateProfile(input: ProfileInputs): ProfileResults | null {
       alerts.push({ level: "ERROR", message: `Tramo ${ts.DN_mm}mm ${ts.materialName} ${ts.pipeClass ?? ''}: P max ${ts.maxPressure_kgcm2.toFixed(1)} kg/cm2 EXCEDE la capacidad de la tuberia (PN ${ts.PN_bar} bar = ${pnKg} kg/cm2)` });
     }
   }
+  if (uncovered) alerts.push({ level: "WARN", message: `El perfil topografico (${profileStart}-${profileEnd}m) se extiende mas alla de los tramos definidos. Ajusta el rango de los tramos para cubrir todo el perfil.` });
   if (pointsCritical > 0) alerts.push({ level: "ERROR", message: `${pointsCritical} punto(s) con presion negativa` });
   if (pointsBelowMin > 0) alerts.push({ level: "WARN", message: `${pointsBelowMin} punto(s) con presion menor a ${Pmin_kgcm2} kg/cm2` });
   if (finalP != null && finalP < Pmin_kgcm2) alerts.push({ level: "ERROR", message: `Presion final (${finalP.toFixed(2)} kg/cm2) no cumple el minimo requerido` });
