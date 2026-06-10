@@ -1,125 +1,83 @@
 import Link from "next/link";
 
+const iconCls = "w-7 h-7";
 const modules = [
+  // ── Diseño ──
   {
-    title: "Calculo de gasto",
-    desc: "Calcula el caudal de diseno por poblacion, viviendas o superficie.",
+    title: "Cálculo de gasto",
+    desc: "Caudal de diseño por población, viviendas o superficie.",
     href: "/demanda",
-    icon: (
-      <svg viewBox="0 0 24 24" className="w-7 h-7" fill="none" stroke="currentColor" strokeWidth={1.5}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
-      </svg>
-    ),
+    icon: (<svg viewBox="0 0 24 24" className={iconCls} fill="none" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" /></svg>),
   },
   {
     title: "Fuente de abastecimiento",
-    desc: "Aforo de pozo: abatimiento, caudal especifico y caudal de explotacion recomendado.",
+    desc: "Aforo de pozo: abatimiento, caudal específico y caudal de explotación.",
     href: "/fuente",
-    icon: (
-      <svg viewBox="0 0 24 24" className="w-7 h-7" fill="none" stroke="currentColor" strokeWidth={1.5}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v6m0 0l-3-3m3 3l3-3M6 13h12v6a2 2 0 01-2 2H8a2 2 0 01-2-2v-6z" />
-      </svg>
-    ),
+    icon: (<svg viewBox="0 0 24 24" className={iconCls} fill="none" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M12 3v6m0 0l-3-3m3 3l3-3M6 13h12v6a2 2 0 01-2 2H8a2 2 0 01-2-2v-6z" /></svg>),
   },
   {
-    title: "Verificar presión",
-    desc: "Presión de salida, caudal máximo o diámetro recomendado para un tramo.",
-    href: "/tramo-simple",
-    icon: (
-      <svg viewBox="0 0 24 24" className="w-7 h-7" fill="none" stroke="currentColor" strokeWidth={1.5}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
-      </svg>
-    ),
+    title: "Tanque de regularización",
+    desc: "Volumen de regulación y reserva, dimensiones del tanque (CONAGUA MAPAS).",
+    href: "/tanque",
+    icon: (<svg viewBox="0 0 24 24" className={iconCls} fill="none" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M5 4h14v16H5V4zm0 5h14M8 13h8" /></svg>),
   },
+  // ── Conducción ──
   {
-    title: "Linea de conduccion",
-    desc: "Perfil topografico, tramos con diferente DN/material, presiones y materiales SIMEX.",
-    href: "/perfil",
-    icon: (
-      <svg viewBox="0 0 24 24" className="w-7 h-7" fill="none" stroke="currentColor" strokeWidth={1.5}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M3 20l4-8 3 4 4-12 3 6 4-4" />
-      </svg>
-    ),
-  },
-  {
-    title: "Linea de impulsion",
-    desc: "Bomba a tanque: CDT, diametro economico, potencia y costo de energia.",
+    title: "Línea de impulsión",
+    desc: "Bomba a tanque: CDT, diámetro económico, potencia y costo de energía.",
     href: "/impulsion",
-    icon: (
-      <svg viewBox="0 0 24 24" className="w-7 h-7" fill="none" stroke="currentColor" strokeWidth={1.5}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M5 10l7-7m0 0l7 7m-7-7v18" />
-      </svg>
-    ),
-  },
-  {
-    title: "Golpe de ariete",
-    desc: "Sobrepresión por cierre de válvulas y clase de tubería requerida.",
-    href: "/golpe-ariete",
-    icon: (
-      <svg viewBox="0 0 24 24" className="w-7 h-7" fill="none" stroke="currentColor" strokeWidth={1.5}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
-      </svg>
-    ),
+    icon: (<svg viewBox="0 0 24 24" className={iconCls} fill="none" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M5 10l7-7m0 0l7 7m-7-7v18" /></svg>),
   },
   {
     title: "Mi bomba",
     desc: "Punto real de trabajo de la bomba en el sistema hidráulico.",
     href: "/bombeo",
-    icon: (
-      <svg viewBox="0 0 24 24" className="w-7 h-7" fill="none" stroke="currentColor" strokeWidth={1.5}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M12 8c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm0 0V4m0 16v-4m8-4h-4M4 12h4" />
-      </svg>
-    ),
+    icon: (<svg viewBox="0 0 24 24" className={iconCls} fill="none" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M12 8c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm0 0V4m0 16v-4m8-4h-4M4 12h4" /></svg>),
   },
+  {
+    title: "Línea de conducción",
+    desc: "Perfil topográfico, tramos con diferente DN/material, presiones y materiales SIMEX.",
+    href: "/perfil",
+    icon: (<svg viewBox="0 0 24 24" className={iconCls} fill="none" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M3 20l4-8 3 4 4-12 3 6 4-4" /></svg>),
+  },
+  // ── Herramientas ──
   {
     title: "Elegir diámetro",
     desc: "Compara todos los diámetros estándar y encuentra el óptimo.",
     href: "/dimensionamiento",
-    icon: (
-      <svg viewBox="0 0 24 24" className="w-7 h-7" fill="none" stroke="currentColor" strokeWidth={1.5}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M9 7h6m-6 4h6m-6 4h4M5 3h14a2 2 0 012 2v14a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2z" />
-      </svg>
-    ),
+    icon: (<svg viewBox="0 0 24 24" className={iconCls} fill="none" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M9 7h6m-6 4h6m-6 4h4M5 3h14a2 2 0 012 2v14a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2z" /></svg>),
   },
+  {
+    title: "Verificar presión",
+    desc: "Presión de salida, caudal máximo o diámetro recomendado para un tramo.",
+    href: "/tramo-simple",
+    icon: (<svg viewBox="0 0 24 24" className={iconCls} fill="none" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" /></svg>),
+  },
+  // ── Protección y control ──
   {
     title: "Válvulas de aire",
     desc: "Ubicación y dimensionamiento en los puntos críticos de la línea.",
     href: "/valvulas-aire",
-    icon: (
-      <svg viewBox="0 0 24 24" className="w-7 h-7" fill="none" stroke="currentColor" strokeWidth={1.5}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M5 15l7-7 7 7" />
-      </svg>
-    ),
+    icon: (<svg viewBox="0 0 24 24" className={iconCls} fill="none" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M5 15l7-7 7 7" /></svg>),
   },
   {
-    title: "Valvula reductora",
-    desc: "Selecciona el tamano correcto de VRP para tu linea.",
+    title: "Golpe de ariete",
+    desc: "Sobrepresión por cierre de válvulas y clase de tubería requerida.",
+    href: "/golpe-ariete",
+    icon: (<svg viewBox="0 0 24 24" className={iconCls} fill="none" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>),
+  },
+  {
+    title: "Válvula reductora",
+    desc: "Selecciona el tamaño correcto de VRP para tu línea.",
     href: "/vrp",
-    icon: (
-      <svg viewBox="0 0 24 24" className="w-7 h-7" fill="none" stroke="currentColor" strokeWidth={1.5}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M19 14l-7 7m0 0l-7-7m7 7V3" />
-      </svg>
-    ),
+    icon: (<svg viewBox="0 0 24 24" className={iconCls} fill="none" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M19 14l-7 7m0 0l-7-7m7 7V3" /></svg>),
   },
-  {
-    title: "Tanque de regularizacion",
-    desc: "Volumen de regulacion y reserva, dimensiones del tanque segun CONAGUA MAPAS.",
-    href: "/tanque",
-    icon: (
-      <svg viewBox="0 0 24 24" className="w-7 h-7" fill="none" stroke="currentColor" strokeWidth={1.5}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M5 4h14v16H5V4zm0 5h14M8 13h8" />
-      </svg>
-    ),
-  },
+  // ── Proyectos ──
   {
     title: "Mis proyectos",
-    desc: "Guarda, organiza y exporta todos tus calculos.",
+    desc: "Guarda, organiza y exporta todos tus cálculos.",
     href: "/proyectos",
-    icon: (
-      <svg viewBox="0 0 24 24" className="w-7 h-7" fill="none" stroke="currentColor" strokeWidth={1.5}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
-      </svg>
-    ),
+    icon: (<svg viewBox="0 0 24 24" className={iconCls} fill="none" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" /></svg>),
   },
 ];
 
