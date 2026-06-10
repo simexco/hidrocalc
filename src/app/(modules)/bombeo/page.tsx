@@ -19,6 +19,7 @@ import type { PumpInputMethod, PumpPoint } from "@/types/hydraulic";
 export default function BombeoPage() {
   const { inputs, results, setInput, setResults, addPumpPoint, removePumpPoint, updatePumpPoint, reset } = usePumpOperationStore();
   const [p2Req, setP2Req] = useState<number>(0); // kg/cm² — pressure required at delivery
+  const [showAdvanced, setShowAdvanced] = useState(false);
   const [materialName, setMaterialName] = useState(MATERIALS[0].name);
   const [pipeClass, setPipeClass] = useState("");
   const [PNBar, setPNBar] = useState<number | null>(null);
@@ -88,8 +89,6 @@ export default function BombeoPage() {
             </div>
             <InputField label="Nombre del proyecto" value={inputs.projectName} onChange={(v) => setInput("projectName", v)} type="text" />
             <InputField label="Altura geométrica Hg" value={inputs.Hg} onChange={(v) => handleNum("Hg", v)} unit="m" required tooltip="Diferencia de elevacion entre la succion y la descarga de la bomba (z2 - z1)" />
-            <InputField label="Presión remanente P2" value={p2Req} onChange={(v) => setP2Req(parseFloat(v) || 0)} unit="kg/cm2" tooltip="Presión minima requerida en el punto de entrega (tanque, red). Si descarga a tanque atmosferico, usar 0." />
-            <p className="text-[10px] text-gray-400 -mt-2 mb-1">Hs = Hg + P2 = {((inputs.Hg ?? 0) + p2Req * 10).toFixed(1)} m</p>
             <InputField label="Longitud total L" value={inputs.L} onChange={(v) => handleNum("L", v)} unit="m" required tooltip="Longitud total de la tubería desde la bomba hasta el punto de descarga" />
 
             <div className="space-y-1">
@@ -142,8 +141,18 @@ export default function BombeoPage() {
               );
             })()}
 
-            <InputField label="K total accesorios" value={inputs.kTotal} onChange={(v) => setInput("kTotal", parseFloat(v) || 0)} tooltip="Suma de todos los coeficientes K de pérdidas menores (codos, válvulas, tees, etc.). Si no lo conoces, déjalo en 0 y se estimará como 10% de las pérdidas por fricción" />
             <InputWarnings warnings={validateHydraulicInputs({ DN_mm: inputs.DN, L: inputs.L })} />
+
+            <button onClick={() => setShowAdvanced(!showAdvanced)} className="text-[10px] text-[#1C3D5A] underline decoration-dotted">
+              {showAdvanced ? 'Ocultar' : 'Mostrar'} parametros avanzados
+            </button>
+            {showAdvanced && (
+              <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-3 space-y-3">
+                <InputField label="Presión remanente P2" value={p2Req} onChange={(v) => setP2Req(parseFloat(v) || 0)} unit="kg/cm2" tooltip="Presión minima requerida en el punto de entrega (tanque, red). Si descarga a tanque atmosferico, usar 0." />
+                <p className="text-[10px] text-gray-400 -mt-2 mb-1">Hs = Hg + P2 = {((inputs.Hg ?? 0) + p2Req * 10).toFixed(1)} m</p>
+                <InputField label="K total accesorios" value={inputs.kTotal} onChange={(v) => setInput("kTotal", parseFloat(v) || 0)} tooltip="Suma de todos los coeficientes K de pérdidas menores (codos, válvulas, tees, etc.). Si no lo conoces, déjalo en 0 y se estimará como 10% de las pérdidas por fricción" />
+              </div>
+            )}
           </div>
 
           {/* Pump inputs */}

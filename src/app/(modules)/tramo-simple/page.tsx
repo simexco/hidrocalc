@@ -26,6 +26,7 @@ export default function TramoSimplePage() {
   const [pipeClass, setPipeClass] = useState("");
   const [qmaxLimits, setQmaxLimits] = useState<{ pressure: number; gradient: number; velocity: number; factor: string } | null>(null);
   const [PNBar, setPNBar] = useState<number | null>(null);
+  const [showAdvanced, setShowAdvanced] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
   const persistRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
@@ -379,36 +380,43 @@ export default function TramoSimplePage() {
               />
             )}
 
-            {inputs.mode === "C" && (
-              <InputField
-                label="Velocidad máxima"
-                value={inputs.maxVelocity}
-                onChange={(v) => setInput("maxVelocity", parseFloat(v) || DEFAULTS.maxVelocity)}
-                unit="m/s"
-                tooltip="Velocidad máxima permitida en la tubería. La norma mexicana recomienda entre 0.5 y 2.5 m/s para agua potable"
-              />
-            )}
+            <button onClick={() => setShowAdvanced(!showAdvanced)} className="text-[10px] text-[#1C3D5A] underline decoration-dotted">
+              {showAdvanced ? 'Ocultar' : 'Mostrar'} parametros avanzados
+            </button>
+            {showAdvanced && (
+              <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-3 space-y-3">
+                {inputs.mode === "C" && (
+                  <InputField
+                    label="Velocidad máxima"
+                    value={inputs.maxVelocity}
+                    onChange={(v) => setInput("maxVelocity", parseFloat(v) || DEFAULTS.maxVelocity)}
+                    unit="m/s"
+                    tooltip="Velocidad máxima permitida en la tubería. La norma mexicana recomienda entre 0.5 y 2.5 m/s para agua potable"
+                  />
+                )}
 
-            <div className="grid grid-cols-2 gap-3">
-              <InputField
-                label="Cota entrada z₁"
-                value={inputs.z1}
-                onChange={(v) => setInput("z1", parseFloat(v) || 0)}
-                unit="m.s.n.m."
-                tooltip="Elevación del punto respecto al nivel del mar"
-                assumed={inputs.z1 === 0}
-                assumedLabel="Valor por defecto: 0 m"
-              />
-              <InputField
-                label="Cota salida z₂"
-                value={inputs.z2}
-                onChange={(v) => setInput("z2", parseFloat(v) || 0)}
-                unit="m.s.n.m."
-                tooltip="Elevación del punto respecto al nivel del mar"
-                assumed={inputs.z2 === 0}
-                assumedLabel="Valor por defecto: 0 m"
-              />
-            </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <InputField
+                    label="Cota entrada z₁"
+                    value={inputs.z1}
+                    onChange={(v) => setInput("z1", parseFloat(v) || 0)}
+                    unit="m.s.n.m."
+                    tooltip="Elevación del punto respecto al nivel del mar"
+                    assumed={inputs.z1 === 0}
+                    assumedLabel="Valor por defecto: 0 m"
+                  />
+                  <InputField
+                    label="Cota salida z₂"
+                    value={inputs.z2}
+                    onChange={(v) => setInput("z2", parseFloat(v) || 0)}
+                    unit="m.s.n.m."
+                    tooltip="Elevación del punto respecto al nivel del mar"
+                    assumed={inputs.z2 === 0}
+                    assumedLabel="Valor por defecto: 0 m"
+                  />
+                </div>
+              </div>
+            )}
 
             {/* Input validation warnings */}
             <InputWarnings warnings={validateHydraulicInputs({

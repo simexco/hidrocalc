@@ -19,6 +19,7 @@ export default function DimensionamientoPage() {
   const { inputs, results, setInput, setResults, reset } = usePipeSizingStore();
   const [pipeClass, setPipeClass] = useState("");
   const [PNBar, setPNBar] = useState<number | null>(null);
+  const [showAdvanced, setShowAdvanced] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
   const persistRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
@@ -169,13 +170,21 @@ export default function DimensionamientoPage() {
             })()}
 
             <InputField label="Presión entrada P₁" value={inputs.P1} onChange={(v) => handleNum("P1", v)} unit="kg/cm²" tooltip="Presión disponible al inicio de la tubería. Si no la conoces, la tabla mostrará solo velocidad y pérdidas, pero no podrá verificar presión de salida" />
-            <InputField label="P₂ mínima requerida" value={inputs.P2min} onChange={(v) => setInput("P2min", parseFloat(v) || DEFAULTS.P2min)} unit="kg/cm²" tooltip="Presión mínima que necesitas al final de la tubería. CONAGUA establece 10 kg/cm² como mínimo para agua potable" />
-            <InputField label="Velocidad máxima" value={inputs.maxVelocity} onChange={(v) => setInput("maxVelocity", parseFloat(v) || DEFAULTS.maxVelocity)} unit="m/s" tooltip="Velocidad máxima permitida. La norma recomienda no exceder 2.5 m/s en agua potable para evitar desgaste y golpe de ariete" />
 
-            <div className="grid grid-cols-2 gap-3">
-              <InputField label="Cota z₁" value={inputs.z1} onChange={(v) => setInput("z1", parseFloat(v) || 0)} unit="m.s.n.m." assumed={inputs.z1 === 0} assumedLabel="0 m" tooltip="Elevación del punto de inicio sobre el nivel del mar. Si no la conoces, déjala en 0 (terreno plano)" />
-              <InputField label="Cota z₂" value={inputs.z2} onChange={(v) => setInput("z2", parseFloat(v) || 0)} unit="m.s.n.m." assumed={inputs.z2 === 0} assumedLabel="0 m" tooltip="Elevación del punto final sobre el nivel del mar. Si es más alto que z1, el agua sube (más pérdida de presión)" />
-            </div>
+            <button onClick={() => setShowAdvanced(!showAdvanced)} className="text-[10px] text-[#1C3D5A] underline decoration-dotted">
+              {showAdvanced ? 'Ocultar' : 'Mostrar'} parametros avanzados
+            </button>
+            {showAdvanced && (
+              <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-3 space-y-3">
+                <InputField label="P₂ mínima requerida" value={inputs.P2min} onChange={(v) => setInput("P2min", parseFloat(v) || DEFAULTS.P2min)} unit="kg/cm²" tooltip="Presión mínima que necesitas al final de la tubería. CONAGUA establece 10 kg/cm² como mínimo para agua potable" />
+                <InputField label="Velocidad máxima" value={inputs.maxVelocity} onChange={(v) => setInput("maxVelocity", parseFloat(v) || DEFAULTS.maxVelocity)} unit="m/s" tooltip="Velocidad máxima permitida. La norma recomienda no exceder 2.5 m/s en agua potable para evitar desgaste y golpe de ariete" />
+
+                <div className="grid grid-cols-2 gap-3">
+                  <InputField label="Cota z₁" value={inputs.z1} onChange={(v) => setInput("z1", parseFloat(v) || 0)} unit="m.s.n.m." assumed={inputs.z1 === 0} assumedLabel="0 m" tooltip="Elevación del punto de inicio sobre el nivel del mar. Si no la conoces, déjala en 0 (terreno plano)" />
+                  <InputField label="Cota z₂" value={inputs.z2} onChange={(v) => setInput("z2", parseFloat(v) || 0)} unit="m.s.n.m." assumed={inputs.z2 === 0} assumedLabel="0 m" tooltip="Elevación del punto final sobre el nivel del mar. Si es más alto que z1, el agua sube (más pérdida de presión)" />
+                </div>
+              </div>
+            )}
             <InputWarnings warnings={validateHydraulicInputs({ Q_ls: inputs.rawQ, L: inputs.L, P1_kgcm2: inputs.P1, z1: inputs.z1, z2: inputs.z2 })} />
           </div>
         </div>

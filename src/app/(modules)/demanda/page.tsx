@@ -130,33 +130,36 @@ export default function DemandaPage() {
               </select>
             </div>
 
-            {/* Climate */}
-            <div className="space-y-1">
-              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Clima de la zona</label>
-              <select value={inputs.climaKey} onChange={(e) => set('climaKey', e.target.value)} className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 dark:text-white">
-                {CLIMATE_TYPES.map(c => (
-                  <option key={c.key} value={c.key}>{c.label} ({c.factor === 1 ? 'base' : c.factor > 1 ? `+${((c.factor-1)*100).toFixed(0)}%` : `${((c.factor-1)*100).toFixed(0)}%`})</option>
-                ))}
-              </select>
-            </div>
-
-            {/* Dotacion — editable */}
-            <InputField label="Dotacion" value={inputs.dotacionBase} onChange={(v) => set("dotacionBase", parseFloat(v) || 150)} unit="L/hab/dia" tooltip="Sugerida segun tipo de desarrollo. Puedes modificarla si tienes un dato especifico." />
-
-            {/* Growth */}
-            <div className="grid grid-cols-2 gap-3">
-              <InputField label="Tasa crecimiento" value={inputs.tasaCrecimiento} onChange={(v) => set("tasaCrecimiento", parseFloat(v) || 2)} unit="% anual" tooltip="Tasa de crecimiento poblacional. Promedio nacional INEGI: 1-2%. Si no la conoces, usa 2%." />
-              <InputField label="Periodo de diseno" value={inputs.periodoDiseno} onChange={(v) => set("periodoDiseno", parseFloat(v) || 20)} unit="años" tooltip="CONAGUA recomienda 20-25 años para sistemas de agua potable" />
-            </div>
-
             {/* Advanced */}
             <button onClick={() => setShowAdvanced(!showAdvanced)} className="text-[10px] text-[#1C3D5A] underline decoration-dotted">
-              {showAdvanced ? 'Ocultar' : 'Mostrar'} coeficientes de variacion
+              {showAdvanced ? 'Ocultar' : 'Mostrar'} parametros avanzados
             </button>
             {showAdvanced && (
-              <div className="grid grid-cols-2 gap-3 bg-gray-50 dark:bg-gray-900 rounded-lg p-3">
-                <InputField label="CVD (variacion diaria)" value={inputs.CVD} onChange={(v) => set("CVD", parseFloat(v) || 1.4)} tooltip="Coeficiente de variacion diaria. CONAGUA: 1.2-1.5, default 1.4" />
-                <InputField label="CVH (variacion horaria)" value={inputs.CVH} onChange={(v) => set("CVH", parseFloat(v) || 1.55)} tooltip="Coeficiente de variacion horaria. CONAGUA: 1.5-2.0, default 1.55" />
+              <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-3 space-y-3">
+                {/* Climate */}
+                <div className="space-y-1">
+                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Clima de la zona</label>
+                  <select value={inputs.climaKey} onChange={(e) => set('climaKey', e.target.value)} className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 dark:text-white">
+                    {CLIMATE_TYPES.map(c => (
+                      <option key={c.key} value={c.key}>{c.label} ({c.factor === 1 ? 'base' : c.factor > 1 ? `+${((c.factor-1)*100).toFixed(0)}%` : `${((c.factor-1)*100).toFixed(0)}%`})</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Dotacion — editable */}
+                <InputField label="Dotacion" value={inputs.dotacionBase} onChange={(v) => set("dotacionBase", parseFloat(v) || 150)} unit="L/hab/dia" tooltip="Sugerida segun tipo de desarrollo. Puedes modificarla si tienes un dato especifico." />
+
+                {/* Growth */}
+                <div className="grid grid-cols-2 gap-3">
+                  <InputField label="Tasa crecimiento" value={inputs.tasaCrecimiento} onChange={(v) => set("tasaCrecimiento", parseFloat(v) || 2)} unit="% anual" tooltip="Tasa de crecimiento poblacional. Promedio nacional INEGI: 1-2%. Si no la conoces, usa 2%." />
+                  <InputField label="Periodo de diseno" value={inputs.periodoDiseno} onChange={(v) => set("periodoDiseno", parseFloat(v) || 20)} unit="años" tooltip="CONAGUA recomienda 20-25 años para sistemas de agua potable" />
+                </div>
+
+                {/* Coeficientes de variacion */}
+                <div className="grid grid-cols-2 gap-3">
+                  <InputField label="CVD (variacion diaria)" value={inputs.CVD} onChange={(v) => set("CVD", parseFloat(v) || 1.4)} tooltip="Coeficiente de variacion diaria. CONAGUA: 1.2-1.5, default 1.4" />
+                  <InputField label="CVH (variacion horaria)" value={inputs.CVH} onChange={(v) => set("CVH", parseFloat(v) || 1.55)} tooltip="Coeficiente de variacion horaria. CONAGUA: 1.5-2.0, default 1.55" />
+                </div>
               </div>
             )}
           </div>

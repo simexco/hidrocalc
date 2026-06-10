@@ -18,6 +18,7 @@ import type { FlowUnit, AssumedValue } from "@/types/hydraulic";
 
 export default function VRPPage() {
   const { inputs, results, setInput, setResults, reset } = useVRPStore();
+  const [showAdvanced, setShowAdvanced] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
   const persistRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
@@ -92,15 +93,6 @@ export default function VRPPage() {
               </select>
             </div>
 
-            {/* Q min */}
-            <InputField
-              label="Caudal minimo Q (opcional)"
-              value={inputs.rawQMin}
-              onChange={(v) => handleNum("rawQMin", v)}
-              unit={inputs.flowUnit}
-              tooltip="Caudal minimo esperado. Se usa para verificar estabilidad de la valvula a baja demanda. Si no lo conoces, se estima como 10% de Q max."
-            />
-
             <InputField
               label="Presion aguas arriba P1"
               value={inputs.P1}
@@ -129,6 +121,21 @@ export default function VRPPage() {
               </select>
             </div>
             <InputWarnings warnings={validateHydraulicInputs({ P1_kgcm2: inputs.P1 })} />
+
+            <button onClick={() => setShowAdvanced(!showAdvanced)} className="text-[10px] text-[#1C3D5A] underline decoration-dotted">
+              {showAdvanced ? 'Ocultar' : 'Mostrar'} parametros avanzados
+            </button>
+            {showAdvanced && (
+              <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-3 space-y-3">
+                <InputField
+                  label="Caudal minimo Q (opcional)"
+                  value={inputs.rawQMin}
+                  onChange={(v) => handleNum("rawQMin", v)}
+                  unit={inputs.flowUnit}
+                  tooltip="Caudal minimo esperado. Se usa para verificar estabilidad de la valvula a baja demanda. Si no lo conoces, se estima como 10% de Q max."
+                />
+              </div>
+            )}
           </div>
 
           {/* Info card */}

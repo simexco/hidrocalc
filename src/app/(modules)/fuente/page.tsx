@@ -25,6 +25,7 @@ const defaults: WellYieldInputs = {
 export default function FuentePage() {
   const [inputs, setInputs] = useState<WellYieldInputs>({ ...defaults });
   const [results, setResults] = useState<ReturnType<typeof calculateWellYield>>(null);
+  const [showAdvanced, setShowAdvanced] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   const set = <K extends keyof WellYieldInputs>(key: K, value: WellYieldInputs[K]) => {
@@ -73,13 +74,20 @@ export default function FuentePage() {
 
             <InputField label="Caudal de prueba" value={inputs.Qprueba_ls} onChange={(v) => set("Qprueba_ls", v === "" ? null : parseFloat(v))} unit="L/s" required tooltip="Caudal constante con el que se realizo la prueba de bombeo" />
 
-            <InputField label="Profundidad del pozo" value={inputs.profundidadPozo} onChange={(v) => set("profundidadPozo", v === "" ? null : parseFloat(v))} unit="m" tooltip="Profundidad total del pozo (opcional — para calcular el abatimiento maximo permisible)" />
+            <button onClick={() => setShowAdvanced(!showAdvanced)} className="text-[10px] text-[#1C3D5A] underline decoration-dotted">
+              {showAdvanced ? 'Ocultar' : 'Mostrar'} parametros avanzados
+            </button>
+            {showAdvanced && (
+              <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-3 space-y-3">
+                <InputField label="Profundidad del pozo" value={inputs.profundidadPozo} onChange={(v) => set("profundidadPozo", v === "" ? null : parseFloat(v))} unit="m" tooltip="Profundidad total del pozo (opcional — para calcular el abatimiento maximo permisible)" />
 
-            <InputField label="Factor de seguridad" value={inputs.factorSeguridad * 100} onChange={(v) => set("factorSeguridad", (parseFloat(v) || 70) / 100)} unit="%" tooltip="Fraccion del abatimiento maximo que se permite usar (tipico 70%)" />
+                <InputField label="Factor de seguridad" value={inputs.factorSeguridad * 100} onChange={(v) => set("factorSeguridad", (parseFloat(v) || 70) / 100)} unit="%" tooltip="Fraccion del abatimiento maximo que se permite usar (tipico 70%)" />
 
-            <InputField label="QMD requerido" value={inputs.QMD_ls} onChange={(v) => set("QMD_ls", v === "" ? null : parseFloat(v))} unit="L/s" tooltip="Gasto maximo diario requerido — para comparar con la demanda (opcional)" />
+                <InputField label="QMD requerido" value={inputs.QMD_ls} onChange={(v) => set("QMD_ls", v === "" ? null : parseFloat(v))} unit="L/s" tooltip="Gasto maximo diario requerido — para comparar con la demanda (opcional)" />
 
-            <InputField label="Horas de bombeo" value={inputs.horasBombeo} onChange={(v) => set("horasBombeo", parseFloat(v) || 16)} unit="h/dia" tooltip="Horas de bombeo del pozo al dia (tipico 16-20 h)" />
+                <InputField label="Horas de bombeo" value={inputs.horasBombeo} onChange={(v) => set("horasBombeo", parseFloat(v) || 16)} unit="h/dia" tooltip="Horas de bombeo del pozo al dia (tipico 16-20 h)" />
+              </div>
+            )}
           </div>
         </div>
 

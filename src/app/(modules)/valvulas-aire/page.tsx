@@ -35,6 +35,7 @@ export default function ValvulasAirePage() {
     { id: uuid(), dist: 1000, cota: 110, desc: "Fin" },
   ]);
   const [results, setResults] = useState<AirValveOutputs | null>(null);
+  const [showAdvanced, setShowAdvanced] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   // Persist
@@ -211,10 +212,18 @@ export default function ValvulasAirePage() {
               );
             })()}
 
-            <InputField label="Presión de operación P₀" value={P0} onChange={(v) => setP0(v === "" ? null : parseFloat(v))} unit="kg/cm²" tooltip="Presión al inicio de la línea. Si no la conoces, se calculará solo geometría." />
-            <InputField label="Presión mínima normativa" value={pressureMin} onChange={(v) => setPressureMin(parseFloat(v) || 5)} unit="m.c.a." tooltip="NOM-001-CONAGUA: mínimo absoluto 5 m.c.a. (0.5 kg/cm²), recomendado 10 m.c.a." />
-            <InputField label="Espaciado máximo VA-E" value={maxSpacing} onChange={(v) => setMaxSpacing(parseFloat(v) || 600)} unit="m" tooltip="Distancia máxima entre válvulas eliminadoras en tramos rectos. AWWA M51: 500-800 m." />
             <InputWarnings warnings={validateHydraulicInputs({ Q_ls: rawQ, DN_mm: DN, P1_kgcm2: P0 })} />
+
+            <button onClick={() => setShowAdvanced(!showAdvanced)} className="text-[10px] text-[#1C3D5A] underline decoration-dotted">
+              {showAdvanced ? 'Ocultar' : 'Mostrar'} parametros avanzados
+            </button>
+            {showAdvanced && (
+              <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-3 space-y-3">
+                <InputField label="Presión de operación P₀" value={P0} onChange={(v) => setP0(v === "" ? null : parseFloat(v))} unit="kg/cm²" tooltip="Presión al inicio de la línea. Si no la conoces, se calculará solo geometría." />
+                <InputField label="Presión mínima normativa" value={pressureMin} onChange={(v) => setPressureMin(parseFloat(v) || 5)} unit="m.c.a." tooltip="NOM-001-CONAGUA: mínimo absoluto 5 m.c.a. (0.5 kg/cm²), recomendado 10 m.c.a." />
+                <InputField label="Espaciado máximo VA-E" value={maxSpacing} onChange={(v) => setMaxSpacing(parseFloat(v) || 600)} unit="m" tooltip="Distancia máxima entre válvulas eliminadoras en tramos rectos. AWWA M51: 500-800 m." />
+              </div>
+            )}
           </div>
 
           {/* Profile table */}

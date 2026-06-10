@@ -24,6 +24,7 @@ const defaults: TankStorageInputs = {
 export default function TanquePage() {
   const [inputs, setInputs] = useState<TankStorageInputs>({ ...defaults });
   const [results, setResults] = useState<ReturnType<typeof calculateTankStorage>>(null);
+  const [showAdvanced, setShowAdvanced] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   const set = <K extends keyof TankStorageInputs>(key: K, value: TankStorageInputs[K]) => {
@@ -67,52 +68,60 @@ export default function TanquePage() {
 
             <InputField label="Gasto medio diario Qmd" value={inputs.Qmd_ls} onChange={(v) => set("Qmd_ls", v === "" ? null : parseFloat(v))} unit="L/s" required tooltip="Caudal medio diario — obtenlo del modulo Calculo de gasto" />
 
-            {/* Horas de aportacion */}
-            <div className="space-y-1">
-              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Horas de aportacion al tanque</label>
-              <select value={inputs.horasAportacion} onChange={(e) => set("horasAportacion", parseInt(e.target.value))} className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 dark:text-white">
-                {REGULATION_COEFFICIENTS.map(c => (
-                  <option key={c.hours} value={c.hours}>{c.label} (R = {c.R})</option>
-                ))}
-              </select>
-              <p className="text-[10px] text-gray-400">Menos horas de aportacion → mayor coeficiente de regulacion</p>
-            </div>
+            {/* Advanced */}
+            <button onClick={() => setShowAdvanced(!showAdvanced)} className="text-[10px] text-[#1C3D5A] underline decoration-dotted">
+              {showAdvanced ? 'Ocultar' : 'Mostrar'} parametros avanzados
+            </button>
+            {showAdvanced && (
+              <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-3 space-y-3">
+                {/* Horas de aportacion */}
+                <div className="space-y-1">
+                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Horas de aportacion al tanque</label>
+                  <select value={inputs.horasAportacion} onChange={(e) => set("horasAportacion", parseInt(e.target.value))} className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 dark:text-white">
+                    {REGULATION_COEFFICIENTS.map(c => (
+                      <option key={c.hours} value={c.hours}>{c.label} (R = {c.R})</option>
+                    ))}
+                  </select>
+                  <p className="text-[10px] text-gray-400">Menos horas de aportacion → mayor coeficiente de regulacion</p>
+                </div>
 
-            {/* Reserva */}
-            <div className="space-y-2">
-              <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
-                <input type="checkbox" checked={inputs.incluirReserva} onChange={(e) => set("incluirReserva", e.target.checked)} className="rounded border-gray-300" />
-                Incluir volumen de reserva
-              </label>
-              {inputs.incluirReserva && (
-                <InputField label="Horas de reserva (Qmd)" value={inputs.horasReserva} onChange={(v) => set("horasReserva", parseFloat(v) || 2)} unit="h" tooltip="Horas de Qmd almacenadas como reserva ante fallas (tipico 2-4 h)" />
-              )}
-            </div>
+                {/* Reserva */}
+                <div className="space-y-2">
+                  <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+                    <input type="checkbox" checked={inputs.incluirReserva} onChange={(e) => set("incluirReserva", e.target.checked)} className="rounded border-gray-300" />
+                    Incluir volumen de reserva
+                  </label>
+                  {inputs.incluirReserva && (
+                    <InputField label="Horas de reserva (Qmd)" value={inputs.horasReserva} onChange={(v) => set("horasReserva", parseFloat(v) || 2)} unit="h" tooltip="Horas de Qmd almacenadas como reserva ante fallas (tipico 2-4 h)" />
+                  )}
+                </div>
 
-            {/* Geometria */}
-            <div className="space-y-1">
-              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Forma del tanque</label>
-              <div className="grid grid-cols-2 gap-2">
-                {(["rectangular", "circular"] as TankShape[]).map(s => (
-                  <button
-                    key={s}
-                    onClick={() => set("shape", s)}
-                    className={`px-3 py-2 text-sm rounded-lg border transition-colors ${
-                      inputs.shape === s
-                        ? "bg-[#1C3D5A] text-white border-[#1C3D5A]"
-                        : "bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:border-[#1C3D5A]"
-                    }`}
-                  >
-                    {s === "rectangular" ? "Rectangular" : "Circular"}
-                  </button>
-                ))}
+                {/* Geometria */}
+                <div className="space-y-1">
+                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Forma del tanque</label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {(["rectangular", "circular"] as TankShape[]).map(s => (
+                      <button
+                        key={s}
+                        onClick={() => set("shape", s)}
+                        className={`px-3 py-2 text-sm rounded-lg border transition-colors ${
+                          inputs.shape === s
+                            ? "bg-[#1C3D5A] text-white border-[#1C3D5A]"
+                            : "bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:border-[#1C3D5A]"
+                        }`}
+                      >
+                        {s === "rectangular" ? "Rectangular" : "Circular"}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <InputField label="Tirante de agua" value={inputs.altura} onChange={(v) => set("altura", parseFloat(v) || 3)} unit="m" tooltip="Profundidad util del agua (tipico 3-5 m)" />
+                  <InputField label="Bordo libre" value={inputs.bordoLibre} onChange={(v) => set("bordoLibre", parseFloat(v) || 0.3)} unit="m" tooltip="Espacio libre sobre el nivel del agua (tipico 0.3 m)" />
+                </div>
               </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              <InputField label="Tirante de agua" value={inputs.altura} onChange={(v) => set("altura", parseFloat(v) || 3)} unit="m" tooltip="Profundidad util del agua (tipico 3-5 m)" />
-              <InputField label="Bordo libre" value={inputs.bordoLibre} onChange={(v) => set("bordoLibre", parseFloat(v) || 0.3)} unit="m" tooltip="Espacio libre sobre el nivel del agua (tipico 0.3 m)" />
-            </div>
+            )}
           </div>
         </div>
 
