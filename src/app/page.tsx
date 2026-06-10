@@ -12,6 +12,16 @@ const modules = [
     ),
   },
   {
+    title: "Fuente de abastecimiento",
+    desc: "Aforo de pozo: abatimiento, caudal especifico y caudal de explotacion recomendado.",
+    href: "/fuente",
+    icon: (
+      <svg viewBox="0 0 24 24" className="w-7 h-7" fill="none" stroke="currentColor" strokeWidth={1.5}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v6m0 0l-3-3m3 3l3-3M6 13h12v6a2 2 0 01-2 2H8a2 2 0 01-2-2v-6z" />
+      </svg>
+    ),
+  },
+  {
     title: "Verificar presión",
     desc: "Presión de salida, caudal máximo o diámetro recomendado para un tramo.",
     href: "/tramo-simple",
@@ -88,6 +98,16 @@ const modules = [
     icon: (
       <svg viewBox="0 0 24 24" className="w-7 h-7" fill="none" stroke="currentColor" strokeWidth={1.5}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+      </svg>
+    ),
+  },
+  {
+    title: "Tanque de regularizacion",
+    desc: "Volumen de regulacion y reserva, dimensiones del tanque segun CONAGUA MAPAS.",
+    href: "/tanque",
+    icon: (
+      <svg viewBox="0 0 24 24" className="w-7 h-7" fill="none" stroke="currentColor" strokeWidth={1.5}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M5 4h14v16H5V4zm0 5h14M8 13h8" />
       </svg>
     ),
   },
@@ -173,6 +193,7 @@ export default function Home() {
           <div className="space-y-3">
             {[
               { situation: "No se cuanto caudal necesito para mi proyecto", module: "Calculo de gasto", data: "Poblacion o viviendas, tipo, clima", href: "/demanda" },
+              { situation: "¿Cuanto puedo extraer de mi pozo y cuantos necesito?", module: "Fuente de abastecimiento", data: "Nivel estatico y dinamico, Q prueba", href: "/fuente" },
               { situation: "¿La presión llega al final de mi tubería?", module: "Verificar presión (Modo A)", data: "Q, DN, L, P1", href: "/tramo-simple" },
               { situation: "¿Cuánto caudal puede pasar sin bajar la presión?", module: "Verificar presión (Modo B)", data: "DN, L, P1, P2 mínima", href: "/tramo-simple" },
               { situation: "No sé qué diámetro usar para mi caudal", module: "Elegir diámetro", data: "Q, L, P1", href: "/dimensionamiento" },
@@ -182,6 +203,7 @@ export default function Home() {
               { situation: "¿Dónde pongo las válvulas de aire en mi línea?", module: "Válvulas de aire", data: "Q, DN, perfil de cotas", href: "/valvulas-aire" },
               { situation: "Quiero ver si la presion llega a lo largo de todo el trazo", module: "Linea de conduccion", data: "Q, DN, P1, perfil topografico", href: "/perfil" },
               { situation: "Necesito reducir la presion en una zona de mi red", module: "Valvula reductora", data: "Q, P1, P2, DN", href: "/vrp" },
+              { situation: "¿Que volumen de tanque necesito para regular el suministro?", module: "Tanque de regularizacion", data: "Qmd, horas de aportacion", href: "/tanque" },
             ].map((r) => (
               <Link key={r.module} href={r.href} className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4 bg-white/5 hover:bg-white/10 border border-white/5 rounded-lg px-4 py-3 transition-colors group">
                 <p className="text-sm text-white/80 flex-1 group-hover:text-white">{r.situation}</p>

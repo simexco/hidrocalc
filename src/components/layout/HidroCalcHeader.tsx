@@ -6,6 +6,7 @@ import { HelpButton } from "@/components/ui/HelpModal";
 
 const moduleNames: Record<string, string> = {
   "/demanda": "Calculo de gasto",
+  "/fuente": "Fuente de abastecimiento",
   "/tramo-simple": "Verificar presión",
   "/perfil": "Linea de conduccion",
   "/impulsion": "Linea de impulsion",
@@ -14,6 +15,7 @@ const moduleNames: Record<string, string> = {
   "/dimensionamiento": "Elegir diámetro",
   "/valvulas-aire": "Válvulas de aire",
   "/vrp": "Valvula reductora",
+  "/tanque": "Tanque de regularizacion",
   "/proyectos": "Mis proyectos",
 };
 

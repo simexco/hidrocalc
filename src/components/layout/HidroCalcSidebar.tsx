@@ -14,6 +14,15 @@ const modules = [
     ),
   },
   {
+    href: "/fuente",
+    label: "Fuente de abastecimiento",
+    icon: (
+      <svg viewBox="0 0 24 24" className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={1.8}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v6m0 0l-3-3m3 3l3-3M6 13h12v6a2 2 0 01-2 2H8a2 2 0 01-2-2v-6z" />
+      </svg>
+    ),
+  },
+  {
     href: "/tramo-simple",
     label: "Verificar presión",
     icon: (
@@ -82,6 +91,15 @@ const modules = [
     icon: (
       <svg viewBox="0 0 24 24" className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={1.8}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+      </svg>
+    ),
+  },
+  {
+    href: "/tanque",
+    label: "Tanque de regularizacion",
+    icon: (
+      <svg viewBox="0 0 24 24" className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={1.8}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M5 4h14v16H5V4zm0 5h14M8 13h8" />
       </svg>
     ),
   },
