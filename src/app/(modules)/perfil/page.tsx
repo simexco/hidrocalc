@@ -429,7 +429,7 @@ export default function PerfilPage() {
                       >
                         <option value="">-- Seleccionar clase --</option>
                         {classes.classes.map(c => (
-                          <option key={c.clase} value={c.clase}>{c.clase} (PN {c.pn} bar = {(c.pn / 0.9807).toFixed(1)} kg/cm2)</option>
+                          <option key={c.clase} value={c.clase}>{c.clase} — {(c.pn / 0.9807).toFixed(1)} kg/cm2</option>
                         ))}
                       </select>
                       {!t.pipeClass && <p className="text-[10px] text-yellow-600">Selecciona la clase para verificar que resista la presion</p>}

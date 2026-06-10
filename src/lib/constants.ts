@@ -93,56 +93,56 @@ export interface PipeCatalogGroup {
 
 export const PIPE_CATALOG: PipeCatalogGroup[] = [
   {
-    material: "PVC", E: 3e9, label: "PVC — AWWA C900 (4in-12in)",
+    material: "PVC", E: 3e9, label: "PVC C900 (4\"-12\")",
     sizes: [
-      { label: '4"', od: 118.1, classes: [{ name: "DR 25", e: 4.7 }, { name: "DR 18", e: 6.6 }, { name: "DR 14", e: 8.4 }] },
-      { label: '6"', od: 168.3, classes: [{ name: "DR 25", e: 6.7 }, { name: "DR 18", e: 9.4 }, { name: "DR 14", e: 12.0 }] },
-      { label: '8"', od: 219.1, classes: [{ name: "DR 25", e: 8.8 }, { name: "DR 18", e: 12.2 }, { name: "DR 14", e: 15.7 }] },
-      { label: '10"', od: 273.0, classes: [{ name: "DR 25", e: 10.9 }, { name: "DR 18", e: 15.2 }, { name: "DR 14", e: 19.5 }] },
-      { label: '12"', od: 323.9, classes: [{ name: "DR 25", e: 13.0 }, { name: "DR 18", e: 18.0 }, { name: "DR 14", e: 23.1 }] },
+      { label: '4"', od: 118.1, classes: [{ name: "RD 25", e: 4.7 }, { name: "RD 18", e: 6.6 }] },
+      { label: '6"', od: 168.3, classes: [{ name: "RD 25", e: 6.7 }, { name: "RD 18", e: 9.4 }] },
+      { label: '8"', od: 219.1, classes: [{ name: "RD 25", e: 8.8 }, { name: "RD 18", e: 12.2 }] },
+      { label: '10"', od: 273.0, classes: [{ name: "RD 25", e: 10.9 }, { name: "RD 18", e: 15.2 }] },
+      { label: '12"', od: 323.9, classes: [{ name: "RD 25", e: 13.0 }, { name: "RD 18", e: 18.0 }] },
     ],
   },
   {
-    material: "PVC", E: 3e9, label: "PVC — AWWA C905 (14in-24in)",
+    material: "PVC", E: 3e9, label: "PVC C905 (14\"-24\")",
     sizes: [
-      { label: '14"', od: 368.3, classes: [{ name: "DR 51", e: 7.2 }, { name: "DR 41", e: 9.0 }, { name: "DR 32.5", e: 11.3 }, { name: "DR 26", e: 14.2 }] },
-      { label: '16"', od: 422.4, classes: [{ name: "DR 51", e: 8.3 }, { name: "DR 41", e: 10.3 }, { name: "DR 32.5", e: 13.0 }, { name: "DR 26", e: 16.2 }] },
-      { label: '18"', od: 473.1, classes: [{ name: "DR 51", e: 9.3 }, { name: "DR 41", e: 11.5 }, { name: "DR 32.5", e: 14.6 }, { name: "DR 26", e: 18.2 }] },
-      { label: '20"', od: 527.8, classes: [{ name: "DR 51", e: 10.3 }, { name: "DR 41", e: 12.9 }, { name: "DR 32.5", e: 16.2 }, { name: "DR 26", e: 20.3 }] },
-      { label: '24"', od: 635.0, classes: [{ name: "DR 51", e: 12.5 }, { name: "DR 41", e: 15.5 }, { name: "DR 32.5", e: 19.5 }, { name: "DR 26", e: 24.4 }] },
+      { label: '14"', od: 368.3, classes: [{ name: "RD 41", e: 9.0 }, { name: "RD 26", e: 14.2 }] },
+      { label: '16"', od: 422.4, classes: [{ name: "RD 41", e: 10.3 }, { name: "RD 26", e: 16.2 }] },
+      { label: '18"', od: 473.1, classes: [{ name: "RD 41", e: 11.5 }, { name: "RD 26", e: 18.2 }] },
+      { label: '20"', od: 527.8, classes: [{ name: "RD 41", e: 12.9 }, { name: "RD 26", e: 20.3 }] },
+      { label: '24"', od: 635.0, classes: [{ name: "RD 41", e: 15.5 }, { name: "RD 26", e: 24.4 }] },
     ],
   },
   {
-    material: "PVC", E: 3e9, label: "PVC — Métrico ISO 4422",
+    material: "PVC", E: 3e9, label: "PVC Métrico",
     sizes: [
-      { label: '2" (OD 63mm)', od: 63, classes: [{ name: "SDR 41", e: 1.5 }, { name: "SDR 26", e: 2.5 }, { name: "SDR 17", e: 3.8 }, { name: "SDR 13.6", e: 4.7 }, { name: "SDR 11", e: 5.7 }] },
-      { label: '2.5" (OD 75mm)', od: 75, classes: [{ name: "SDR 41", e: 1.8 }, { name: "SDR 26", e: 3.0 }, { name: "SDR 17", e: 4.5 }, { name: "SDR 13.6", e: 5.6 }, { name: "SDR 11", e: 6.8 }] },
-      { label: '3" (OD 90mm)', od: 90, classes: [{ name: "SDR 41", e: 2.2 }, { name: "SDR 26", e: 3.5 }, { name: "SDR 17", e: 5.4 }, { name: "SDR 13.6", e: 6.7 }, { name: "SDR 11", e: 8.2 }] },
-      { label: '4" (OD 110mm)', od: 110, classes: [{ name: "SDR 41", e: 2.7 }, { name: "SDR 26", e: 4.3 }, { name: "SDR 17", e: 6.6 }, { name: "SDR 13.6", e: 8.1 }, { name: "SDR 11", e: 10.0 }] },
-      { label: '6" (OD 160mm)', od: 160, classes: [{ name: "SDR 41", e: 3.9 }, { name: "SDR 26", e: 6.2 }, { name: "SDR 17", e: 9.5 }, { name: "SDR 13.6", e: 11.8 }, { name: "SDR 11", e: 14.5 }] },
-      { label: '8" (OD 200mm)', od: 200, classes: [{ name: "SDR 41", e: 4.9 }, { name: "SDR 26", e: 7.7 }, { name: "SDR 17", e: 11.9 }, { name: "SDR 13.6", e: 14.8 }, { name: "SDR 11", e: 18.2 }] },
-      { label: '10" (OD 250mm)', od: 250, classes: [{ name: "SDR 41", e: 6.1 }, { name: "SDR 26", e: 9.7 }, { name: "SDR 17", e: 14.8 }, { name: "SDR 13.6", e: 18.5 }, { name: "SDR 11", e: 22.7 }] },
-      { label: '12" (OD 315mm)', od: 315, classes: [{ name: "SDR 41", e: 7.7 }, { name: "SDR 26", e: 12.2 }, { name: "SDR 17", e: 18.7 }, { name: "SDR 13.6", e: 23.2 }, { name: "SDR 11", e: 28.6 }] },
-      { label: '16" (OD 400mm)', od: 400, classes: [{ name: "SDR 41", e: 9.8 }, { name: "SDR 26", e: 15.4 }, { name: "SDR 17", e: 23.5 }, { name: "SDR 13.6", e: 29.4 }, { name: "SDR 11", e: 36.4 }] },
-      { label: '20" (OD 500mm)', od: 500, classes: [{ name: "SDR 41", e: 12.2 }, { name: "SDR 26", e: 19.2 }, { name: "SDR 17", e: 29.4 }, { name: "SDR 13.6", e: 36.8 }, { name: "SDR 11", e: 45.5 }] },
-      { label: '24" (OD 630mm)', od: 630, classes: [{ name: "SDR 41", e: 15.4 }, { name: "SDR 26", e: 24.2 }, { name: "SDR 17", e: 37.1 }, { name: "SDR 13.6", e: 46.3 }, { name: "SDR 11", e: 57.3 }] },
+      { label: '2" (OD 63mm)', od: 63, classes: [{ name: "Clase 5", e: 1.5 }, { name: "Clase 7", e: 2.5 }, { name: "Clase 10", e: 3.8 }, { name: "Clase 14", e: 4.7 }] },
+      { label: '2.5" (OD 75mm)', od: 75, classes: [{ name: "Clase 5", e: 1.8 }, { name: "Clase 7", e: 3.0 }, { name: "Clase 10", e: 4.5 }, { name: "Clase 14", e: 5.6 }] },
+      { label: '3" (OD 90mm)', od: 90, classes: [{ name: "Clase 5", e: 2.2 }, { name: "Clase 7", e: 3.5 }, { name: "Clase 10", e: 5.4 }, { name: "Clase 14", e: 6.7 }] },
+      { label: '4" (OD 110mm)', od: 110, classes: [{ name: "Clase 5", e: 2.7 }, { name: "Clase 7", e: 4.3 }, { name: "Clase 10", e: 6.6 }, { name: "Clase 14", e: 8.1 }] },
+      { label: '6" (OD 160mm)', od: 160, classes: [{ name: "Clase 5", e: 3.9 }, { name: "Clase 7", e: 6.2 }, { name: "Clase 10", e: 9.5 }, { name: "Clase 14", e: 11.8 }] },
+      { label: '8" (OD 200mm)', od: 200, classes: [{ name: "Clase 5", e: 4.9 }, { name: "Clase 7", e: 7.7 }, { name: "Clase 10", e: 11.9 }, { name: "Clase 14", e: 14.8 }] },
+      { label: '10" (OD 250mm)', od: 250, classes: [{ name: "Clase 5", e: 6.1 }, { name: "Clase 7", e: 9.7 }, { name: "Clase 10", e: 14.8 }, { name: "Clase 14", e: 18.5 }] },
+      { label: '12" (OD 315mm)', od: 315, classes: [{ name: "Clase 5", e: 7.7 }, { name: "Clase 7", e: 12.2 }, { name: "Clase 10", e: 18.7 }, { name: "Clase 14", e: 23.2 }] },
+      { label: '16" (OD 400mm)', od: 400, classes: [{ name: "Clase 5", e: 9.8 }, { name: "Clase 7", e: 15.4 }, { name: "Clase 10", e: 23.5 }, { name: "Clase 14", e: 29.4 }] },
+      { label: '20" (OD 500mm)', od: 500, classes: [{ name: "Clase 5", e: 12.2 }, { name: "Clase 7", e: 19.2 }, { name: "Clase 10", e: 29.4 }, { name: "Clase 14", e: 36.8 }] },
+      { label: '24" (OD 630mm)', od: 630, classes: [{ name: "Clase 5", e: 15.4 }, { name: "Clase 7", e: 24.2 }, { name: "Clase 10", e: 37.1 }, { name: "Clase 14", e: 46.3 }] },
     ],
   },
   {
-    material: "PVC", E: 3e9, label: "PVC — Ingles ASTM D2241",
+    material: "PVC", E: 3e9, label: "PVC Inglés",
     sizes: [
-      { label: '2"', od: 60.3, classes: [{ name: "SDR 41", e: 1.5 }, { name: "SDR 26", e: 2.3 }, { name: "SDR 17", e: 3.6 }, { name: "SDR 13.6", e: 4.4 }, { name: "SDR 11", e: 5.5 }] },
-      { label: '3"', od: 88.9, classes: [{ name: "SDR 41", e: 2.2 }, { name: "SDR 26", e: 3.4 }, { name: "SDR 17", e: 5.2 }, { name: "SDR 13.6", e: 6.5 }, { name: "SDR 11", e: 8.1 }] },
-      { label: '4"', od: 114.3, classes: [{ name: "SDR 41", e: 2.8 }, { name: "SDR 26", e: 4.4 }, { name: "SDR 17", e: 6.7 }, { name: "SDR 13.6", e: 8.4 }, { name: "SDR 11", e: 10.4 }] },
-      { label: '6"', od: 168.3, classes: [{ name: "SDR 41", e: 4.1 }, { name: "SDR 26", e: 6.5 }, { name: "SDR 17", e: 9.9 }, { name: "SDR 13.6", e: 12.4 }, { name: "SDR 11", e: 15.3 }] },
-      { label: '8"', od: 219.1, classes: [{ name: "SDR 41", e: 5.3 }, { name: "SDR 26", e: 8.4 }, { name: "SDR 17", e: 12.9 }, { name: "SDR 13.6", e: 16.1 }, { name: "SDR 11", e: 19.9 }] },
-      { label: '10"', od: 273.0, classes: [{ name: "SDR 41", e: 6.7 }, { name: "SDR 26", e: 10.5 }, { name: "SDR 17", e: 16.1 }, { name: "SDR 13.6", e: 20.1 }, { name: "SDR 11", e: 24.8 }] },
-      { label: '12"', od: 323.9, classes: [{ name: "SDR 41", e: 7.9 }, { name: "SDR 26", e: 12.5 }, { name: "SDR 17", e: 19.1 }, { name: "SDR 13.6", e: 23.8 }, { name: "SDR 11", e: 29.4 }] },
-      { label: '14"', od: 355.6, classes: [{ name: "SDR 41", e: 8.7 }, { name: "SDR 26", e: 13.7 }, { name: "SDR 17", e: 20.9 }, { name: "SDR 13.6", e: 26.1 }, { name: "SDR 11", e: 32.3 }] },
-      { label: '16"', od: 406.4, classes: [{ name: "SDR 41", e: 9.9 }, { name: "SDR 26", e: 15.6 }, { name: "SDR 17", e: 23.9 }, { name: "SDR 13.6", e: 29.9 }, { name: "SDR 11", e: 36.9 }] },
-      { label: '18"', od: 457.2, classes: [{ name: "SDR 41", e: 11.1 }, { name: "SDR 26", e: 17.6 }, { name: "SDR 17", e: 26.9 }, { name: "SDR 13.6", e: 33.6 }, { name: "SDR 11", e: 41.6 }] },
-      { label: '20"', od: 508.0, classes: [{ name: "SDR 41", e: 12.4 }, { name: "SDR 26", e: 19.5 }, { name: "SDR 17", e: 29.9 }, { name: "SDR 13.6", e: 37.4 }, { name: "SDR 11", e: 46.2 }] },
-      { label: '24"', od: 609.6, classes: [{ name: "SDR 41", e: 14.9 }, { name: "SDR 26", e: 23.4 }, { name: "SDR 17", e: 35.9 }, { name: "SDR 13.6", e: 44.8 }, { name: "SDR 11", e: 55.4 }] },
+      { label: '2"', od: 60.3, classes: [{ name: "RD 41", e: 1.5 }, { name: "RD 32.5", e: 1.9 }, { name: "RD 26", e: 2.3 }] },
+      { label: '3"', od: 88.9, classes: [{ name: "RD 41", e: 2.2 }, { name: "RD 32.5", e: 2.7 }, { name: "RD 26", e: 3.4 }] },
+      { label: '4"', od: 114.3, classes: [{ name: "RD 41", e: 2.8 }, { name: "RD 32.5", e: 3.5 }, { name: "RD 26", e: 4.4 }] },
+      { label: '6"', od: 168.3, classes: [{ name: "RD 41", e: 4.1 }, { name: "RD 32.5", e: 5.2 }, { name: "RD 26", e: 6.5 }] },
+      { label: '8"', od: 219.1, classes: [{ name: "RD 41", e: 5.3 }, { name: "RD 32.5", e: 6.7 }, { name: "RD 26", e: 8.4 }] },
+      { label: '10"', od: 273.0, classes: [{ name: "RD 41", e: 6.7 }, { name: "RD 32.5", e: 8.4 }, { name: "RD 26", e: 10.5 }] },
+      { label: '12"', od: 323.9, classes: [{ name: "RD 41", e: 7.9 }, { name: "RD 32.5", e: 10.0 }, { name: "RD 26", e: 12.5 }] },
+      { label: '14"', od: 355.6, classes: [{ name: "RD 41", e: 8.7 }, { name: "RD 32.5", e: 10.9 }, { name: "RD 26", e: 13.7 }] },
+      { label: '16"', od: 406.4, classes: [{ name: "RD 41", e: 9.9 }, { name: "RD 32.5", e: 12.5 }, { name: "RD 26", e: 15.6 }] },
+      { label: '18"', od: 457.2, classes: [{ name: "RD 41", e: 11.1 }, { name: "RD 32.5", e: 14.1 }, { name: "RD 26", e: 17.6 }] },
+      { label: '20"', od: 508.0, classes: [{ name: "RD 41", e: 12.4 }, { name: "RD 32.5", e: 15.6 }, { name: "RD 26", e: 19.5 }] },
+      { label: '24"', od: 609.6, classes: [{ name: "RD 41", e: 14.9 }, { name: "RD 32.5", e: 18.8 }, { name: "RD 26", e: 23.4 }] },
     ],
   },
   {
@@ -334,50 +334,54 @@ export const PVC_THICKNESS: Record<PVCSystem, ThicknessRef> = {
  * D > 290mm (~12") → C905 classes, otherwise C900.
  */
 export function getPVCClasses(pvcSys: PVCSystem, isC905: boolean): { title: string; note?: string; classes: PipeClassRow[] } {
-  if (pvcSys === "métrico" || pvcSys === "ingles") {
+  // Clases que realmente se usan en México
+  if (pvcSys === "métrico") {
     return {
-      title: pvcSys === "métrico" ? "ISO 4422 / NMX-E-143 — PVC Presion" : "NMX-E-143 / ASTM D2241 — PVC Presion",
+      title: "PVC Métrico",
       classes: [
-        { clase: "SDR 41", pn: 3.4 }, { clase: "SDR 26", pn: 6 },
-        { clase: "SDR 17", pn: 10 }, { clase: "SDR 13.6", pn: 12.5 }, { clase: "SDR 11", pn: 16 },
+        { clase: "Clase 5", pn: 4.9 }, { clase: "Clase 7", pn: 6.9 },
+        { clase: "Clase 10", pn: 9.8 }, { clase: "Clase 14", pn: 13.7 },
       ],
     };
   }
-  // c900 vs c905 — determined by catalog selection, not by diameter
+  if (pvcSys === "ingles") {
+    return {
+      title: "PVC Inglés",
+      classes: [
+        { clase: "RD 41", pn: 6.9 }, { clase: "RD 32.5", pn: 8.6 }, { clase: "RD 26", pn: 11.0 },
+      ],
+    };
+  }
   if (isC905) {
     return {
-      title: "AWWA C905 — PVC Municipal (14in-24in)",
-      note: "Aplica para diámetros 14in a 24in. PN a 23 C.",
+      title: "PVC C905 (14\"+)",
       classes: [
-        { clase: "DR 51", pn: 4.8 }, { clase: "DR 41", pn: 6.0 },
-        { clase: "DR 32.5", pn: 7.6 }, { clase: "DR 26", pn: 9.5 },
+        { clase: "RD 41", pn: 6.0 }, { clase: "RD 26", pn: 9.5 },
       ],
     };
   }
   return {
-    title: "AWWA C900 — PVC Municipal (4in-12in)",
-    note: "Aplica para diámetros 4in a 12in. PN a 23 C.",
+    title: "PVC C900",
     classes: [
-      { clase: "DR 25", pn: 6.9 }, { clase: "DR 18", pn: 10.3 }, { clase: "DR 14", pn: 13.8 },
+      { clase: "RD 25", pn: 6.9 }, { clase: "RD 18", pn: 10.3 },
     ],
   };
 }
 
 // Legacy — kept for non-PVC
 export const PVC_CLASSES: Record<PVCSystem, { title: string; note?: string; classes: PipeClassRow[] }> = {
-  métrico: { title: "ISO 4422 / NMX-E-143 — PVC Presion", classes: [
-    { clase: "SDR 41", pn: 3.4 }, { clase: "SDR 26", pn: 6 }, { clase: "SDR 17", pn: 10 },
-    { clase: "SDR 13.6", pn: 12.5 }, { clase: "SDR 11", pn: 16 },
+  métrico: { title: "PVC Métrico", classes: [
+    { clase: "Clase 5", pn: 4.9 }, { clase: "Clase 7", pn: 6.9 },
+    { clase: "Clase 10", pn: 9.8 }, { clase: "Clase 14", pn: 13.7 },
   ]},
-  ingles: { title: "NMX-E-143 / ASTM D2241 — PVC Presion", classes: [
-    { clase: "SDR 41", pn: 3.4 }, { clase: "SDR 26", pn: 6 }, { clase: "SDR 17", pn: 10 },
-    { clase: "SDR 13.6", pn: 12.5 }, { clase: "SDR 11", pn: 16 },
+  ingles: { title: "PVC Inglés", classes: [
+    { clase: "RD 41", pn: 6.9 }, { clase: "RD 32.5", pn: 8.6 }, { clase: "RD 26", pn: 11.0 },
   ]},
-  c900: { title: "AWWA C900 — PVC Municipal (4in-12in)", classes: [
-    { clase: "DR 25", pn: 6.9 }, { clase: "DR 18", pn: 10.3 }, { clase: "DR 14", pn: 13.8 },
+  c900: { title: "PVC C900", classes: [
+    { clase: "RD 25", pn: 6.9 }, { clase: "RD 18", pn: 10.3 },
   ]},
-  c905: { title: "AWWA C905 — PVC Municipal (14in-24in)", classes: [
-    { clase: "DR 51", pn: 4.8 }, { clase: "DR 41", pn: 6.0 }, { clase: "DR 32.5", pn: 7.6 }, { clase: "DR 26", pn: 9.5 },
+  c905: { title: "PVC C905 (14\"+)", classes: [
+    { clase: "RD 41", pn: 6.0 }, { clase: "RD 26", pn: 9.5 },
   ]},
 };
 
@@ -422,13 +426,12 @@ export const PIPE_CLASSES_BY_MATERIAL: Record<string, {
 export function getPipeClassesForMaterial(materialName: string): { title: string; classes: PipeClassRow[] } | null {
   if (materialName.includes("C900") || materialName.includes("C905")) {
     const isC905 = materialName.includes("C905");
-    // For C900/C905, combine both since the material name includes both
+    // For C900/C905, show the classes used in Mexico
     if (materialName.includes("C900/C905")) {
       return {
-        title: "PVC AWWA C900/C905",
+        title: "PVC C900",
         classes: [
-          { clase: "DR 25 (C900)", pn: 6.9 }, { clase: "DR 18 (C900)", pn: 10.3 }, { clase: "DR 14 (C900)", pn: 13.8 },
-          { clase: "DR 51 (C905)", pn: 4.8 }, { clase: "DR 41 (C905)", pn: 6.0 }, { clase: "DR 26 (C905)", pn: 9.5 },
+          { clase: "RD 25", pn: 6.9 }, { clase: "RD 18", pn: 10.3 },
         ],
       };
     }

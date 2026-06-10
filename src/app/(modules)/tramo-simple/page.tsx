@@ -352,7 +352,7 @@ export default function TramoSimplePage() {
                   >
                     <option value="">-- Seleccionar clase --</option>
                     {classes.classes.map(c => (
-                      <option key={c.clase} value={c.clase}>{c.clase} (PN {c.pn} bar = {(c.pn / 0.9807).toFixed(1)} kg/cm²)</option>
+                      <option key={c.clase} value={c.clase}>{c.clase} — {(c.pn / 0.9807).toFixed(1)} kg/cm²</option>
                     ))}
                   </select>
                   {!pipeClass && <p className="text-[10px] text-yellow-600">Selecciona la clase para verificar resistencia</p>}
