@@ -7,6 +7,10 @@
 const DN_MM: Record<number,string> = {50:'2"',75:'3"',100:'4"',150:'6"',200:'8"',250:'10"',300:'12"',350:'14"',400:'16"',450:'18"',500:'20"',600:'24"',750:'30"',900:'36"'}
 
 const MAT_MAP: Record<string,string> = {
+  // Nombres actuales (simplificados)
+  'PVC C900':'PVC AWWA C900','PVC Métrico':'PVC Métrico',
+  'PVC Inglés':'PVC Inglés','HDPE':'PEAD','Acero':'Acero',
+  // Nombres antiguos (compatibilidad con localStorage guardado)
   'PVC — AWWA C900/C905':'PVC AWWA C900','PVC — Métrico ISO 4422':'PVC Métrico',
   'PVC — Ingles ASTM D2241':'PVC Inglés','HDPE — AWWA C906':'PEAD',
   'Hierro dúctil':'HD AWWA','Acero nuevo':'Acero','Acero (10+ años)':'Acero',

@@ -224,7 +224,7 @@ export default function EnSeriePage() {
                       }}
                       className="w-full px-2 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 dark:text-white"
                     >
-                      {MATERIALS.map((m) => <option key={m.name} value={m.name}>{m.name} (C={m.c})</option>)}
+                      {MATERIALS.map((m) => <option key={m.name} value={m.name}>{m.name}</option>)}
                     </select>
                   </div>
                   <InputField label="Cota final" value={t.zEnd} onChange={(v) => updateTramo(t.id, { zEnd: parseFloat(v) || 0 })} unit="m" tooltip="Elevacion al final de este tramo (m.s.n.m.)" />

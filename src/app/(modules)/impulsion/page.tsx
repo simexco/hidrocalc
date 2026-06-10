@@ -20,7 +20,7 @@ const defaults: PumpLineInputs = {
   L: null,
   DN_mm: null,
   C: 150,
-  materialName: "PVC — AWWA C900/C905",
+  materialName: "PVC C900",
   hmPercent: 10,
   eficienciaBomba: 0.70,
   eficienciaMotor: 0.90,
@@ -114,7 +114,7 @@ export default function ImpulsionPage() {
             <div className="space-y-1">
               <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Material</label>
               <select value={inputs.materialName} onChange={(e) => handleMaterial(e.target.value)} className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 dark:text-white">
-                {MATERIALS.map(m => <option key={m.name} value={m.name}>{m.name} (C={m.c})</option>)}
+                {MATERIALS.map(m => <option key={m.name} value={m.name}>{m.name}</option>)}
               </select>
             </div>
 

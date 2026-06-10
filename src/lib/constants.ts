@@ -26,13 +26,12 @@ export const STANDARD_DNS_LABELED = [
 // ── Materials with Hazen-Williams C ──
 // Names match the pipe catalog in Golpe de Ariete for consistency
 export const MATERIALS = [
-  { name: "PVC — AWWA C900/C905", c: 150 },
-  { name: "PVC — Métrico ISO 4422", c: 150 },
-  { name: "PVC — Ingles ASTM D2241", c: 150 },
-  { name: "HDPE — AWWA C906", c: 150 },
+  { name: "PVC C900", c: 150 },
+  { name: "PVC Métrico", c: 150 },
+  { name: "PVC Inglés", c: 150 },
+  { name: "HDPE", c: 150 },
   { name: "Hierro dúctil", c: 130 },
-  { name: "Acero nuevo", c: 120 },
-  { name: "Acero (10+ años)", c: 100 },
+  { name: "Acero", c: 120 },
   { name: "Asbesto cemento", c: 140 },
   { name: "Concreto centrifugado", c: 130 },
   { name: "Personalizado", c: 130 },
@@ -93,18 +92,13 @@ export interface PipeCatalogGroup {
 
 export const PIPE_CATALOG: PipeCatalogGroup[] = [
   {
-    material: "PVC", E: 3e9, label: "PVC C900 (4\"-12\")",
+    material: "PVC", E: 3e9, label: "PVC C900",
     sizes: [
       { label: '4"', od: 118.1, classes: [{ name: "RD 25", e: 4.7 }, { name: "RD 18", e: 6.6 }] },
       { label: '6"', od: 168.3, classes: [{ name: "RD 25", e: 6.7 }, { name: "RD 18", e: 9.4 }] },
       { label: '8"', od: 219.1, classes: [{ name: "RD 25", e: 8.8 }, { name: "RD 18", e: 12.2 }] },
       { label: '10"', od: 273.0, classes: [{ name: "RD 25", e: 10.9 }, { name: "RD 18", e: 15.2 }] },
       { label: '12"', od: 323.9, classes: [{ name: "RD 25", e: 13.0 }, { name: "RD 18", e: 18.0 }] },
-    ],
-  },
-  {
-    material: "PVC", E: 3e9, label: "PVC C905 (14\"-24\")",
-    sizes: [
       { label: '14"', od: 368.3, classes: [{ name: "RD 41", e: 9.0 }, { name: "RD 26", e: 14.2 }] },
       { label: '16"', od: 422.4, classes: [{ name: "RD 41", e: 10.3 }, { name: "RD 26", e: 16.2 }] },
       { label: '18"', od: 473.1, classes: [{ name: "RD 41", e: 11.5 }, { name: "RD 26", e: 18.2 }] },
@@ -146,20 +140,20 @@ export const PIPE_CATALOG: PipeCatalogGroup[] = [
     ],
   },
   {
-    material: "HDPE", E: 1e9, label: "HDPE — IPS/DIPS (AWWA C906)",
+    material: "HDPE", E: 1e9, label: "HDPE",
     sizes: [
-      { label: '2"', od: 60.3, classes: [{ name: "SDR 26", e: 2.3 }, { name: "SDR 17", e: 3.5 }, { name: "SDR 13.6", e: 4.4 }, { name: "SDR 11", e: 5.5 }, { name: "SDR 9", e: 6.7 }] },
-      { label: '3"', od: 88.9, classes: [{ name: "SDR 26", e: 3.4 }, { name: "SDR 17", e: 5.2 }, { name: "SDR 13.6", e: 6.5 }, { name: "SDR 11", e: 8.1 }, { name: "SDR 9", e: 9.9 }] },
-      { label: '4"', od: 114.3, classes: [{ name: "SDR 26", e: 4.4 }, { name: "SDR 17", e: 6.7 }, { name: "SDR 13.6", e: 8.4 }, { name: "SDR 11", e: 10.4 }, { name: "SDR 9", e: 12.7 }] },
-      { label: '6"', od: 168.3, classes: [{ name: "SDR 26", e: 6.5 }, { name: "SDR 17", e: 9.9 }, { name: "SDR 13.6", e: 12.4 }, { name: "SDR 11", e: 15.3 }, { name: "SDR 9", e: 18.7 }] },
-      { label: '8"', od: 219.1, classes: [{ name: "SDR 26", e: 8.4 }, { name: "SDR 17", e: 12.9 }, { name: "SDR 13.6", e: 16.1 }, { name: "SDR 11", e: 19.9 }, { name: "SDR 9", e: 24.3 }] },
-      { label: '10"', od: 273.0, classes: [{ name: "SDR 26", e: 10.5 }, { name: "SDR 17", e: 16.1 }, { name: "SDR 13.6", e: 20.1 }, { name: "SDR 11", e: 24.8 }, { name: "SDR 9", e: 30.3 }] },
-      { label: '12"', od: 323.9, classes: [{ name: "SDR 26", e: 12.5 }, { name: "SDR 17", e: 19.1 }, { name: "SDR 13.6", e: 23.8 }, { name: "SDR 11", e: 29.4 }, { name: "SDR 9", e: 36.0 }] },
-      { label: '14"', od: 355.6, classes: [{ name: "SDR 26", e: 13.7 }, { name: "SDR 17", e: 20.9 }, { name: "SDR 13.6", e: 26.1 }, { name: "SDR 11", e: 32.3 }, { name: "SDR 9", e: 39.5 }] },
-      { label: '16"', od: 406.4, classes: [{ name: "SDR 26", e: 15.6 }, { name: "SDR 17", e: 23.9 }, { name: "SDR 13.6", e: 29.9 }, { name: "SDR 11", e: 36.9 }, { name: "SDR 9", e: 45.2 }] },
-      { label: '18"', od: 457.2, classes: [{ name: "SDR 26", e: 17.6 }, { name: "SDR 17", e: 26.9 }, { name: "SDR 13.6", e: 33.6 }, { name: "SDR 11", e: 41.6 }, { name: "SDR 9", e: 50.8 }] },
-      { label: '20"', od: 508.0, classes: [{ name: "SDR 26", e: 19.5 }, { name: "SDR 17", e: 29.9 }, { name: "SDR 13.6", e: 37.4 }, { name: "SDR 11", e: 46.2 }, { name: "SDR 9", e: 56.4 }] },
-      { label: '24"', od: 609.6, classes: [{ name: "SDR 26", e: 23.4 }, { name: "SDR 17", e: 35.9 }, { name: "SDR 13.6", e: 44.8 }, { name: "SDR 11", e: 55.4 }, { name: "SDR 9", e: 67.7 }] },
+      { label: '2"', od: 60.3, classes: [{ name: "SDR 13.6", e: 4.4 }, { name: "SDR 11", e: 5.5 }, { name: "SDR 9", e: 6.7 }] },
+      { label: '3"', od: 88.9, classes: [{ name: "SDR 13.6", e: 6.5 }, { name: "SDR 11", e: 8.1 }, { name: "SDR 9", e: 9.9 }] },
+      { label: '4"', od: 114.3, classes: [{ name: "SDR 13.6", e: 8.4 }, { name: "SDR 11", e: 10.4 }, { name: "SDR 9", e: 12.7 }] },
+      { label: '6"', od: 168.3, classes: [{ name: "SDR 13.6", e: 12.4 }, { name: "SDR 11", e: 15.3 }, { name: "SDR 9", e: 18.7 }] },
+      { label: '8"', od: 219.1, classes: [{ name: "SDR 13.6", e: 16.1 }, { name: "SDR 11", e: 19.9 }, { name: "SDR 9", e: 24.3 }] },
+      { label: '10"', od: 273.0, classes: [{ name: "SDR 13.6", e: 20.1 }, { name: "SDR 11", e: 24.8 }, { name: "SDR 9", e: 30.3 }] },
+      { label: '12"', od: 323.9, classes: [{ name: "SDR 13.6", e: 23.8 }, { name: "SDR 11", e: 29.4 }, { name: "SDR 9", e: 36.0 }] },
+      { label: '14"', od: 355.6, classes: [{ name: "SDR 13.6", e: 26.1 }, { name: "SDR 11", e: 32.3 }, { name: "SDR 9", e: 39.5 }] },
+      { label: '16"', od: 406.4, classes: [{ name: "SDR 13.6", e: 29.9 }, { name: "SDR 11", e: 36.9 }, { name: "SDR 9", e: 45.2 }] },
+      { label: '18"', od: 457.2, classes: [{ name: "SDR 13.6", e: 33.6 }, { name: "SDR 11", e: 41.6 }, { name: "SDR 9", e: 50.8 }] },
+      { label: '20"', od: 508.0, classes: [{ name: "SDR 13.6", e: 37.4 }, { name: "SDR 11", e: 46.2 }, { name: "SDR 9", e: 56.4 }] },
+      { label: '24"', od: 609.6, classes: [{ name: "SDR 13.6", e: 44.8 }, { name: "SDR 11", e: 55.4 }, { name: "SDR 9", e: 67.7 }] },
     ],
   },
   {
@@ -181,18 +175,18 @@ export const PIPE_CATALOG: PipeCatalogGroup[] = [
   {
     material: "Acero", E: 210e9, label: "Acero — AWWA C200",
     sizes: [
-      { label: '2"', od: 60.3, classes: [{ name: "Sch 10", e: 2.1 }, { name: "Sch 20", e: 2.8 }, { name: "Sch 40", e: 3.9 }, { name: "Sch 80", e: 5.5 }] },
-      { label: '3"', od: 88.9, classes: [{ name: "Sch 10", e: 2.1 }, { name: "Sch 20", e: 3.0 }, { name: "Sch 40", e: 5.5 }, { name: "Sch 80", e: 7.6 }] },
-      { label: '4"', od: 114.3, classes: [{ name: "Sch 10", e: 2.1 }, { name: "Sch 20", e: 3.1 }, { name: "Sch 40", e: 6.0 }, { name: "Sch 80", e: 8.6 }] },
-      { label: '6"', od: 168.3, classes: [{ name: "Sch 10", e: 2.8 }, { name: "Sch 20", e: 4.0 }, { name: "Sch 40", e: 7.1 }, { name: "Sch 80", e: 11.0 }] },
-      { label: '8"', od: 219.1, classes: [{ name: "Sch 10", e: 2.8 }, { name: "Sch 20", e: 5.2 }, { name: "Sch 40", e: 8.2 }, { name: "Sch 80", e: 12.7 }] },
-      { label: '10"', od: 273.0, classes: [{ name: "Sch 10", e: 3.4 }, { name: "Sch 20", e: 5.2 }, { name: "Sch 40", e: 9.3 }, { name: "Sch 80", e: 15.1 }] },
-      { label: '12"', od: 323.9, classes: [{ name: "Sch 10", e: 3.6 }, { name: "Sch 20", e: 6.4 }, { name: "Sch 40", e: 10.3 }, { name: "Sch 80", e: 17.5 }] },
-      { label: '14"', od: 355.6, classes: [{ name: "Sch 10", e: 3.6 }, { name: "Sch 20", e: 6.4 }, { name: "Sch 40", e: 11.1 }, { name: "Sch 80", e: 19.0 }] },
-      { label: '16"', od: 406.4, classes: [{ name: "Sch 10", e: 4.0 }, { name: "Sch 20", e: 6.4 }, { name: "Sch 40", e: 12.7 }, { name: "Sch 80", e: 21.4 }] },
-      { label: '18"', od: 457.2, classes: [{ name: "Sch 10", e: 4.0 }, { name: "Sch 20", e: 6.4 }, { name: "Sch 40", e: 14.3 }, { name: "Sch 80", e: 23.8 }] },
-      { label: '20"', od: 508.0, classes: [{ name: "Sch 10", e: 4.8 }, { name: "Sch 20", e: 6.4 }, { name: "Sch 40", e: 15.1 }, { name: "Sch 80", e: 26.2 }] },
-      { label: '24"', od: 609.6, classes: [{ name: "Sch 10", e: 5.5 }, { name: "Sch 20", e: 6.4 }, { name: "Sch 40", e: 17.5 }, { name: "Sch 80", e: 30.9 }] },
+      { label: '2"', od: 60.3, classes: [{ name: "Cédula 40", e: 3.9 }] },
+      { label: '3"', od: 88.9, classes: [{ name: "Cédula 40", e: 5.5 }] },
+      { label: '4"', od: 114.3, classes: [{ name: "Cédula 40", e: 6.0 }] },
+      { label: '6"', od: 168.3, classes: [{ name: "Cédula 40", e: 7.1 }] },
+      { label: '8"', od: 219.1, classes: [{ name: "Cédula 40", e: 8.2 }] },
+      { label: '10"', od: 273.0, classes: [{ name: "Cédula 40", e: 9.3 }] },
+      { label: '12"', od: 323.9, classes: [{ name: "Cédula 40", e: 10.3 }] },
+      { label: '14"', od: 355.6, classes: [{ name: "Cédula 40", e: 11.1 }] },
+      { label: '16"', od: 406.4, classes: [{ name: "Cédula 40", e: 12.7 }] },
+      { label: '18"', od: 457.2, classes: [{ name: "Cédula 40", e: 14.3 }] },
+      { label: '20"', od: 508.0, classes: [{ name: "Cédula 40", e: 15.1 }] },
+      { label: '24"', od: 609.6, classes: [{ name: "Cédula 40", e: 17.5 }] },
     ],
   },
 ];
@@ -354,7 +348,7 @@ export function getPVCClasses(pvcSys: PVCSystem, isC905: boolean): { title: stri
   }
   if (isC905) {
     return {
-      title: "PVC C905 (14\"+)",
+      title: "PVC C900",
       classes: [
         { clase: "RD 41", pn: 6.0 }, { clase: "RD 26", pn: 9.5 },
       ],
@@ -394,7 +388,7 @@ export const PIPE_CLASSES_BY_MATERIAL: Record<string, {
   classes: PipeClassRow[];
 } | null> = {
   "Hierro dúctil": {
-    title: "ISO 2531 — Hierro dúctil",
+    title: "Hierro dúctil",
     classes: [
       { clase: "K7", pn: 10 }, { clase: "K9", pn: 16 },
       { clase: "K12", pn: 25 }, { clase: "K14", pn: 25 }, { clase: "K16", pn: 40 },
@@ -402,19 +396,17 @@ export const PIPE_CLASSES_BY_MATERIAL: Record<string, {
   },
   PVC: null, // handled by PVC_CLASSES subsystem
   HDPE: {
-    title: "HDPE IPS/DIPS — AWWA C906",
+    title: "HDPE",
     classes: [
-      { clase: "SDR 26", pn: 6.3 }, { clase: "SDR 17", pn: 10 },
       { clase: "SDR 13.6", pn: 12.5 }, { clase: "SDR 11", pn: 16 },
-      { clase: "SDR 9", pn: 20 }, { clase: "SDR 7.4", pn: 25 },
+      { clase: "SDR 9", pn: 20 },
     ],
   },
   Acero: {
-    title: "AWWA C200 — Acero",
-    note: "PN varia por DN y grado de acero. Verificar con fabricante.",
+    title: "Acero",
+    note: "Verificar con fabricante.",
     classes: [
-      { clase: "Sch 10", pn: 17 }, { clase: "Sch 20", pn: 21 },
-      { clase: "Sch 40", pn: 38 }, { clase: "Sch 80", pn: 69 },
+      { clase: "Cédula 40", pn: 38 },
     ],
   },
   "Asbesto cemento": null,
@@ -426,19 +418,11 @@ export const PIPE_CLASSES_BY_MATERIAL: Record<string, {
 export function getPipeClassesForMaterial(materialName: string): { title: string; classes: PipeClassRow[] } | null {
   if (materialName.includes("C900") || materialName.includes("C905")) {
     const isC905 = materialName.includes("C905");
-    // For C900/C905, show the classes used in Mexico
-    if (materialName.includes("C900/C905")) {
-      return {
-        title: "PVC C900",
-        classes: [
-          { clase: "RD 25", pn: 6.9 }, { clase: "RD 18", pn: 10.3 },
-        ],
-      };
-    }
+    // "PVC C900" (México llama C900 a todo): clases usadas en México
     return isC905 ? getPVCClasses("c905", true) : getPVCClasses("c900", false);
   }
   if (materialName.includes("Métrico") || materialName.includes("Metrico")) return getPVCClasses("métrico", false);
-  if (materialName.includes("Ingles")) return getPVCClasses("ingles", false);
+  if (materialName.includes("Ingles") || materialName.includes("Inglés")) return getPVCClasses("ingles", false);
   if (materialName.includes("HDPE")) return PIPE_CLASSES_BY_MATERIAL["HDPE"] ?? null;
   if (materialName.includes("Hierro")) return PIPE_CLASSES_BY_MATERIAL["Hierro dúctil"] ?? null;
   if (materialName.includes("Acero")) return PIPE_CLASSES_BY_MATERIAL["Acero"] ?? null;

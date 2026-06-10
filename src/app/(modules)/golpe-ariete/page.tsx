@@ -41,10 +41,10 @@ export default function GolpeArietePage() {
     setInput("materialName", catalog.material);
     // Auto-detect PVC system from catalog label
     if (catalog.material === "PVC") {
-      if (catalog.label.includes("C905")) setPvcSystem("c905");
-      else if (catalog.label.includes("C900")) setPvcSystem("c900");
+      // C900 group covers 4"-24": sizes >12" (OD > 350mm) use the C905-type classes (RD 41/RD 26)
+      if (catalog.label.includes("C900")) setPvcSystem(sizeEntry.od > 350 ? "c905" : "c900");
       else if (catalog.label.includes("Métrico")) setPvcSystem("métrico");
-      else if (catalog.label.includes("Ingles")) setPvcSystem("ingles");
+      else if (catalog.label.includes("Ingles") || catalog.label.includes("Inglés")) setPvcSystem("ingles");
     }
   }, [entryMode, selectedCatalog, selectedSize, selectedClass, catalog, sizeEntry, classEntry, setInput]);
 
@@ -117,6 +117,13 @@ export default function GolpeArietePage() {
     if (matName) {
       // Map HW material names to elasticity material names
       const matMap: Record<string, string> = {
+        // Nombres actuales (simplificados)
+        "PVC C900": "PVC",
+        "PVC Métrico": "PVC",
+        "PVC Inglés": "PVC",
+        "HDPE": "HDPE",
+        "Acero": "Acero",
+        // Nombres antiguos (compatibilidad con localStorage guardado)
         "PVC — AWWA C900/C905": "PVC",
         "PVC — Métrico ISO 4422": "PVC",
         "PVC — Ingles ASTM D2241": "PVC",

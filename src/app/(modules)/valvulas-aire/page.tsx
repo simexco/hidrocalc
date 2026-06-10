@@ -179,7 +179,7 @@ export default function ValvulasAirePage() {
             <div className="space-y-1">
               <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Material / C</label>
               <select value={materialName} onChange={(e) => handleMaterial(e.target.value)} className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 dark:text-white">
-                {MATERIALS.map((m) => <option key={m.name} value={m.name}>{m.name} (C={m.c})</option>)}
+                {MATERIALS.map((m) => <option key={m.name} value={m.name}>{m.name}</option>)}
               </select>
             </div>
 

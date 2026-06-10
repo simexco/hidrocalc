@@ -132,7 +132,7 @@ export default function DimensionamientoPage() {
                 className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 dark:text-white"
               >
                 {MATERIALS.map((m) => (
-                  <option key={m.name} value={m.name}>{m.name} (C={m.c})</option>
+                  <option key={m.name} value={m.name}>{m.name}</option>
                 ))}
               </select>
               <p className="text-[10px] text-gray-400 dark:text-gray-500 leading-tight mt-1">

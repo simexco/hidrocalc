@@ -52,6 +52,13 @@ export function calcHmReal(accesorios: AccesorioCalc[], L: number, D_m: number, 
 
 // ── Material name mapping HidroCalc → SIMEX catalog ──
 export const MATERIAL_MAP: Record<string, string> = {
+  // Nombres actuales (simplificados)
+  "PVC C900": "PVC AWWA C900",
+  "PVC Métrico": "PVC Métrico",
+  "PVC Inglés": "PVC Inglés",
+  "HDPE": "PEAD",
+  "Acero": "Acero",
+  // Nombres antiguos (compatibilidad con localStorage guardado)
   "PVC — AWWA C900/C905": "PVC AWWA C900",
   "PVC — Métrico ISO 4422": "PVC Métrico",
   "PVC — Ingles ASTM D2241": "PVC Inglés",

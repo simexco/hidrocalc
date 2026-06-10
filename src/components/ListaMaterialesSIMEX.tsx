@@ -385,6 +385,10 @@ const CDM: Record<string,string> = {
 
 // ═══ MAPAS ═══════════════════════════════════════════════════
 const MAT_MAP: Record<string,string> = {
+  // Nombres actuales (simplificados)
+  'PVC C900':'PVC AWWA C900','PVC Métrico':'PVC Métrico',
+  'PVC Inglés':'PVC Inglés','HDPE':'PEAD','Acero':'Acero',
+  // Nombres antiguos (compatibilidad con localStorage guardado)
   'PVC — AWWA C900/C905':'PVC AWWA C900','PVC — Métrico ISO 4422':'PVC Métrico',
   'PVC — Ingles ASTM D2241':'PVC Inglés','HDPE — AWWA C906':'PEAD',
   'Hierro dúctil':'HD AWWA','Acero nuevo':'Acero','Acero (10+ años)':'Acero',

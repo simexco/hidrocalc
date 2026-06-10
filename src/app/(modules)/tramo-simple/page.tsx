@@ -315,7 +315,7 @@ export default function TramoSimplePage() {
               >
                 {MATERIALS.map((m) => (
                   <option key={m.name} value={m.name}>
-                    {m.name} (C={m.c})
+                    {m.name}
                   </option>
                 ))}
               </select>
