@@ -283,13 +283,13 @@ export default function DemandaPage() {
                     title="QMH"
                     value={formatNumber(results.QMH_ls, 2)}
                     unit="L/s"
-                    formula="QMH = Qmd × CVH"
+                    formula="QMH = QMD × CVH"
                     steps={[
-                      { substitution: `QMH = ${formatNumber(results.Qmd_ls, 2)} × ${inputs.CVH}` },
+                      { label: "Sobre el maximo diario:", substitution: `QMH = ${formatNumber(results.QMD_ls, 2)} × ${inputs.CVH}` },
                       { result: `QMH = ${formatNumber(results.QMH_ls, 2)} L/s` },
                     ]}
                     reference="Caudal maximo horario"
-                    norm="CONAGUA MAPAS: CVH = 1.5 a 2.0"
+                    norm="CONAGUA MAPAS: QMH = QMD × CVH, CVH = 1.5 a 2.0"
                   />
                 </div>
               </div>

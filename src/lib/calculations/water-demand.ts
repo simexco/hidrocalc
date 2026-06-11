@@ -97,7 +97,8 @@ export function calculateWaterDemand(input: WaterDemandInputs): WaterDemandResul
   const Qmd_m3h = Qmd_ls * 3.6;
   const QMD_ls = Qmd_ls * CVD;
   const QMD_m3h = QMD_ls * 3.6;
-  const QMH_ls = Qmd_ls * CVH;
+  // QMH se calcula sobre el maximo diario, no sobre el medio (CONAGUA MAPAS)
+  const QMH_ls = QMD_ls * CVH;
   const QMH_m3h = QMH_ls * 3.6;
   const volDiario_m3 = (pobDiseno * dotacionAjustada) / 1000;
 
