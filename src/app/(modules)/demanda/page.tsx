@@ -16,7 +16,7 @@ const defaults: WaterDemandInputs = {
   mode: 'viviendas',
   poblacionActual: null,
   numViviendas: null,
-  habPorVivienda: 3.8,
+  habPorVivienda: 4,
   superficieHa: null,
   densidadHabHa: 50,
   tasaCrecimiento: 2.0,
@@ -66,11 +66,11 @@ export default function DemandaPage() {
   const handleDevType = (key: string) => {
     const dt = DEVELOPMENT_TYPES.find(d => d.key === key);
     if (dt) {
+      // Solo actualiza dotacion y densidad — el hab/vivienda lo controla el usuario (default 4)
       setInputs(prev => ({
         ...prev,
         devType: key,
         dotacionBase: dt.dotacion,
-        habPorVivienda: dt.habViv,
         densidadHabHa: dt.densidad,
       }));
     }
@@ -110,7 +110,12 @@ export default function DemandaPage() {
             {inputs.mode === 'viviendas' && (
               <>
                 <InputField label="Numero de viviendas" value={inputs.numViviendas} onChange={(v) => set("numViviendas", v === "" ? null : parseFloat(v))} required tooltip="Total de viviendas del desarrollo o fraccionamiento" />
-                <InputField label="Habitantes por vivienda" value={inputs.habPorVivienda} onChange={(v) => set("habPorVivienda", parseFloat(v) || 3.8)} tooltip={`Promedio INEGI: 3.8 hab/viv. Sugerido para ${devType?.label}: ${devType?.habViv}`} />
+                <div>
+                  <InputField label="Habitantes por vivienda" value={inputs.habPorVivienda} onChange={(v) => set("habPorVivienda", parseFloat(v) || 4)} tooltip="Valor mas usado en Mexico: 4 hab/viv. Puedes cambiarlo segun el censo INEGI de tu localidad." />
+                  <p className="text-[10px] text-gray-400 mt-1">
+                    Referencia: rural ~4.5 · interes social ~4.0 · medio ~3.8 · residencial ~3.5 (INEGI). Mas usado: <strong className="text-gray-500">4</strong>
+                  </p>
+                </div>
               </>
             )}
             {inputs.mode === 'superficie' && (
