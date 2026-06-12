@@ -30,7 +30,6 @@ const sections = [
     items: [
       { href: "/demanda", label: "Cálculo de gasto", icon: icons.gasto },
       { href: "/fuente", label: "Fuente de abastecimiento", icon: icons.fuente },
-      { href: "/tanque", label: "Tanque de regulación", icon: icons.tanque },
     ],
   },
   {

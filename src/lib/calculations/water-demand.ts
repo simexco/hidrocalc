@@ -57,6 +57,8 @@ export interface WaterDemandInputs {
   // Variation coefficients
   CVD: number;  // daily variation (default 1.4)
   CVH: number;  // hourly variation (default 1.55)
+  // Tanque de regulacion (integrado)
+  coefRegulacion: number;  // fraccion del volumen diario (default 0.19 para 24h)
 }
 
 export interface WaterDemandResults {
@@ -73,6 +75,7 @@ export interface WaterDemandResults {
   QMH_m3h: number;
   // Volume
   volDiario_m3: number;  // daily volume m³
+  volTanque_m3: number;  // volumen del tanque de regulacion (Vr = coef × vol diario)
   // Recommendations
   conduccion: string;    // "Para linea de conduccion usar QMD = X L/s"
   distribucion: string;  // "Para red de distribucion usar QMH = X L/s"
@@ -116,6 +119,8 @@ export function calculateWaterDemand(input: WaterDemandInputs): WaterDemandResul
   const QMH_ls = QMD_ls * CVH;
   const QMH_m3h = QMH_ls * 3.6;
   const volDiario_m3 = (pobDiseno * dotacionAjustada) / 1000;
+  // Tanque de regulacion: Vr = coeficiente × volumen diario
+  const volTanque_m3 = (input.coefRegulacion ?? 0.19) * volDiario_m3;
 
   // 5. Alerts
   const alerts: WaterDemandResults['alerts'] = [];
@@ -134,6 +139,7 @@ export function calculateWaterDemand(input: WaterDemandInputs): WaterDemandResul
     QMD_ls, QMD_m3h,
     QMH_ls, QMH_m3h,
     volDiario_m3,
+    volTanque_m3,
     conduccion: `Para linea de conduccion usar QMD = ${QMD_ls.toFixed(2)} L/s (${QMD_m3h.toFixed(1)} m3/h)`,
     distribucion: `Para red de distribucion usar QMH = ${QMH_ls.toFixed(2)} L/s (${QMH_m3h.toFixed(1)} m3/h)`,
     alerts,

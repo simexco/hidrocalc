@@ -5,7 +5,7 @@ const modules = [
   // ── Diseño ──
   {
     title: "Cálculo de gasto",
-    desc: "Caudal de diseño por población, viviendas o superficie.",
+    desc: "Caudal de diseño por población, viviendas o superficie. Incluye tanque de regulación.",
     href: "/demanda",
     icon: (<svg viewBox="0 0 24 24" className={iconCls} fill="none" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" /></svg>),
   },
@@ -14,12 +14,6 @@ const modules = [
     desc: "Aforo de pozo: abatimiento, caudal específico y caudal de explotación.",
     href: "/fuente",
     icon: (<svg viewBox="0 0 24 24" className={iconCls} fill="none" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M12 3v6m0 0l-3-3m3 3l3-3M6 13h12v6a2 2 0 01-2 2H8a2 2 0 01-2-2v-6z" /></svg>),
-  },
-  {
-    title: "Tanque de regulación",
-    desc: "Volumen de regulación y reserva, dimensiones del tanque (CONAGUA MAPAS).",
-    href: "/tanque",
-    icon: (<svg viewBox="0 0 24 24" className={iconCls} fill="none" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M5 4h14v16H5V4zm0 5h14M8 13h8" /></svg>),
   },
   // ── Conducción ──
   {
@@ -161,7 +155,7 @@ export default function Home() {
               { situation: "¿Dónde pongo las válvulas de aire en mi línea?", module: "Válvulas de aire", data: "Q, DN, perfil de cotas", href: "/valvulas-aire" },
               { situation: "Quiero ver si la presion llega a lo largo de todo el trazo", module: "Linea de conduccion", data: "Q, DN, P1, perfil topografico", href: "/perfil" },
               { situation: "Necesito reducir la presion en una zona de mi red", module: "Valvula reductora", data: "Q, P1, P2, DN", href: "/vrp" },
-              { situation: "¿Que volumen de tanque necesito para regular el suministro?", module: "Tanque de regulacion", data: "Qmd, horas de aportacion", href: "/tanque" },
+              { situation: "¿Que volumen de tanque necesito para regular el suministro?", module: "Calculo de gasto", data: "Qmd, coef. regulacion", href: "/demanda" },
             ].map((r) => (
               <Link key={r.module} href={r.href} className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4 bg-white/5 hover:bg-white/10 border border-white/5 rounded-lg px-4 py-3 transition-colors group">
                 <p className="text-sm text-white/80 flex-1 group-hover:text-white">{r.situation}</p>

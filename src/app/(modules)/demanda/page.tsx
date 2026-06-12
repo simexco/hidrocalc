@@ -27,6 +27,7 @@ const defaults: WaterDemandInputs = {
   dotacionBase: 185,
   CVD: 1.4,
   CVH: 1.55,
+  coefRegulacion: 0.19,
 };
 
 export default function DemandaPage() {
@@ -196,6 +197,8 @@ export default function DemandaPage() {
                   <InputField label="CVD (variacion diaria)" value={inputs.CVD} onChange={(v) => set("CVD", parseFloat(v) || 1.4)} tooltip="Coeficiente de variacion diaria. CONAGUA: 1.2-1.5, default 1.4" />
                   <InputField label="CVH (variacion horaria)" value={inputs.CVH} onChange={(v) => set("CVH", parseFloat(v) || 1.55)} tooltip="Coeficiente de variacion horaria. CONAGUA: 1.5-2.0, default 1.55" />
                 </div>
+                {/* Coeficiente del tanque de regulacion */}
+                <InputField label="Coef. regulacion del tanque" value={inputs.coefRegulacion} onChange={(v) => set("coefRegulacion", parseFloat(v) || 0.19)} tooltip="Fraccion del volumen diario para el tanque de regulacion. CONAGUA: 0.11 (24h) a 0.25. Default 0.19." />
               </div>
             )}
           </div>
@@ -229,6 +232,7 @@ export default function DemandaPage() {
                     { label: "QMD (conduccion)", value: formatNumber(results.QMD_ls, 2), unit: "L/s" },
                     { label: "QMH (distribucion)", value: formatNumber(results.QMH_ls, 2), unit: "L/s" },
                     { label: "Volumen diario", value: formatNumber(results.volDiario_m3, 0), unit: "m3/dia" },
+                    { label: "Tanque de regulacion", value: formatNumber(results.volTanque_m3, 0), unit: "m3" },
                   ],
                   alerts: results.alerts.map(a => ({ level: a.level, message: a.message })),
                 };
@@ -331,7 +335,28 @@ export default function DemandaPage() {
               </div>
 
               {/* Volume */}
-              <MetricCard label="Volumen diario" value={formatNumber(results.volDiario_m3, 0)} unit="m3/dia" dataStatus="calculated" />
+              <div className="grid grid-cols-2 gap-3">
+                <MetricCard label="Volumen diario" value={formatNumber(results.volDiario_m3, 0)} unit="m3/dia" dataStatus="calculated" />
+                <MetricCard label="Tanque de regulacion" value={formatNumber(results.volTanque_m3, 0)} unit="m3" dataStatus="calculated" />
+              </div>
+
+              {/* Tanque de regulacion detalle */}
+              <div className="bg-[#E9EFF5] dark:bg-[#1C3D5A]/20 rounded-xl p-4">
+                <p className="text-xs text-[#1C3D5A]/60 dark:text-blue-300/60">Volumen del tanque de regulacion</p>
+                <p className="text-2xl font-bold text-[#1C3D5A] dark:text-blue-200">{formatNumber(results.volTanque_m3, 0)} <span className="text-sm font-normal">m3</span></p>
+                <FormulaDetail
+                  title="Tanque de regulacion"
+                  value={formatNumber(results.volTanque_m3, 0)}
+                  unit="m3"
+                  formula="Vr = Coef × Volumen diario"
+                  steps={[
+                    { substitution: `Vr = ${inputs.coefRegulacion} × ${formatNumber(results.volDiario_m3, 0)} m3` },
+                    { result: `Vr = ${formatNumber(results.volTanque_m3, 0)} m3` },
+                  ]}
+                  reference="Volumen de regulacion"
+                  norm="CONAGUA MAPAS: coef 0.11 (24h aportacion) a 0.25"
+                />
+              </div>
 
               {/* Alerts */}
               {results.alerts.map((a, i) => (

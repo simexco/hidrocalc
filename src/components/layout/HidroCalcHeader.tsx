@@ -15,7 +15,6 @@ const moduleNames: Record<string, string> = {
   "/dimensionamiento": "Elegir diámetro",
   "/valvulas-aire": "Válvulas de aire",
   "/vrp": "Valvula reductora",
-  "/tanque": "Tanque de regulacion",
   "/proyectos": "Mis proyectos",
 };
 
