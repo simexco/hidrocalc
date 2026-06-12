@@ -7,7 +7,7 @@ import { AlertBanner } from "@/components/ui/AlertBanner";
 import { ExportPDFButton } from "@/components/ui/ExportPDFButton";
 import { ResetButton } from "@/components/ui/ResetButton";
 import { FormulaDetail } from "@/components/ui/FormulaDetail";
-import { calculateWaterDemand, DEVELOPMENT_TYPES, CLIMATE_TYPES, type PopulationMode, type WaterDemandInputs } from "@/lib/calculations/water-demand";
+import { calculateWaterDemand, DEVELOPMENT_TYPES, CLIMATE_TYPES, DENSITY_CATEGORIES, type PopulationMode, type WaterDemandInputs } from "@/lib/calculations/water-demand";
 import { formatNumber } from "@/lib/calculations/conversions";
 import { saveFormState, loadFormState } from "@/lib/storage/form-persistence";
 
@@ -18,7 +18,7 @@ const defaults: WaterDemandInputs = {
   numViviendas: null,
   habPorVivienda: 4,
   superficieHa: null,
-  densidadHabHa: 50,
+  densidadHabHa: 55,
   proyectarCrecimiento: false,
   tasaCrecimiento: 2.0,
   periodoDiseno: 20,
@@ -68,12 +68,11 @@ export default function DemandaPage() {
   const handleDevType = (key: string) => {
     const dt = DEVELOPMENT_TYPES.find(d => d.key === key);
     if (dt) {
-      // Solo actualiza dotacion y densidad — el hab/vivienda lo controla el usuario (default 4)
+      // Solo actualiza la dotacion — el resto lo controla el usuario
       setInputs(prev => ({
         ...prev,
         devType: key,
         dotacionBase: dt.dotacion,
-        densidadHabHa: dt.densidad,
       }));
     }
   };
@@ -123,7 +122,23 @@ export default function DemandaPage() {
             {inputs.mode === 'superficie' && (
               <>
                 <InputField label="Superficie" value={inputs.superficieHa} onChange={(v) => set("superficieHa", v === "" ? null : parseFloat(v))} unit="hectareas" required tooltip="Area total del desarrollo en hectareas" />
-                <InputField label="Densidad" value={inputs.densidadHabHa} onChange={(v) => set("densidadHabHa", parseFloat(v) || 50)} unit="hab/ha" tooltip={`Sugerido para ${devType?.label}: ${devType?.densidad} hab/ha`} />
+                <div className="space-y-1">
+                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Categoria de densidad</label>
+                  <select
+                    value={DENSITY_CATEGORIES.find(d => d.vivHa === inputs.densidadHabHa)?.key ?? 'custom'}
+                    onChange={(e) => { const c = DENSITY_CATEGORIES.find(d => d.key === e.target.value); if (c && c.key !== 'custom') set("densidadHabHa", c.vivHa); }}
+                    className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 dark:text-white"
+                  >
+                    {DENSITY_CATEGORIES.map(d => <option key={d.key} value={d.key}>{d.label}{d.key !== 'custom' ? ` (${d.vivHa} viv/ha)` : ''}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <InputField label="Densidad de vivienda" value={inputs.densidadHabHa} onChange={(v) => set("densidadHabHa", parseFloat(v) || 50)} unit="viv/ha" tooltip="Viviendas por hectarea. Tomalo del plan parcial de desarrollo urbano de tu zona." />
+                  <p className="text-[10px] text-gray-400 mt-1">
+                    Referencia: minima ~15 · baja ~30 · media ~55 · alta ~90 viv/ha (reglamentos de zonificacion)
+                  </p>
+                </div>
+                <InputField label="Habitantes por vivienda" value={inputs.habPorVivienda} onChange={(v) => set("habPorVivienda", parseFloat(v) || 4)} tooltip="Default 4 (mas usado en Mexico)." />
               </>
             )}
 
@@ -195,7 +210,7 @@ export default function DemandaPage() {
                   projectName: inputs.projectName,
                   hasAssumedValues: false,
                   inputs: [
-                    { label: "Modo", value: inputs.mode === 'habitantes' ? `${results.poblacionActual} hab` : inputs.mode === 'viviendas' ? `${inputs.numViviendas} viviendas × ${inputs.habPorVivienda} hab/viv` : `${inputs.superficieHa} ha × ${inputs.densidadHabHa} hab/ha` },
+                    { label: "Modo", value: inputs.mode === 'habitantes' ? `${results.poblacionActual} hab` : inputs.mode === 'viviendas' ? `${inputs.numViviendas} viviendas × ${inputs.habPorVivienda} hab/viv` : `${inputs.superficieHa} ha × ${inputs.densidadHabHa} viv/ha × ${inputs.habPorVivienda} hab/viv` },
                     { label: "Tipo desarrollo", value: devType?.label ?? inputs.devType },
                     { label: "Clima", value: CLIMATE_TYPES.find(c => c.key === inputs.climaKey)?.label ?? inputs.climaKey },
                     { label: "Dotacion", value: `${inputs.dotacionBase} L/hab/dia (ajustada: ${results.dotacionAjustada.toFixed(0)})` },

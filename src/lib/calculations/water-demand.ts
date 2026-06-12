@@ -14,6 +14,17 @@ export const DEVELOPMENT_TYPES = [
   { key: 'custom', label: 'Personalizado', dotacion: 200, habViv: 3.8, densidad: 50 },
 ] as const;
 
+// ── Categorías de densidad de vivienda (viv/ha) ──
+// Basado en reglamentos de zonificación (REZ Jalisco, planes parciales).
+// La densidad neta de vivienda por hectárea típica por categoría.
+export const DENSITY_CATEGORIES = [
+  { key: 'minima', label: 'Densidad minima (campestre/residencial)', vivHa: 15 },
+  { key: 'baja', label: 'Densidad baja (residencial)', vivHa: 30 },
+  { key: 'media', label: 'Densidad media (interes social)', vivHa: 55 },
+  { key: 'alta', label: 'Densidad alta (popular/vertical)', vivHa: 90 },
+  { key: 'custom', label: 'Personalizado', vivHa: 50 },
+] as const;
+
 // ── Ajuste por clima ──
 export const CLIMATE_TYPES = [
   { key: 'calido-humedo', label: 'Calido humedo (costa, sureste)', factor: 1.20 },
@@ -81,7 +92,8 @@ export function calculateWaterDemand(input: WaterDemandInputs): WaterDemandResul
     pobActual = input.numViviendas * input.habPorVivienda;
   } else {
     if (input.superficieHa == null || input.superficieHa <= 0) return null;
-    pobActual = input.superficieHa * input.densidadHabHa;
+    // densidadHabHa ahora representa viviendas/ha; se multiplica por hab/vivienda
+    pobActual = input.superficieHa * input.densidadHabHa * input.habPorVivienda;
   }
 
   // 2. Future population — solo si se activa la proyeccion (localidades existentes)
