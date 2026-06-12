@@ -16,7 +16,7 @@ const modules = [
     icon: (<svg viewBox="0 0 24 24" className={iconCls} fill="none" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M12 3v6m0 0l-3-3m3 3l3-3M6 13h12v6a2 2 0 01-2 2H8a2 2 0 01-2-2v-6z" /></svg>),
   },
   {
-    title: "Tanque de regularización",
+    title: "Tanque de regulación",
     desc: "Volumen de regulación y reserva, dimensiones del tanque (CONAGUA MAPAS).",
     href: "/tanque",
     icon: (<svg viewBox="0 0 24 24" className={iconCls} fill="none" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M5 4h14v16H5V4zm0 5h14M8 13h8" /></svg>),
@@ -161,7 +161,7 @@ export default function Home() {
               { situation: "¿Dónde pongo las válvulas de aire en mi línea?", module: "Válvulas de aire", data: "Q, DN, perfil de cotas", href: "/valvulas-aire" },
               { situation: "Quiero ver si la presion llega a lo largo de todo el trazo", module: "Linea de conduccion", data: "Q, DN, P1, perfil topografico", href: "/perfil" },
               { situation: "Necesito reducir la presion en una zona de mi red", module: "Valvula reductora", data: "Q, P1, P2, DN", href: "/vrp" },
-              { situation: "¿Que volumen de tanque necesito para regular el suministro?", module: "Tanque de regularizacion", data: "Qmd, horas de aportacion", href: "/tanque" },
+              { situation: "¿Que volumen de tanque necesito para regular el suministro?", module: "Tanque de regulacion", data: "Qmd, horas de aportacion", href: "/tanque" },
             ].map((r) => (
               <Link key={r.module} href={r.href} className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4 bg-white/5 hover:bg-white/10 border border-white/5 rounded-lg px-4 py-3 transition-colors group">
                 <p className="text-sm text-white/80 flex-1 group-hover:text-white">{r.situation}</p>

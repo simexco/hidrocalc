@@ -11,7 +11,7 @@ import { formatNumber } from "@/lib/calculations/conversions";
 import { saveFormState, loadFormState } from "@/lib/storage/form-persistence";
 
 const defaults: TankStorageInputs = {
-  projectName: "Tanque de regularizacion",
+  projectName: "Tanque de regulacion",
   Qmd_ls: null,
   horasAportacion: 24,
   incluirReserva: false,
@@ -60,7 +60,7 @@ export default function TanquePage() {
         <div className="lg:col-span-2 space-y-5">
           <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 space-y-4">
             <div className="flex items-center justify-between border-b border-gray-100 dark:border-gray-700 pb-2">
-              <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300">Tanque de regularizacion</h2>
+              <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300">Tanque de regulacion</h2>
               <ResetButton moduleKey="tanque" onReset={handleReset} />
             </div>
 
