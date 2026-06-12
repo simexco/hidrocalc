@@ -195,7 +195,7 @@ export default function PerfilPage() {
     const ExcelJS = (await import('exceljs')).default;
     const wb = new ExcelJS.Workbook();
     const ws = wb.addWorksheet('Perfil');
-    const headerRow = ws.addRow(['Distancia (m)', 'Cota (m.s.n.m.)', 'Descripcion']);
+    const headerRow = ws.addRow(['Cadenamiento (m)', 'Cota (m.s.n.m.)', 'Descripcion']);
     headerRow.eachCell((cell) => {
       cell.font = { bold: true, color: { argb: 'FFFFFFFF' } };
       cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1C3D5A' } };
@@ -584,10 +584,10 @@ export default function PerfilPage() {
               <input ref={fileRef} type="file" accept=".csv,.txt,.tsv" onChange={handleCSVImport} className="hidden" />
               <input ref={xlsxRef} type="file" accept=".xlsx" onChange={handleXLSXImport} className="hidden" />
             </div>
-            <p className="text-[10px] text-gray-400">CSV: distancia, cota, descripcion (opcional)</p>
+            <p className="text-[10px] text-gray-400">CSV: cadenamiento, cota, descripcion (opcional)</p>
 
             <div className="grid grid-cols-[1fr_1fr_1fr_24px] gap-2 text-[10px] text-gray-400 font-semibold uppercase px-1">
-              <span>Dist. (m)</span><span>Cota (m.s.n.m.)</span><span>Descripcion</span><span></span>
+              <span>Cadenam. (m)</span><span>Cota (m.s.n.m.)</span><span>Descripcion</span><span></span>
             </div>
             <div className="space-y-1 max-h-[350px] overflow-y-auto">
               {vertices.map((v, i) => (
@@ -636,7 +636,7 @@ export default function PerfilPage() {
                   ],
                   alerts: results.alerts.map(a => ({ level: a.level, message: a.message })),
                   tableData: {
-                    head: ["Dist", "Cota", "Piezo", "P (kg/cm2)", "DN", "V (m/s)", "Estado"],
+                    head: ["Cadenam.", "Cota", "Piezo", "P (kg/cm2)", "DN", "V (m/s)", "Estado"],
                     body: results.points.map(p => [
                       `${p.dist}`, formatNumber(p.cota, 1),
                       p.piezo != null ? formatNumber(p.piezo, 1) : "--",
@@ -731,7 +731,7 @@ export default function PerfilPage() {
                   <ResponsiveContainer width="100%" height={320}>
                     <ComposedChart data={chartData} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
                       <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
-                      <XAxis dataKey="dist" type="number" tick={{ fontSize: 10 }} label={{ value: "Distancia (m)", position: "bottom", fontSize: 10 }} />
+                      <XAxis dataKey="dist" type="number" tick={{ fontSize: 10 }} label={{ value: "Cadenamiento (m)", position: "bottom", fontSize: 10 }} />
                       <YAxis tick={{ fontSize: 10 }} label={{ value: "Elevacion (m)", angle: -90, position: "insideLeft", fontSize: 10 }} />
                       <Tooltip formatter={(v: number) => [v?.toFixed(2), ""]} labelFormatter={(l) => `Dist: ${l} m`} />
                       <Legend wrapperStyle={{ fontSize: 11 }} />
@@ -755,7 +755,7 @@ export default function PerfilPage() {
                     <thead>
                       <tr className="bg-gray-50 dark:bg-gray-700 text-gray-500">
                         <th className="px-2 py-2 text-left">#</th>
-                        <th className="px-2 py-2 text-right">Dist (m)</th>
+                        <th className="px-2 py-2 text-right">Cadenam. (m)</th>
                         <th className="px-2 py-2 text-right">Cota</th>
                         <th className="px-2 py-2 text-right">Piezom.</th>
                         <th className="px-2 py-2 text-right">P (kg/cm2)</th>
