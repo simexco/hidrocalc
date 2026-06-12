@@ -43,12 +43,16 @@ export interface ProfileInputs {
   Pmin_kgcm2: number;
   vertices: ProfileVertex[];
   tramos: ProfileTramo[];  // if empty, use single-pipe mode (first tramo covers all)
+  coefAccesorios?: number; // pérdidas menores como fracción de hf (default 0.05 = 5%)
 }
 
 export interface ProfileResults {
   points: ProfilePointResult[];
   totalLength: number;
-  totalHf: number;
+  totalHf: number;        // pérdida longitudinal (friccion)
+  totalHm: number;        // pérdida por accesorios (menores)
+  totalPerdida: number;   // hf + hm
+  coefAccesorios: number; // % usado
   finalPressure_kgcm2: number | null;
   criticalPoint: { dist: number; pressure_kgcm2: number } | null;
   pointsBelowMin: number;
@@ -80,6 +84,7 @@ function findTramo(dist: number, tramos: ProfileTramo[]): ProfileTramo | null {
 
 export function calculateProfile(input: ProfileInputs): ProfileResults | null {
   const { Q, P1_kgcm2, Pmin_kgcm2, vertices, tramos } = input;
+  const coefAcc = input.coefAccesorios ?? 0.05; // 5% por defecto
   if (vertices.length < 2) return null;
   if (tramos.length === 0) return null;
 
@@ -123,7 +128,8 @@ export function calculateProfile(input: ProfileInputs): ProfileResults | null {
 
     if (hasHydraulics) {
       const piezoStart = sorted[0].cota + P1_kgcm2! * 10;
-      piezo = piezoStart - hfAccum;
+      // La perdida total incluye friccion (hfAccum) + accesorios (coefAcc × hfAccum)
+      piezo = piezoStart - hfAccum * (1 + coefAcc);
       pressure_mca = piezo - sorted[i].cota;
       pressure_kgcm2 = pressure_mca / 10;
 
@@ -164,6 +170,8 @@ export function calculateProfile(input: ProfileInputs): ProfileResults | null {
 
   const finalP = points[points.length - 1]?.pressure_kgcm2 ?? null;
   const totalHf = hfAccum;
+  const totalHm = hfAccum * coefAcc;
+  const totalPerdida = totalHf + totalHm;
 
   // Tramo summaries with max pressure check
   const tramoSummaries = tramos.map((t, tIdx) => {
@@ -214,6 +222,9 @@ export function calculateProfile(input: ProfileInputs): ProfileResults | null {
     points,
     totalLength,
     totalHf,
+    totalHm,
+    totalPerdida,
+    coefAccesorios: coefAcc,
     finalPressure_kgcm2: finalP,
     criticalPoint: criticalPoint && minPressure < Infinity ? criticalPoint : null,
     pointsBelowMin,

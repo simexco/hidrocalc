@@ -24,6 +24,7 @@ export default function PerfilPage() {
   const [flowUnit, setFlowUnit] = useState<FlowUnit>("L/s");
   const [P1, setP1] = useState<number | null>(null);
   const [Pmin, setPmin] = useState(1.0);
+  const [coefAccesorios, setCoefAccesorios] = useState(5); // % de hf (default 5%)
   const [vertices, setVertices] = useState<ProfileVertex[]>([
     { id: uuid(), dist: 0, cota: 100, desc: "Inicio" },
     { id: uuid(), dist: 1000, cota: 95, desc: "Fin" },
@@ -81,17 +82,17 @@ export default function PerfilPage() {
       setComputedP1(null);
     }
 
-    const res = calculateProfile({ Q, P1_kgcm2: effectiveP1, Pmin_kgcm2: Pmin, vertices, tramos });
+    const res = calculateProfile({ Q, P1_kgcm2: effectiveP1, Pmin_kgcm2: Pmin, vertices, tramos, coefAccesorios: coefAccesorios / 100 });
     setResults(res);
 
     // Scenario B
     if (showScenarioB) {
-      const resB = calculateProfile({ Q, P1_kgcm2: effectiveP1, Pmin_kgcm2: Pmin, vertices, tramos: tramosB });
+      const resB = calculateProfile({ Q, P1_kgcm2: effectiveP1, Pmin_kgcm2: Pmin, vertices, tramos: tramosB, coefAccesorios: coefAccesorios / 100 });
       setResultsB(resB);
     } else {
       setResultsB(null);
     }
-  }, [rawQ, flowUnit, P1, Pmin, vertices, tramos, calcMode, showScenarioB, tramosB]);
+  }, [rawQ, flowUnit, P1, Pmin, vertices, tramos, calcMode, showScenarioB, tramosB, coefAccesorios]);
 
   useEffect(() => {
     clearTimeout(debounceRef.current);
@@ -101,7 +102,7 @@ export default function PerfilPage() {
 
   const handleReset = () => {
     setProjectName("Perfil hidraulico");
-    setRawQ(null); setFlowUnit("L/s"); setP1(null); setPmin(1.0); setResults(null);
+    setRawQ(null); setFlowUnit("L/s"); setP1(null); setPmin(1.0); setCoefAccesorios(5); setResults(null);
     setVertices([
       { id: uuid(), dist: 0, cota: 100, desc: "Inicio" },
       { id: uuid(), dist: 1000, cota: 95, desc: "Fin" },
@@ -378,6 +379,7 @@ export default function PerfilPage() {
             {showAdvanced && (
               <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-3 space-y-3">
                 <InputField label="Presion minima requerida" value={Pmin} onChange={(v) => setPmin(parseFloat(v) || 1)} unit="kg/cm2" tooltip="Presion minima aceptable en cualquier punto" />
+                <InputField label="Perdida por accesorios" value={coefAccesorios} onChange={(v) => setCoefAccesorios(parseFloat(v) || 5)} unit="% de hf" tooltip="Perdida por accesorios estimada como porcentaje de la perdida por friccion. Tipico 5% en lineas de conduccion." />
               </div>
             )}
           </div>
@@ -643,7 +645,9 @@ export default function PerfilPage() {
                   ],
                   results: [
                     { label: "Longitud total", value: formatNumber(results.totalLength, 0), unit: "m" },
-                    { label: "hf total", value: formatNumber(results.totalHf, 3), unit: "m" },
+                    { label: "Perdida longitudinal (hf)", value: formatNumber(results.totalHf, 3), unit: "m" },
+                    { label: `Perdida accesorios (${coefAccesorios}%)`, value: formatNumber(results.totalHm, 3), unit: "m" },
+                    { label: "Perdida total", value: formatNumber(results.totalPerdida, 3), unit: "m" },
                     { label: "P final", value: results.finalPressure_kgcm2 != null ? formatNumber(results.finalPressure_kgcm2, 2) : "--", unit: "kg/cm2" },
                   ],
                   alerts: results.alerts.map(a => ({ level: a.level, message: a.message })),
@@ -667,7 +671,7 @@ export default function PerfilPage() {
               {/* Summary */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 <MetricCard label="Longitud total" value={formatNumber(results.totalLength, 0)} unit="m" dataStatus="calculated" />
-                <MetricCard label="hf total" value={formatNumber(results.totalHf, 2)} unit="m" dataStatus="calculated" />
+                <MetricCard label="Perdida total" value={formatNumber(results.totalPerdida, 2)} unit="m" dataStatus="calculated" />
                 <MetricCard
                   label="P final"
                   value={results.finalPressure_kgcm2 != null ? formatNumber(results.finalPressure_kgcm2, 2) : "--"}
@@ -676,6 +680,27 @@ export default function PerfilPage() {
                   dataStatus="calculated"
                 />
                 <MetricCard label="Puntos criticos" value={`${results.pointsCritical}`} alertLevel={results.pointsCritical > 0 ? "ERROR" : "OK"} dataStatus="calculated" />
+              </div>
+
+              {/* Desglose de perdidas de carga */}
+              <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+                <div className="bg-[#1C3D5A] px-4 py-2">
+                  <h3 className="text-xs font-semibold text-white">Desglose de perdida de carga</h3>
+                </div>
+                <div className="divide-y divide-gray-100 dark:divide-gray-700">
+                  <div className="flex items-center justify-between px-4 py-2.5 text-sm">
+                    <span className="text-gray-600 dark:text-gray-400">Perdida longitudinal (friccion)</span>
+                    <span className="font-mono font-semibold text-gray-700 dark:text-gray-300">{formatNumber(results.totalHf, 2)} m</span>
+                  </div>
+                  <div className="flex items-center justify-between px-4 py-2.5 text-sm">
+                    <span className="text-gray-600 dark:text-gray-400">Perdida por accesorios ({coefAccesorios}% de hf)</span>
+                    <span className="font-mono font-semibold text-gray-700 dark:text-gray-300">{formatNumber(results.totalHm, 2)} m</span>
+                  </div>
+                  <div className="flex items-center justify-between px-4 py-3 text-sm bg-[#E9EFF5] dark:bg-[#1C3D5A]/20">
+                    <span className="font-semibold text-[#1C3D5A] dark:text-blue-300">Perdida total</span>
+                    <span className="font-mono font-bold text-[#1C3D5A] dark:text-blue-200">{formatNumber(results.totalPerdida, 2)} m</span>
+                  </div>
+                </div>
               </div>
               {calcMode === 'calcularP1' && computedP1 != null && (
                 <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-4 text-center">
