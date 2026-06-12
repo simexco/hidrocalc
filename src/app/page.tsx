@@ -9,12 +9,6 @@ const modules = [
     href: "/demanda",
     icon: (<svg viewBox="0 0 24 24" className={iconCls} fill="none" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" /></svg>),
   },
-  {
-    title: "Fuente de abastecimiento",
-    desc: "Aforo de pozo: abatimiento, caudal específico y caudal de explotación.",
-    href: "/fuente",
-    icon: (<svg viewBox="0 0 24 24" className={iconCls} fill="none" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M12 3v6m0 0l-3-3m3 3l3-3M6 13h12v6a2 2 0 01-2 2H8a2 2 0 01-2-2v-6z" /></svg>),
-  },
   // ── Conducción ──
   {
     title: "Línea de impulsión",
@@ -145,7 +139,6 @@ export default function Home() {
           <div className="space-y-3">
             {[
               { situation: "No se cuanto caudal necesito para mi proyecto", module: "Calculo de gasto", data: "Poblacion o viviendas, tipo, clima", href: "/demanda" },
-              { situation: "¿Cuanto puedo extraer de mi pozo y cuantos necesito?", module: "Fuente de abastecimiento", data: "Nivel estatico y dinamico, Q prueba", href: "/fuente" },
               { situation: "¿La presión llega al final de mi tubería?", module: "Verificar presión (Modo A)", data: "Q, DN, L, P1", href: "/tramo-simple" },
               { situation: "¿Cuánto caudal puede pasar sin bajar la presión?", module: "Verificar presión (Modo B)", data: "DN, L, P1, P2 mínima", href: "/tramo-simple" },
               { situation: "No sé qué diámetro usar para mi caudal", module: "Elegir diámetro", data: "Q, L, P1", href: "/dimensionamiento" },

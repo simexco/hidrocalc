@@ -6,7 +6,6 @@ import { HelpButton } from "@/components/ui/HelpModal";
 
 const moduleNames: Record<string, string> = {
   "/demanda": "Calculo de gasto",
-  "/fuente": "Fuente de abastecimiento",
   "/tramo-simple": "Verificar presión",
   "/perfil": "Linea de conduccion",
   "/impulsion": "Linea de impulsion",
