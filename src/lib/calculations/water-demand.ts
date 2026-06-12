@@ -35,7 +35,8 @@ export interface WaterDemandInputs {
   // Mode C — by area
   superficieHa: number | null;
   densidadHabHa: number;
-  // Growth
+  // Growth (opcional — solo para localidades existentes)
+  proyectarCrecimiento: boolean;
   tasaCrecimiento: number;  // % annual
   periodoDiseno: number;    // years
   // Demand
@@ -68,7 +69,7 @@ export interface WaterDemandResults {
 }
 
 export function calculateWaterDemand(input: WaterDemandInputs): WaterDemandResults | null {
-  const { mode, tasaCrecimiento, periodoDiseno, dotacionBase, climaKey, CVD, CVH } = input;
+  const { mode, proyectarCrecimiento, tasaCrecimiento, periodoDiseno, dotacionBase, climaKey, CVD, CVH } = input;
 
   // 1. Population
   let pobActual: number;
@@ -83,9 +84,11 @@ export function calculateWaterDemand(input: WaterDemandInputs): WaterDemandResul
     pobActual = input.superficieHa * input.densidadHabHa;
   }
 
-  // 2. Future population
+  // 2. Future population — solo si se activa la proyeccion (localidades existentes)
   const r = tasaCrecimiento / 100;
-  const pobDiseno = pobActual * Math.pow(1 + r, periodoDiseno);
+  const pobDiseno = proyectarCrecimiento
+    ? pobActual * Math.pow(1 + r, periodoDiseno)
+    : pobActual;
 
   // 3. Climate adjustment
   const clima = CLIMATE_TYPES.find(c => c.key === climaKey);
@@ -106,9 +109,9 @@ export function calculateWaterDemand(input: WaterDemandInputs): WaterDemandResul
   const alerts: WaterDemandResults['alerts'] = [];
   if (dotacionAjustada > 500) alerts.push({ level: 'WARN', message: `Dotacion ajustada muy alta (${dotacionAjustada.toFixed(0)} L/hab/dia) — verificar tipo de desarrollo y clima` });
   if (dotacionAjustada < 75) alerts.push({ level: 'WARN', message: `Dotacion muy baja (${dotacionAjustada.toFixed(0)} L/hab/dia) — verificar que cubre necesidades basicas` });
-  if (pobDiseno > pobActual * 5) alerts.push({ level: 'WARN', message: `La poblacion de diseno (${Math.round(pobDiseno)}) es ${(pobDiseno/pobActual).toFixed(1)}x la actual — verificar tasa de crecimiento y periodo` });
-  if (tasaCrecimiento > 5) alerts.push({ level: 'WARN', message: `Tasa de crecimiento ${tasaCrecimiento}% es muy alta — el promedio nacional es 1-2%` });
-  if (periodoDiseno > 30) alerts.push({ level: 'WARN', message: `Periodo de diseno > 30 años — CONAGUA recomienda 20-25 años para agua potable` });
+  if (proyectarCrecimiento && pobDiseno > pobActual * 5) alerts.push({ level: 'WARN', message: `La poblacion de diseno (${Math.round(pobDiseno)}) es ${(pobDiseno/pobActual).toFixed(1)}x la actual — verificar tasa de crecimiento y periodo` });
+  if (proyectarCrecimiento && tasaCrecimiento > 5) alerts.push({ level: 'WARN', message: `Tasa de crecimiento ${tasaCrecimiento}% es muy alta — el promedio nacional es 1-2%` });
+  if (proyectarCrecimiento && periodoDiseno > 30) alerts.push({ level: 'WARN', message: `Periodo de diseno > 30 años — CONAGUA recomienda 20-25 años para agua potable` });
 
   return {
     poblacionActual: Math.round(pobActual),

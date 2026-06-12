@@ -19,6 +19,7 @@ const defaults: WaterDemandInputs = {
   habPorVivienda: 4,
   superficieHa: null,
   densidadHabHa: 50,
+  proyectarCrecimiento: false,
   tasaCrecimiento: 2.0,
   periodoDiseno: 20,
   devType: 'interes-social',
@@ -155,10 +156,19 @@ export default function DemandaPage() {
                 {/* Dotacion — editable */}
                 <InputField label="Dotacion" value={inputs.dotacionBase} onChange={(v) => set("dotacionBase", parseFloat(v) || 150)} unit="L/hab/dia" tooltip="Sugerida segun tipo de desarrollo. Puedes modificarla si tienes un dato especifico." />
 
-                {/* Growth */}
-                <div className="grid grid-cols-2 gap-3">
-                  <InputField label="Tasa crecimiento" value={inputs.tasaCrecimiento} onChange={(v) => set("tasaCrecimiento", parseFloat(v) || 2)} unit="% anual" tooltip="Tasa de crecimiento poblacional. Promedio nacional INEGI: 1-2%. Si no la conoces, usa 2%." />
-                  <InputField label="Periodo de diseno" value={inputs.periodoDiseno} onChange={(v) => set("periodoDiseno", parseFloat(v) || 20)} unit="años" tooltip="CONAGUA recomienda 20-25 años para sistemas de agua potable" />
+                {/* Growth projection — optional, off by default */}
+                <div className="space-y-2">
+                  <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+                    <input type="checkbox" checked={inputs.proyectarCrecimiento} onChange={(e) => set("proyectarCrecimiento", e.target.checked)} className="rounded border-gray-300" />
+                    Proyectar crecimiento a futuro
+                  </label>
+                  <p className="text-[10px] text-gray-400 -mt-1">Solo para localidades existentes que van a crecer. Para desarrollos nuevos (ya conoces el total de viviendas) dejalo apagado.</p>
+                  {inputs.proyectarCrecimiento && (
+                    <div className="grid grid-cols-2 gap-3">
+                      <InputField label="Tasa crecimiento" value={inputs.tasaCrecimiento} onChange={(v) => set("tasaCrecimiento", parseFloat(v) || 2)} unit="% anual" tooltip="Tasa de crecimiento poblacional. Promedio nacional INEGI: 1-2%." />
+                      <InputField label="Periodo de diseno" value={inputs.periodoDiseno} onChange={(v) => set("periodoDiseno", parseFloat(v) || 20)} unit="años" tooltip="CONAGUA recomienda 20-25 años" />
+                    </div>
+                  )}
                 </div>
 
                 {/* Coeficientes de variacion */}
@@ -189,7 +199,7 @@ export default function DemandaPage() {
                     { label: "Tipo desarrollo", value: devType?.label ?? inputs.devType },
                     { label: "Clima", value: CLIMATE_TYPES.find(c => c.key === inputs.climaKey)?.label ?? inputs.climaKey },
                     { label: "Dotacion", value: `${inputs.dotacionBase} L/hab/dia (ajustada: ${results.dotacionAjustada.toFixed(0)})` },
-                    { label: "Crecimiento", value: `${inputs.tasaCrecimiento}% × ${inputs.periodoDiseno} años` },
+                    { label: "Crecimiento", value: inputs.proyectarCrecimiento ? `${inputs.tasaCrecimiento}% × ${inputs.periodoDiseno} años` : "Sin proyeccion" },
                     { label: "CVD / CVH", value: `${inputs.CVD} / ${inputs.CVH}` },
                   ],
                   results: [
