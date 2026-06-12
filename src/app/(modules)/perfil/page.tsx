@@ -382,6 +382,45 @@ export default function PerfilPage() {
             )}
           </div>
 
+          {/* Profile table */}
+          <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 space-y-3">
+            <div className="flex items-center justify-between">
+              <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300">Perfil topografico</h2>
+              <div className="flex gap-2">
+                <button onClick={downloadTemplate} className="text-[10px] text-[#1C3D5A] border border-[#1C3D5A]/30 px-2 py-1 rounded hover:bg-[#1C3D5A]/10 transition-colors">
+                  Plantilla .xlsx
+                </button>
+                <button onClick={() => xlsxRef.current?.click()} className="text-[10px] text-[#1C3D5A] border border-[#1C3D5A]/30 px-2 py-1 rounded hover:bg-[#1C3D5A]/10 transition-colors">
+                  Importar Excel
+                </button>
+                <button onClick={() => fileRef.current?.click()} className="text-[10px] text-[#1C3D5A] border border-[#1C3D5A]/30 px-2 py-1 rounded hover:bg-[#1C3D5A]/10 transition-colors">
+                  Importar CSV
+                </button>
+                <button onClick={addVertex} className="text-xs bg-[#1C3D5A] text-white px-3 py-1.5 rounded-lg hover:bg-[#0F2438] transition-colors">
+                  + Punto
+                </button>
+              </div>
+              <input ref={fileRef} type="file" accept=".csv,.txt,.tsv" onChange={handleCSVImport} className="hidden" />
+              <input ref={xlsxRef} type="file" accept=".xlsx" onChange={handleXLSXImport} className="hidden" />
+            </div>
+            <p className="text-[10px] text-gray-400">CSV: cadenamiento, cota, descripcion (opcional)</p>
+
+            <div className="grid grid-cols-[1fr_1fr_1fr_24px] gap-2 text-[10px] text-gray-400 font-semibold uppercase px-1">
+              <span>Cadenam. (m)</span><span>Cota (m.s.n.m.)</span><span>Descripcion</span><span></span>
+            </div>
+            <div className="space-y-1 max-h-[350px] overflow-y-auto">
+              {vertices.map((v, i) => (
+                <div key={v.id} className={`grid grid-cols-[1fr_1fr_1fr_24px] gap-2 items-center px-1 ${results?.points[i]?.status === 'critical' ? 'bg-red-50 dark:bg-red-900/10 rounded' : results?.points[i]?.status === 'low' ? 'bg-yellow-50 dark:bg-yellow-900/10 rounded' : ''}`}>
+                  <NumInput value={v.dist} onChange={(n) => updateVertex(v.id, "dist", n)} />
+                  <NumInput value={v.cota} onChange={(n) => updateVertex(v.id, "cota", n)} />
+                  <input type="text" value={v.desc} onChange={(e) => updateVertex(v.id, "desc", e.target.value)} placeholder={i === 0 ? "Inicio" : ""} className="w-full px-2 py-1.5 text-xs border border-gray-200 dark:border-gray-600 rounded bg-white dark:bg-gray-800 dark:text-white" />
+                  {vertices.length > 2 ? <button onClick={() => removeVertex(v.id)} className="text-red-400 hover:text-red-600 text-xs text-center">{"✗"}</button> : <span />}
+                </div>
+              ))}
+            </div>
+            <p className="text-[10px] text-gray-400">{vertices.length} puntos</p>
+          </div>
+
           {/* Tramos de tubería */}
           <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 space-y-3">
             <div className="flex items-center justify-between">
@@ -573,45 +612,6 @@ export default function PerfilPage() {
                 ))}
               </>
             )}
-          </div>
-
-          {/* Profile table */}
-          <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 space-y-3">
-            <div className="flex items-center justify-between">
-              <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300">Perfil topografico</h2>
-              <div className="flex gap-2">
-                <button onClick={downloadTemplate} className="text-[10px] text-[#1C3D5A] border border-[#1C3D5A]/30 px-2 py-1 rounded hover:bg-[#1C3D5A]/10 transition-colors">
-                  Plantilla .xlsx
-                </button>
-                <button onClick={() => xlsxRef.current?.click()} className="text-[10px] text-[#1C3D5A] border border-[#1C3D5A]/30 px-2 py-1 rounded hover:bg-[#1C3D5A]/10 transition-colors">
-                  Importar Excel
-                </button>
-                <button onClick={() => fileRef.current?.click()} className="text-[10px] text-[#1C3D5A] border border-[#1C3D5A]/30 px-2 py-1 rounded hover:bg-[#1C3D5A]/10 transition-colors">
-                  Importar CSV
-                </button>
-                <button onClick={addVertex} className="text-xs bg-[#1C3D5A] text-white px-3 py-1.5 rounded-lg hover:bg-[#0F2438] transition-colors">
-                  + Punto
-                </button>
-              </div>
-              <input ref={fileRef} type="file" accept=".csv,.txt,.tsv" onChange={handleCSVImport} className="hidden" />
-              <input ref={xlsxRef} type="file" accept=".xlsx" onChange={handleXLSXImport} className="hidden" />
-            </div>
-            <p className="text-[10px] text-gray-400">CSV: cadenamiento, cota, descripcion (opcional)</p>
-
-            <div className="grid grid-cols-[1fr_1fr_1fr_24px] gap-2 text-[10px] text-gray-400 font-semibold uppercase px-1">
-              <span>Cadenam. (m)</span><span>Cota (m.s.n.m.)</span><span>Descripcion</span><span></span>
-            </div>
-            <div className="space-y-1 max-h-[350px] overflow-y-auto">
-              {vertices.map((v, i) => (
-                <div key={v.id} className={`grid grid-cols-[1fr_1fr_1fr_24px] gap-2 items-center px-1 ${results?.points[i]?.status === 'critical' ? 'bg-red-50 dark:bg-red-900/10 rounded' : results?.points[i]?.status === 'low' ? 'bg-yellow-50 dark:bg-yellow-900/10 rounded' : ''}`}>
-                  <NumInput value={v.dist} onChange={(n) => updateVertex(v.id, "dist", n)} />
-                  <NumInput value={v.cota} onChange={(n) => updateVertex(v.id, "cota", n)} />
-                  <input type="text" value={v.desc} onChange={(e) => updateVertex(v.id, "desc", e.target.value)} placeholder={i === 0 ? "Inicio" : ""} className="w-full px-2 py-1.5 text-xs border border-gray-200 dark:border-gray-600 rounded bg-white dark:bg-gray-800 dark:text-white" />
-                  {vertices.length > 2 ? <button onClick={() => removeVertex(v.id)} className="text-red-400 hover:text-red-600 text-xs text-center">{"✗"}</button> : <span />}
-                </div>
-              ))}
-            </div>
-            <p className="text-[10px] text-gray-400">{vertices.length} puntos</p>
           </div>
         </div>
 
