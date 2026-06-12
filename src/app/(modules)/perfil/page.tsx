@@ -302,6 +302,18 @@ export default function PerfilPage() {
     return base;
   })();
 
+  // Rango del eje Y ajustado a las cotas reales (no parte de 0) para que
+  // se vean las variaciones de pocos metros del terreno.
+  const yDomain: [number, number] = (() => {
+    const vals = chartData.flatMap(d => [d.Terreno, d["Piezometrica A"], d["Piezometrica B"]])
+      .filter((v): v is number => v != null && isFinite(v));
+    if (vals.length === 0) return [0, 100];
+    const lo = Math.min(...vals);
+    const hi = Math.max(...vals);
+    const pad = Math.max((hi - lo) * 0.1, 2); // 10% del rango o minimo 2 m
+    return [Math.floor(lo - pad), Math.ceil(hi + pad)];
+  })();
+
   const missing: string[] = [];
   if (rawQ == null) missing.push("caudal Q");
   if (calcMode === 'verificar' && P1 == null) missing.push("presion P1");
@@ -732,10 +744,10 @@ export default function PerfilPage() {
                     <ComposedChart data={chartData} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
                       <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
                       <XAxis dataKey="dist" type="number" tick={{ fontSize: 10 }} label={{ value: "Cadenamiento (m)", position: "bottom", fontSize: 10 }} />
-                      <YAxis tick={{ fontSize: 10 }} label={{ value: "Elevacion (m)", angle: -90, position: "insideLeft", fontSize: 10 }} />
-                      <Tooltip formatter={(v: number) => [v?.toFixed(2), ""]} labelFormatter={(l) => `Dist: ${l} m`} />
+                      <YAxis domain={yDomain} allowDataOverflow tick={{ fontSize: 10 }} label={{ value: "Elevacion (m)", angle: -90, position: "insideLeft", fontSize: 10 }} />
+                      <Tooltip formatter={(v: number) => [v?.toFixed(2), ""]} labelFormatter={(l) => `Cadenam: ${l} m`} />
                       <Legend wrapperStyle={{ fontSize: 11 }} />
-                      <Area type="monotone" dataKey="Terreno" stroke="#8B7355" fill="#D2B48C" fillOpacity={0.3} strokeWidth={2} />
+                      <Area type="monotone" dataKey="Terreno" stroke="#8B7355" fill="#D2B48C" fillOpacity={0.3} strokeWidth={2} baseValue="dataMin" />
                       <Line type="monotone" dataKey="Piezometrica A" stroke="#1C3D5A" strokeWidth={2.5} dot={{ r: 3 }} strokeDasharray="8 4" />
                       {showScenarioB && resultsB && (
                         <Line type="monotone" dataKey="Piezometrica B" stroke="#F97316" strokeWidth={2} dot={{ r: 2 }} strokeDasharray="4 4" />
