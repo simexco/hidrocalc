@@ -138,7 +138,12 @@ export default function DemandaPage() {
                     Referencia: minima ~15 · baja ~30 · media ~55 · alta ~90 viv/ha (reglamentos de zonificacion)
                   </p>
                 </div>
-                <InputField label="Habitantes por vivienda" value={inputs.habPorVivienda} onChange={(v) => set("habPorVivienda", parseFloat(v) || 4)} tooltip="Default 4 (mas usado en Mexico)." />
+                <div>
+                  <InputField label="Habitantes por vivienda" value={inputs.habPorVivienda} onChange={(v) => set("habPorVivienda", parseFloat(v) || 4)} tooltip="Valor mas usado en Mexico: 4 hab/viv. Puedes cambiarlo segun el censo INEGI de tu localidad." />
+                  <p className="text-[10px] text-gray-400 mt-1">
+                    Referencia: rural ~4.5 · interes social ~4.0 · medio ~3.8 · residencial ~3.5 (INEGI). Mas usado: <strong className="text-gray-500">4</strong>
+                  </p>
+                </div>
               </>
             )}
 
