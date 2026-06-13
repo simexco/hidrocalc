@@ -348,14 +348,13 @@ export default function DemandaPage() {
                   title="Tanque de regulacion"
                   value={formatNumber(results.volTanque_m3, 0)}
                   unit="m3"
-                  formula="Vr = (C / 100) × Vol. maximo diario"
+                  formula="Vr = QMD × Coeficiente de regulacion"
                   steps={[
-                    { label: "Volumen maximo diario:", substitution: `QMD × 86.4 = ${formatNumber(results.QMD_ls, 2)} × 86.4 = ${formatNumber(results.QMD_ls * 86.4, 0)} m3` },
-                    { label: `Coeficiente C = ${inputs.coefRegulacion}%`, substitution: `Vr = (${inputs.coefRegulacion} / 100) × ${formatNumber(results.QMD_ls * 86.4, 0)}` },
+                    { substitution: `Vr = ${formatNumber(results.QMD_ls, 2)} L/s × ${inputs.coefRegulacion}` },
                     { result: `Vr = ${formatNumber(results.volTanque_m3, 0)} m3` },
                   ]}
-                  reference="Volumen de regulacion — sobre el gasto maximo diario"
-                  norm="CONAGUA MAPAS Tabla 1.3: 24h=11.0, 20h=9.0, 16h=19.0 (CDMX Tabla 1.4: 24h=14.3)"
+                  reference="Volumen de regulacion"
+                  norm="CONAGUA Tabla 1.3: 24h=11.0, 20h=9.0, 16h=19.0 (CDMX Tabla 1.4: 24h=14.3)"
                 />
               </div>
 
