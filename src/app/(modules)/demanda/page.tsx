@@ -43,8 +43,8 @@ export default function DemandaPage() {
   // Persist
   useEffect(() => {
     const saved = loadFormState<WaterDemandInputs>("demanda");
-    // habPorVivienda siempre arranca en 4 (no se carga el valor viejo guardado)
-    if (saved) setInputs({ ...defaults, ...saved, habPorVivienda: 4 });
+    // habPorVivienda siempre arranca en 4 y coefRegulacion en 11.0 (ignora valores viejos guardados)
+    if (saved) setInputs({ ...defaults, ...saved, habPorVivienda: 4, coefRegulacion: 11.0 });
   }, []);
 
   useEffect(() => {
