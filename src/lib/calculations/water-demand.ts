@@ -58,7 +58,7 @@ export interface WaterDemandInputs {
   CVD: number;  // daily variation (default 1.4)
   CVH: number;  // hourly variation (default 1.55)
   // Tanque de regulacion (integrado)
-  coefRegulacion: number;  // fraccion del volumen diario (default 0.19 para 24h)
+  coefRegulacion: number;  // coeficiente de regulacion CONAGUA en % (default 11.0 para 24h)
 }
 
 export interface WaterDemandResults {
@@ -119,8 +119,12 @@ export function calculateWaterDemand(input: WaterDemandInputs): WaterDemandResul
   const QMH_ls = QMD_ls * CVH;
   const QMH_m3h = QMH_ls * 3.6;
   const volDiario_m3 = (pobDiseno * dotacionAjustada) / 1000;
-  // Tanque de regulacion: Vr = coeficiente × volumen diario
-  const volTanque_m3 = (input.coefRegulacion ?? 0.19) * volDiario_m3;
+  // Tanque de regulacion (CONAGUA MAPAS):
+  // V = (C/100) × volumen maximo diario, donde el vol max diario = QMD × 86.4
+  // y C es el coeficiente de regulacion de la tabla (% , ej. 11.0 para 24h)
+  const volDiarioMax_m3 = QMD_ls * 86.4;
+  const coefReg = input.coefRegulacion ?? 11.0;
+  const volTanque_m3 = (coefReg / 100) * volDiarioMax_m3;
 
   // 5. Alerts
   const alerts: WaterDemandResults['alerts'] = [];
