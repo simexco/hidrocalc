@@ -158,25 +158,25 @@ export default function DemandaPage() {
               </select>
             </div>
 
+            {/* Climate — siempre visible */}
+            <div className="space-y-1">
+              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Clima de la zona</label>
+              <select value={inputs.climaKey} onChange={(e) => set('climaKey', e.target.value)} className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 dark:text-white">
+                {CLIMATE_TYPES.map(c => (
+                  <option key={c.key} value={c.key}>{c.label} ({c.factor === 1 ? 'base' : c.factor > 1 ? `+${((c.factor-1)*100).toFixed(0)}%` : `${((c.factor-1)*100).toFixed(0)}%`})</option>
+                ))}
+              </select>
+            </div>
+
+            {/* Dotacion — siempre visible, editable */}
+            <InputField label="Dotacion" value={inputs.dotacionBase} onChange={(v) => set("dotacionBase", parseFloat(v) || 150)} unit="L/hab/dia" tooltip="Sugerida segun tipo de desarrollo. Puedes modificarla si tienes un dato especifico." />
+
             {/* Advanced */}
             <button onClick={() => setShowAdvanced(!showAdvanced)} className="text-[10px] text-[#1C3D5A] underline decoration-dotted">
               {showAdvanced ? 'Ocultar' : 'Mostrar'} parametros avanzados
             </button>
             {showAdvanced && (
               <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-3 space-y-3">
-                {/* Climate */}
-                <div className="space-y-1">
-                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Clima de la zona</label>
-                  <select value={inputs.climaKey} onChange={(e) => set('climaKey', e.target.value)} className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 dark:text-white">
-                    {CLIMATE_TYPES.map(c => (
-                      <option key={c.key} value={c.key}>{c.label} ({c.factor === 1 ? 'base' : c.factor > 1 ? `+${((c.factor-1)*100).toFixed(0)}%` : `${((c.factor-1)*100).toFixed(0)}%`})</option>
-                    ))}
-                  </select>
-                </div>
-
-                {/* Dotacion — editable */}
-                <InputField label="Dotacion" value={inputs.dotacionBase} onChange={(v) => set("dotacionBase", parseFloat(v) || 150)} unit="L/hab/dia" tooltip="Sugerida segun tipo de desarrollo. Puedes modificarla si tienes un dato especifico." />
-
                 {/* Growth projection — optional, off by default */}
                 <div className="space-y-2">
                   <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
