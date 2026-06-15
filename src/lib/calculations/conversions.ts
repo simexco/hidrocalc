@@ -44,5 +44,5 @@ export function kgcm2ToMca(kgcm2: number): number {
 
 export function formatNumber(val: number | null | undefined, decimals = 2): string {
   if (val == null || !isFinite(val)) return "—";
-  return val.toFixed(decimals);
+  return val.toLocaleString("es-MX", { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
 }
