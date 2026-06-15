@@ -3,6 +3,7 @@
 import { HidroCalcSidebar } from "./HidroCalcSidebar";
 import { HidroCalcHeader } from "./HidroCalcHeader";
 import { HidroCalcFooter } from "./HidroCalcFooter";
+import { FlowNav } from "./FlowNav";
 
 export function HidroCalcLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -12,7 +13,10 @@ export function HidroCalcLayout({ children }: { children: React.ReactNode }) {
       </div>
       <div className="flex-1 flex flex-col min-w-0">
         <HidroCalcHeader />
-        <main className="flex-1 p-5 lg:p-6 overflow-auto">{children}</main>
+        <main className="flex-1 p-5 lg:p-6 overflow-auto">
+          <FlowNav />
+          {children}
+        </main>
         <HidroCalcFooter />
       </div>
     </div>

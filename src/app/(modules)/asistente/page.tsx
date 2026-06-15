@@ -41,7 +41,7 @@ export default function AsistentePage() {
       <div className="flex items-start justify-between gap-4">
         <div>
           <h1 className="text-lg font-semibold text-gray-800 dark:text-gray-200">Asistente de proyecto</h1>
-          <p className="text-xs text-gray-500 dark:text-gray-400">Sigue los pasos en orden. Los datos avanzan de un paso al siguiente y al final se genera el reporte.</p>
+          <p className="text-xs text-gray-500 dark:text-gray-400">Pon el nombre del proyecto y empieza por el paso 1. Dentro de cada paso tendrás un botón &quot;Siguiente&quot; para avanzar hasta el reporte.</p>
         </div>
         <ResetButton moduleKey="hidrocalc-active-project" onReset={() => reset()} />
       </div>
@@ -56,12 +56,14 @@ export default function AsistentePage() {
         </div>
       </div>
 
-      {nextStep && (
-        <div className="bg-[#E9EFF5] dark:bg-[#1C3D5A]/20 border border-[#1C3D5A]/20 rounded-xl px-4 py-3 flex items-center justify-between gap-3">
-          <span className="text-sm text-[#1C3D5A] dark:text-blue-200">Siguiente paso sugerido: <strong>{nextStep.title}</strong></span>
-          <Link href={nextStep.href} className="text-xs bg-[#1C3D5A] text-white px-3 py-1.5 rounded-lg hover:bg-[#0F2438] transition-colors whitespace-nowrap">Continuar →</Link>
-        </div>
-      )}
+      <div className="bg-[#E9EFF5] dark:bg-[#1C3D5A]/20 border border-[#1C3D5A]/20 rounded-xl px-4 py-3 flex items-center justify-between gap-3">
+        <span className="text-sm text-[#1C3D5A] dark:text-blue-200">
+          {nextStep ? <>Siguiente paso: <strong>{nextStep.title}</strong></> : <>Todos los pasos listos. Ya puedes generar el reporte.</>}
+        </span>
+        <Link href={nextStep ? nextStep.href : "/entregable"} className="text-xs bg-[#1C3D5A] text-white px-4 py-2 rounded-lg hover:bg-[#0F2438] transition-colors whitespace-nowrap font-medium">
+          {nextStep ? (steps[0].n === nextStep.n ? "Comenzar →" : "Continuar →") : "Generar reporte →"}
+        </Link>
+      </div>
 
       {/* Stepper */}
       <div className="space-y-3">
