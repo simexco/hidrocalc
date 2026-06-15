@@ -22,6 +22,14 @@ export default function GolpeArietePage() {
   const [pvcSystem, setPvcSystem] = useState<PVCSystem>("métrico");
   const [entryMode, setEntryMode] = useState<"simple" | "advanced">("simple");
   const [showDetail, setShowDetail] = useState(false);
+  // Velocidad o caudal: si el ing tiene el caudal, calculamos V0 = Q/A con el diametro interno
+  const [velMode, setVelMode] = useState<"velocidad" | "caudal">("caudal");
+  const [caudalQ, setCaudalQ] = useState<number | null>(null);
+
+  // Velocidad calculada a partir del caudal (L/s) y el diametro interno D (mm)
+  const velFromQ = caudalQ != null && caudalQ > 0 && inputs.D != null && inputs.D > 0
+    ? (caudalQ / 1000) / (Math.PI * Math.pow(inputs.D / 1000 / 2, 2))
+    : null;
 
   // Simple mode state
   const [selectedCatalog, setSelectedCatalog] = useState<number>(0);
@@ -89,6 +97,13 @@ export default function GolpeArietePage() {
     debounceRef.current = setTimeout(runCalc, 300);
     return () => clearTimeout(debounceRef.current);
   }, [runCalc]);
+
+  // En modo caudal: mantener V0 sincronizada con la velocidad calculada
+  useEffect(() => {
+    if (velMode === "caudal" && velFromQ != null) {
+      setInput("V0", Math.round(velFromQ * 1000) / 1000);
+    }
+  }, [velMode, velFromQ, setInput]);
 
   const handleNum = (key: keyof typeof inputs, val: string) => {
     setInput(key, (val === "" ? null : parseFloat(val)) as never);
@@ -182,14 +197,47 @@ export default function GolpeArietePage() {
             </div>
 
             <InputField label="Nombre del proyecto" value={inputs.projectName} onChange={(v) => setInput("projectName", v)} type="text" />
-            <InputField
-              label="Velocidad V0"
-              value={inputs.V0}
-              onChange={(v) => handleNum("V0", v)}
-              unit="m/s"
-              required
-              tooltip="Velocidad del agua antes del cierre de válvula. Puedes obtenerla del Módulo 1 o calcularla como Q/A"
-            />
+
+            {/* Velocidad o caudal */}
+            <div className="space-y-1.5">
+              <div className="flex gap-2">
+                <button type="button" onClick={() => setVelMode("caudal")} className={`flex-1 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${velMode === "caudal" ? "bg-[#1C3D5A] text-white" : "bg-gray-100 dark:bg-gray-700 text-gray-500"}`}>
+                  Tengo el caudal
+                </button>
+                <button type="button" onClick={() => setVelMode("velocidad")} className={`flex-1 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${velMode === "velocidad" ? "bg-[#1C3D5A] text-white" : "bg-gray-100 dark:bg-gray-700 text-gray-500"}`}>
+                  Tengo la velocidad
+                </button>
+              </div>
+
+              {velMode === "caudal" ? (
+                <>
+                  <InputField
+                    label="Caudal Q"
+                    value={caudalQ}
+                    onChange={(v) => setCaudalQ(v === "" ? null : parseFloat(v))}
+                    unit="L/s"
+                    required
+                    tooltip="Caudal de agua que circula por la tubería. La velocidad se calcula sola con el diámetro: V = Q / Área."
+                  />
+                  {velFromQ != null ? (
+                    <p className="text-[11px] text-[#1C3D5A] dark:text-blue-300 bg-[#E9EFF5] dark:bg-[#1C3D5A]/20 rounded px-2 py-1.5">
+                      Velocidad calculada: <strong>{formatNumber(velFromQ, 2)} m/s</strong>
+                    </p>
+                  ) : caudalQ != null && caudalQ > 0 ? (
+                    <p className="text-[11px] text-amber-600 dark:text-amber-400">Selecciona el diámetro de la tubería abajo para calcular la velocidad.</p>
+                  ) : null}
+                </>
+              ) : (
+                <InputField
+                  label="Velocidad V0"
+                  value={inputs.V0}
+                  onChange={(v) => handleNum("V0", v)}
+                  unit="m/s"
+                  required
+                  tooltip="Velocidad del agua antes del cierre de válvula. Puedes obtenerla del Módulo 1 o calcularla como Q/A"
+                />
+              )}
+            </div>
 
             {/* Entry mode toggle */}
             <div className="flex gap-2 pt-1">
