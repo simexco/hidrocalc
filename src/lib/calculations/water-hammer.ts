@@ -82,11 +82,16 @@ export function calculateWaterHammer(input: WaterHammerInputs, pvcSystem?: PVCSy
     alerts.push({ level: "OK", field: "closure", message: `Cierre lento (Tc=${Tc}s ≥ Tfase=${Tphase.toFixed(2)}s)` });
   }
 
-  // Negative pressure alerts
-  if (Pmin < -10) {
-    alerts.push({ level: "CRITICAL", field: "Pmin", message: "Cavitación probable — instalar válvula de alivio" });
-  } else if (Pmin < 0) {
-    alerts.push({ level: "ERROR", field: "Pmin", message: "Riesgo de colapso de tubería (presión negativa transitoria)" });
+  // Negative pressure alerts — SOLO si se conoce P0.
+  // Sin P0 el motor asume P0=0 y Pmin siempre saldria negativa (falso positivo).
+  if (P0 != null) {
+    if (Pmin < -10) {
+      alerts.push({ level: "CRITICAL", field: "Pmin", message: "Cavitación probable — instalar válvula de alivio" });
+    } else if (Pmin < 0) {
+      alerts.push({ level: "ERROR", field: "Pmin", message: "Riesgo de colapso de tubería (presión negativa transitoria)" });
+    }
+  } else {
+    alerts.push({ level: "WARN", field: "Pmin", message: "Ingresa la presión de operación P0 para evaluar la presión mínima y el riesgo de cavitación." });
   }
 
   // Safe closure time recommendation

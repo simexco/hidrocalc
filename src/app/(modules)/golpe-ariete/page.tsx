@@ -409,7 +409,7 @@ export default function GolpeArietePage() {
               {(() => {
                 const classOk = results.pipeClass != null && !results.pipeClass.startsWith("Excede");
                 const pmaxK = results.Pmax != null ? mcaToKgcm2(results.Pmax) : null;
-                const negPres = results.Pmin != null && results.Pmin < 0;
+                const negPres = inputs.P0 != null && results.Pmin != null && results.Pmin < 0;
                 const hasClass = results.pipeClass != null;
                 return (
                   <div className={`rounded-xl border p-5 ${hasClass && classOk ? "bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800" : "bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800"}`}>
@@ -433,6 +433,11 @@ export default function GolpeArietePage() {
                         </span>
                       )}
                     </div>
+                    {inputs.P0 == null && (
+                      <p className="text-[11px] text-amber-600 dark:text-amber-400 mt-2">
+                        Falta la presion de operacion P0. Sin ella la presion maxima y minima son parciales (se asume P0 = 0). Captura P0 para una recomendacion completa.
+                      </p>
+                    )}
                   </div>
                 );
               })()}
