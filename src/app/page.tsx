@@ -17,12 +17,6 @@ const modules = [
     icon: (<svg viewBox="0 0 24 24" className={iconCls} fill="none" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M5 10l7-7m0 0l7 7m-7-7v18" /></svg>),
   },
   {
-    title: "Mi bomba",
-    desc: "Punto real de trabajo de la bomba en el sistema hidráulico.",
-    href: "/bombeo",
-    icon: (<svg viewBox="0 0 24 24" className={iconCls} fill="none" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M12 8c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm0 0V4m0 16v-4m8-4h-4M4 12h4" /></svg>),
-  },
-  {
     title: "Línea de conducción",
     desc: "Perfil topográfico, tramos con diferente DN/material, presiones y materiales SIMEX.",
     href: "/perfil",
@@ -144,7 +138,6 @@ export default function Home() {
               { situation: "No sé qué diámetro usar para mi caudal", module: "Elegir diámetro", data: "Q, L, P1", href: "/dimensionamiento" },
               { situation: "Mi linea cambia de diametro o material en el trayecto", module: "Linea de conduccion", data: "Q, P1, perfil topografico, tramos", href: "/perfil" },
               { situation: "¿Qué clase de tubería aguanta el golpe de cierre de una válvula?", module: "Golpe de ariete", data: "V0, D interno, espesor, material, Tc", href: "/golpe-ariete" },
-              { situation: "¿En qué punto opera mi bomba en este sistema?", module: "Mi bomba", data: "Hg, L, DN, curva de bomba", href: "/bombeo" },
               { situation: "¿Dónde pongo las válvulas de aire en mi línea?", module: "Válvulas de aire", data: "Q, DN, perfil de cotas", href: "/valvulas-aire" },
               { situation: "Quiero ver si la presion llega a lo largo de todo el trazo", module: "Linea de conduccion", data: "Q, DN, P1, perfil topografico", href: "/perfil" },
               { situation: "Necesito reducir la presion en una zona de mi red", module: "Valvula reductora", data: "Q, P1, P2, DN", href: "/vrp" },

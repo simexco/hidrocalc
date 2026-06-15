@@ -10,7 +10,6 @@ const moduleNames: Record<string, string> = {
   "/perfil": "Linea de conduccion",
   "/impulsion": "Linea de impulsion",
   "/golpe-ariete": "Golpe de ariete",
-  "/bombeo": "Mi bomba",
   "/dimensionamiento": "Elegir diámetro",
   "/valvulas-aire": "Válvulas de aire",
   "/vrp": "Valvula reductora",
