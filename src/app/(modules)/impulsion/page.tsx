@@ -24,7 +24,7 @@ const defaults: PumpLineInputs = {
   hmPercent: 10,
   eficienciaBomba: 0.70,
   eficienciaMotor: 0.90,
-  tarifaCFE: 1.50,
+  tarifaCFE: 4.50,
 };
 
 export default function ImpulsionPage() {
@@ -42,7 +42,7 @@ export default function ImpulsionPage() {
     const saved = loadFormState<PumpLineInputs & { useEconomic?: boolean }>("impulsion");
     if (saved) {
       const { useEconomic: ue, ...rest } = saved;
-      setInputs({ ...defaults, ...rest });
+      setInputs({ ...defaults, ...rest, tarifaCFE: rest.tarifaCFE && rest.tarifaCFE >= 3 ? rest.tarifaCFE : 4.50 });
       if (ue != null) setUseEconomic(ue);
     }
   }, []);
@@ -145,7 +145,7 @@ export default function ImpulsionPage() {
                   <InputField label="Eficiencia bomba" value={(inputs.eficienciaBomba * 100)} onChange={(v) => set("eficienciaBomba", (parseFloat(v) || 70) / 100)} unit="%" tooltip="Eficiencia de la bomba (tipico 60-80%)" />
                   <InputField label="Eficiencia motor" value={(inputs.eficienciaMotor * 100)} onChange={(v) => set("eficienciaMotor", (parseFloat(v) || 90) / 100)} unit="%" tooltip="Eficiencia del motor electrico (tipico 85-95%)" />
                 </div>
-                <InputField label="Tarifa CFE" value={inputs.tarifaCFE} onChange={(v) => set("tarifaCFE", parseFloat(v) || 1.5)} unit="$/kWh" tooltip="Tarifa electrica promedio. Consultar recibo CFE." />
+                <InputField label="Tarifa CFE comercial" value={inputs.tarifaCFE} onChange={(v) => set("tarifaCFE", parseFloat(v) || 4.5)} unit="$/kWh" tooltip="Tarifa comercial CFE (PDBT) que pagan los organismos operadores. Ajustar al recibo real; varia por region y mes." />
               </div>
             )}
           </div>
