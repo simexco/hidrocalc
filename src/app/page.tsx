@@ -11,8 +11,8 @@ const modules = [
   },
   // ── Conducción ──
   {
-    title: "Línea de impulsión",
-    desc: "Bomba a tanque: CDT, diámetro económico, potencia y costo de energía.",
+    title: "Cálculo de diámetro económico",
+    desc: "Diámetro económico (Bresse), CDT, potencia de bomba y costo de energía.",
     href: "/impulsion",
     icon: (<svg viewBox="0 0 24 24" className={iconCls} fill="none" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M5 10l7-7m0 0l7 7m-7-7v18" /></svg>),
   },
