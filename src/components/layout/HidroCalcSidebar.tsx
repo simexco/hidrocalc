@@ -16,6 +16,7 @@ const icons = {
   golpe: <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />,
   aire: <path strokeLinecap="round" strokeLinejoin="round" d="M5 15l7-7 7 7" />,
   vrp: <path strokeLinecap="round" strokeLinejoin="round" d="M19 14l-7 7m0 0l-7-7m7 7V3" />,
+  despiece: <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />,
   proyectos: <path strokeLinecap="round" strokeLinejoin="round" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />,
 };
 
@@ -43,6 +44,7 @@ const sections = [
     items: [
       { href: "/dimensionamiento", label: "Elegir diámetro", icon: icons.diametro },
       { href: "/tramo-simple", label: "Verificar presión", icon: icons.presion },
+      { href: "/despiece", label: "Despiece de tramo", icon: icons.despiece },
     ],
   },
   {

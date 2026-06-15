@@ -11,6 +11,7 @@ const moduleNames: Record<string, string> = {
   "/impulsion": "Calculo de diametro economico",
   "/golpe-ariete": "Golpe de ariete",
   "/dimensionamiento": "Elegir diámetro",
+  "/despiece": "Despiece de tramo",
   "/valvulas-aire": "Válvulas de aire",
   "/vrp": "Valvula reductora",
   "/proyectos": "Mis proyectos",
