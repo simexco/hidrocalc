@@ -21,6 +21,7 @@ export default function GolpeArietePage() {
   const [showThicknessRef, setShowThicknessRef] = useState(false);
   const [pvcSystem, setPvcSystem] = useState<PVCSystem>("métrico");
   const [entryMode, setEntryMode] = useState<"simple" | "advanced">("simple");
+  const [showDetail, setShowDetail] = useState(false);
 
   // Simple mode state
   const [selectedCatalog, setSelectedCatalog] = useState<number>(0);
@@ -286,14 +287,25 @@ export default function GolpeArietePage() {
             )}
 
             <InputField label="Presión estática P0" value={inputs.P0} onChange={(v) => handleNum("P0", v)} unit="kg/cm2" tooltip="Presión normal de operación antes del cierre de valvula" />
-            <InputField
-              label="Tiempo de cierre Tc"
-              value={inputs.Tc}
-              onChange={(v) => handleNum("Tc", v)}
-              unit="s"
-              required
-              tooltip="Tiempo en que la válvula pasa de totalmente abierta a cerrada. A mayor tiempo de cierre, menor golpe de ariete"
-            />
+            <div className="space-y-1.5">
+              <InputField
+                label="Tiempo de cierre Tc"
+                value={inputs.Tc}
+                onChange={(v) => handleNum("Tc", v)}
+                unit="s"
+                required
+                tooltip="Tiempo en que la válvula pasa de totalmente abierta a cerrada. A mayor tiempo de cierre, menor golpe de ariete"
+              />
+              <div className="flex items-center gap-1.5">
+                <span className="text-[10px] text-gray-400">Si no lo conoces:</span>
+                <button type="button" onClick={() => setInput("Tc", 1)} className="text-[10px] px-2 py-0.5 rounded border border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+                  Cierre instantáneo (peor caso)
+                </button>
+                <button type="button" onClick={() => setInput("Tc", 5)} className="text-[10px] px-2 py-0.5 rounded border border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+                  Cierre manual (~5 s)
+                </button>
+              </div>
+            </div>
             <InputField label="Longitud L" value={inputs.L} onChange={(v) => handleNum("L", v)} unit="m" required tooltip="Longitud total de la tubería desde la válvula hasta el punto donde se refleja la onda de presión (tanque, reservorio, etc.)" />
           </div>
         </div>
@@ -345,6 +357,44 @@ export default function GolpeArietePage() {
 
           {results && (
             <>
+              {/* \u2500\u2500 RESULTADO PRINCIPAL (lenguaje simple) \u2500\u2500 */}
+              {(() => {
+                const classOk = results.pipeClass != null && !results.pipeClass.startsWith("Excede");
+                const pmaxK = results.Pmax != null ? mcaToKgcm2(results.Pmax) : null;
+                const negPres = results.Pmin != null && results.Pmin < 0;
+                const hasClass = results.pipeClass != null;
+                return (
+                  <div className={`rounded-xl border p-5 ${hasClass && classOk ? "bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800" : "bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800"}`}>
+                    <p className="text-[11px] uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1">Clase de tuberia recomendada</p>
+                    <p className={`text-3xl font-bold ${hasClass && classOk ? "text-green-700 dark:text-green-300" : "text-red-600 dark:text-red-400"}`}>
+                      {results.pipeClass ?? "\u2014"}
+                    </p>
+                    {pmaxK != null && (
+                      <p className="text-sm text-gray-700 dark:text-gray-300 mt-2">
+                        El cierre de la valvula eleva la presion hasta <strong>{formatNumber(pmaxK, 1)} kg/cm\u00B2</strong>
+                        {inputs.P0 != null ? <> (presion normal de operacion {formatNumber(inputs.P0, 1)} kg/cm\u00B2).</> : "."}
+                      </p>
+                    )}
+                    <div className="flex flex-wrap gap-2 mt-3">
+                      <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${results.closureType === "brusco" ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-300" : "bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300"}`}>
+                        {results.closureType === "brusco" ? "\u26A0 Cierre brusco" : "\u2713 Cierre lento"}
+                      </span>
+                      {negPres && (
+                        <span className="text-xs px-2.5 py-1 rounded-full font-medium bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300">
+                          Riesgo de presion negativa {"\u2014"} requiere proteccion
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                );
+              })()}
+
+              {/* Detalle tecnico \u2014 colapsable */}
+              <button onClick={() => setShowDetail(!showDetail)} className="text-xs text-[#1C3D5A] dark:text-blue-300 underline decoration-dotted">
+                {showDetail ? "Ocultar" : "Ver"} detalle tecnico
+              </button>
+              {showDetail && (
+              <div className="space-y-4">
               {/* Closure type banner */}
               <div className={`rounded-xl p-4 text-center font-medium ${
                 results.closureType === "brusco"
@@ -402,6 +452,8 @@ export default function GolpeArietePage() {
                 <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg px-4 py-3 text-sm text-blue-700 dark:text-blue-300">
                   Tc minimo recomendado para cierre lento: <strong>{formatNumber(results.safeTc, 2)} s</strong>
                 </div>
+              )}
+              </div>
               )}
 
               {/* Pipe class comparison table — dynamic by material */}
