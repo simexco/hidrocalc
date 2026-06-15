@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef, useMemo } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { v4 as uuid } from "uuid";
 import { InputField } from "@/components/ui/InputField";
 import { MetricCard } from "@/components/ui/MetricCard";
@@ -10,13 +10,11 @@ import { ExportPDFButton } from "@/components/ui/ExportPDFButton";
 import { ResetButton } from "@/components/ui/ResetButton";
 import { validateHydraulicInputs, InputWarnings } from "@/components/ui/InputWarning";
 import { calculateProfile, calculateRequiredP1, type ProfileVertex, type ProfileTramo, type ProfileResults } from "@/lib/calculations/hydraulic-profile";
-import { calculateAirValves } from "@/lib/calculations/air-valves";
 import { flowToM3s, formatNumber } from "@/lib/calculations/conversions";
 import { STANDARD_DNS, STANDARD_DNS_LABELED, MATERIALS, getPipeClassesForMaterial } from "@/lib/constants";
 import { saveFormState, loadFormState } from "@/lib/storage/form-persistence";
 import { useProjectStore } from "@/store/projectStore";
 import { ComposedChart, Line, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
-import ListaMaterialesSIMEX, { type SIMEXAcc } from "@/components/ListaMaterialesSIMEX";
 import { NumInput } from "@/components/ui/NumInput";
 import type { FlowUnit } from "@/types/hydraulic";
 
@@ -35,7 +33,6 @@ export default function PerfilPage() {
     { id: uuid(), distFrom: 0, distTo: 1000, DN_mm: 150, C: MATERIALS[0].c, materialName: MATERIALS[0].name },
   ]);
   const [results, setResults] = useState<ProfileResults | null>(null);
-  const [simexPorTramo, setSimexPorTramo] = useState<Record<string, SIMEXAcc[]>>({});
   const [calcMode, setCalcMode] = useState<'verificar' | 'calcularP1'>('verificar');
   const [computedP1, setComputedP1] = useState<number | null>(null);
   const [showScenarioB, setShowScenarioB] = useState(false);
@@ -78,39 +75,14 @@ export default function PerfilPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Valvulas de aire requeridas segun el perfil (mismo motor que el modulo de valvulas)
-  const airValves = useMemo(() => {
-    const Q = rawQ != null ? flowToM3s(rawQ, flowUnit) : null;
-    const dn = tramos[0]?.DN_mm ?? null;
-    const validVerts = vertices.filter((v) => v.dist != null && v.cota != null);
-    if (!dn || validVerts.length < 2) return null;
-    return calculateAirValves({
-      projectName,
-      Q,
-      DN_mm: dn,
-      C: tramos[0]?.C ?? 130,
-      P0_kgcm2: P1,
-      pressureMin: (Pmin ?? 0.5) * 10, // kg/cm2 -> m.c.a.
-      maxSpacing: 500,
-      vertices: validVerts.map((v) => ({ id: v.id, dist: v.dist, cota: v.cota, desc: v.desc || "" })),
-    });
-  }, [rawQ, flowUnit, tramos, vertices, P1, Pmin, projectName]);
-
-  // Nombre comercial por tipo de valvula
-  const valveFullName = (type: string) =>
-    type === "VA-C" ? "Valvula de aire combinada" : type === "VA-A" ? "Valvula de admision y expulsion (VAEA)" : "Valvula eliminadora de aire";
-
   // Flujo de proyecto: la conduccion escribe sus datos al proyecto activo
+  // (el perfil topografico viaja al siguiente paso: Valvulas de aire)
   const patchProject = useProjectStore((s) => s.patch);
   useEffect(() => {
     const t = setTimeout(() => {
       const sorted = [...vertices].filter((v) => v.dist != null && v.cota != null).sort((a, b) => a.dist - b.dist);
       const t0 = tramos[0];
       const dnLabel = t0 ? (STANDARD_DNS_LABELED.find((s) => s.dn === t0.DN_mm)?.label ?? `${t0.DN_mm} mm`) : "";
-      const valvulas = (airValves?.valves ?? []).map((v) => ({
-        cad: `0+${String(Math.round(v.dist)).padStart(3, "0")}`,
-        tipo: `${valveFullName(v.type)} ${v.bodySize} - ${v.reason}`,
-      }));
       patchProject({
         material: t0?.materialName ?? "PVC C900",
         dn: dnLabel,
@@ -119,11 +91,10 @@ export default function PerfilPage() {
         longitud: sorted.length ? sorted[sorted.length - 1].dist : null,
         desnivel: sorted.length >= 2 ? sorted[0].cota - sorted[sorted.length - 1].cota : null,
         vertices: sorted.map((v) => ({ cad: v.dist, cota: v.cota, desc: v.desc || "" })),
-        ...(valvulas.length > 0 ? { valvulas } : {}),
       });
     }, 700);
     return () => clearTimeout(t);
-  }, [vertices, tramos, airValves, patchProject]);
+  }, [vertices, tramos, patchProject]);
 
   // Calculate
   const runCalc = useCallback(() => {
@@ -166,7 +137,6 @@ export default function PerfilPage() {
     setTramos([
       { id: uuid(), distFrom: 0, distTo: 1000, DN_mm: 150, C: MATERIALS[0].c, materialName: MATERIALS[0].name },
     ]);
-    setSimexPorTramo({});
     setCalcMode('verificar');
     setComputedP1(null);
     setShowScenarioB(false);
@@ -603,21 +573,6 @@ export default function PerfilPage() {
                     )}
                   </div>
                 )}
-                {/* SIMEX Accessories */}
-                <div className="mt-2 pt-2 border-t border-gray-100 dark:border-gray-700">
-                  <ListaMaterialesSIMEX
-                    mode="selector"
-                    dnMM={t.DN_mm}
-                    materialRaw={t.materialName}
-                    externalAccs={simexPorTramo[t.id] || []}
-                    onAccsChange={(accs) => setSimexPorTramo(prev => ({...prev, [t.id]: accs}))}
-                  />
-                  {(simexPorTramo[t.id]?.length ?? 0) > 0 && (
-                    <p className="text-[10px] text-[#1C3D5A]/60 dark:text-blue-300/50 mt-1 font-medium">
-                      {simexPorTramo[t.id].reduce((s, a) => s + a.qty, 0)} pza(s) seleccionada(s)
-                    </p>
-                  )}
-                </div>
               </div>
             );})}
           </div>
@@ -833,44 +788,6 @@ export default function PerfilPage() {
                 </div>
               )}
 
-              {/* Valvulas de aire requeridas segun el perfil */}
-              {airValves && airValves.valves.length > 0 && (
-                <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
-                  <div className="bg-[#1C3D5A] px-4 py-2 flex items-center justify-between">
-                    <h3 className="text-xs font-semibold text-white">Valvulas de aire requeridas (segun el perfil)</h3>
-                    <span className="text-[10px] text-white/60">{airValves.totalVAC} VA-C · {airValves.totalVAA} VA-A · {airValves.totalVAE} VA-E</span>
-                  </div>
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-xs">
-                      <thead>
-                        <tr className="bg-gray-50 dark:bg-gray-700 text-gray-500">
-                          <th className="px-2 py-2 text-left">Cadenam.</th>
-                          <th className="px-2 py-2 text-left">Valvula</th>
-                          <th className="px-2 py-2 text-center">Tamano</th>
-                          <th className="px-2 py-2 text-left">Motivo</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {airValves.valves.map((v, i) => (
-                          <tr key={i} className={`border-b border-gray-100 dark:border-gray-700 ${i % 2 ? "bg-gray-50/50 dark:bg-gray-800/40" : ""}`}>
-                            <td className="px-2 py-1.5 font-mono">0+{String(Math.round(v.dist)).padStart(3, "0")}</td>
-                            <td className="px-2 py-1.5">
-                              <span className={`inline-block w-2 h-2 rounded-full mr-1.5 ${v.type === "VA-C" ? "bg-blue-500" : v.type === "VA-A" ? "bg-amber-500" : "bg-green-500"}`} />
-                              {valveFullName(v.type)}
-                            </td>
-                            <td className="px-2 py-1.5 text-center font-mono">{v.bodySize}</td>
-                            <td className="px-2 py-1.5 text-gray-500 dark:text-gray-400">{v.reason}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                  <p className="px-3 py-2 text-[10px] text-gray-400 border-t border-gray-100 dark:border-gray-700">
-                    Calculado del perfil con el motor de Valvulas de aire. Estas valvulas se guardan en el proyecto y aparecen en el reporte. Para el detalle de orificios y PN, abre el modulo Valvulas de aire.
-                  </p>
-                </div>
-              )}
-
               {/* Results table */}
               <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
                 <div className="bg-[#1C3D5A] px-4 py-2">
@@ -924,37 +841,6 @@ export default function PerfilPage() {
               {results.alerts.map((a, i) => (
                 <AlertBanner key={i} level={a.level} message={a.message} />
               ))}
-
-              {/* SIMEX Material Tables */}
-              {tramos.some(t => (simexPorTramo[t.id]?.length ?? 0) > 0) && (
-                <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
-                  <div className="bg-gradient-to-r from-[#1C3D5A] to-[#2A5A7A] px-5 py-3">
-                    <h3 className="text-sm font-semibold text-white tracking-wide">Lista de Materiales SIMEX</h3>
-                    <p className="text-[10px] text-white/50 mt-0.5">Generada desde los accesorios seleccionados por tramo</p>
-                  </div>
-                  <div className="divide-y divide-gray-100 dark:divide-gray-700">
-                    {tramos.map((t, i) => {
-                      if ((simexPorTramo[t.id]?.length ?? 0) === 0) return null;
-                      return (
-                        <div key={`simex-${t.id}`} className="p-4">
-                          <div className="flex items-center gap-2 mb-3">
-                            <span className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold text-white" style={{ backgroundColor: tramoColors[i % tramoColors.length] }}>{i + 1}</span>
-                            <h4 className="text-xs font-semibold text-[#1C3D5A] dark:text-blue-300">Tramo {i + 1} — {t.DN_mm}mm {t.materialName}</h4>
-                            <span className="text-[10px] text-gray-400 ml-auto">{formatNumber(t.distFrom, 0)}m a {formatNumber(t.distTo, 0)}m</span>
-                          </div>
-                          <ListaMaterialesSIMEX
-                            mode="table"
-                            dnMM={t.DN_mm}
-                            materialRaw={t.materialName}
-                            externalAccs={simexPorTramo[t.id] || []}
-                            onAccsChange={(accs) => setSimexPorTramo(prev => ({...prev, [t.id]: accs}))}
-                          />
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
             </>
           )}
         </div>

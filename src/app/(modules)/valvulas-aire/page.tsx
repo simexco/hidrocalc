@@ -11,6 +11,7 @@ import { calculateAirValves, type AirValveVertex, type AirValveInputs, type AirV
 import { flowToM3s, formatNumber } from "@/lib/calculations/conversions";
 import { STANDARD_DNS_LABELED, MATERIALS, getPipeClassesForMaterial } from "@/lib/constants";
 import { saveFormState, loadFormState } from "@/lib/storage/form-persistence";
+import { useProjectStore } from "@/store/projectStore";
 import { ResetButton } from "@/components/ui/ResetButton";
 import { ComposedChart, Line, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine } from "recharts";
 import { NumInput } from "@/components/ui/NumInput";
@@ -61,6 +62,38 @@ export default function ValvulasAirePage() {
     const t = setTimeout(() => saveFormState("valvulas-aire", { projectName, rawQ, flowUnit, DN, C, P0, pressureMin, maxSpacing, vertices, materialName, pipeClass, PNBar }), 1000);
     return () => clearTimeout(t);
   }, [projectName, rawQ, flowUnit, DN, C, P0, pressureMin, maxSpacing, vertices, materialName, pipeClass, PNBar]);
+
+  // Flujo de proyecto: si no hay datos propios guardados, cargar el perfil y Q/DN del proyecto activo
+  useEffect(() => {
+    const saved = loadFormState<{ vertices?: AirValveVertex[] }>("valvulas-aire");
+    const proj = useProjectStore.getState().project;
+    const projVerts = proj.vertices.filter((v) => v.cad != null && v.cota != null);
+    const sinDatosPropios = !saved || !(saved.vertices && saved.vertices.length >= 2);
+    if (sinDatosPropios && projVerts.length >= 2) {
+      setVertices(projVerts.map((v) => ({ id: uuid(), dist: v.cad, cota: v.cota, desc: v.desc || "" })));
+      if (proj.q_ls != null) { setRawQ(proj.q_ls); setFlowUnit("L/s"); }
+      if (proj.diametroInterior != null) setDN(proj.diametroInterior);
+      if (proj.material) setMaterialName(proj.material);
+      if (proj.c != null) setC(proj.c);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Flujo de proyecto: las valvulas calculadas se escriben al proyecto (salen en el reporte)
+  const patchProject = useProjectStore((s) => s.patch);
+  useEffect(() => {
+    if (!results) return;
+    const fullName = (type: string) => type === "VA-C" ? "Valvula de aire combinada" : type === "VA-A" ? "Valvula de admision y expulsion (VAEA)" : "Valvula eliminadora de aire";
+    const t = setTimeout(() => {
+      patchProject({
+        valvulas: results.valves.map((v) => ({
+          cad: `0+${String(Math.round(v.dist)).padStart(3, "0")}`,
+          tipo: `${fullName(v.type)} ${v.bodySize} - ${v.reason}`,
+        })),
+      });
+    }, 700);
+    return () => clearTimeout(t);
+  }, [results, patchProject]);
 
   // Calculate
   const runCalc = useCallback(() => {
