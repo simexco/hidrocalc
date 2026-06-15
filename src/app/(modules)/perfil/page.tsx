@@ -41,7 +41,6 @@ export default function PerfilPage() {
     { id: uuid(), distFrom: 0, distTo: 1000, DN_mm: 150, C: MATERIALS[0].c, materialName: MATERIALS[0].name },
   ]);
   const [resultsB, setResultsB] = useState<ProfileResults | null>(null);
-  const [showAdvanced, setShowAdvanced] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
   const fileRef = useRef<HTMLInputElement>(null);
   const xlsxRef = useRef<HTMLInputElement>(null);
@@ -373,15 +372,10 @@ export default function PerfilPage() {
             )}
             <InputWarnings warnings={validateHydraulicInputs({ Q_ls: rawQ, P1_kgcm2: P1 })} />
 
-            <button onClick={() => setShowAdvanced(!showAdvanced)} className="text-[10px] text-[#1C3D5A] underline decoration-dotted">
-              {showAdvanced ? 'Ocultar' : 'Mostrar'} parametros avanzados
-            </button>
-            {showAdvanced && (
-              <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-3 space-y-3">
-                <InputField label="Presion minima requerida" value={Pmin} onChange={(v) => setPmin(parseFloat(v) || 1)} unit="kg/cm2" tooltip="Presion minima aceptable en cualquier punto" />
-                <InputField label="Perdida por accesorios" value={coefAccesorios} onChange={(v) => setCoefAccesorios(parseFloat(v) || 5)} unit="% de hf" tooltip="Perdida por accesorios estimada como porcentaje de la perdida por friccion. Tipico 5% en lineas de conduccion." />
-              </div>
-            )}
+            <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-3 space-y-3">
+              <InputField label="Presion minima requerida" value={Pmin} onChange={(v) => setPmin(parseFloat(v) || 1)} unit="kg/cm2" tooltip="Presion minima aceptable en cualquier punto" />
+              <InputField label="Perdida por accesorios" value={coefAccesorios} onChange={(v) => setCoefAccesorios(parseFloat(v) || 5)} unit="% de hf" tooltip="Perdida por accesorios estimada como porcentaje de la perdida por friccion. Tipico 5% en lineas de conduccion." />
+            </div>
           </div>
 
           {/* Profile table */}
