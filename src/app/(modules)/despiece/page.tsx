@@ -1,47 +1,32 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { v4 as uuid } from "uuid";
 import { InputField } from "@/components/ui/InputField";
-import { ExportPDFButton } from "@/components/ui/ExportPDFButton";
 import { ResetButton } from "@/components/ui/ResetButton";
 import { saveFormState, loadFormState } from "@/lib/storage/form-persistence";
-import { CATALOG_ITEMS, CATALOG_CATEGORIES, type CatalogItem } from "@/lib/simex-catalog";
+import { STANDARD_DNS_LABELED, MATERIALS } from "@/lib/constants";
+import ListaMaterialesSIMEX, { type SIMEXAcc } from "@/components/ListaMaterialesSIMEX";
 
-interface BomRow {
+interface DespieceTramo {
   id: string;
-  desc: string;
-  medida: string;
-  sku: string;
-  cantidad: number;
-  unidad: string;
-  ubicacion: string;
+  name: string;
+  DN: number;
+  material: string;
 }
-
-const FREE = "Otro (libre)";
 
 export default function DespiecePage() {
   const [projectName, setProjectName] = useState("");
-  const [rows, setRows] = useState<BomRow[]>([]);
-
-  // Form de captura
-  const [categoria, setCategoria] = useState(CATALOG_CATEGORIES[0] ?? FREE);
-  const [productoIdx, setProductoIdx] = useState(0);
-  const [cantidad, setCantidad] = useState<number>(1);
-  const [ubicacion, setUbicacion] = useState("");
-  // Modo libre
-  const [freeDesc, setFreeDesc] = useState("");
-  const [freeMedida, setFreeMedida] = useState("");
-  const [freeUnidad, setFreeUnidad] = useState("pza");
-
-  const idRef = useRef(0);
-  const newId = () => `r${idRef.current++}-${rows.length}`;
+  const [tramos, setTramos] = useState<DespieceTramo[]>([]);
+  const [accsPorTramo, setAccsPorTramo] = useState<Record<string, SIMEXAcc[]>>({});
 
   // Cargar guardado
   useEffect(() => {
-    const saved = loadFormState<{ projectName?: string; rows?: BomRow[] }>("despiece");
+    const saved = loadFormState<{ projectName?: string; tramos?: DespieceTramo[]; accsPorTramo?: Record<string, SIMEXAcc[]> }>("despiece");
     if (saved) {
       if (saved.projectName) setProjectName(saved.projectName);
-      if (Array.isArray(saved.rows)) setRows(saved.rows);
+      if (Array.isArray(saved.tramos)) setTramos(saved.tramos);
+      if (saved.accsPorTramo) setAccsPorTramo(saved.accsPorTramo);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -50,74 +35,31 @@ export default function DespiecePage() {
   const persistRef = useRef<ReturnType<typeof setTimeout>>(undefined);
   useEffect(() => {
     clearTimeout(persistRef.current);
-    persistRef.current = setTimeout(() => saveFormState("despiece", { projectName, rows }), 800);
-  }, [projectName, rows]);
+    persistRef.current = setTimeout(() => saveFormState("despiece", { projectName, tramos, accsPorTramo }), 800);
+  }, [projectName, tramos, accsPorTramo]);
 
-  const productosDeCategoria: CatalogItem[] = CATALOG_ITEMS.filter((i) => i.category === categoria);
-
-  const handleAdd = () => {
-    const qty = cantidad && cantidad > 0 ? cantidad : 1;
-    if (categoria === FREE) {
-      if (!freeDesc.trim()) return;
-      setRows((prev) => [...prev, { id: newId(), desc: freeDesc.trim(), medida: freeMedida.trim(), sku: "—", cantidad: qty, unidad: freeUnidad.trim() || "pza", ubicacion: ubicacion.trim() }]);
-      setFreeDesc(""); setFreeMedida("");
-    } else {
-      const p = productosDeCategoria[productoIdx];
-      if (!p) return;
-      setRows((prev) => [...prev, { id: newId(), desc: p.desc, medida: p.medida, sku: p.sku, cantidad: qty, unidad: p.unidad, ubicacion: ubicacion.trim() }]);
-    }
-    setCantidad(1);
+  const addTramo = () => {
+    setTramos((prev) => [...prev, { id: uuid(), name: `Tramo ${prev.length + 1}`, DN: 150, material: "PVC C900" }]);
   };
-
-  const updateRow = (id: string, patch: Partial<BomRow>) => {
-    setRows((prev) => prev.map((r) => (r.id === id ? { ...r, ...patch } : r)));
+  const updateTramo = (id: string, patch: Partial<DespieceTramo>) => {
+    setTramos((prev) => prev.map((t) => (t.id === id ? { ...t, ...patch } : t)));
   };
-  const removeRow = (id: string) => setRows((prev) => prev.filter((r) => r.id !== id));
+  const removeTramo = (id: string) => {
+    setTramos((prev) => prev.filter((t) => t.id !== id));
+    setAccsPorTramo((prev) => { const n = { ...prev }; delete n[id]; return n; });
+  };
 
   const handleReset = () => {
-    setRows([]); setProjectName(""); setCantidad(1); setUbicacion("");
-    setFreeDesc(""); setFreeMedida("");
+    setTramos([]); setAccsPorTramo({}); setProjectName("");
   };
 
-  const totalPiezas = rows.filter((r) => r.unidad === "pza").reduce((s, r) => s + r.cantidad, 0);
-
-  // ── Export Excel ──
-  const handleExportExcel = async () => {
-    if (rows.length === 0) return;
-    const ExcelJS = (await import("exceljs")).default;
-    const wb = new ExcelJS.Workbook();
-    const ws = wb.addWorksheet("Despiece");
-    ws.addRow([`Despiece de materiales${projectName ? ` — ${projectName}` : ""}`]);
-    ws.getRow(1).font = { bold: true, size: 13 };
-    ws.addRow([]);
-    const header = ws.addRow(["Cant.", "Unidad", "Descripción", "Medida", "SKU Sigma Flow", "Ubicación / Tramo"]);
-    header.eachCell((cell) => {
-      cell.font = { bold: true, color: { argb: "FFFFFFFF" } };
-      cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF1C3D5A" } };
-      cell.alignment = { horizontal: "center" };
-    });
-    rows.forEach((r) => ws.addRow([r.cantidad, r.unidad, r.desc, r.medida, r.sku, r.ubicacion]));
-    ws.getColumn(1).width = 8;
-    ws.getColumn(2).width = 9;
-    ws.getColumn(3).width = 42;
-    ws.getColumn(4).width = 14;
-    ws.getColumn(5).width = 20;
-    ws.getColumn(6).width = 22;
-    const buffer = await wb.xlsx.writeBuffer();
-    const blob = new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `Despiece_${(projectName || "tramo").replace(/\s+/g, "_")}_${new Date().toISOString().slice(0, 10)}.xlsx`;
-    a.click();
-    URL.revokeObjectURL(url);
-  };
+  const tramosConAccs = tramos.filter((t) => (accsPorTramo[t.id]?.length ?? 0) > 0);
 
   return (
-    <div className="max-w-6xl mx-auto space-y-6">
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <div className="max-w-7xl mx-auto space-y-6">
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
         {/* ── Captura ── */}
-        <div className="lg:col-span-1 space-y-5">
+        <div className="lg:col-span-2 space-y-5">
           <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 space-y-4">
             <div className="flex items-center justify-between border-b border-gray-100 dark:border-gray-700 pb-2">
               <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300">Datos</h2>
@@ -126,156 +68,115 @@ export default function DespiecePage() {
             <InputField label="Proyecto / Obra" value={projectName} onChange={setProjectName} type="text" placeholder="Ej. Línea conducción El Roble" />
           </div>
 
-          <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 space-y-4">
-            <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 border-b border-gray-100 dark:border-gray-700 pb-2">Agregar accesorio</h2>
-
-            <div className="space-y-1">
-              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Categoría</label>
-              <select
-                value={categoria}
-                onChange={(e) => { setCategoria(e.target.value); setProductoIdx(0); }}
-                className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 dark:text-white"
-              >
-                {CATALOG_CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
-                <option value={FREE}>{FREE}</option>
-              </select>
+          {/* Tramos */}
+          <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 space-y-3">
+            <div className="flex items-center justify-between gap-2">
+              <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300">Tramos</h2>
+              <button onClick={addTramo} className="text-xs bg-[#1C3D5A] text-white px-3 py-1.5 rounded-lg hover:bg-[#0F2438] transition-colors">
+                + Tramo
+              </button>
             </div>
 
-            {categoria !== FREE ? (
-              <div className="space-y-1">
-                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Producto</label>
-                <select
-                  value={productoIdx}
-                  onChange={(e) => setProductoIdx(Number(e.target.value))}
-                  className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 dark:text-white"
-                >
-                  {productosDeCategoria.map((p, i) => (
-                    <option key={p.sku + i} value={i}>{p.desc} — {p.sku}</option>
-                  ))}
-                </select>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                <InputField label="Descripción" value={freeDesc} onChange={setFreeDesc} type="text" placeholder="Ej. Tubería PVC C900 6&quot;" />
-                <div className="grid grid-cols-2 gap-3">
-                  <InputField label="Medida" value={freeMedida} onChange={setFreeMedida} type="text" placeholder='6"' />
-                  <InputField label="Unidad" value={freeUnidad} onChange={setFreeUnidad} type="text" placeholder="pza / m" />
-                </div>
-              </div>
+            {tramos.length === 0 && (
+              <p className="text-xs text-gray-400 text-center py-4">Agrega un tramo, elige su diámetro y material, y luego sus accesorios. El acoplamiento (adaptador bridado, empaque y tornillería) se agrega solo.</p>
             )}
 
-            <div className="grid grid-cols-2 gap-3">
-              <InputField label="Cantidad" value={cantidad} onChange={(v) => setCantidad(parseFloat(v) || 0)} min={0} step="any" />
-              <InputField label="Ubicación / Tramo" value={ubicacion} onChange={setUbicacion} type="text" placeholder="Opcional" />
-            </div>
+            {tramos.map((t) => (
+              <div key={t.id} className="border border-gray-100 dark:border-gray-700 rounded-lg p-3 space-y-2">
+                <div className="flex items-center justify-between">
+                  <input
+                    value={t.name}
+                    onChange={(e) => updateTramo(t.id, { name: e.target.value })}
+                    className="text-sm font-medium bg-transparent border-b border-transparent hover:border-gray-300 dark:text-white focus:outline-none"
+                  />
+                  <button onClick={() => removeTramo(t.id)} className="text-red-400 hover:text-red-600 text-xs">&#10005;</button>
+                </div>
+                <div className="grid grid-cols-2 gap-2 text-xs">
+                  <div className="space-y-1">
+                    <label className="text-sm font-medium text-gray-700 dark:text-gray-300">DN (mm)</label>
+                    <select
+                      value={t.DN}
+                      onChange={(e) => updateTramo(t.id, { DN: parseInt(e.target.value) })}
+                      className="w-full px-2 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 dark:text-white"
+                    >
+                      {STANDARD_DNS_LABELED.map((d) => <option key={d.dn} value={d.dn}>{d.label}</option>)}
+                    </select>
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Material</label>
+                    <select
+                      value={t.material}
+                      onChange={(e) => updateTramo(t.id, { material: e.target.value })}
+                      className="w-full px-2 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 dark:text-white"
+                    >
+                      {MATERIALS.map((m) => <option key={m.name} value={m.name}>{m.name}</option>)}
+                    </select>
+                  </div>
+                </div>
 
-            <button
-              onClick={handleAdd}
-              className="w-full bg-[#1C3D5A] text-white py-2.5 rounded-lg text-sm font-medium hover:bg-[#0F2438] transition-colors"
-            >
-              + Agregar al despiece
-            </button>
+                {/* Selector de accesorios SIMEX por tramo */}
+                <div className="mt-2 pt-2 border-t border-gray-100 dark:border-gray-700">
+                  <ListaMaterialesSIMEX
+                    mode="selector"
+                    dnMM={t.DN}
+                    materialRaw={t.material}
+                    externalAccs={accsPorTramo[t.id] || []}
+                    onAccsChange={(accs) => setAccsPorTramo((prev) => ({ ...prev, [t.id]: accs }))}
+                  />
+                  {(accsPorTramo[t.id]?.length ?? 0) > 0 && (
+                    <p className="text-[10px] text-[#1C3D5A]/60 dark:text-blue-300/50 mt-1 font-medium">
+                      {accsPorTramo[t.id].reduce((s, a) => s + a.qty, 0)} pza(s) seleccionada(s)
+                    </p>
+                  )}
+                </div>
+              </div>
+            ))}
           </div>
         </div>
 
-        {/* ── Tabla del despiece ── */}
-        <div className="lg:col-span-2 space-y-5">
-          <div className="flex items-start justify-between gap-4">
-            <div>
-              <h1 className="text-lg font-semibold text-gray-800 dark:text-gray-200">Despiece de tramo</h1>
-              <p className="text-xs text-gray-500 dark:text-gray-400">Lista de materiales y accesorios. Catálogo Sigma Flow con SKU.</p>
-            </div>
-            <div className="flex gap-2">
-              <button
-                onClick={handleExportExcel}
-                disabled={rows.length === 0}
-                className="text-sm bg-green-700 text-white px-4 py-2 rounded-lg hover:bg-green-800 transition-colors disabled:opacity-40 disabled:cursor-not-allowed shadow-sm whitespace-nowrap"
-              >
-                Excel
-              </button>
-              <ExportPDFButton
-                disabled={rows.length === 0}
-                getData={() => ({
-                  title: "Despiece de materiales",
-                  module: "Despiece de tramo",
-                  projectName: projectName || "Sin nombre",
-                  hasAssumedValues: false,
-                  inputs: [{ label: "Total de renglones", value: `${rows.length}` }, { label: "Total de piezas", value: `${totalPiezas}` }],
-                  results: [],
-                  alerts: [],
-                  tableData: {
-                    head: ["Cant.", "Unidad", "Descripción", "Medida", "SKU", "Ubicación"],
-                    body: rows.map((r) => [`${r.cantidad}`, r.unidad, r.desc, r.medida, r.sku, r.ubicacion]),
-                  },
-                })}
-              />
-            </div>
+        {/* ── Despiece resultante ── */}
+        <div className="lg:col-span-3 space-y-5">
+          <div>
+            <h1 className="text-lg font-semibold text-gray-800 dark:text-gray-200">Despiece de tramo</h1>
+            <p className="text-xs text-gray-500 dark:text-gray-400">Lista de materiales y accesorios con SKU Sigma Flow. El acoplamiento se genera automáticamente.</p>
           </div>
 
-          <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
-            {rows.length === 0 ? (
-              <div className="p-8 text-center text-sm text-gray-400">
-                Aún no hay piezas. Agrega accesorios desde el catálogo o como artículo libre.
+          {tramosConAccs.length === 0 ? (
+            <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-8 text-center text-sm text-gray-400">
+              Selecciona accesorios en algún tramo para ver el despiece con su acoplamiento.
+            </div>
+          ) : (
+            <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+              <div className="bg-gradient-to-r from-[#1C3D5A] to-[#2A5A7A] px-5 py-3">
+                <h3 className="text-sm font-semibold text-white tracking-wide">Lista de Materiales SIMEX{projectName ? ` — ${projectName}` : ""}</h3>
+                <p className="text-[10px] text-white/50 mt-0.5">Generada desde los accesorios seleccionados por tramo, con acoplamiento incluido</p>
               </div>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-xs">
-                  <thead>
-                    <tr className="bg-gray-50 dark:bg-gray-900 text-gray-500 dark:text-gray-400">
-                      <th className="px-2 py-2 text-center w-16">Cant.</th>
-                      <th className="px-2 py-2 text-center w-14">Unidad</th>
-                      <th className="px-2 py-2 text-left">Descripción</th>
-                      <th className="px-2 py-2 text-center w-20">Medida</th>
-                      <th className="px-2 py-2 text-left w-28">SKU</th>
-                      <th className="px-2 py-2 text-left w-32">Ubicación</th>
-                      <th className="px-2 py-2 w-8"></th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {rows.map((r) => (
-                      <tr key={r.id} className="border-t border-gray-100 dark:border-gray-700">
-                        <td className="px-2 py-1.5 text-center">
-                          <input
-                            type="number"
-                            value={r.cantidad}
-                            min={0}
-                            onChange={(e) => updateRow(r.id, { cantidad: parseFloat(e.target.value) || 0 })}
-                            className="w-14 px-1 py-1 text-center border border-gray-200 dark:border-gray-600 rounded bg-white dark:bg-gray-800 dark:text-white"
-                          />
-                        </td>
-                        <td className="px-2 py-1.5 text-center text-gray-500">{r.unidad}</td>
-                        <td className="px-2 py-1.5 text-gray-800 dark:text-gray-200">{r.desc}</td>
-                        <td className="px-2 py-1.5 text-center font-mono text-gray-600 dark:text-gray-300">{r.medida}</td>
-                        <td className="px-2 py-1.5 font-mono text-[#1C3D5A] dark:text-blue-300">{r.sku}</td>
-                        <td className="px-2 py-1.5">
-                          <input
-                            type="text"
-                            value={r.ubicacion}
-                            onChange={(e) => updateRow(r.id, { ubicacion: e.target.value })}
-                            placeholder="—"
-                            className="w-full px-1 py-1 border border-transparent hover:border-gray-200 dark:hover:border-gray-600 focus:border-gray-300 rounded bg-transparent dark:text-white"
-                          />
-                        </td>
-                        <td className="px-2 py-1.5 text-center">
-                          <button onClick={() => removeRow(r.id)} className="text-red-500 hover:text-red-700" title="Eliminar">✕</button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                  <tfoot>
-                    <tr className="border-t-2 border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-900 font-semibold text-gray-700 dark:text-gray-300">
-                      <td className="px-2 py-2 text-center">{totalPiezas}</td>
-                      <td className="px-2 py-2 text-center text-[10px] text-gray-400">pza</td>
-                      <td className="px-2 py-2" colSpan={5}>{rows.length} renglón(es) en el despiece</td>
-                    </tr>
-                  </tfoot>
-                </table>
+              <div className="divide-y divide-gray-100 dark:divide-gray-700">
+                {tramos.map((t, i) => {
+                  if ((accsPorTramo[t.id]?.length ?? 0) === 0) return null;
+                  return (
+                    <div key={`tabla-${t.id}`} className="p-4">
+                      <div className="flex items-center gap-2 mb-3">
+                        <span className="w-6 h-6 rounded-full bg-[#1C3D5A]/10 text-[#1C3D5A] dark:bg-blue-900/30 dark:text-blue-300 flex items-center justify-center text-[10px] font-bold">{i + 1}</span>
+                        <h4 className="text-xs font-semibold text-[#1C3D5A] dark:text-blue-300">{t.name}</h4>
+                        <span className="text-[10px] text-gray-400 ml-auto">DN {t.DN} mm · {t.material}</span>
+                      </div>
+                      <ListaMaterialesSIMEX
+                        mode="table"
+                        dnMM={t.DN}
+                        materialRaw={t.material}
+                        externalAccs={accsPorTramo[t.id] || []}
+                        onAccsChange={(accs) => setAccsPorTramo((prev) => ({ ...prev, [t.id]: accs }))}
+                      />
+                    </div>
+                  );
+                })}
               </div>
-            )}
-          </div>
+            </div>
+          )}
 
           <p className="text-[10px] text-gray-400">
-            Tip: la tubería y materiales fuera de catálogo agrégalos con &quot;{FREE}&quot; indicando la unidad (m, pza, etc.). Contacte a su distribuidor Sigma Flow autorizado para cotización — S.H.I. de México, simexco.com.mx
+            Contacte a su distribuidor Sigma Flow autorizado para cotización — S.H.I. de México, simexco.com.mx
           </p>
         </div>
       </div>
