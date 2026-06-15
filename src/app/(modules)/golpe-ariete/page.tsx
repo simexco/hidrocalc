@@ -405,6 +405,21 @@ export default function GolpeArietePage() {
 
           {results && (
             <>
+              {/* \u2500\u2500 AVISO DE VELOCIDAD ALTA \u2014 causa raiz de un golpe excesivo \u2500\u2500 */}
+              {inputs.V0 != null && inputs.V0 > 2.5 && (() => {
+                const Q = inputs.D != null ? inputs.V0 * Math.PI * Math.pow(inputs.D / 1000 / 2, 2) : null;
+                const dSug = Q != null ? Math.ceil(Math.sqrt((4 * Q) / (Math.PI * 2.0)) * 1000) : null;
+                return (
+                  <div className="rounded-xl border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/20 p-4">
+                    <p className="text-sm font-semibold text-amber-800 dark:text-amber-300">{"\u26a0"} Velocidad muy alta: {formatNumber(inputs.V0, 2)} m/s</p>
+                    <p className="text-xs text-amber-700 dark:text-amber-300 mt-1 leading-relaxed">
+                      El diametro es chico para este caudal (lo recomendable es {"\u2264"} 2 m/s). Esa velocidad alta es lo que dispara el golpe de ariete, y por eso aparecen los errores de abajo.
+                      {dSug != null && <> Para este caudal conviene un diametro interno de al menos <strong>{dSug} mm</strong> {"\u2014"} sube el diametro en &quot;Seleccionar tuberia&quot; y veras como bajan las presiones.</>}
+                    </p>
+                  </div>
+                );
+              })()}
+
               {/* \u2500\u2500 RESULTADO PRINCIPAL (lenguaje simple) \u2500\u2500 */}
               {(() => {
                 const classOk = results.pipeClass != null && !results.pipeClass.startsWith("Excede");
