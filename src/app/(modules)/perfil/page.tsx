@@ -13,6 +13,7 @@ import { calculateProfile, calculateRequiredP1, type ProfileVertex, type Profile
 import { flowToM3s, formatNumber } from "@/lib/calculations/conversions";
 import { STANDARD_DNS, STANDARD_DNS_LABELED, MATERIALS, getPipeClassesForMaterial } from "@/lib/constants";
 import { saveFormState, loadFormState } from "@/lib/storage/form-persistence";
+import { useProjectStore } from "@/store/projectStore";
 import { ComposedChart, Line, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
 import ListaMaterialesSIMEX, { type SIMEXAcc } from "@/components/ListaMaterialesSIMEX";
 import { NumInput } from "@/components/ui/NumInput";
@@ -67,6 +68,34 @@ export default function PerfilPage() {
     const t = setTimeout(() => saveFormState("perfil", { projectName, rawQ, flowUnit, P1, Pmin, vertices, tramos }), 1000);
     return () => clearTimeout(t);
   }, [projectName, rawQ, flowUnit, P1, Pmin, vertices, tramos]);
+
+  // Flujo de proyecto: prefill del Q desde el proyecto si no hay dato guardado
+  useEffect(() => {
+    const saved = loadFormState<{ rawQ?: number | null }>("perfil");
+    const projQ = useProjectStore.getState().project.q_ls;
+    if (saved?.rawQ == null && projQ != null) { setRawQ(projQ); setFlowUnit("L/s"); }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Flujo de proyecto: la conduccion escribe sus datos al proyecto activo
+  const patchProject = useProjectStore((s) => s.patch);
+  useEffect(() => {
+    const t = setTimeout(() => {
+      const sorted = [...vertices].filter((v) => v.dist != null && v.cota != null).sort((a, b) => a.dist - b.dist);
+      const t0 = tramos[0];
+      const dnLabel = t0 ? (STANDARD_DNS_LABELED.find((s) => s.dn === t0.DN_mm)?.label ?? `${t0.DN_mm} mm`) : "";
+      patchProject({
+        material: t0?.materialName ?? "PVC C900",
+        dn: dnLabel,
+        diametroInterior: t0?.DN_mm ?? null,
+        c: t0?.C ?? 150,
+        longitud: sorted.length ? sorted[sorted.length - 1].dist : null,
+        desnivel: sorted.length >= 2 ? sorted[0].cota - sorted[sorted.length - 1].cota : null,
+        vertices: sorted.map((v) => ({ cad: v.dist, cota: v.cota, desc: v.desc || "" })),
+      });
+    }, 700);
+    return () => clearTimeout(t);
+  }, [vertices, tramos, patchProject]);
 
   // Calculate
   const runCalc = useCallback(() => {

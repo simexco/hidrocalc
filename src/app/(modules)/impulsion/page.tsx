@@ -11,6 +11,7 @@ import { calculatePumpLine, PUMPING_REGIMES, type PumpLineInputs } from "@/lib/c
 import { formatNumber } from "@/lib/calculations/conversions";
 import { STANDARD_DNS_LABELED, MATERIALS } from "@/lib/constants";
 import { saveFormState, loadFormState } from "@/lib/storage/form-persistence";
+import { useProjectStore } from "@/store/projectStore";
 
 const defaults: PumpLineInputs = {
   Qmd_ls: null,
@@ -40,10 +41,13 @@ export default function ImpulsionPage() {
 
   useEffect(() => {
     const saved = loadFormState<PumpLineInputs & { useEconomic?: boolean }>("impulsion");
+    const projQ = useProjectStore.getState().project.q_ls;
     if (saved) {
       const { useEconomic: ue, ...rest } = saved;
-      setInputs({ ...defaults, ...rest, tarifaCFE: rest.tarifaCFE && rest.tarifaCFE >= 3 ? rest.tarifaCFE : 4.50 });
+      setInputs({ ...defaults, ...rest, tarifaCFE: rest.tarifaCFE && rest.tarifaCFE >= 3 ? rest.tarifaCFE : 4.50, Qmd_ls: rest.Qmd_ls ?? projQ });
       if (ue != null) setUseEconomic(ue);
+    } else if (projQ != null) {
+      setInputs({ ...defaults, Qmd_ls: projQ });
     }
   }, []);
 

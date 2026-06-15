@@ -8,6 +8,7 @@ import { ExportPDFButton } from "@/components/ui/ExportPDFButton";
 import { ResetButton } from "@/components/ui/ResetButton";
 import { FormulaDetail } from "@/components/ui/FormulaDetail";
 import { calculateWaterDemand, DEVELOPMENT_TYPES, CLIMATE_TYPES, DENSITY_CATEGORIES, type PopulationMode, type WaterDemandInputs } from "@/lib/calculations/water-demand";
+import { useProjectStore } from "@/store/projectStore";
 import { formatNumber } from "@/lib/calculations/conversions";
 import { saveFormState, loadFormState } from "@/lib/storage/form-persistence";
 
@@ -62,6 +63,20 @@ export default function DemandaPage() {
     debounceRef.current = setTimeout(runCalc, 300);
     return () => clearTimeout(debounceRef.current);
   }, [runCalc]);
+
+  // Flujo de proyecto: los resultados de gasto avanzan al proyecto activo (Qmd, poblacion, dotacion, coeficientes)
+  const patchProject = useProjectStore((s) => s.patch);
+  useEffect(() => {
+    if (!results) return;
+    const t = setTimeout(() => patchProject({
+      poblacion: results.poblacionDiseno,
+      dotacion: Math.round(results.dotacionAjustada),
+      cmd: inputs.CVD,
+      cmh: inputs.CVH,
+      q_ls: Math.round(results.QMD_ls * 100) / 100,
+    }), 600);
+    return () => clearTimeout(t);
+  }, [results, inputs.CVD, inputs.CVH, patchProject]);
 
   const handleReset = () => { setInputs({ ...defaults }); setResults(null); };
 

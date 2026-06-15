@@ -5,6 +5,7 @@ import Link from "next/link";
 import { HelpButton } from "@/components/ui/HelpModal";
 
 const moduleNames: Record<string, string> = {
+  "/asistente": "Asistente de proyecto",
   "/demanda": "Calculo de gasto",
   "/tramo-simple": "Verificar presión",
   "/perfil": "Linea de conduccion",

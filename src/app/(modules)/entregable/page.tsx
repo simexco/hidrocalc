@@ -1,38 +1,19 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { InputField } from "@/components/ui/InputField";
 import { ResetButton } from "@/components/ui/ResetButton";
-import { saveFormState, loadFormState } from "@/lib/storage/form-persistence";
 import { MATERIALS, STANDARD_DNS_LABELED } from "@/lib/constants";
+import { useProjectStore } from "@/store/projectStore";
 import { computeReport, generateReportPDF, downloadReport, type ReportData, type ReportVertex, type ReportValve } from "@/lib/export/report-generator";
 
 const num = (v: string) => (v === "" ? null : parseFloat(v));
 
-const DEFAULTS: ReportData = {
-  proyecto: "", localidad: "", fecha: "", folio: "", elaboro: "",
-  poblacion: null, periodoDiseno: 20, dotacion: 150, cmd: 1.4, cmh: 2.0, horasTanque: 14.3,
-  q_ls: null, longitud: null, desnivel: null, presionRequerida: 10, material: "PVC C900", dn: "", clase: "", diametroInterior: null, c: 150,
-  vertices: [], valvulas: [],
-  incluyeBombeo: false, he: null, eficiencia: 70,
-};
-
 export default function EntregablePage() {
-  const [d, setD] = useState<ReportData>({ ...DEFAULTS });
+  const { project: d, patch, reset } = useProjectStore();
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    const saved = loadFormState<ReportData>("entregable");
-    if (saved) setD({ ...DEFAULTS, ...saved });
-  }, []);
-
-  const persistRef = useRef<ReturnType<typeof setTimeout>>(undefined);
-  useEffect(() => {
-    clearTimeout(persistRef.current);
-    persistRef.current = setTimeout(() => saveFormState("entregable", d), 800);
-  }, [d]);
-
-  const set = <K extends keyof ReportData>(key: K, value: ReportData[K]) => setD((p) => ({ ...p, [key]: value }));
+  const set = <K extends keyof ReportData>(key: K, value: ReportData[K]) => patch({ [key]: value } as Partial<ReportData>);
   const r = computeReport(d);
 
   // Vertices
@@ -72,7 +53,7 @@ export default function EntregablePage() {
           <p className="text-xs text-gray-500 dark:text-gray-400">Captura los datos del proyecto y genera el reporte PDF de marca Sigma Flow.</p>
         </div>
         <div className="flex gap-2">
-          <ResetButton moduleKey="entregable" onReset={() => setD({ ...DEFAULTS })} />
+          <ResetButton moduleKey="hidrocalc-active-project" onReset={() => reset()} />
           <button onClick={handleGenerate} disabled={loading} className="text-sm bg-[#1C3D5A] text-white px-4 py-2 rounded-lg hover:bg-[#0F2438] transition-colors disabled:opacity-40 shadow-sm whitespace-nowrap">
             {loading ? "Generando..." : "Generar PDF"}
           </button>
