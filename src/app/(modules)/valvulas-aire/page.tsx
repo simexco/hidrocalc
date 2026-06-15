@@ -161,6 +161,13 @@ export default function ValvulasAirePage() {
     return "bg-green-100 text-green-700";
   };
 
+  // Descripcion comercial completa Sigma Flow segun tipo de valvula
+  const typeFullName = (type: string) => {
+    if (type === "VA-C") return "Válvula de aire combinada";
+    if (type === "VA-A") return "Válvula de aire de admisión y expulsión";
+    return "Válvula eliminadora de aire";
+  };
+
   return (
     <div className="max-w-7xl mx-auto space-y-6">
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
@@ -426,8 +433,11 @@ export default function ValvulasAirePage() {
               <h3 className="text-sm font-semibold text-blue-800 dark:text-blue-300">Productos SIMEX recomendados</h3>
               {results.valves.filter((v, i, arr) => arr.findIndex((x) => x.type === v.type && x.bodySize === v.bodySize) === i).map((v, i) => (
                 <div key={i} className="text-xs text-blue-700 dark:text-blue-400">
-                  <span className="font-mono">{v.type === "VA-C" ? `VI-VAC-${v.bodySize.replace(/"/g, "")}` : v.type === "VA-A" ? `VI-VAE-${v.bodySize.replace(/"/g, "")}` : `VI-VEA-${v.bodySize.replace(/"/g, "")}`}</span>
-                  {" — "}{v.type} {v.bodySize} — Conexión roscada NTP | HD A536
+                  <span className="font-medium">{typeFullName(v.type)} de {v.bodySize} Sigma Flow</span>
+                  <span className="block text-[10px] text-blue-500 dark:text-blue-400/70 mt-0.5">
+                    <span className="font-mono">{v.type === "VA-C" ? `VI-VAC-${v.bodySize.replace(/"/g, "")}` : v.type === "VA-A" ? `VI-VAE-${v.bodySize.replace(/"/g, "")}` : `VI-VEA-${v.bodySize.replace(/"/g, "")}`}</span>
+                    {" — "}{v.type} — Conexión roscada NTP | HD A536
+                  </span>
                 </div>
               ))}
               <p className="text-[9px] text-blue-500 mt-2">Contacte a su distribuidor SIMEX autorizado para cotización. S.H.I. de México — simexco.com.mx</p>
