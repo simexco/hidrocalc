@@ -14,6 +14,7 @@ const moduleNames: Record<string, string> = {
   "/despiece": "Despiece de tramo",
   "/valvulas-aire": "Válvulas de aire",
   "/vrp": "Valvula reductora",
+  "/entregable": "Reporte de proyecto",
   "/proyectos": "Mis proyectos",
 };
 

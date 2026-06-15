@@ -17,6 +17,7 @@ const icons = {
   aire: <path strokeLinecap="round" strokeLinejoin="round" d="M5 15l7-7 7 7" />,
   vrp: <path strokeLinecap="round" strokeLinejoin="round" d="M19 14l-7 7m0 0l-7-7m7 7V3" />,
   despiece: <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />,
+  entregable: <path strokeLinecap="round" strokeLinejoin="round" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z M9 13h6m-6 4h6" />,
   proyectos: <path strokeLinecap="round" strokeLinejoin="round" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />,
 };
 
@@ -56,8 +57,9 @@ const sections = [
     ],
   },
   {
-    title: "",
+    title: "Entregables",
     items: [
+      { href: "/entregable", label: "Reporte de proyecto", icon: icons.entregable },
       { href: "/proyectos", label: "Proyectos", icon: icons.proyectos },
     ],
   },

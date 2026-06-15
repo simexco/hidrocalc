@@ -60,7 +60,13 @@ const modules = [
     href: "/vrp",
     icon: (<svg viewBox="0 0 24 24" className={iconCls} fill="none" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M19 14l-7 7m0 0l-7-7m7 7V3" /></svg>),
   },
-  // ── Proyectos ──
+  // ── Entregables ──
+  {
+    title: "Reporte de proyecto",
+    desc: "Genera el reporte PDF de predimensionamiento (demanda, conducción, bombeo y guía) de marca Sigma Flow.",
+    href: "/entregable",
+    icon: (<svg viewBox="0 0 24 24" className={iconCls} fill="none" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z M9 13h6m-6 4h6" /></svg>),
+  },
   {
     title: "Mis proyectos",
     desc: "Guarda, organiza y exporta todos tus cálculos.",
