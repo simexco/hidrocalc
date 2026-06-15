@@ -144,6 +144,17 @@ export default function ValvulasAirePage() {
     return points.sort((a, b) => a.dist - b.dist);
   })();
 
+  // Dominio Y relativo: se ajusta a la variacion real del terreno para que
+  // los desniveles pequenos se vean claros (no escalado al valor absoluto de la cota).
+  const yDomain = (() => {
+    if (chartData.length < 2) return [0, 100] as [number, number];
+    const cotas = chartData.map((d) => d.cota);
+    const lo = Math.min(...cotas);
+    const hi = Math.max(...cotas);
+    const pad = Math.max((hi - lo) * 0.15, 2);
+    return [Math.floor(lo - pad), Math.ceil(hi + pad)] as [number, number];
+  })();
+
   const typeBadge = (type: string) => {
     if (type === "VA-C") return "bg-blue-100 text-blue-700";
     if (type === "VA-A") return "bg-yellow-100 text-yellow-700";
@@ -329,16 +340,14 @@ export default function ValvulasAirePage() {
                   <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
                   <XAxis dataKey="dist" label={{ value: "Distancia (m)", position: "insideBottom", offset: -10, style: { fontSize: 11 } }} tick={{ fontSize: 10 }} />
                   <YAxis
-                    domain={[
-                      Math.floor(Math.min(...vertices.map((v) => v.cota)) * 0.99),
-                      Math.ceil(Math.max(...vertices.map((v) => v.cota)) * 1.01),
-                    ]}
+                    domain={yDomain}
+                    allowDataOverflow
                     label={{ value: "Elevación (m)", angle: -90, position: "insideLeft", style: { fontSize: 11 } }}
                     tick={{ fontSize: 10 }}
                   />
                   <Tooltip />
                   <Legend />
-                  <Area type="monotone" dataKey="cota" stroke="#1C3D5A" fill="#1C3D5A" fillOpacity={0.15} strokeWidth={2} name="Terreno"
+                  <Area type="monotone" dataKey="cota" baseValue="dataMin" stroke="#1C3D5A" fill="#1C3D5A" fillOpacity={0.15} strokeWidth={2} name="Terreno"
                     dot={(props: Record<string, unknown>) => {
                       const { cx, cy, payload } = props as { cx: number; cy: number; payload: { valveType?: string | null; valveReason?: string | null } };
                       if (!payload?.valveType) return <circle key={`dot-${cx}`} cx={cx} cy={cy} r={0} />;
