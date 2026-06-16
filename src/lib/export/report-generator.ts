@@ -44,6 +44,8 @@ export interface ReportData {
   incluyeBombeo: boolean;
   he: number | null;
   eficiencia: number | null;
+  // Despiece (lista consolidada de piezas seleccionadas)
+  despiece: { desc: string; sku: string; qty: number }[];
 }
 
 export interface ReportResults {
@@ -62,6 +64,11 @@ export interface ReportResults {
   peKW: number | null;
   hp: number | null;
   qm3h: number | null;
+  // Recomendaciones de protección
+  presionEstaticaMax: number | null;   // m.c.a.
+  vrpRecomendada: boolean;
+  sobrepresionGolpe: number | null;    // m.c.a. (Joukowsky cierre brusco)
+  golpeRiesgo: "alto" | "medio" | "bajo";
 }
 
 // ── Cálculos del reporte ───────────────────────────────
@@ -70,6 +77,7 @@ export function computeReport(d: ReportData): ReportResults {
     qm: null, qmd: null, qmh: null, vtanque: null,
     velocidad: null, hf: null, hac: null, perdidaTotal: null, presionFinal: null,
     hv: null, cdt: null, phKW: null, peKW: null, hp: null, qm3h: null,
+    presionEstaticaMax: null, vrpRecomendada: false, sobrepresionGolpe: null, golpeRiesgo: "bajo",
   };
 
   // Módulo 1
@@ -112,6 +120,31 @@ export function computeReport(d: ReportData): ReportResults {
   } else if (Q != null) {
     r.qm3h = (Q / 1000) * 3600;
   }
+
+  // ── Recomendaciones de protección ──
+  // Presión estática máxima ≈ desnivel total del perfil (cota más alta - más baja)
+  const cotas = d.vertices.filter((v) => v.cota != null).map((v) => v.cota);
+  if (cotas.length >= 2) r.presionEstaticaMax = Math.max(...cotas) - Math.min(...cotas);
+  else if (d.desnivel != null) r.presionEstaticaMax = Math.abs(d.desnivel);
+  // VRP recomendada si la presión estática supera ~50 m.c.a. (5 kg/cm²)
+  r.vrpRecomendada = r.presionEstaticaMax != null && r.presionEstaticaMax > 50;
+
+  // Golpe de ariete (Joukowsky, cierre brusco): ΔH = a·V/g. a según material.
+  if (r.velocidad != null && r.velocidad > 0) {
+    const m = (d.material || "").toLowerCase();
+    const a = m.includes("pvc") ? 350
+      : (m.includes("pead") || m.includes("hdpe") || m.includes("polietileno")) ? 250
+      : (m.includes("hierro") || m.includes("ductil") || m.includes("dúctil")) ? 1200
+      : m.includes("acero") ? 1000
+      : m.includes("asbesto") ? 1000
+      : m.includes("concreto") ? 1000
+      : 900;
+    r.sobrepresionGolpe = (a * r.velocidad) / 9.81;
+  }
+  // Riesgo: bombeo siempre alto (paro de bomba); gravedad según sobrepresión
+  if (d.incluyeBombeo) r.golpeRiesgo = "alto";
+  else if (r.sobrepresionGolpe != null && r.sobrepresionGolpe > 30) r.golpeRiesgo = "medio";
+  else r.golpeRiesgo = "bajo";
 
   return r;
 }
@@ -225,13 +258,16 @@ function drawProfile(doc: jsPDF, verts: ReportVertex[], y: number): number {
 export async function generateReportPDF(d: ReportData): Promise<jsPDF> {
   const r = computeReport(d);
   const doc = new jsPDF();
-  const total = d.incluyeBombeo ? 4 : 3;
+  const hasDespiece = (d.despiece?.filter((p) => p.qty > 0).length ?? 0) > 0;
+  // Hojas: Demanda + Conducción + [Bombeo] + [Despiece] + Guía
+  const total = 2 + (d.incluyeBombeo ? 1 : 0) + (hasDespiece ? 1 : 0) + 1;
+  let pg = 1;
   const logo = await loadLogo();
 
   const tableBlue = { fillColor: BRAND as [number, number, number], textColor: 255 as number, fontStyle: "bold" as const };
 
   // ─────────── HOJA 1 — DEMANDA ───────────
-  header(doc, d, 1, total);
+  header(doc, d, pg, total);
   doc.setFontSize(13); doc.setFont("helvetica", "bold");
   doc.text("REPORTE DE PREDIMENSIONAMIENTO HIDRAULICO", 14, 32);
   let y = sectionTitle(doc, "MODULO 1", "ANALISIS DE DEMANDA DE AGUA", 38);
@@ -277,7 +313,8 @@ export async function generateReportPDF(d: ReportData): Promise<jsPDF> {
 
   // ─────────── HOJA 2 — CONDUCCION ───────────
   doc.addPage();
-  header(doc, d, 2, total);
+  pg++;
+  header(doc, d, pg, total);
   doc.setFontSize(13); doc.setFont("helvetica", "bold");
   doc.text("REPORTE DE PREDIMENSIONAMIENTO HIDRAULICO", 14, 32);
   y = sectionTitle(doc, "MODULO 2", "DIMENSIONAMIENTO DE TUBERIA", 38);
@@ -321,20 +358,56 @@ export async function generateReportPDF(d: ReportData): Promise<jsPDF> {
     y = subhead(doc, "Perfil de la linea", y);
     y = drawProfile(doc, d.vertices, y);
   }
-  if (d.valvulas.filter((v) => v.cad || v.tipo).length > 0) {
+  const valvList = d.valvulas.filter((v) => v.cad || v.tipo);
+  if (valvList.length > 0) {
+    y = subhead(doc, "Valvulas de aire y control sugeridas", y);
     autoTable(doc, {
-      startY: y, theme: "plain", styles: { fontSize: 8 },
+      startY: y, theme: "grid", styles: { fontSize: 8 }, headStyles: tableBlue,
       head: [["Cadenamiento", "Valvula / accesorio sugerido"]],
-      headStyles: { fontStyle: "bold", textColor: BRAND as [number, number, number] },
-      body: d.valvulas.filter((v) => v.cad || v.tipo).map((v) => [v.cad || "-", safe(v.tipo || "-")]),
+      body: valvList.map((v) => [v.cad || "-", safe(v.tipo || "-")]),
       margin: { left: 14, right: 14 },
     });
+    y = finalY(doc) + 6;
   }
+
+  // ── Recomendaciones de proteccion (VRP y golpe de ariete) ──
+  y = subhead(doc, "Recomendaciones de proteccion", y);
+  autoTable(doc, {
+    startY: y, theme: "grid", styles: { fontSize: 8 }, headStyles: tableBlue,
+    head: [["Proteccion", "Recomendacion", "Por que"]],
+    body: [
+      [
+        "Valvula reductora (VRP)",
+        r.vrpRecomendada ? "SE RECOMIENDA" : "No requerida",
+        r.presionEstaticaMax != null
+          ? (r.vrpRecomendada
+              ? `Presion estatica ~${n(r.presionEstaticaMax, 0)} m.c.a. (alta). Zonificar para no exceder la clase del tubo.`
+              : `Presion estatica ~${n(r.presionEstaticaMax, 0)} m.c.a. (dentro de rango).`)
+          : "Falta el perfil para evaluar.",
+      ],
+      [
+        "Golpe de ariete",
+        r.golpeRiesgo === "alto" ? "ANALIZAR / PROTEGER" : r.golpeRiesgo === "medio" ? "Revisar" : "Riesgo bajo",
+        d.incluyeBombeo
+          ? `Linea por bombeo: el paro de la bomba genera sobrepresion. Sobrepresion estimada ~${n(r.sobrepresionGolpe, 0)} m.c.a.`
+          : (r.sobrepresionGolpe != null
+              ? `Por gravedad. Sobrepresion por cierre brusco ~${n(r.sobrepresionGolpe, 0)} m.c.a. (Joukowsky).`
+              : "Falta velocidad para estimar."),
+      ],
+    ],
+    columnStyles: { 0: { cellWidth: 38 }, 1: { cellWidth: 32 } },
+    margin: { left: 14, right: 14 },
+  });
+  y = finalY(doc) + 3;
+  doc.setFontSize(7); doc.setTextColor(120, 120, 120);
+  doc.text(safe("Criterio: VRP cuando la presion estatica supera ~50 m.c.a.; golpe de ariete: siempre analizar en lineas por bombeo. Estimaciones preliminares — confirmar con el proyecto ejecutivo."), 14, y, { maxWidth: doc.internal.pageSize.getWidth() - 28 });
+  doc.setTextColor(0, 0, 0);
 
   // ─────────── HOJA 3 — BOMBEO ───────────
   if (d.incluyeBombeo) {
     doc.addPage();
-    header(doc, d, 3, total);
+    pg++;
+    header(doc, d, pg, total);
     doc.setFontSize(13); doc.setFont("helvetica", "bold");
     doc.text("REPORTE DE PREDIMENSIONAMIENTO HIDRAULICO", 14, 32);
     y = sectionTitle(doc, "MODULO 3", "EQUIPO DE BOMBEO", 38);
@@ -384,9 +457,35 @@ export async function generateReportPDF(d: ReportData): Promise<jsPDF> {
     doc.setTextColor(0, 0, 0);
   }
 
+  // ─────────── HOJA DESPIECE (si hay piezas) ───────────
+  if (hasDespiece) {
+    doc.addPage();
+    pg++;
+    header(doc, d, pg, total);
+    doc.setFontSize(13); doc.setFont("helvetica", "bold");
+    doc.text("REPORTE DE PREDIMENSIONAMIENTO HIDRAULICO", 14, 32);
+    y = sectionTitle(doc, "DESPIECE", "LISTA DE MATERIALES Y ACCESORIOS", 38);
+    doc.setFontSize(8); doc.setTextColor(90, 90, 90);
+    doc.text(safe("Piezas y accesorios Sigma Flow seleccionados para la linea. Cotizar con folio del proyecto."), 14, y);
+    doc.setTextColor(0, 0, 0); y += 6;
+    const piezas = d.despiece.filter((p) => p.qty > 0);
+    autoTable(doc, {
+      startY: y, theme: "grid", styles: { fontSize: 8 }, headStyles: tableBlue,
+      head: [["Cant.", "Descripcion", "SKU Sigma Flow"]],
+      body: piezas.map((p) => [`${p.qty}`, safe(p.desc), p.sku]),
+      columnStyles: { 0: { cellWidth: 16, halign: "center" }, 2: { cellWidth: 40 } },
+      margin: { left: 14, right: 14 },
+    });
+    y = finalY(doc) + 4;
+    doc.setFontSize(7.5); doc.setTextColor(90, 90, 90);
+    doc.text(safe("Nota: cada accesorio bridado requiere ademas su acoplamiento (adaptador de brida, empaque y tornilleria). El modulo Despiece genera el listado completo con esos SKU."), 14, y, { maxWidth: doc.internal.pageSize.getWidth() - 28 });
+    doc.setTextColor(0, 0, 0);
+  }
+
   // ─────────── HOJA FINAL — GUIA DE INSTALACION ───────────
   doc.addPage();
-  header(doc, d, total, total);
+  pg++;
+  header(doc, d, pg, total);
   doc.setFontSize(13); doc.setFont("helvetica", "bold");
   doc.text("GUIA DE INSTALACION SUGERIDA", 14, 32);
   doc.setFontSize(8); doc.setFont("helvetica", "normal"); doc.setTextColor(90, 90, 90);

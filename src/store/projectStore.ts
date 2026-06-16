@@ -21,6 +21,7 @@ export const emptyProject: ActiveProject = {
   material: "PVC C900", dn: "", clase: "", diametroInterior: null, c: 150,
   vertices: [], valvulas: [],
   incluyeBombeo: false, he: null, eficiencia: 70,
+  despiece: [],
 };
 
 interface ProjectState {

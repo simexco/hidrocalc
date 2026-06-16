@@ -48,6 +48,21 @@ export default function DespiecePage() {
     persistRef.current = setTimeout(() => saveFormState("despiece", { projectName, tramos, accsPorTramo }), 800);
   }, [projectName, tramos, accsPorTramo]);
 
+  // Flujo de proyecto: escribir el despiece consolidado al proyecto (sale en el reporte)
+  const patchProject = useProjectStore((s) => s.patch);
+  useEffect(() => {
+    const t = setTimeout(() => {
+      const acc: Record<string, { desc: string; sku: string; qty: number }> = {};
+      Object.values(accsPorTramo).flat().forEach((a) => {
+        const key = a.sku || a.label;
+        if (!acc[key]) acc[key] = { desc: a.label, sku: a.sku || "—", qty: 0 };
+        acc[key].qty += a.qty;
+      });
+      patchProject({ despiece: Object.values(acc) });
+    }, 700);
+    return () => clearTimeout(t);
+  }, [accsPorTramo, patchProject]);
+
   const addTramo = () => {
     setTramos((prev) => [...prev, { id: uuid(), name: `Tramo ${prev.length + 1}`, DN: 150, material: "PVC C900" }]);
   };

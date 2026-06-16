@@ -105,6 +105,18 @@ export default function ImpulsionPage() {
     return () => clearTimeout(debounceRef.current);
   }, [runCalc]);
 
+  // Flujo de proyecto: usar este modulo marca la linea como por bombeo y pasa He y eficiencia al reporte
+  useEffect(() => {
+    if (!results) return;
+    const ef = Math.round((inputs.eficienciaBomba ?? 0.7) * (inputs.eficienciaMotor ?? 0.9) * 100);
+    const t = setTimeout(() => patchProject({
+      incluyeBombeo: true,
+      he: results.Hg != null ? Math.round(results.Hg * 10) / 10 : null,
+      eficiencia: ef,
+    }), 600);
+    return () => clearTimeout(t);
+  }, [results, inputs.eficienciaBomba, inputs.eficienciaMotor, patchProject]);
+
   const handleReset = () => { setInputs({ ...defaults }); setResults(null); setUseEconomic(true); };
 
   const handleMaterial = (name: string) => {
