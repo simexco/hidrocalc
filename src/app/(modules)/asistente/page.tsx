@@ -2,8 +2,8 @@
 
 import Link from "next/link";
 import { InputField } from "@/components/ui/InputField";
-import { ResetButton } from "@/components/ui/ResetButton";
 import { useProjectStore } from "@/store/projectStore";
+import { clearAllFormState } from "@/lib/storage/form-persistence";
 import { computeReport } from "@/lib/export/report-generator";
 
 interface Step {
@@ -18,6 +18,14 @@ interface Step {
 export default function AsistentePage() {
   const { project: p, patch, reset } = useProjectStore();
   const r = computeReport(p);
+
+  const handleNuevoProyecto = () => {
+    if (!confirm("¿Empezar un proyecto nuevo? Se borrarán TODOS los datos de todos los pasos (gasto, conducción, válvulas, despiece y reporte).")) return;
+    clearAllFormState();
+    reset();
+    // Recargar para que todas las paginas re-inicien limpias
+    window.location.reload();
+  };
 
   const gastoDone = p.poblacion != null && p.dotacion != null && p.q_ls != null;
   const condDone = !!p.material && !!p.dn && p.diametroInterior != null && p.longitud != null;
@@ -43,7 +51,9 @@ export default function AsistentePage() {
           <h1 className="text-lg font-semibold text-gray-800 dark:text-gray-200">Asistente de proyecto</h1>
           <p className="text-xs text-gray-500 dark:text-gray-400">Pon el nombre del proyecto y empieza por el paso 1. Dentro de cada paso tendrás un botón &quot;Siguiente&quot; para avanzar hasta el reporte.</p>
         </div>
-        <ResetButton moduleKey="hidrocalc-active-project" onReset={() => reset()} />
+        <button onClick={handleNuevoProyecto} className="text-xs border border-red-200 text-red-600 dark:border-red-800 dark:text-red-400 px-3 py-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors whitespace-nowrap">
+          Nuevo proyecto (borrar todo)
+        </button>
       </div>
 
       {/* Datos del proyecto */}
