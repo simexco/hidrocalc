@@ -13,7 +13,7 @@ const FLOW = [
   { href: "/golpe-ariete", label: "Golpe de ariete" },
   { href: "/vrp", label: "Válvula reductora" },
   { href: "/valvulas-aire", label: "Válvulas de aire" },
-  { href: "/despiece", label: "Despiece" },
+  { href: "/despiece", label: "Lista de materiales (despiece)" },
   { href: "/entregable", label: "Reporte" },
 ];
 

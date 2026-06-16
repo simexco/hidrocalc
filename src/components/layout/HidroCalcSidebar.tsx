@@ -52,7 +52,7 @@ const sections = [
     items: [
       { href: "/dimensionamiento", label: "Elegir diámetro", icon: icons.diametro },
       { href: "/tramo-simple", label: "Verificar presión", icon: icons.presion },
-      { href: "/despiece", label: "Despiece de tramo", icon: icons.despiece },
+      { href: "/despiece", label: "Lista de materiales (despiece)", icon: icons.despiece },
     ],
   },
   {

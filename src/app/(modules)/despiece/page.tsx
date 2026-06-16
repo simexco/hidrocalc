@@ -162,7 +162,7 @@ export default function DespiecePage() {
         {/* ── Despiece resultante ── */}
         <div className="lg:col-span-3 space-y-5">
           <div>
-            <h1 className="text-lg font-semibold text-gray-800 dark:text-gray-200">Despiece de tramo</h1>
+            <h1 className="text-lg font-semibold text-gray-800 dark:text-gray-200">Cálculo de lista de materiales (despiece)</h1>
             <p className="text-xs text-gray-500 dark:text-gray-400">Lista de materiales y accesorios con SKU Sigma Flow. El acoplamiento se genera automáticamente.</p>
           </div>
 

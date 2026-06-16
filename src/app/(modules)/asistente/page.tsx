@@ -41,7 +41,7 @@ export default function AsistentePage() {
     { n: 4, title: "Golpe de ariete", desc: "¿La tubería resiste el golpe? Si no, válvula de protección.", href: "/golpe-ariete", done: null, summary: "Protección contra sobrepresión / vacío" },
     { n: 5, title: "Válvula reductora (VRP)", desc: "Si la presión excede la clase del tubo: reducir presión.", href: "/vrp", done: null, summary: vrpRecomendada ? "Recomendada (presión alta)" : "Revisar si aplica" },
     { n: 6, title: "Válvulas de aire", desc: "Ubicación de ventosas, seccionamiento y desfogue.", href: "/valvulas-aire", done: valvDone, summary: valvDone ? `${p.valvulas.length} válvulas/accesorios` : "Pendiente" },
-    { n: 7, title: "Despiece de piezas", desc: "Lista de materiales y accesorios con SKU Sigma Flow.", href: "/despiece", done: null, summary: "Arma el despiece por tramo" },
+    { n: 7, title: "Cálculo de lista de materiales (despiece)", desc: "Lista de materiales y accesorios con SKU Sigma Flow.", href: "/despiece", done: null, summary: "Arma la lista por tramo" },
     { n: 8, title: "Generar reporte", desc: "Reporte PDF consolidado de marca Sigma Flow.", href: "/entregable", done: null, summary: "Documento final" },
   ];
 
