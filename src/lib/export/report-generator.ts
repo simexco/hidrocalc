@@ -48,6 +48,9 @@ export interface ReportData {
   eficiencia: number | null;
   // Despiece (lista consolidada de piezas seleccionadas)
   despiece: { desc: string; sku: string; qty: number }[];
+  // Válvulas de control determinadas por el proyecto
+  vrpDN: string | null;          // DN de la válvula reductora recomendada
+  golpeValvulaDN: string | null; // DN de la válvula de protección contra golpe (si se requiere)
 }
 
 export interface ReportResults {
@@ -274,7 +277,20 @@ function drawProfile(doc: jsPDF, verts: ReportVertex[], y: number): number {
 export async function generateReportPDF(d: ReportData): Promise<jsPDF> {
   const r = computeReport(d);
   const doc = new jsPDF();
-  const hasDespiece = (d.despiece?.filter((p) => p.qty > 0).length ?? 0) > 0;
+
+  // Válvulas de control determinadas por el proyecto (entran solas al despiece)
+  const valvulasControl: { desc: string; sku: string; qty: number }[] = [];
+  const airGroups: Record<string, number> = {};
+  for (const v of d.valvulas ?? []) {
+    const key = (v.tipo || "").split(" - ")[0].trim();
+    if (key) airGroups[key] = (airGroups[key] || 0) + 1;
+  }
+  for (const [desc, qty] of Object.entries(airGroups)) valvulasControl.push({ desc, sku: "—", qty });
+  if (r.vrpRecomendada && d.vrpDN) valvulasControl.push({ desc: `Válvula reductora de presión (VRP) ${d.vrpDN}`, sku: "—", qty: 1 });
+  if (d.golpeValvulaDN) valvulasControl.push({ desc: `Válvula de protección golpe de ariete (alivio/anticipadora) ${d.golpeValvulaDN}`, sku: "—", qty: 1 });
+
+  const piezasManual = (d.despiece ?? []).filter((p) => p.qty > 0);
+  const hasDespiece = piezasManual.length > 0 || valvulasControl.length > 0;
   // Hojas: Demanda + Conducción + [Bombeo] + [Despiece] + Guía
   const total = 2 + (d.incluyeBombeo ? 1 : 0) + (hasDespiece ? 1 : 0) + 1;
   let pg = 1;
@@ -490,19 +506,36 @@ export async function generateReportPDF(d: ReportData): Promise<jsPDF> {
     doc.text("REPORTE DE PREDIMENSIONAMIENTO HIDRAULICO", 14, 32);
     y = sectionTitle(doc, "DESPIECE", "LISTA DE MATERIALES Y ACCESORIOS", 38);
     doc.setFontSize(8); doc.setTextColor(90, 90, 90);
-    doc.text(safe("Piezas y accesorios Sigma Flow seleccionados para la linea. Cotizar con folio del proyecto."), 14, y);
+    doc.text(safe("Piezas y accesorios Sigma Flow para la linea. Cotizar con folio del proyecto."), 14, y);
     doc.setTextColor(0, 0, 0); y += 6;
-    const piezas = d.despiece.filter((p) => p.qty > 0);
-    autoTable(doc, {
-      startY: y, theme: "grid", styles: { fontSize: 8 }, headStyles: tableBlue,
-      head: [["Cant.", "Descripcion", "SKU Sigma Flow"]],
-      body: piezas.map((p) => [`${p.qty}`, safe(p.desc), p.sku]),
-      columnStyles: { 0: { cellWidth: 16, halign: "center" }, 2: { cellWidth: 40 } },
-      margin: { left: 14, right: 14 },
-    });
-    y = finalY(doc) + 4;
+
+    // Válvulas de control determinadas por el proyecto (automáticas)
+    if (valvulasControl.length > 0) {
+      y = subhead(doc, "Válvulas y piezas de control (determinadas por el proyecto)", y);
+      autoTable(doc, {
+        startY: y, theme: "grid", styles: { fontSize: 8 }, headStyles: tableBlue,
+        head: [["Cant.", "Descripcion", "Origen"]],
+        body: valvulasControl.map((p) => [`${p.qty}`, safe(p.desc), p.desc.includes("VRP") ? "Valvula reductora" : p.desc.includes("golpe") ? "Golpe de ariete" : "Valvulas de aire"]),
+        columnStyles: { 0: { cellWidth: 16, halign: "center" }, 2: { cellWidth: 38 } },
+        margin: { left: 14, right: 14 },
+      });
+      y = finalY(doc) + 6;
+    }
+
+    // Accesorios capturados manualmente en el módulo Despiece
+    if (piezasManual.length > 0) {
+      y = subhead(doc, "Accesorios del despiece (capturados)", y);
+      autoTable(doc, {
+        startY: y, theme: "grid", styles: { fontSize: 8 }, headStyles: tableBlue,
+        head: [["Cant.", "Descripcion", "SKU Sigma Flow"]],
+        body: piezasManual.map((p) => [`${p.qty}`, safe(p.desc), p.sku]),
+        columnStyles: { 0: { cellWidth: 16, halign: "center" }, 2: { cellWidth: 40 } },
+        margin: { left: 14, right: 14 },
+      });
+      y = finalY(doc) + 4;
+    }
     doc.setFontSize(7.5); doc.setTextColor(90, 90, 90);
-    doc.text(safe("Nota: cada accesorio bridado requiere ademas su acoplamiento (adaptador de brida, empaque y tornilleria). El modulo Despiece genera el listado completo con esos SKU."), 14, y, { maxWidth: doc.internal.pageSize.getWidth() - 28 });
+    doc.text(safe("Las valvulas de control salen automaticamente de los pasos del proyecto. Los accesorios bridados requieren ademas su acoplamiento (adaptador, empaque, tornilleria) — el modulo Despiece genera el listado completo con SKU."), 14, y, { maxWidth: doc.internal.pageSize.getWidth() - 28 });
     doc.setTextColor(0, 0, 0);
   }
 

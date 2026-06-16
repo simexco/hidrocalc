@@ -55,6 +55,13 @@ export default function VRPPage() {
     return () => clearTimeout(debounceRef.current);
   }, [runCalc]);
 
+  // Flujo de proyecto: la VRP recomendada se guarda para el despiece/reporte
+  const patchProject = useProjectStore((s) => s.patch);
+  useEffect(() => {
+    const t = setTimeout(() => patchProject({ vrpDN: results?.recommendedDN ?? null }), 600);
+    return () => clearTimeout(t);
+  }, [results, patchProject]);
+
   const handleNum = (key: keyof typeof inputs, val: string) => {
     setInput(key, (val === "" ? null : parseFloat(val)) as never);
   };

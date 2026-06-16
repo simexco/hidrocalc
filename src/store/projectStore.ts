@@ -23,6 +23,7 @@ export const emptyProject: ActiveProject = {
   vertices: [], valvulas: [],
   incluyeBombeo: false, he: null, eficiencia: 70,
   despiece: [],
+  vrpDN: null, golpeValvulaDN: null,
 };
 
 interface ProjectState {

@@ -239,6 +239,15 @@ export default function GolpeArietePage() {
     return { dn: v?.dn ?? null, cv: Cv, pSet };
   })();
 
+  // Flujo de proyecto: si la tubería NO resiste, la válvula de protección entra al despiece/reporte
+  const patchProjectGolpe = useProjectStore((s) => s.patch);
+  useEffect(() => {
+    const necesita = resiste === false;
+    const dn = necesita ? (protecValvula?.dn ?? null) : null;
+    const t = setTimeout(() => patchProjectGolpe({ golpeValvulaDN: dn }), 600);
+    return () => clearTimeout(t);
+  }, [resiste, protecValvula, patchProjectGolpe]);
+
   return (
     <div className="max-w-6xl mx-auto space-y-6">
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
