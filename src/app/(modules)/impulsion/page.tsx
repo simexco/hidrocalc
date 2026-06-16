@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
+import { useRouter } from "next/navigation";
 import { InputField } from "@/components/ui/InputField";
 import { MetricCard } from "@/components/ui/MetricCard";
 import { AlertBanner } from "@/components/ui/AlertBanner";
@@ -34,9 +35,27 @@ export default function ImpulsionPage() {
   const [useEconomic, setUseEconomic] = useState(true);
   const [showAdvanced, setShowAdvanced] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const router = useRouter();
+  const patchProject = useProjectStore((s) => s.patch);
 
   const set = <K extends keyof PumpLineInputs>(key: K, value: PumpLineInputs[K]) => {
     setInputs(prev => ({ ...prev, [key]: value }));
+  };
+
+  // Aplicar el diametro economico a los tramos de la linea de conduccion y abrirla
+  const aplicarDNaConduccion = (dn: number) => {
+    if (!dn) return;
+    if (!confirm(`¿Aplicar ${dn} mm a todos los tramos de la Línea de conducción? Reemplazará el diámetro que tengas ahí.`)) return;
+    const dnLabel = STANDARD_DNS_LABELED.find((s) => s.dn === dn)?.label ?? `${dn} mm`;
+    // Actualizar el estado guardado del perfil (linea de conduccion)
+    const saved = loadFormState<{ tramos?: Array<{ DN_mm: number }> }>("perfil");
+    if (saved && Array.isArray(saved.tramos)) {
+      saved.tramos = saved.tramos.map((t) => ({ ...t, DN_mm: dn }));
+      saveFormState("perfil", saved);
+    }
+    // Reflejarlo en el proyecto activo
+    patchProject({ dn: dnLabel, diametroInterior: dn });
+    router.push("/perfil");
   };
 
   useEffect(() => {
@@ -243,6 +262,12 @@ export default function ImpulsionPage() {
                     </div>
                   )}
                 </div>
+                <button
+                  onClick={() => aplicarDNaConduccion(results.DN_econ_mm)}
+                  className="mt-3 w-full text-xs bg-green-600 text-white px-3 py-2 rounded-lg hover:bg-green-700 transition-colors font-medium shadow-sm"
+                >
+                  Aplicar {results.DN_econ_mm} mm a la Línea de conducción →
+                </button>
                 <FormulaDetail
                   title="D economico" value={`${results.DN_econ_mm}`} unit="mm"
                   formula="D = K × √Q  (Bresse)"
