@@ -246,7 +246,7 @@ export default function VRPPage() {
                 <MetricCard
                   label="Indice cavitacion"
                   value={formatNumber(results.sigma, 2)}
-                  unit={`\u03C3`}
+                  unit={`σ`}
                   alertLevel={results.riesgoCavitacion ? "WARN" : "OK"}
                   dataStatus={results.dataStatus}
                 />
@@ -301,10 +301,10 @@ export default function VRPPage() {
                             {row.status === "insuficiente" ? "--" : `${row.pct_min}%`}
                           </td>
                           <td className="px-3 py-2 text-center">
-                            {row.status === "optimo" && <span className="text-green-600 font-medium">{"\u2705"} Optimo</span>}
-                            {row.status === "funcional" && <span className="text-blue-600">{"\u2713"} Funcional</span>}
-                            {row.status === "limite" && <span className="text-yellow-600">{"\u26A0"} Limite sup.</span>}
-                            {row.status === "insuficiente" && <span className="text-red-500">{"\u2717"} Insuficiente</span>}
+                            {row.status === "optimo" && <span className="text-green-600 font-medium">{"✅"} Optimo</span>}
+                            {row.status === "funcional" && <span className="text-blue-600">{"✓"} Funcional</span>}
+                            {row.status === "limite" && <span className="text-yellow-600">{"⚠"} Limite sup.</span>}
+                            {row.status === "insuficiente" && <span className="text-red-500">{"✗"} Insuficiente</span>}
                           </td>
                         </tr>
                       );

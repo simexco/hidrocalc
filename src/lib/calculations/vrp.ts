@@ -109,25 +109,25 @@ export function calculateVRP(inputs: VRPInputs): VRPResults | null {
   if (riesgoCavitacion) {
     alerts.push({
       level: "WARN", field: "sigma",
-      message: `Indice de cavitacion bajo (\u03C3=${sigma.toFixed(2)}) \u2014 Verificar con fabricante, considerar valvula anticavitacion`,
+      message: `Indice de cavitacion bajo (σ=${sigma.toFixed(2)}) — Verificar con fabricante, considerar valvula anticavitacion`,
     });
   }
   if (dobleEtapa) {
     alerts.push({
       level: "WARN", field: "presion",
-      message: `Relacion de presion > 3:1 (${relacionPresion}:1) \u2014 Considerar dos VRP en serie`,
+      message: `Relacion de presion > 3:1 (${relacionPresion}:1) — Considerar dos VRP en serie`,
     });
   }
   if (pct_apertura_min != null && pct_apertura_min < 10) {
     alerts.push({
       level: "WARN", field: "apertura",
-      message: `Apertura minima < 10% (${pct_apertura_min}%) \u2014 Posible inestabilidad a caudal minimo`,
+      message: `Apertura minima < 10% (${pct_apertura_min}%) — Posible inestabilidad a caudal minimo`,
     });
   }
   if (v_aguas_abajo > 3.0) {
     alerts.push({
       level: "WARN", field: "velocidad",
-      message: `Velocidad aguas abajo elevada (${v_aguas_abajo.toFixed(1)} m/s) \u2014 Considerar DN mayor`,
+      message: `Velocidad aguas abajo elevada (${v_aguas_abajo.toFixed(1)} m/s) — Considerar DN mayor`,
     });
   }
   if (!vrp_seleccionada) {

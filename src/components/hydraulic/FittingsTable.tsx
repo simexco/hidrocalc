@@ -106,7 +106,7 @@ export function FittingsTable({ fittings, velocity, onAdd, onRemove, onUpdate }:
                       />
                     </td>
                     <td className="px-2 py-1.5 text-right text-xs font-mono">
-                      {isFinite(hmPartial) ? hmPartial.toFixed(3) : "\u2014"}
+                      {isFinite(hmPartial) ? hmPartial.toFixed(3) : "—"}
                     </td>
                     <td className="px-1 py-1.5">
                       <button
@@ -114,7 +114,7 @@ export function FittingsTable({ fittings, velocity, onAdd, onRemove, onUpdate }:
                         onClick={() => onRemove(f.id)}
                         className="text-red-400 hover:text-red-600 text-xs"
                       >
-                        {"\u2717"}
+                        {"✗"}
                       </button>
                     </td>
                   </tr>
@@ -126,7 +126,7 @@ export function FittingsTable({ fittings, velocity, onAdd, onRemove, onUpdate }:
                 <td className="px-2 py-1.5 text-gray-600 dark:text-gray-400">Total</td>
                 <td className="px-2 py-1.5 text-center font-mono text-gray-600">{totalK.toFixed(2)}</td>
                 <td className="px-2 py-1.5 text-center text-gray-400">{fittings.reduce((s, f) => s + f.quantity, 0)}</td>
-                <td className="px-2 py-1.5 text-right font-mono text-gray-700 dark:text-gray-300">{isFinite(totalHm) ? totalHm.toFixed(3) : "\u2014"}</td>
+                <td className="px-2 py-1.5 text-right font-mono text-gray-700 dark:text-gray-300">{isFinite(totalHm) ? totalHm.toFixed(3) : "—"}</td>
                 <td />
               </tr>
             </tfoot>

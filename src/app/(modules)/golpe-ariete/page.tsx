@@ -438,43 +438,43 @@ export default function GolpeArietePage() {
 
           {results && (
             <>
-              {/* \u2500\u2500 AVISO DE VELOCIDAD ALTA \u2014 causa raiz de un golpe excesivo \u2500\u2500 */}
+              {/* ── AVISO DE VELOCIDAD ALTA — causa raiz de un golpe excesivo ── */}
               {inputs.V0 != null && inputs.V0 > 2.5 && (() => {
                 const Q = inputs.D != null ? inputs.V0 * Math.PI * Math.pow(inputs.D / 1000 / 2, 2) : null;
                 const dSug = Q != null ? Math.ceil(Math.sqrt((4 * Q) / (Math.PI * 2.0)) * 1000) : null;
                 return (
                   <div className="rounded-xl border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/20 p-4">
-                    <p className="text-sm font-semibold text-amber-800 dark:text-amber-300">{"\u26a0"} Velocidad muy alta: {formatNumber(inputs.V0, 2)} m/s</p>
+                    <p className="text-sm font-semibold text-amber-800 dark:text-amber-300">{"⚠"} Velocidad muy alta: {formatNumber(inputs.V0, 2)} m/s</p>
                     <p className="text-xs text-amber-700 dark:text-amber-300 mt-1 leading-relaxed">
-                      El diametro es chico para este caudal (lo recomendable es {"\u2264"} 2 m/s). Esa velocidad alta es lo que dispara el golpe de ariete, y por eso aparecen los errores de abajo.
-                      {dSug != null && <> Para este caudal conviene un diametro interno de al menos <strong>{dSug} mm</strong> {"\u2014"} sube el diametro en &quot;Seleccionar tuberia&quot; y veras como bajan las presiones.</>}
+                      El diametro es chico para este caudal (lo recomendable es {"≤"} 2 m/s). Esa velocidad alta es lo que dispara el golpe de ariete, y por eso aparecen los errores de abajo.
+                      {dSug != null && <> Para este caudal conviene un diametro interno de al menos <strong>{dSug} mm</strong> {"—"} sube el diametro en &quot;Seleccionar tuberia&quot; y veras como bajan las presiones.</>}
                     </p>
                   </div>
                 );
               })()}
 
-              {/* \u2500\u2500 RESULTADO PRINCIPAL (lenguaje simple) \u2500\u2500 */}
+              {/* ── RESULTADO PRINCIPAL (lenguaje simple) ── */}
               {(() => {
                 const pmaxK = results.Pmax != null ? mcaToKgcm2(results.Pmax) : null;
                 const negPres = inputs.P0 != null && results.Pmin != null && results.Pmin < 0;
-                // Veredicto: \u00BFla tuber\u00EDa elegida resiste? (si no se pudo evaluar la clase, cae a si alguna clase resiste)
+                // Veredicto: ¿la tubería elegida resiste? (si no se pudo evaluar la clase, cae a si alguna clase resiste)
                 const claseExiste = results.pipeClass != null && !results.pipeClass.startsWith("Excede");
                 const ok = resiste != null ? resiste : claseExiste;
                 return (
                   <div className={`rounded-xl border p-5 ${ok ? "bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800" : "bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800"}`}>
                     <p className="text-[11px] uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1">
-                      {resiste != null ? "\u00BFTu tuber\u00EDa resiste el golpe de ariete?" : "Resultado"}
+                      {resiste != null ? "¿Tu tubería resiste el golpe de ariete?" : "Resultado"}
                     </p>
                     <p className={`text-2xl font-bold ${ok ? "text-green-700 dark:text-green-300" : "text-red-600 dark:text-red-400"}`}>
                       {resiste != null
-                        ? (resiste ? "S\u00ED \u2014 tu tuber\u00EDa resiste el golpe" : "No \u2014 tu tuber\u00EDa NO resiste el golpe")
-                        : (claseExiste ? `Clase recomendada: ${results.pipeClass}` : `Excede el cat\u00E1logo`)}
+                        ? (resiste ? "Sí — tu tubería resiste el golpe" : "No — tu tubería NO resiste el golpe")
+                        : (claseExiste ? `Clase recomendada: ${results.pipeClass}` : `Excede el catálogo`)}
                     </p>
                     {pmaxK != null && (
                       <p className="text-sm text-gray-700 dark:text-gray-300 mt-2">
-                        El cierre de la v\u00E1lvula eleva la presi\u00F3n hasta <strong>{formatNumber(pmaxK, 1)} kg/cm\u00B2</strong>
-                        {userPN != null ? <> ; tu tuber\u00EDa aguanta <strong>{formatNumber(userPN / 0.9807, 1)} kg/cm\u00B2</strong> (clase elegida).</>
-                          : inputs.P0 != null ? <> (presi\u00F3n normal {formatNumber(inputs.P0, 1)} kg/cm\u00B2).</> : "."}
+                        El cierre de la válvula eleva la presión hasta <strong>{formatNumber(pmaxK, 1)} kg/cm²</strong>
+                        {userPN != null ? <> ; tu tubería aguanta <strong>{formatNumber(userPN / 0.9807, 1)} kg/cm²</strong> (clase elegida).</>
+                          : inputs.P0 != null ? <> (presión normal {formatNumber(inputs.P0, 1)} kg/cm²).</> : "."}
                       </p>
                     )}
 
@@ -482,38 +482,38 @@ export default function GolpeArietePage() {
                     {!ok && (
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3">
                         <div className="bg-white/70 dark:bg-gray-800/50 rounded-lg p-3 border border-red-200 dark:border-red-800">
-                          <p className="text-[10px] uppercase tracking-wide text-gray-500">Opci\u00F3n A \u2014 subir la tuber\u00EDa</p>
+                          <p className="text-[10px] uppercase tracking-wide text-gray-500">Opción A — subir la tubería</p>
                           <p className="text-base font-bold text-[#1C3D5A] dark:text-blue-200">{claseExiste ? `Clase ${results.pipeClass}` : "Sin clase suficiente"}</p>
-                          <p className="text-[10px] text-gray-500">{claseExiste ? "Clase m\u00EDnima que resiste el golpe (ver tabla)." : "Considerar hierro d\u00FActil o acero."}</p>
+                          <p className="text-[10px] text-gray-500">{claseExiste ? "Clase mínima que resiste el golpe (ver tabla)." : "Considerar hierro dúctil o acero."}</p>
                         </div>
                         <div className="bg-white/70 dark:bg-gray-800/50 rounded-lg p-3 border border-amber-200 dark:border-amber-800">
-                          <p className="text-[10px] uppercase tracking-wide text-gray-500">Opci\u00F3n B \u2014 v\u00E1lvula de protecci\u00F3n</p>
-                          <p className="text-base font-bold text-amber-800 dark:text-amber-300">{protecValvula?.dn ? `V\u00E1lvula DN ${protecValvula.dn}` : "Consultar fabricante"}</p>
-                          <p className="text-[10px] text-gray-500">Alivio/anticipadora de golpe \u2014 deja la tuber\u00EDa actual (ver detalle abajo).</p>
+                          <p className="text-[10px] uppercase tracking-wide text-gray-500">Opción B — válvula de protección</p>
+                          <p className="text-base font-bold text-amber-800 dark:text-amber-300">{protecValvula?.dn ? `Válvula DN ${protecValvula.dn}` : "Consultar fabricante"}</p>
+                          <p className="text-[10px] text-gray-500">Alivio/anticipadora de golpe — deja la tubería actual (ver detalle abajo).</p>
                         </div>
                       </div>
                     )}
 
                     <div className="flex flex-wrap gap-2 mt-3">
                       <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${results.closureType === "brusco" ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-300" : "bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300"}`}>
-                        {results.closureType === "brusco" ? "\u26A0 Cierre brusco" : "\u2713 Cierre lento"}
+                        {results.closureType === "brusco" ? "⚠ Cierre brusco" : "✓ Cierre lento"}
                       </span>
                       {negPres && (
                         <span className="text-xs px-2.5 py-1 rounded-full font-medium bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300">
-                          Riesgo de presi\u00F3n negativa {"\u2014"} requiere protecci\u00F3n
+                          Riesgo de presión negativa {"—"} requiere protección
                         </span>
                       )}
                     </div>
                     {inputs.P0 == null && (
                       <p className="text-[11px] text-amber-600 dark:text-amber-400 mt-2">
-                        Falta la presi\u00F3n de operaci\u00F3n P0. Sin ella la presi\u00F3n m\u00E1xima es parcial (se asume P0 = 0). Capt\u00FArala para el veredicto exacto.
+                        Falta la presión de operación P0. Sin ella la presión máxima es parcial (se asume P0 = 0). Captúrala para el veredicto exacto.
                       </p>
                     )}
                   </div>
                 );
               })()}
 
-              {/* Detalle tecnico \u2014 colapsable */}
+              {/* Detalle tecnico — colapsable */}
               <button onClick={() => setShowDetail(!showDetail)} className="text-xs text-[#1C3D5A] dark:text-blue-300 underline decoration-dotted">
                 {showDetail ? "Ocultar" : "Ver"} detalle tecnico
               </button>
@@ -525,7 +525,7 @@ export default function GolpeArietePage() {
                   ? "bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 text-yellow-800 dark:text-yellow-300"
                   : "bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 text-green-800 dark:text-green-300"
               }`}>
-                {results.closureType === "brusco" ? <><span>{"\u26A0"}</span> Cierre Brusco</> : <><span>{"\u2713"}</span> Cierre Lento</>}
+                {results.closureType === "brusco" ? <><span>{"⚠"}</span> Cierre Brusco</> : <><span>{"✓"}</span> Cierre Lento</>}
                 <span className="text-xs ml-2 font-normal">
                   (Tc={inputs.Tc}s {results.closureType === "brusco" ? "<" : "≥"} Tfase={formatNumber(results.Tphase, 2)}s)
                 </span>
@@ -632,9 +632,9 @@ export default function GolpeArietePage() {
                               </td>
                               <td className="px-3 py-2 text-right font-mono">{row.pn}</td>
                               <td className="px-3 py-2 text-center">
-                                {cumple ? <span className="text-green-600">{"\u2713"}</span> : <span className="text-red-500">{"\u2717"}</span>}
+                                {cumple ? <span className="text-green-600">{"✓"}</span> : <span className="text-red-500">{"✗"}</span>}
                               </td>
-                              <td className="px-3 py-2 text-right font-mono">{fs > 0 ? fs.toFixed(2) : "\u2014"}</td>
+                              <td className="px-3 py-2 text-right font-mono">{fs > 0 ? fs.toFixed(2) : "—"}</td>
                             </tr>
                           );
                         })}
@@ -694,7 +694,7 @@ export default function GolpeArietePage() {
                 return (
                   <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl p-5 space-y-3">
                     <h3 className="text-sm font-semibold text-amber-800 dark:text-amber-300">
-                      {"\u26A0"} Proteccion recomendada — Valvula de alivio/anticipacion
+                      {"⚠"} Proteccion recomendada — Valvula de alivio/anticipacion
                     </h3>
 
                     {valv_recomendada ? (
@@ -720,7 +720,7 @@ export default function GolpeArietePage() {
 
                         <p className="text-xs text-amber-700 dark:text-amber-300">
                           Presion de ajuste sugerida (Pset): <strong>{formatNumber(pSet, 2)} kg/cm2</strong>
-                          {" "}{"\u2014"} La valvula debe abrirse cuando P supere este valor
+                          {" "}{"—"} La valvula debe abrirse cuando P supere este valor
                         </p>
                       </>
                     ) : (

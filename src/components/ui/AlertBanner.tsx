@@ -9,10 +9,10 @@ interface AlertBannerProps {
 }
 
 const icons: Record<AlertLevel, string> = {
-  OK: "\u2713",
-  WARN: "\u26A0",
-  ERROR: "\u2716",
-  CRITICAL: "\u26A0",
+  OK: "✓",
+  WARN: "⚠",
+  ERROR: "✖",
+  CRITICAL: "⚠",
 };
 
 const styles: Record<AlertLevel, string> = {
