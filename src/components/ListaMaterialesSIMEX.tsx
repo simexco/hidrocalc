@@ -675,16 +675,29 @@ export default function ListaMaterialesSIMEX({
   if(needsKit && totalBridas>0) {
     Object.entries(bridasPorDN).forEach(([dnKit,nBridas])=>{
       if(nBridas===0) return
-      const kk=`${dnKit}|${matCat}`
-      const kd=KIT[kk]??null
-      if(!kd) return
+      let kd = KIT[`${dnKit}|${matCat}`] ?? null
+      let aprox = false
+      // Fallback: si la clase de la linea no existe en ese DN (ej. C900 no viene en 3"),
+      // usar el adaptador de ese DN en un material compatible y marcarlo "verificar".
+      if(!kd) {
+        const fam = (matCat.split(' ')[0] || '')
+        const keys = Object.keys(KIT).filter(k => k.startsWith(`${dnKit}|`))
+        const altKey = keys.find(k => fam && (k.split('|')[1]||'').startsWith(fam)) ?? keys[0]
+        if(altKey) { kd = KIT[altKey]; aprox = true }
+      }
+      // Si no hay ningun kit para ese DN, no lo omitas: marcalo para confirmar
+      if(!kd) {
+        kitItems.push({sku:'← CONF', desc:`Adaptador/transicion ${dnKit} para el ramal — confirmar con distribuidor`, qty:nBridas, norma:'—', dnKit})
+        return
+      }
+      const suf = aprox ? ' (verificar OD del ramal)' : ''
       const extOD=kd.eo??kd.od??''
       const gibOD=kd.g?.replace('JN-JGI-','')??''
       if(opcion==='A'&&kd.a) {
-        kitItems.push({sku:kd.a, desc:ABU_DESC[kd.a]||`Adaptador de Brida Universal ${dnKit} Sigma Flow`, qty:nBridas, norma:'EN 14525', dnKit})
+        kitItems.push({sku:kd.a, desc:(ABU_DESC[kd.a]||`Adaptador de Brida Universal ${dnKit} Sigma Flow`)+suf, qty:nBridas, norma:'EN 14525', dnKit})
       } else if(kd.e) {
-        kitItems.push({sku:kd.e, desc:`Extremidad Bridada ${dnKit} OD ${extOD}mm Sigma Flow`, qty:nBridas, norma:'AWWA C110', dnKit})
-        if(kd.g) kitItems.push({sku:kd.g, desc:`Junta Gibault ${gibOD}mm Sigma Flow`, qty:nBridas, norma:'AWWA', dnKit})
+        kitItems.push({sku:kd.e, desc:`Extremidad Bridada ${dnKit} OD ${extOD}mm Sigma Flow${suf}`, qty:nBridas, norma:'AWWA C110', dnKit})
+        if(kd.g) kitItems.push({sku:kd.g, desc:`Junta Gibault ${gibOD}mm Sigma Flow${suf}`, qty:nBridas, norma:'AWWA', dnKit})
       }
       if(kd.em) kitItems.push({sku:kd.em, desc:`Empaque SBR ${dnKit} Sigma Flow`, qty:nBridas, norma:'—', dnKit})
       if(kd.t) kitItems.push({sku:kd.t, desc:`${TOR_DESC[kd.t]??`Tornillo ${dnKit}`}`, qty:nBridas*(kd.b??8), norma:'—', dnKit})
