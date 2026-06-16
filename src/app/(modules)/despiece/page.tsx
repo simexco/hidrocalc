@@ -6,6 +6,7 @@ import { InputField } from "@/components/ui/InputField";
 import { ResetButton } from "@/components/ui/ResetButton";
 import { saveFormState, loadFormState } from "@/lib/storage/form-persistence";
 import { STANDARD_DNS_LABELED, MATERIALS } from "@/lib/constants";
+import { useProjectStore } from "@/store/projectStore";
 import ListaMaterialesSIMEX, { type SIMEXAcc } from "@/components/ListaMaterialesSIMEX";
 
 interface DespieceTramo {
@@ -20,13 +21,22 @@ export default function DespiecePage() {
   const [tramos, setTramos] = useState<DespieceTramo[]>([]);
   const [accsPorTramo, setAccsPorTramo] = useState<Record<string, SIMEXAcc[]>>({});
 
-  // Cargar guardado
+  // Cargar guardado / flujo de proyecto
   useEffect(() => {
     const saved = loadFormState<{ projectName?: string; tramos?: DespieceTramo[]; accsPorTramo?: Record<string, SIMEXAcc[]> }>("despiece");
+    const tieneTramos = saved && Array.isArray(saved.tramos) && saved.tramos.length > 0;
     if (saved) {
       if (saved.projectName) setProjectName(saved.projectName);
       if (Array.isArray(saved.tramos)) setTramos(saved.tramos);
       if (saved.accsPorTramo) setAccsPorTramo(saved.accsPorTramo);
+    }
+    // Si no hay tramos propios, sembrar el primero con el material/DN del proyecto activo
+    if (!tieneTramos) {
+      const proj = useProjectStore.getState().project;
+      if (proj.proyecto && !saved?.projectName) setProjectName(proj.proyecto);
+      if (proj.diametroInterior != null || proj.material) {
+        setTramos([{ id: uuid(), name: "Tramo 1", DN: proj.diametroInterior ?? 150, material: proj.material || "PVC C900" }]);
+      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
