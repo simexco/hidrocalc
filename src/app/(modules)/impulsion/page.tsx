@@ -283,10 +283,16 @@ export default function ImpulsionPage() {
 
               {/* Hydraulics */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                <MetricCard label="Velocidad" value={formatNumber(results.V, 2)} unit="m/s" alertLevel={results.V > 2.0 ? "WARN" : results.V < 0.5 ? "WARN" : "OK"} dataStatus="calculated" />
-                <MetricCard label="hf" value={formatNumber(results.hf, 2)} unit="m" dataStatus="calculated" />
-                <MetricCard label="hm" value={formatNumber(results.hm, 2)} unit="m" dataStatus="calculated" />
-                <MetricCard label="J" value={formatNumber(results.J_km, 2)} unit="m/km" alertLevel={results.J_km > 10 ? "WARN" : "OK"} dataStatus="calculated" />
+                <MetricCard label="Velocidad (V)" value={formatNumber(results.V, 2)} unit="m/s" alertLevel={results.V > 2.0 ? "WARN" : results.V < 0.5 ? "WARN" : "OK"} dataStatus="calculated" />
+                <MetricCard label="hf — fricción" value={formatNumber(results.hf, 2)} unit="m" dataStatus="calculated" />
+                <MetricCard label="hm — accesorios" value={formatNumber(results.hm, 2)} unit="m" dataStatus="calculated" />
+                <MetricCard label="J — gradiente" value={formatNumber(results.J_km, 2)} unit="m/km" alertLevel={results.J_km > 10 ? "WARN" : "OK"} dataStatus="calculated" />
+              </div>
+              <div className="bg-gray-50 dark:bg-gray-800/60 border border-gray-100 dark:border-gray-700 rounded-lg px-3 py-2.5 text-[11px] text-gray-600 dark:text-gray-400 space-y-1 leading-relaxed">
+                <p><strong>V (velocidad):</strong> qué tan rápido va el agua = Q / área del tubo. Ideal 0.6 a 2 m/s.</p>
+                <p><strong>hf (pérdida por fricción):</strong> energía que pierde el agua al rozar la pared del tubo, a lo largo de toda la línea. Se calcula con Hazen-Williams.</p>
+                <p><strong>hm (pérdida por accesorios):</strong> energía que se pierde en codos, válvulas y piezas especiales. Aquí estimada como % de hf.</p>
+                <p><strong>J (gradiente):</strong> cuánta presión se pierde por cada kilómetro de tubo (hf entre la longitud). Sirve para comparar diámetros.</p>
               </div>
 
               {/* CDT */}
@@ -298,6 +304,9 @@ export default function ImpulsionPage() {
                   <span>+ hf = {formatNumber(results.hf, 2)} m</span>
                   <span>+ hm = {formatNumber(results.hm, 2)} m</span>
                 </div>
+                <p className="mt-2 text-[11px] text-gray-500 dark:text-gray-400 leading-relaxed">
+                  La <strong>CDT (carga dinámica total)</strong> es la &quot;altura&quot; total que la bomba debe vencer: <strong>Hg</strong> = desnivel entre la bomba y el tanque (carga estática) <strong>+ hf</strong> (fricción) <strong>+ hm</strong> (accesorios). Es uno de los dos datos para pedir la bomba (el otro es el caudal Q).
+                </p>
                 <FormulaDetail
                   title="CDT" value={formatNumber(results.CDT, 2)} unit="m"
                   formula="CDT = Hg + hf + hm"
@@ -330,6 +339,14 @@ export default function ImpulsionPage() {
                     <p className="text-[10px] text-amber-600">HP comercial</p>
                     <p className="text-2xl font-bold text-amber-900">{results.HP_comercial} <span className="text-sm font-normal">HP</span></p>
                   </div>
+                </div>
+                <div className="bg-white/60 dark:bg-gray-800/40 rounded-lg px-3 py-2.5 text-[11px] text-amber-800 dark:text-amber-200/80 space-y-1.5 leading-relaxed">
+                  <p className="font-semibold">De dónde sale cada potencia:</p>
+                  <p><strong>1. Hidráulica (Ph):</strong> la energía que el agua realmente necesita para subir el caudal Q contra la carga CDT. Fórmula: Ph = (peso del agua × Q × CDT) = 9.81 × Q × CDT. Es el mínimo teórico.</p>
+                  <p><strong>2. Al freno (Pb):</strong> lo que la bomba debe entregar en su eje. Como ninguna bomba es 100% eficiente, se divide entre su eficiencia: Pb = Ph / η_bomba (aquí {Math.round((inputs.eficienciaBomba ?? 0.7) * 100)}%).</p>
+                  <p><strong>3. Motor (Pm):</strong> lo que consume el motor eléctrico, que tampoco es perfecto: Pm = Pb / η_motor (aquí {Math.round((inputs.eficienciaMotor ?? 0.9) * 100)}%). Se convierte a HP (1 kW = 1.34 HP).</p>
+                  <p><strong>4. HP comercial:</strong> el motor estándar inmediato superior que se vende (no existe un motor de {formatNumber(results.Pm_HP, 1)} HP, se compra el de {results.HP_comercial} HP).</p>
+                  <p className="text-amber-600/80 dark:text-amber-300/60">Cada paso da un poco más de potencia porque suma las pérdidas de la bomba y del motor.</p>
                 </div>
                 <FormulaDetail
                   title="Potencia" value={formatNumber(results.Pm_HP, 1)} unit="HP"

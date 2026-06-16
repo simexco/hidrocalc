@@ -848,6 +848,9 @@ export default function PerfilPage() {
                     </tbody>
                   </table>
                 </div>
+                <div className="px-4 py-2.5 text-[10px] text-gray-500 dark:text-gray-400 border-t border-gray-100 dark:border-gray-700 leading-relaxed">
+                  <strong>Cadenam.</strong> = distancia desde el inicio (m). <strong>Cota</strong> = elevación del terreno (m.s.n.m.). <strong>Piezom.</strong> = línea piezométrica (nivel de energía del agua). <strong>P</strong> = presión disponible en ese punto. <strong>hf</strong> = pérdida por fricción acumulada. <strong>V</strong> = velocidad del agua. <strong>Estado</strong>: ✓ cumple, ⚠ presión baja, ✗ crítica.
+                </div>
               </div>
 
               {/* Alerts */}
