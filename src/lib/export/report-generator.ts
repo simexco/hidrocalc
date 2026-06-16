@@ -537,7 +537,7 @@ export async function generateReportPDF(d: ReportData): Promise<jsPDF> {
 
     // Accesorios capturados manualmente en el módulo Despiece
     if (piezasManual.length > 0) {
-      y = subhead(doc, "Accesorios del despiece (capturados)", y);
+      y = subhead(doc, "Accesorios y acoplamiento (piezas + forma de conexión)", y);
       autoTable(doc, {
         startY: y, theme: "grid", styles: { fontSize: 8 }, headStyles: tableBlue,
         head: [["Cant.", "Descripcion", "SKU Sigma Flow"]],
@@ -548,7 +548,7 @@ export async function generateReportPDF(d: ReportData): Promise<jsPDF> {
       y = finalY(doc) + 4;
     }
     doc.setFontSize(7.5); doc.setTextColor(90, 90, 90);
-    doc.text(safe("Las valvulas de control salen automaticamente de los pasos del proyecto. Los accesorios bridados requieren ademas su acoplamiento (adaptador, empaque, tornilleria) — el modulo Despiece genera el listado completo con SKU."), 14, y, { maxWidth: doc.internal.pageSize.getWidth() - 28 });
+    doc.text(safe("La lista incluye las piezas principales y su acoplamiento (adaptador de brida o extremidad + empaque + tornilleria) segun la forma de conexion elegida en el modulo. Las valvulas de control salen automaticamente de los pasos del proyecto."), 14, y, { maxWidth: doc.internal.pageSize.getWidth() - 28 });
     doc.setTextColor(0, 0, 0);
   }
 

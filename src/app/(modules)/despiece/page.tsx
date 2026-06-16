@@ -20,6 +20,8 @@ export default function DespiecePage() {
   const [projectName, setProjectName] = useState("");
   const [tramos, setTramos] = useState<DespieceTramo[]>([]);
   const [accsPorTramo, setAccsPorTramo] = useState<Record<string, SIMEXAcc[]>>({});
+  // Lista completa computada por tramo (piezas + acoplamiento) para el reporte
+  const [listaPorTramo, setListaPorTramo] = useState<Record<string, { sku: string; desc: string; qty: number }[]>>({});
 
   // Cargar guardado / flujo de proyecto
   useEffect(() => {
@@ -52,16 +54,21 @@ export default function DespiecePage() {
   const patchProject = useProjectStore((s) => s.patch);
   useEffect(() => {
     const t = setTimeout(() => {
+      // Consolidar la lista COMPLETA de cada tramo (incluye piezas + acoplamiento/adaptadores)
+      // Solo tramos que aún tienen accesorios (ignora listas obsoletas)
       const acc: Record<string, { desc: string; sku: string; qty: number }> = {};
-      Object.values(accsPorTramo).flat().forEach((a) => {
-        const key = a.sku || a.label;
-        if (!acc[key]) acc[key] = { desc: a.label, sku: a.sku || "—", qty: 0 };
-        acc[key].qty += a.qty;
+      tramos.forEach((t2) => {
+        if ((accsPorTramo[t2.id]?.length ?? 0) === 0) return;
+        (listaPorTramo[t2.id] ?? []).forEach((p) => {
+          const key = p.sku && p.sku !== "—" ? p.sku : p.desc;
+          if (!acc[key]) acc[key] = { desc: p.desc, sku: p.sku || "—", qty: 0 };
+          acc[key].qty += p.qty;
+        });
       });
       patchProject({ despiece: Object.values(acc) });
     }, 700);
     return () => clearTimeout(t);
-  }, [accsPorTramo, patchProject]);
+  }, [listaPorTramo, accsPorTramo, tramos, patchProject]);
 
   const addTramo = () => {
     setTramos((prev) => [...prev, { id: uuid(), name: `Tramo ${prev.length + 1}`, DN: 150, material: "PVC C900" }]);
@@ -192,6 +199,7 @@ export default function DespiecePage() {
                         materialRaw={t.material}
                         externalAccs={accsPorTramo[t.id] || []}
                         onAccsChange={(accs) => setAccsPorTramo((prev) => ({ ...prev, [t.id]: accs }))}
+                        onComputed={(rows) => setListaPorTramo((prev) => ({ ...prev, [t.id]: rows }))}
                       />
                     </div>
                   );

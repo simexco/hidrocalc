@@ -1,5 +1,5 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 
 // ═══════════════════════════════════════════════════════════════
 //  CATÁLOGO SIMEX — Embebido directamente (no requiere JSON externo)
@@ -506,6 +506,7 @@ interface Props {
   mode?: 'full' | 'selector' | 'table'
   externalAccs?: Acc[]
   onAccsChange?: (accs: Acc[]) => void
+  onComputed?: (rows: { sku: string; desc: string; qty: number }[]) => void  // lista completa (piezas + kit) para el reporte
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -514,7 +515,7 @@ interface Props {
 export { type Acc as SIMEXAcc }
 
 export default function ListaMaterialesSIMEX({
-  dnMM, dnStr, materialRaw, hf, longitud, onHmChange, mode = 'full', externalAccs, onAccsChange
+  dnMM, dnStr, materialRaw, hf, longitud, onHmChange, mode = 'full', externalAccs, onAccsChange, onComputed
 }: Props) {
 
   // Resolver DN — acepta número en mm O string con comillas
@@ -707,6 +708,18 @@ export default function ListaMaterialesSIMEX({
   const piezasPrinc = accs.filter(a=>!a.isObra)
   const piezasObra  = accs.filter(a=>a.isObra)
   const noABU       = !kitData?.a && !!kitData
+
+  // Lista completa para el reporte: piezas principales + acoplamiento (kit) + obra
+  const fullList = [
+    ...piezasPrinc.map(a => ({ sku: a.sku, desc: a.label, qty: a.qty })),
+    ...kitItems.map(k => ({ sku: k.sku, desc: k.desc, qty: k.qty })),
+    ...piezasObra.map(a => ({ sku: a.sku, desc: a.label, qty: a.qty })),
+  ]
+  const fullListKey = JSON.stringify(fullList)
+  useEffect(() => {
+    onComputed?.(fullList)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fullListKey])
 
   if(!dn) return null
 
