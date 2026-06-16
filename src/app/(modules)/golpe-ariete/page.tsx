@@ -198,17 +198,8 @@ export default function GolpeArietePage() {
 
             <InputField label="Nombre del proyecto" value={inputs.projectName} onChange={(v) => setInput("projectName", v)} type="text" />
 
-            {/* Velocidad o caudal */}
+            {/* Caudal (o velocidad) */}
             <div className="space-y-1.5">
-              <div className="flex gap-2">
-                <button type="button" onClick={() => setVelMode("caudal")} className={`flex-1 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${velMode === "caudal" ? "bg-[#1C3D5A] text-white" : "bg-gray-100 dark:bg-gray-700 text-gray-500"}`}>
-                  Tengo el caudal
-                </button>
-                <button type="button" onClick={() => setVelMode("velocidad")} className={`flex-1 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${velMode === "velocidad" ? "bg-[#1C3D5A] text-white" : "bg-gray-100 dark:bg-gray-700 text-gray-500"}`}>
-                  Tengo la velocidad
-                </button>
-              </div>
-
               {velMode === "caudal" ? (
                 <>
                   <InputField
@@ -234,18 +225,11 @@ export default function GolpeArietePage() {
                   onChange={(v) => handleNum("V0", v)}
                   unit="m/s"
                   required
-                  tooltip="Velocidad del agua antes del cierre de válvula. Puedes obtenerla del Módulo 1 o calcularla como Q/A"
+                  tooltip="Velocidad del agua antes del cierre de válvula."
                 />
               )}
-            </div>
-
-            {/* Entry mode toggle */}
-            <div className="flex gap-2 pt-1">
-              <button type="button" onClick={() => setEntryMode("simple")} className={`flex-1 px-3 py-2 rounded-lg text-xs font-medium transition-colors ${entryMode === "simple" ? "bg-[#1C3D5A] text-white" : "bg-gray-100 dark:bg-gray-700 text-gray-500"}`}>
-                Seleccionar tuberia
-              </button>
-              <button type="button" onClick={() => setEntryMode("advanced")} className={`flex-1 px-3 py-2 rounded-lg text-xs font-medium transition-colors ${entryMode === "advanced" ? "bg-[#1C3D5A] text-white" : "bg-gray-100 dark:bg-gray-700 text-gray-500"}`}>
-                Ingreso manual
+              <button type="button" onClick={() => setVelMode(velMode === "caudal" ? "velocidad" : "caudal")} className="text-[10px] text-[#1C3D5A] dark:text-blue-300 underline decoration-dotted">
+                {velMode === "caudal" ? "Tengo la velocidad, no el caudal" : "Mejor uso el caudal"}
               </button>
             </div>
 
@@ -333,6 +317,10 @@ export default function GolpeArietePage() {
             </div>
               </>
             )}
+
+            <button type="button" onClick={() => setEntryMode(entryMode === "simple" ? "advanced" : "simple")} className="text-[10px] text-[#1C3D5A] dark:text-blue-300 underline decoration-dotted">
+              {entryMode === "simple" ? "¿Tubería no listada? Ingresar D y espesor manualmente" : "Volver a seleccionar del catálogo"}
+            </button>
 
             {/* Aviso de velocidad alta junto al selector de diametro */}
             {inputs.V0 != null && inputs.V0 > 2.5 && (() => {
