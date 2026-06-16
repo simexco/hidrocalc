@@ -37,7 +37,7 @@ export default function DespiecePage() {
       const proj = useProjectStore.getState().project;
       if (proj.proyecto && !saved?.projectName) setProjectName(proj.proyecto);
       if (proj.diametroInterior != null || proj.material) {
-        setTramos([{ id: uuid(), name: "Tramo 1", DN: proj.diametroInterior ?? 150, material: proj.material || "PVC C900" }]);
+        setTramos([{ id: uuid(), name: "Tramo 1", DN: proj.diametroInterior ?? 150, material: proj.material || "PVC Inglés" }]);
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -71,7 +71,7 @@ export default function DespiecePage() {
   }, [listaPorTramo, accsPorTramo, tramos, patchProject]);
 
   const addTramo = () => {
-    setTramos((prev) => [...prev, { id: uuid(), name: `Tramo ${prev.length + 1}`, DN: 150, material: "PVC C900" }]);
+    setTramos((prev) => [...prev, { id: uuid(), name: `Tramo ${prev.length + 1}`, DN: 150, material: "PVC Inglés" }]);
   };
   const updateTramo = (id: string, patch: Partial<DespieceTramo>) => {
     setTramos((prev) => prev.map((t) => (t.id === id ? { ...t, ...patch } : t)));

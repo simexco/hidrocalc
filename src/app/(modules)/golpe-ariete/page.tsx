@@ -95,15 +95,15 @@ export default function GolpeArietePage() {
       });
       return;
     }
-    // Sin datos propios: ligar caudal, presion y tuberia del proyecto activo
+    // Sin datos propios: tuberia por defecto PVC Inglés RD 26 (o lo del proyecto si existe),
+    // y ligar caudal/presion del proyecto activo.
     const p = useProjectStore.getState().project;
-    if (p.q_ls == null && p.presionMaxLinea == null && p.longitud == null) return;
     prefillingRef.current = true;
+    const m = matchGolpeCatalog(p.material || "PVC Inglés", p.diametroInterior, p.clase || "RD 26");
+    if (m) { setSelectedCatalog(m.gi); setSelectedSize(m.si); setSelectedClass(m.ci); }
     if (p.q_ls != null) { setVelMode("caudal"); setCaudalQ(p.q_ls); }
     if (p.presionMaxLinea != null) setInput("P0", Math.round(p.presionMaxLinea * 10) / 10);
     if (p.longitud != null) setInput("L", p.longitud);
-    const m = matchGolpeCatalog(p.material, p.diametroInterior, p.clase);
-    if (m) { setSelectedCatalog(m.gi); setSelectedSize(m.si); setSelectedClass(m.ci); }
     setTimeout(() => { prefillingRef.current = false; }, 0);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

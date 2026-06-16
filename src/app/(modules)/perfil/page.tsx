@@ -30,14 +30,14 @@ export default function PerfilPage() {
     { id: uuid(), dist: 1000, cota: 95, desc: "Fin" },
   ]);
   const [tramos, setTramos] = useState<ProfileTramo[]>([
-    { id: uuid(), distFrom: 0, distTo: 1000, DN_mm: 150, C: MATERIALS[0].c, materialName: MATERIALS[0].name },
+    { id: uuid(), distFrom: 0, distTo: 1000, DN_mm: 150, C: MATERIALS[0].c, materialName: MATERIALS[0].name, pipeClass: "RD 26", PN_bar: 11.0 },
   ]);
   const [results, setResults] = useState<ProfileResults | null>(null);
   const [calcMode, setCalcMode] = useState<'verificar' | 'calcularP1'>('verificar');
   const [computedP1, setComputedP1] = useState<number | null>(null);
   const [showScenarioB, setShowScenarioB] = useState(false);
   const [tramosB, setTramosB] = useState<ProfileTramo[]>([
-    { id: uuid(), distFrom: 0, distTo: 1000, DN_mm: 150, C: MATERIALS[0].c, materialName: MATERIALS[0].name },
+    { id: uuid(), distFrom: 0, distTo: 1000, DN_mm: 150, C: MATERIALS[0].c, materialName: MATERIALS[0].name, pipeClass: "RD 26", PN_bar: 11.0 },
   ]);
   const [resultsB, setResultsB] = useState<ProfileResults | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
@@ -144,12 +144,12 @@ export default function PerfilPage() {
       { id: uuid(), dist: 1000, cota: 95, desc: "Fin" },
     ]);
     setTramos([
-      { id: uuid(), distFrom: 0, distTo: 1000, DN_mm: 150, C: MATERIALS[0].c, materialName: MATERIALS[0].name },
+      { id: uuid(), distFrom: 0, distTo: 1000, DN_mm: 150, C: MATERIALS[0].c, materialName: MATERIALS[0].name, pipeClass: "RD 26", PN_bar: 11.0 },
     ]);
     setCalcMode('verificar');
     setComputedP1(null);
     setShowScenarioB(false);
-    setTramosB([{ id: uuid(), distFrom: 0, distTo: 1000, DN_mm: 150, C: MATERIALS[0].c, materialName: MATERIALS[0].name }]);
+    setTramosB([{ id: uuid(), distFrom: 0, distTo: 1000, DN_mm: 150, C: MATERIALS[0].c, materialName: MATERIALS[0].name, pipeClass: "RD 26", PN_bar: 11.0 }]);
     setResultsB(null);
   };
 
@@ -170,7 +170,7 @@ export default function PerfilPage() {
   const addTramo = () => {
     const last = tramos[tramos.length - 1];
     const from = last?.distTo ?? 0;
-    setTramos([...tramos, { id: uuid(), distFrom: from, distTo: from + 1000, DN_mm: last?.DN_mm ?? 150, C: last?.C ?? MATERIALS[0].c, materialName: last?.materialName ?? MATERIALS[0].name }]);
+    setTramos([...tramos, { id: uuid(), distFrom: from, distTo: from + 1000, DN_mm: last?.DN_mm ?? 150, C: last?.C ?? MATERIALS[0].c, materialName: last?.materialName ?? MATERIALS[0].name, pipeClass: last?.pipeClass ?? "RD 26", PN_bar: last?.PN_bar ?? 11.0 }]);
   };
   const removeTramo = (id: string) => {
     if (tramos.length <= 1) return;
@@ -220,7 +220,7 @@ export default function PerfilPage() {
   const addTramoB = () => {
     const last = tramosB[tramosB.length - 1];
     const from = last?.distTo ?? 0;
-    setTramosB([...tramosB, { id: uuid(), distFrom: from, distTo: from + 1000, DN_mm: last?.DN_mm ?? 150, C: last?.C ?? MATERIALS[0].c, materialName: last?.materialName ?? MATERIALS[0].name }]);
+    setTramosB([...tramosB, { id: uuid(), distFrom: from, distTo: from + 1000, DN_mm: last?.DN_mm ?? 150, C: last?.C ?? MATERIALS[0].c, materialName: last?.materialName ?? MATERIALS[0].name, pipeClass: last?.pipeClass ?? "RD 26", PN_bar: last?.PN_bar ?? 11.0 }]);
   };
   const removeTramoB = (id: string) => {
     if (tramosB.length <= 1) return;

@@ -22,7 +22,7 @@ const defaults: PumpLineInputs = {
   L: null,
   DN_mm: null,
   C: 150,
-  materialName: "PVC C900",
+  materialName: "PVC Inglés",
   hmPercent: 10,
   eficienciaBomba: 0.70,
   eficienciaMotor: 0.90,

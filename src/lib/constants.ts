@@ -26,9 +26,9 @@ export const STANDARD_DNS_LABELED = [
 // ── Materials with Hazen-Williams C ──
 // Names match the pipe catalog in Golpe de Ariete for consistency
 export const MATERIALS = [
+  { name: "PVC Inglés", c: 150 },
   { name: "PVC C900", c: 150 },
   { name: "PVC Métrico", c: 150 },
-  { name: "PVC Inglés", c: 150 },
   { name: "HDPE", c: 150 },
   { name: "Hierro dúctil", c: 130 },
   { name: "Acero", c: 120 },
