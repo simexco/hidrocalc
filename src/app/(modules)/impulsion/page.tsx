@@ -252,7 +252,7 @@ export default function ImpulsionPage() {
                     <p className="text-2xl font-bold text-green-800 dark:text-green-200">{results.DN_econ_mm} <span className="text-sm font-normal">mm</span></p>
                     <p className="text-[10px] text-green-600/70">D = {results.K_bresse} × raiz({(results.Qbombeo_ls/1000).toFixed(4)}) = {(results.D_econ_m * 1000).toFixed(1)} mm → DN {results.DN_econ_mm}</p>
                     <p className="text-[10px] text-green-700/80 dark:text-green-300/70 mt-1.5 leading-relaxed">
-                      Suele ser <strong>un tamano mayor</strong> que el minimo por velocidad de la linea de conduccion. No es error: Bresse baja la velocidad para reducir la friccion y <strong>ahorrar energia de bombeo</strong> (el ahorro paga el tubo mas grande). Usa este DN si la linea es por bombeo.
+                      Suele ser <strong>un tamaño mayor</strong> que el mínimo por velocidad de la línea de conducción. No es error: Bresse baja la velocidad para reducir la fricción y <strong>ahorrar energía de bombeo</strong> (el ahorro paga el tubo más grande). Usa este DN si la línea es por bombeo.
                     </p>
                   </div>
                   {results.DN_used_mm !== results.DN_econ_mm && (

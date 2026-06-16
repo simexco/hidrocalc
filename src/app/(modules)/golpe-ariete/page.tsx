@@ -681,7 +681,7 @@ export default function GolpeArietePage() {
                       </>
                     ) : (
                       <p className="text-xs text-red-600 dark:text-red-400">
-                        El caudal de alivio requerido (Cv={formatNumber(Cv_requerido, 1)}) excede los tamanos estandar de catalogo.
+                        El caudal de alivio requerido (Cv={formatNumber(Cv_requerido, 1)}) excede los tamaños estándar de catálogo.
                         Consultar directamente con el fabricante.
                       </p>
                     )}

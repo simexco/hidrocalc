@@ -22,6 +22,7 @@ export interface ReportData {
   elaboro: string;
   // Módulo 1 — Demanda
   poblacion: number | null;
+  proyectarCrecimiento: boolean; // si el calculo de gasto proyectó crecimiento a futuro
   periodoDiseno: number | null;
   dotacion: number | null;
   cmd: number | null;
@@ -117,14 +118,13 @@ export function computeReport(d: ReportData): ReportResults {
 
 // ── Helpers de texto ───────────────────────────────────
 function safe(text: string): string {
+  // jsPDF 4 + fuente estandar renderiza n~ y acentos (cp1252). Solo reemplazamos
+  // simbolos fuera de Latin-1 que si se ven mal (subindices, flechas, vinetas, etc.).
   return text
     .replace(/₁/g, "1").replace(/₂/g, "2").replace(/₃/g, "3").replace(/₀/g, "0")
-    .replace(/²/g, "2").replace(/³/g, "3")
     .replace(/✓/g, "[OK]").replace(/✗/g, "[X]").replace(/⚠/g, "[!]")
     .replace(/·/g, "-").replace(/—/g, " - ").replace(/–/g, "-")
-    .replace(/≥/g, ">=").replace(/≤/g, "<=").replace(/×/g, "x").replace(/°/g, " deg")
-    .replace(/á/g, "a").replace(/é/g, "e").replace(/í/g, "i").replace(/ó/g, "o").replace(/ú/g, "u").replace(/ñ/g, "n")
-    .replace(/Á/g, "A").replace(/É/g, "E").replace(/Í/g, "I").replace(/Ó/g, "O").replace(/Ú/g, "U").replace(/Ñ/g, "N");
+    .replace(/≥/g, ">=").replace(/≤/g, "<=");
 }
 const n = (v: number | null | undefined, dec = 2) => (v == null || !isFinite(v) ? "—" : v.toFixed(dec));
 
@@ -236,7 +236,7 @@ export async function generateReportPDF(d: ReportData): Promise<jsPDF> {
   doc.text("REPORTE DE PREDIMENSIONAMIENTO HIDRAULICO", 14, 32);
   let y = sectionTitle(doc, "MODULO 1", "ANALISIS DE DEMANDA DE AGUA", 38);
   doc.setFontSize(8); doc.setTextColor(90, 90, 90);
-  doc.text(safe("Que responde: cuanta agua requiere la poblacion, cuanto debe entregar la fuente y de que tamano el tanque."), 14, y);
+  doc.text(safe("Qué responde: cuánta agua requiere la población, cuánto debe entregar la fuente y de qué tamaño el tanque."), 14, y);
   doc.setTextColor(0, 0, 0); y += 6;
 
   y = subhead(doc, "1  Entradas capturadas", y);
@@ -244,11 +244,11 @@ export async function generateReportPDF(d: ReportData): Promise<jsPDF> {
     startY: y, theme: "grid", styles: { fontSize: 8 }, headStyles: tableBlue,
     head: [["Parametro", "Valor", "Referencia"]],
     body: [
-      ["Poblacion de diseno", `${n(d.poblacion, 0)} hab`, "Dato base"],
-      ["Periodo de diseno", `${n(d.periodoDiseno, 0)} anos`, "Normativa"],
-      ["Dotacion por habitante", `${n(d.dotacion, 0)} L/hab/dia`, "MAPAS CONAGUA"],
-      ["Coef. maximo diario (CMD)", n(d.cmd, 2), "MAPAS CONAGUA"],
-      ["Coef. maximo horario (CMH)", n(d.cmh, 2), "MAPAS CONAGUA"],
+      [d.proyectarCrecimiento ? "Población de diseño (proyectada)" : "Población", `${n(d.poblacion, 0)} hab`, "Dato base"],
+      ...(d.proyectarCrecimiento ? [["Periodo de diseño", `${n(d.periodoDiseno, 0)} años`, "Proyección de crecimiento"]] : [["Proyección de crecimiento", "No se proyectó (población actual)", "-"]]),
+      ["Dotación por habitante", `${n(d.dotacion, 0)} L/hab/día`, "MAPAS CONAGUA"],
+      ["Coef. máximo diario (CMD)", n(d.cmd, 2), "MAPAS CONAGUA"],
+      ["Coef. máximo horario (CMH)", n(d.cmh, 2), "MAPAS CONAGUA"],
     ],
     margin: { left: 14, right: 14 },
   });
@@ -260,9 +260,9 @@ export async function generateReportPDF(d: ReportData): Promise<jsPDF> {
     head: [["Resultado", "Valor", "Para que sirve"]],
     body: [
       ["Gasto medio (Qm)", `${n(r.qm)} L/s`, "Consumo promedio diario"],
-      ["Gasto maximo diario (Qmd)", `${n(r.qmd)} L/s`, "Disena FUENTE y CONDUCCION"],
-      ["Gasto maximo horario (Qmh)", `${n(r.qmh)} L/s`, "Disena RED DE DISTRIBUCION"],
-      ["Tanque de regulacion (V)", `${n(r.vtanque, 1)} m3`, "Qmd x horas equiv. x 3.6"],
+      ["Gasto máximo diario (Qmd)", `${n(r.qmd)} L/s`, "Diseña FUENTE y CONDUCCIÓN"],
+      ["Gasto máximo horario (Qmh)", `${n(r.qmh)} L/s`, "Diseña RED DE DISTRIBUCIÓN"],
+      ["Tanque de regulación (V)", `${n(r.vtanque, 1)} m3`, "Qmd x horas equiv. x 3.6"],
     ],
     margin: { left: 14, right: 14 },
   });
@@ -290,7 +290,7 @@ export async function generateReportPDF(d: ReportData): Promise<jsPDF> {
     startY: y, theme: "grid", styles: { fontSize: 8 }, headStyles: tableBlue,
     head: [["Parametro", "Valor"]],
     body: [
-      ["Gasto de diseno (Q)", `${n(d.q_ls)} L/s`],
+      ["Gasto de diseño (Q)", `${n(d.q_ls)} L/s`],
       ["Longitud total de la linea", `${n(d.longitud, 0)} m`],
       ["Desnivel (cota inicio-fin)", `${n(d.desnivel, 1)} m`],
       ["Presion requerida al final", `${n(d.presionRequerida, 1)} m.c.a.`],
@@ -371,7 +371,7 @@ export async function generateReportPDF(d: ReportData): Promise<jsPDF> {
       head: [["Concepto", "Valor"]],
       body: [
         ["Caudal nominal (Q)", `${n(d.q_ls)} L/s (${n(r.qm3h, 1)} m3/h)`],
-        ["Carga de diseno (CDT)", `${n(r.cdt, 1)} m.c.a.`],
+        ["Carga de diseño (CDT)", `${n(r.cdt, 1)} m.c.a.`],
         ["Potencia hidraulica / al freno", `${n(r.phKW, 2)} / ${n(r.peKW, 2)} kW`],
         ["Potencia estimada (referencia)", `~${n(r.hp, 1)} HP`],
         ["Tipo de bomba", "Centrifuga horizontal o sumergible"],

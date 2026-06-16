@@ -66,8 +66,8 @@ const moduleHelp: Record<string, { title: string; sections: { title: string; con
   "/perfil": {
     title: "Linea de Conduccion — Guia de uso",
     sections: [
-      { title: "Cuando usar?", content: "Para disenar o verificar una linea de conduccion completa. Cargas el perfil topografico, defines los tramos de tuberia (DN y material) y el modulo calcula la presion en cada punto. Tambien puedes comparar escenarios y calcular la P1 requerida." },
-      { title: "Datos que necesitas", content: "- Caudal Q de diseno\n- Diametro DN y material de la tuberia\n- Presion disponible P1 al inicio\n- Perfil topografico: pares de (distancia acumulada, cota del terreno)" },
+      { title: "Cuando usar?", content: "Para diseñar o verificar una línea de conducción completa. Cargas el perfil topografico, defines los tramos de tuberia (DN y material) y el modulo calcula la presion en cada punto. Tambien puedes comparar escenarios y calcular la P1 requerida." },
+      { title: "Datos que necesitas", content: "- Caudal Q de diseño\n- Diametro DN y material de la tuberia\n- Presion disponible P1 al inicio\n- Perfil topografico: pares de (distancia acumulada, cota del terreno)" },
       { title: "Paso a paso", content: "1. Ingresa Q, DN, material y P1\n2. Agrega los vertices del perfil manualmente o importa un CSV\n3. El formato CSV es: distancia, cota, descripcion (opcional)\n4. Los resultados aparecen automaticamente\n5. Revisa puntos en rojo (presion critica) o amarillo (presion baja)" },
       { title: "Interpretacion", content: "Verde (OK): presion cumple el minimo\nAmarillo (Baja): presion menor al minimo pero positiva\nRojo (Critica): presion negativa — la linea no funciona ahi\nLa linea piezometrica nunca debe cruzar el perfil del terreno" },
     ],
@@ -75,10 +75,10 @@ const moduleHelp: Record<string, { title: string; sections: { title: string; con
   "/vrp": {
     title: "Valvula Reductora de Presion — Guia de uso",
     sections: [
-      { title: "Cuando usar?", content: "Para seleccionar el tamano correcto de valvula reductora de presion (VRP) en una linea donde se necesita reducir la presion aguas abajo. Comun en redes de distribucion con zonas de diferente presion." },
+      { title: "Cuando usar?", content: "Para seleccionar el tamaño correcto de válvula reductora de presión (VRP) en una linea donde se necesita reducir la presion aguas abajo. Comun en redes de distribucion con zonas de diferente presion." },
       { title: "Datos que necesitas", content: "- Caudal maximo Q: demanda pico de la zona aguas abajo\n- Caudal minimo Q (opcional): demanda minima para verificar estabilidad\n- Presion aguas arriba P1: medida con manometro antes de la VRP\n- Presion objetivo P2: la presion deseada despues de la VRP\n- DN de la linea: diametro de la tuberia donde se instalara" },
-      { title: "Paso a paso", content: "1. Ingresa el caudal maximo Q de diseno\n2. Opcionalmente ingresa Q minimo\n3. Ingresa P1 (presion de entrada) y P2 (presion deseada)\n4. Selecciona el DN de la linea\n5. Los resultados aparecen automaticamente\n6. Revisa la tabla de seleccion y las advertencias" },
-      { title: "Interpretacion", content: "Optimo: apertura entre 35-65% a Q max — operacion estable\nFuncional: apertura entre 20-75% — aceptable\nLimite: apertura >75% — valvula demasiado chica\nInsuficiente: Cv de la valvula no alcanza\nIndice cavitacion sigma < 0.5: riesgo de dano\nRelacion P1/P2 > 3:1: considerar dos VRP en serie" },
+      { title: "Paso a paso", content: "1. Ingresa el caudal maximo Q de diseño\n2. Opcionalmente ingresa Q minimo\n3. Ingresa P1 (presion de entrada) y P2 (presion deseada)\n4. Selecciona el DN de la linea\n5. Los resultados aparecen automaticamente\n6. Revisa la tabla de seleccion y las advertencias" },
+      { title: "Interpretacion", content: "Optimo: apertura entre 35-65% a Q max — operacion estable\nFuncional: apertura entre 20-75% — aceptable\nLimite: apertura >75% — valvula demasiado chica\nInsuficiente: Cv de la valvula no alcanza\nIndice cavitacion sigma < 0.5: riesgo de daño\nRelacion P1/P2 > 3:1: considerar dos VRP en serie" },
     ],
   },
 };

@@ -16,7 +16,7 @@ export type ActiveProject = ReportData;
 
 export const emptyProject: ActiveProject = {
   proyecto: "", localidad: "", fecha: "", folio: "", elaboro: "",
-  poblacion: null, periodoDiseno: 20, dotacion: 150, cmd: 1.4, cmh: 2.0, horasTanque: 14.3,
+  poblacion: null, proyectarCrecimiento: false, periodoDiseno: 20, dotacion: 150, cmd: 1.4, cmh: 2.0, horasTanque: 14.3,
   q_ls: null, longitud: null, desnivel: null, presionRequerida: 10,
   material: "PVC C900", dn: "", clase: "", diametroInterior: null, c: 150,
   vertices: [], valvulas: [],

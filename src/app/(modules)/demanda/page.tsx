@@ -70,13 +70,15 @@ export default function DemandaPage() {
     if (!results) return;
     const t = setTimeout(() => patchProject({
       poblacion: results.poblacionDiseno,
+      proyectarCrecimiento: inputs.proyectarCrecimiento,
+      periodoDiseno: inputs.proyectarCrecimiento ? inputs.periodoDiseno : null,
       dotacion: Math.round(results.dotacionAjustada),
       cmd: inputs.CVD,
       cmh: inputs.CVH,
       q_ls: Math.round(results.QMD_ls * 100) / 100,
     }), 600);
     return () => clearTimeout(t);
-  }, [results, inputs.CVD, inputs.CVH, patchProject]);
+  }, [results, inputs.CVD, inputs.CVH, inputs.proyectarCrecimiento, inputs.periodoDiseno, patchProject]);
 
   const handleReset = () => { setInputs({ ...defaults }); setResults(null); };
 
@@ -202,7 +204,7 @@ export default function DemandaPage() {
                   {inputs.proyectarCrecimiento && (
                     <div className="grid grid-cols-2 gap-3">
                       <InputField label="Tasa crecimiento" value={inputs.tasaCrecimiento} onChange={(v) => set("tasaCrecimiento", parseFloat(v) || 2)} unit="% anual" tooltip="Tasa de crecimiento poblacional. Promedio nacional INEGI: 1-2%." />
-                      <InputField label="Periodo de diseno" value={inputs.periodoDiseno} onChange={(v) => set("periodoDiseno", parseFloat(v) || 20)} unit="años" tooltip="CONAGUA recomienda 20-25 años" />
+                      <InputField label="Periodo de diseño" value={inputs.periodoDiseno} onChange={(v) => set("periodoDiseno", parseFloat(v) || 20)} unit="años" tooltip="CONAGUA recomienda 20-25 años" />
                     </div>
                   )}
                 </div>
@@ -237,12 +239,12 @@ export default function DemandaPage() {
                     { label: "Tipo desarrollo", value: devType?.label ?? inputs.devType },
                     { label: "Clima", value: CLIMATE_TYPES.find(c => c.key === inputs.climaKey)?.label ?? inputs.climaKey },
                     { label: "Dotacion", value: `${inputs.dotacionBase} L/hab/dia (ajustada: ${results.dotacionAjustada.toFixed(0)})` },
-                    { label: "Crecimiento", value: inputs.proyectarCrecimiento ? `${inputs.tasaCrecimiento}% × ${inputs.periodoDiseno} años` : "Sin proyeccion" },
+                    { label: "Crecimiento", value: inputs.proyectarCrecimiento ? `${inputs.tasaCrecimiento}% × ${inputs.periodoDiseno} años` : "Sin proyección" },
                     { label: "CVD / CVH", value: `${inputs.CVD} / ${inputs.CVH}` },
                   ],
                   results: [
                     { label: "Poblacion actual", value: `${results.poblacionActual}`, unit: "hab" },
-                    { label: "Poblacion diseno", value: `${results.poblacionDiseno}`, unit: "hab" },
+                    { label: "Población de diseño", value: `${results.poblacionDiseno}`, unit: "hab" },
                     { label: "Qmd", value: formatNumber(results.Qmd_ls, 2), unit: "L/s" },
                     { label: "QMD (conduccion)", value: formatNumber(results.QMD_ls, 2), unit: "L/s" },
                     { label: "QMH (distribucion)", value: formatNumber(results.QMH_ls, 2), unit: "L/s" },
@@ -260,7 +262,7 @@ export default function DemandaPage() {
               {/* Population */}
               <div className="grid grid-cols-2 gap-3">
                 <MetricCard label="Poblacion actual" value={`${results.poblacionActual}`} unit="hab" dataStatus="calculated" />
-                <MetricCard label="Poblacion de diseno" value={`${results.poblacionDiseno}`} unit="hab" dataStatus="calculated" />
+                <MetricCard label="Población de diseño" value={`${results.poblacionDiseno}`} unit="hab" dataStatus="calculated" />
               </div>
 
               {/* Dotacion */}
@@ -384,7 +386,7 @@ export default function DemandaPage() {
                 <p>Dotaciones: CONAGUA — Manual de Agua Potable, Alcantarillado y Saneamiento (MAPAS)</p>
                 <p>Coeficientes de variacion: CONAGUA — Lineamientos Tecnicos para Factibilidades</p>
                 <p>Crecimiento poblacional: INEGI — Tasa de crecimiento intercensal</p>
-                <p>Periodo de diseno: CONAGUA — 20 a 25 años para sistemas de agua potable</p>
+                <p>Periodo de diseño: CONAGUA — 20 a 25 años para sistemas de agua potable</p>
               </div>
             </>
           )}

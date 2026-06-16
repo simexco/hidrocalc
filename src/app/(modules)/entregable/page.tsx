@@ -74,13 +74,19 @@ export default function EntregablePage() {
       {/* Modulo 1 */}
       <Card title="Hoja 1 — Demanda de agua">
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-          <InputField label="Población de diseño" value={d.poblacion} onChange={(v) => set("poblacion", num(v))} unit="hab" />
-          <InputField label="Periodo de diseño" value={d.periodoDiseno} onChange={(v) => set("periodoDiseno", num(v))} unit="años" />
+          <InputField label={d.proyectarCrecimiento ? "Población de diseño" : "Población"} value={d.poblacion} onChange={(v) => set("poblacion", num(v))} unit="hab" />
           <InputField label="Dotación" value={d.dotacion} onChange={(v) => set("dotacion", num(v))} unit="L/hab/día" />
           <InputField label="CMD" value={d.cmd} onChange={(v) => set("cmd", num(v))} tooltip="Coef. máximo diario (MAPAS: 1.2-1.5)" />
           <InputField label="CMH" value={d.cmh} onChange={(v) => set("cmh", num(v))} tooltip="Coef. máximo horario (MAPAS: 1.5-2.0)" />
           <InputField label="Horas equiv. tanque" value={d.horasTanque} onChange={(v) => set("horasTanque", num(v))} unit="h" tooltip="Coeficiente de regulación CONAGUA (horas equivalentes). V = Qmd × horas × 3.6" />
         </div>
+        <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+          <input type="checkbox" checked={d.proyectarCrecimiento} onChange={(e) => set("proyectarCrecimiento", e.target.checked)} className="rounded border-gray-300" />
+          Se proyectó crecimiento a futuro
+        </label>
+        {d.proyectarCrecimiento && (
+          <InputField label="Periodo de diseño" value={d.periodoDiseno} onChange={(v) => set("periodoDiseno", num(v))} unit="años" />
+        )}
         <div className="bg-[#E9EFF5] dark:bg-[#1C3D5A]/20 rounded-lg px-3 py-2 text-xs text-[#1C3D5A] dark:text-blue-300 grid grid-cols-2 sm:grid-cols-4 gap-2">
           <span>Qm: <strong>{r.qm != null ? r.qm.toFixed(2) : "—"} L/s</strong></span>
           <span>Qmd: <strong>{r.qmd != null ? r.qmd.toFixed(2) : "—"} L/s</strong></span>

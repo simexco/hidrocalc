@@ -80,7 +80,7 @@ export default function VRPPage() {
                   value={inputs.rawQMax}
                   onChange={(v) => handleNum("rawQMax", v)}
                   required
-                  tooltip="Caudal maximo de diseno de la linea. El Cv se calcula para este caudal."
+                  tooltip="Caudal máximo de diseño de la línea. El Cv se calcula para este caudal."
                 />
               </div>
               <select
@@ -142,9 +142,9 @@ export default function VRPPage() {
           <div className="bg-[#E9EFF5] dark:bg-[#1C3D5A]/20 rounded-xl p-4 text-xs text-[#1C3D5A] dark:text-blue-300 space-y-2">
             <p className="font-semibold">Como funciona</p>
             <p className="text-[11px] leading-relaxed opacity-80">
-              Se calcula el coeficiente de flujo Cv necesario para reducir la presion de P1 a P2 al caudal de diseno,
-              usando la formula IEC 60534. Luego se selecciona el tamano de valvula donde la apertura se mantenga
-              entre 30% y 70% para operacion estable.
+              Se calcula el coeficiente de flujo Cv necesario para reducir la presión de P1 a P2 al caudal de diseño,
+              usando la fórmula IEC 60534. Luego se selecciona el tamaño de válvula donde la apertura se mantenga
+              entre 30% y 70% para operación estable.
             </p>
           </div>
         </div>
@@ -231,7 +231,7 @@ export default function VRPPage() {
                   </div>
                 </div>
               ) : (
-                <AlertBanner level="ERROR" message="El Cv requerido excede los tamanos estandar de catalogo. Consultar directamente con el fabricante." />
+                <AlertBanner level="ERROR" message="El Cv requerido excede los tamaños estándar de catálogo. Consultar directamente con el fabricante." />
               )}
 
               {/* Cv formula detail */}
@@ -263,7 +263,7 @@ export default function VRPPage() {
               {/* Selection table */}
               <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
                 <div className="bg-[#1C3D5A] px-4 py-2">
-                  <h3 className="text-xs font-semibold text-white">Tabla de seleccion — todos los tamanos</h3>
+                  <h3 className="text-xs font-semibold text-white">Tabla de selección — todos los tamaños</h3>
                 </div>
                 <div className="px-4 py-2 text-[10px] text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700">
                   <strong>Optimo:</strong> apertura 35-65%.

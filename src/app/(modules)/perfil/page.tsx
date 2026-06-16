@@ -366,7 +366,7 @@ export default function PerfilPage() {
             <InputField label="Nombre del proyecto" value={projectName} onChange={setProjectName} type="text" />
             <div className="flex items-end gap-2">
               <div className="flex-1">
-                <InputField label="Caudal Q" value={rawQ} onChange={(v) => setRawQ(v === "" ? null : parseFloat(v))} required tooltip="Caudal de diseno — se usa en todos los tramos" />
+                <InputField label="Caudal Q" value={rawQ} onChange={(v) => setRawQ(v === "" ? null : parseFloat(v))} required tooltip="Caudal de diseño — se usa en todos los tramos" />
               </div>
               <select value={flowUnit} onChange={(e) => setFlowUnit(e.target.value as FlowUnit)} className="px-2 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 dark:text-white">
                 <option value="L/s">L/s</option>

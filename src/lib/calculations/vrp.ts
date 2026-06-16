@@ -133,7 +133,7 @@ export function calculateVRP(inputs: VRPInputs): VRPResults | null {
   if (!vrp_seleccionada) {
     alerts.push({
       level: "ERROR", field: "seleccion",
-      message: "El Cv requerido excede los tamanos estandar de catalogo. Consultar directamente con el fabricante.",
+      message: "El Cv requerido excede los tamaños estándar de catálogo. Consultar directamente con el fabricante.",
     });
   }
 
