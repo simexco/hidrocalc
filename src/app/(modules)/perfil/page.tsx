@@ -83,18 +83,25 @@ export default function PerfilPage() {
       const sorted = [...vertices].filter((v) => v.dist != null && v.cota != null).sort((a, b) => a.dist - b.dist);
       const t0 = tramos[0];
       const dnLabel = t0 ? (STANDARD_DNS_LABELED.find((s) => s.dn === t0.DN_mm)?.label ?? `${t0.DN_mm} mm`) : "";
+      // Presion maxima de operacion en la linea y PN de la clase elegida (del motor del perfil)
+      const sums = results?.tramoSummaries ?? [];
+      const presiones = sums.map((s) => s.maxPressure_kgcm2).filter((p): p is number => p != null);
+      const pns = sums.map((s) => (s.PN_bar != null ? s.PN_bar / 0.9807 : null)).filter((p): p is number => p != null);
       patchProject({
         material: t0?.materialName ?? "PVC C900",
         dn: dnLabel,
+        clase: t0?.pipeClass ?? "",
         diametroInterior: t0?.DN_mm ?? null,
         c: t0?.C ?? 150,
         longitud: sorted.length ? sorted[sorted.length - 1].dist : null,
         desnivel: sorted.length >= 2 ? sorted[0].cota - sorted[sorted.length - 1].cota : null,
         vertices: sorted.map((v) => ({ cad: v.dist, cota: v.cota, desc: v.desc || "" })),
+        presionMaxLinea: presiones.length ? Math.max(...presiones) : null,
+        pnLinea: pns.length ? Math.min(...pns) : null,
       });
     }, 700);
     return () => clearTimeout(t);
-  }, [vertices, tramos, patchProject]);
+  }, [vertices, tramos, results, patchProject]);
 
   // Calculate
   const runCalc = useCallback(() => {

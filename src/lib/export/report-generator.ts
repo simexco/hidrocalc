@@ -38,6 +38,8 @@ export interface ReportData {
   clase: string;
   diametroInterior: number | null; // mm
   c: number | null;
+  presionMaxLinea: number | null;  // kg/cm² — presión máxima de operación en la línea (del perfil)
+  pnLinea: number | null;          // kg/cm² — presión que resiste la clase elegida
   vertices: ReportVertex[];
   valvulas: ReportValve[];
   // Módulo 3 — Bombeo
@@ -68,6 +70,8 @@ export interface ReportResults {
   presionEstaticaMax: number | null;   // m.c.a.
   vrpRecomendada: boolean;
   sobrepresionGolpe: number | null;    // m.c.a. (Joukowsky cierre brusco)
+  pmaxConGolpe: number | null;         // kg/cm² — presión máxima de operación + golpe
+  golpeExcedeClase: boolean | null;    // true si pmaxConGolpe > PN de la clase
   golpeRiesgo: "alto" | "medio" | "bajo";
 }
 
@@ -77,7 +81,7 @@ export function computeReport(d: ReportData): ReportResults {
     qm: null, qmd: null, qmh: null, vtanque: null,
     velocidad: null, hf: null, hac: null, perdidaTotal: null, presionFinal: null,
     hv: null, cdt: null, phKW: null, peKW: null, hp: null, qm3h: null,
-    presionEstaticaMax: null, vrpRecomendada: false, sobrepresionGolpe: null, golpeRiesgo: "bajo",
+    presionEstaticaMax: null, vrpRecomendada: false, sobrepresionGolpe: null, pmaxConGolpe: null, golpeExcedeClase: null, golpeRiesgo: "bajo",
   };
 
   // Módulo 1
@@ -122,12 +126,18 @@ export function computeReport(d: ReportData): ReportResults {
   }
 
   // ── Recomendaciones de protección ──
-  // Presión estática máxima ≈ desnivel total del perfil (cota más alta - más baja)
+  // Presión estática máxima ≈ desnivel total del perfil (referencia)
   const cotas = d.vertices.filter((v) => v.cota != null).map((v) => v.cota);
   if (cotas.length >= 2) r.presionEstaticaMax = Math.max(...cotas) - Math.min(...cotas);
   else if (d.desnivel != null) r.presionEstaticaMax = Math.abs(d.desnivel);
-  // VRP recomendada si la presión estática supera ~50 m.c.a. (5 kg/cm²)
-  r.vrpRecomendada = r.presionEstaticaMax != null && r.presionEstaticaMax > 50;
+
+  // VRP / reducción de presión: criterio = la presión de operación supera la clase del tubo.
+  if (d.presionMaxLinea != null && d.pnLinea != null) {
+    r.vrpRecomendada = d.presionMaxLinea > d.pnLinea;
+  } else {
+    // Sin clase/P1 capturados: referencia de red de distribución (~50 m.c.a. = 5 kg/cm²)
+    r.vrpRecomendada = r.presionEstaticaMax != null && r.presionEstaticaMax / 10 > 5;
+  }
 
   // Golpe de ariete (Joukowsky, cierre brusco): ΔH = a·V/g. a según material.
   if (r.velocidad != null && r.velocidad > 0) {
@@ -139,10 +149,16 @@ export function computeReport(d: ReportData): ReportResults {
       : m.includes("asbesto") ? 1000
       : m.includes("concreto") ? 1000
       : 900;
-    r.sobrepresionGolpe = (a * r.velocidad) / 9.81;
+    r.sobrepresionGolpe = (a * r.velocidad) / 9.81; // m.c.a.
   }
-  // Riesgo: bombeo siempre alto (paro de bomba); gravedad según sobrepresión
-  if (d.incluyeBombeo) r.golpeRiesgo = "alto";
+  // Presión máxima esperada con golpe (operación + sobrepresión), comparada con la clase
+  if (d.presionMaxLinea != null && r.sobrepresionGolpe != null) {
+    r.pmaxConGolpe = d.presionMaxLinea + r.sobrepresionGolpe / 10; // kg/cm²
+    if (d.pnLinea != null) r.golpeExcedeClase = r.pmaxConGolpe > d.pnLinea;
+  }
+  // Riesgo: si excede la clase con golpe → alto; bombeo → al menos medio (paro de bomba); si no → según sobrepresión
+  if (r.golpeExcedeClase === true) r.golpeRiesgo = "alto";
+  else if (d.incluyeBombeo) r.golpeRiesgo = "alto";
   else if (r.sobrepresionGolpe != null && r.sobrepresionGolpe > 30) r.golpeRiesgo = "medio";
   else r.golpeRiesgo = "bajo";
 
@@ -372,35 +388,43 @@ export async function generateReportPDF(d: ReportData): Promise<jsPDF> {
 
   // ── Recomendaciones de proteccion (VRP y golpe de ariete) ──
   y = subhead(doc, "Recomendaciones de proteccion", y);
+  const claseTxt = d.clase ? `${d.material} ${d.clase}` : (d.material || "la clase elegida");
+  const pnTxt = d.pnLinea != null ? `${n(d.pnLinea, 1)} kg/cm2` : "PN de la clase";
+  // Reduccion de presion
+  let vrpRec: string; let vrpPor: string;
+  if (d.presionMaxLinea != null && d.pnLinea != null) {
+    if (r.vrpRecomendada) { vrpRec = "SE REQUIERE"; vrpPor = `P. operacion ${n(d.presionMaxLinea, 1)} kg/cm2 EXCEDE la clase (${pnTxt}). Opciones: VRP, caja rompedora de presion, o subir la clase del tubo.`; }
+    else { vrpRec = "No requerida"; vrpPor = `P. operacion ${n(d.presionMaxLinea, 1)} kg/cm2 dentro de la clase (${pnTxt}).`; }
+  } else {
+    vrpRec = r.vrpRecomendada ? "Revisar" : "No requerida (aprox.)";
+    vrpPor = r.presionEstaticaMax != null
+      ? `Referencia de red: presion estatica ~${n(r.presionEstaticaMax, 0)} m.c.a. Captura P1 y la clase en la conduccion para el veredicto exacto.`
+      : "Falta el perfil/clase para evaluar.";
+  }
+  // Golpe de ariete
+  let golpeRec: string; let golpePor: string;
+  if (r.golpeExcedeClase != null) {
+    golpeRec = r.golpeExcedeClase ? "SE REQUIERE PROTECCION" : "Clase resiste el golpe";
+    golpePor = `P. maxima con golpe ~${n(r.pmaxConGolpe, 1)} kg/cm2 vs clase ${pnTxt}. ${r.golpeExcedeClase ? "Subir clase o instalar valvula de alivio/anticipadora." : "Margen suficiente."}${d.incluyeBombeo ? " Linea por bombeo: analizar el paro de bomba." : ""}`;
+  } else {
+    golpeRec = r.golpeRiesgo === "alto" ? "ANALIZAR / PROTEGER" : r.golpeRiesgo === "medio" ? "Revisar" : "Riesgo bajo";
+    golpePor = d.incluyeBombeo
+      ? `Linea por bombeo: el paro de la bomba genera sobrepresion ~${n(r.sobrepresionGolpe, 0)} m.c.a. Captura la clase para el veredicto.`
+      : (r.sobrepresionGolpe != null ? `Sobrepresion por cierre brusco ~${n(r.sobrepresionGolpe, 0)} m.c.a. (Joukowsky). Captura la clase para comparar.` : "Falta velocidad/clase para estimar.");
+  }
   autoTable(doc, {
     startY: y, theme: "grid", styles: { fontSize: 8 }, headStyles: tableBlue,
     head: [["Proteccion", "Recomendacion", "Por que"]],
     body: [
-      [
-        "Valvula reductora (VRP)",
-        r.vrpRecomendada ? "SE RECOMIENDA" : "No requerida",
-        r.presionEstaticaMax != null
-          ? (r.vrpRecomendada
-              ? `Presion estatica ~${n(r.presionEstaticaMax, 0)} m.c.a. (alta). Zonificar para no exceder la clase del tubo.`
-              : `Presion estatica ~${n(r.presionEstaticaMax, 0)} m.c.a. (dentro de rango).`)
-          : "Falta el perfil para evaluar.",
-      ],
-      [
-        "Golpe de ariete",
-        r.golpeRiesgo === "alto" ? "ANALIZAR / PROTEGER" : r.golpeRiesgo === "medio" ? "Revisar" : "Riesgo bajo",
-        d.incluyeBombeo
-          ? `Linea por bombeo: el paro de la bomba genera sobrepresion. Sobrepresion estimada ~${n(r.sobrepresionGolpe, 0)} m.c.a.`
-          : (r.sobrepresionGolpe != null
-              ? `Por gravedad. Sobrepresion por cierre brusco ~${n(r.sobrepresionGolpe, 0)} m.c.a. (Joukowsky).`
-              : "Falta velocidad para estimar."),
-      ],
+      ["Reduccion de presion (VRP / caja rompedora)", vrpRec, vrpPor],
+      ["Golpe de ariete", golpeRec, golpePor],
     ],
-    columnStyles: { 0: { cellWidth: 38 }, 1: { cellWidth: 32 } },
+    columnStyles: { 0: { cellWidth: 42 }, 1: { cellWidth: 32 } },
     margin: { left: 14, right: 14 },
   });
   y = finalY(doc) + 3;
   doc.setFontSize(7); doc.setTextColor(120, 120, 120);
-  doc.text(safe("Criterio: VRP cuando la presion estatica supera ~50 m.c.a.; golpe de ariete: siempre analizar en lineas por bombeo. Estimaciones preliminares — confirmar con el proyecto ejecutivo."), 14, y, { maxWidth: doc.internal.pageSize.getWidth() - 28 });
+  doc.text(safe("Criterio: se compara la presion de operacion (y la presion con golpe) contra la clase del tubo elegido. En conduccion por gravedad, la caja rompedora de presion es la alternativa comun a la VRP. Estimaciones preliminares — confirmar con el proyecto ejecutivo."), 14, y, { maxWidth: doc.internal.pageSize.getWidth() - 28 });
   doc.setTextColor(0, 0, 0);
 
   // ─────────── HOJA 3 — BOMBEO ───────────
