@@ -576,7 +576,9 @@ export default function ListaMaterialesSIMEX({
     if (existing) {
       newAccs = accs.map(e => e.id === existing.id ? {...e, qty: e.qty + 1} : e)
     } else {
-      newAccs = [...accs, {...a, id:Date.now()}]
+      // id unico garantizado (Date.now() puede colisionar entre clics rapidos)
+      const nextId = (accs.reduce((m, e) => Math.max(m, e.id), 0) || Date.now()) + 1
+      newAccs = [...accs, {...a, id: nextId}]
     }
     if (onAccsChange) onAccsChange(newAccs); else setInternalAccs(newAccs)
     setSub(null); setBifTipo(null); setRedTipo(null)
