@@ -602,6 +602,19 @@ export default function GolpeArietePage() {
                 />
               </div>
 
+              {/* Qué significa cada término */}
+              <div className="bg-gray-50 dark:bg-gray-800/60 border border-gray-100 dark:border-gray-700 rounded-lg px-3 py-2.5 text-[11px] text-gray-600 dark:text-gray-400 space-y-1.5 leading-relaxed">
+                <p className="font-semibold text-gray-700 dark:text-gray-300">¿Qué significa cada dato?</p>
+                <p><strong>Velocidad de onda (a):</strong> qué tan rápido viaja la onda de presión por el tubo cuando se cierra la válvula. Depende del material y el espesor (un tubo rígido como el acero la transmite más rápido que el PVC). Fórmula: a = √(K/ρ) ÷ √(1 + K·D / (E·e)).</p>
+                <p><strong>Período de fase (T):</strong> el tiempo que tarda la onda en ir hasta el extremo y regresar = 2·L / a. Es la referencia para saber si el cierre es brusco o lento.</p>
+                <p><strong>Cierre brusco / lento:</strong> si cierras la válvula <em>más rápido</em> que T → cierre <strong>brusco</strong> (golpe máximo). Si tardas <em>más</em> que T → cierre <strong>lento</strong> (el golpe se reduce).</p>
+                <p><strong>Sobrepresión (ΔH):</strong> cuánto sube la presión por el golpe = a·V / g (fórmula de Joukowsky). Es el corazón del cálculo.</p>
+                <p><strong>ΔP:</strong> la misma sobrepresión, expresada en kPa o bar (solo cambia la unidad).</p>
+                <p><strong>P máxima:</strong> presión de operación + sobrepresión. Es la que tu tubería debe aguantar (se compara con la clase del tubo).</p>
+                <p><strong>P mínima:</strong> presión de operación − sobrepresión. Si sale negativa, hay riesgo de vacío (cavitación / colapso del tubo).</p>
+                <p><strong>Clase recomendada:</strong> la clase de tubería más económica cuyo PN (presión que resiste) es mayor o igual a la P máxima.</p>
+              </div>
+
               {/* Safe Tc recommendation */}
               {results.closureType === "brusco" && results.safeTc != null && (
                 <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg px-4 py-3 text-sm text-blue-700 dark:text-blue-300">
