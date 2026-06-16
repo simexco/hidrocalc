@@ -302,8 +302,10 @@ export async function generateReportPDF(d: ReportData): Promise<jsPDF> {
 
   const piezasManual = (d.despiece ?? []).filter((p) => p.qty > 0);
   const hasDespiece = piezasManual.length > 0 || valvulasControl.length > 0;
-  // Hojas: Demanda + Conducción + [Bombeo] + [Despiece] + Guía
-  const total = 2 + (d.incluyeBombeo ? 1 : 0) + (hasDespiece ? 1 : 0) + 1;
+  // Hojas: Demanda + Conducción + [Bombeo] + [Despiece] + Guía + Anexo (zanja/atraques)
+  const total = 2 + (d.incluyeBombeo ? 1 : 0) + (hasDespiece ? 1 : 0) + 1 + 1;
+  // Diámetro nominal del proyecto (para resaltar su fila en las tablas del anexo)
+  const projInch = (d.dn || "").match(/(\d+(?:\.\d+)?)\s*"/)?.[1] ?? null;
   let pg = 1;
   const logo = await loadLogo();
 
@@ -577,20 +579,9 @@ export async function generateReportPDF(d: ReportData): Promise<jsPDF> {
   for (const p of pasos) { doc.text(safe(p), 16, y); y += 5; }
   y += 3;
 
-  y = subhead(doc, "Dimensiones para atraques de concreto (f'c = 150 kg/cm2)", y);
-  autoTable(doc, {
-    startY: y, theme: "grid", styles: { fontSize: 8 }, headStyles: tableBlue,
-    head: [["Diam. nominal", "Altura cm", "Lado A cm", "Lado B cm", "Vol. m3"]],
-    body: [
-      ['51 mm (2")', "25", "25", "25", "0.016"],
-      ['63 mm (2 1/2")', "30", "30", "30", "0.027"],
-      ['76 mm (3")', "35", "30", "30", "0.032"],
-      ['102 mm (4")', "40", "35", "35", "0.049"],
-      ['152 mm (6")', "50", "45", "45", "0.101"],
-    ],
-    margin: { left: 14, right: 14 },
-  });
-  y = finalY(doc) + 6;
+  doc.setFontSize(8); doc.setTextColor(90, 90, 90);
+  doc.text(safe("Las dimensiones completas de zanja y atraques de concreto (por diametro) estan en el anexo al final de este reporte."), 14, y, { maxWidth: doc.internal.pageSize.getWidth() - 28 });
+  doc.setTextColor(0, 0, 0); y += 6;
 
   y = subhead(doc, "Glosario rapido", y);
   doc.setFontSize(7.5); doc.setFont("helvetica", "normal");
@@ -613,6 +604,67 @@ export async function generateReportPDF(d: ReportData): Promise<jsPDF> {
   doc.setFontSize(8); doc.setFont("helvetica", "normal");
   doc.text(safe(`Envia este reporte (folio ${d.folio || "-"}) a cotizaciones@sigmaflow.mx o por WhatsApp.`), 17, y + 14);
   doc.text("Recibe propuesta tecnico-economica de valvulas, juntas y accesorios en 48 h. www.sigmaflow.mx", 17, y + 18.5);
+  doc.setTextColor(0, 0, 0);
+
+  // ─────────── ANEXO — DIMENSIONES DE ZANJA Y ATRAQUES ───────────
+  doc.addPage();
+  pg++;
+  header(doc, d, pg, total);
+  doc.setFontSize(13); doc.setFont("helvetica", "bold");
+  doc.text("ANEXO - DIMENSIONES DE ZANJA Y ATRAQUES", 14, 32);
+  doc.setFontSize(8); doc.setFont("helvetica", "normal"); doc.setTextColor(90, 90, 90);
+  doc.text(safe("Tablas de referencia por diametro. La fila del diametro de este proyecto va resaltada."), 14, 38);
+  doc.setTextColor(0, 0, 0);
+
+  // Resaltar la fila del DN del proyecto
+  const highlightRow = (data: { column: { index: number }; row: { raw: string[] }; cell: { styles: { fillColor: number[]; fontStyle: string } } }) => {
+    const inchCell = (data.row.raw?.[0] || "").replace(/[^0-9.]/g, "");
+    if (projInch && inchCell === projInch) {
+      data.cell.styles.fillColor = [233, 239, 245];
+      data.cell.styles.fontStyle = "bold";
+    }
+  };
+
+  let ay = subhead(doc, "Dimensiones de zanja", 46);
+  autoTable(doc, {
+    startY: ay, theme: "grid", styles: { fontSize: 7.5 }, headStyles: tableBlue,
+    head: [["DN", "DN mm", "Ancho cm", "Profundidad cm", "Volumen por metro"]],
+    body: [
+      ['1"', "25.4", "50", "70", "0.35 m3"], ['2"', "50.8", "55", "70", "0.39 m3"], ['2.5"', "63.5", "60", "100", "0.60 m3"],
+      ['3"', "76.2", "60", "100", "0.60 m3"], ['4"', "101.6", "60", "100", "0.60 m3"], ['6"', "152.4", "70", "110", "0.77 m3"],
+      ['8"', "203.2", "75", "115", "0.86 m3"], ['10"', "254.0", "85", "125", "1.06 m3"], ['12"', "304.8", "90", "130", "1.17 m3"],
+      ['14"', "355.6", "100", "140", "1.40 m3"], ['16"', "406.4", "100", "145", "1.67 m3"], ['18"', "457.2", "115", "150", "1.80 m3"],
+      ['20"', "508.0", "120", "165", "2.15 m3"], ['24"', "609.6", "130", "185", "2.78 m3"], ['30"', "762.0", "150", "220", "3.74 m3"],
+    ],
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    didParseCell: highlightRow as any,
+    margin: { left: 14, right: 14 },
+  });
+  ay = finalY(doc) + 6;
+
+  ay = subhead(doc, "Dimensiones de atraques de concreto (f'c = 150 kg/cm2)", ay);
+  autoTable(doc, {
+    startY: ay, theme: "grid", styles: { fontSize: 7.5 }, headStyles: tableBlue,
+    head: [["DN", "DN mm", "Altura cm", "Lado A cm", "Lado B cm", "Vol. m3"]],
+    body: [
+      ['3"', "76", "30", "30", "30", "0.027"], ['4"', "102", "35", "30", "30", "0.032"], ['6"', "152", "40", "30", "30", "0.036"],
+      ['8"', "203", "45", "35", "35", "0.055"], ['10"', "254", "50", "40", "35", "0.070"], ['12"', "305", "55", "45", "35", "0.087"],
+      ['14"', "356", "60", "50", "35", "0.105"], ['16"', "406", "65", "55", "40", "0.143"], ['18"', "457", "70", "60", "40", "0.168"],
+      ['20"', "508", "75", "65", "45", "0.219"], ['24"', "610", "85", "75", "50", "0.319"], ['30"', "762", "100", "90", "55", "0.495"],
+      ['36"', "914", "115", "105", "60", "0.725"], ['42"', "1067", "130", "120", "65", "1.014"], ['48"', "1219", "145", "130", "70", "1.320"],
+    ],
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    didParseCell: highlightRow as any,
+    margin: { left: 14, right: 14 },
+  });
+  ay = finalY(doc) + 5;
+  doc.setFontSize(7.5); doc.setTextColor(90, 90, 90);
+  const notas = [
+    "Notas: las piezas especiales deben alinearse y nivelarse antes de colar los atraques; quedan apoyados al fondo y pared de la zanja.",
+    "El atraque debe colocarse en todos los casos antes de la prueba hidrostatica de la tuberia.",
+    "Estos atraques se usan exclusivamente para tuberia alojada en zanja. Concreto f'c = 150 kg/cm2.",
+  ];
+  for (const nt of notas) { doc.text(safe(nt), 14, ay, { maxWidth: doc.internal.pageSize.getWidth() - 28 }); ay += 4.5; }
   doc.setTextColor(0, 0, 0);
 
   // Logo en portada (esquina sup. derecha hoja 1)
