@@ -41,13 +41,31 @@ export default function ImpulsionPage() {
 
   useEffect(() => {
     const saved = loadFormState<PumpLineInputs & { useEconomic?: boolean }>("impulsion");
-    const projQ = useProjectStore.getState().project.q_ls;
+    const proj = useProjectStore.getState().project;
+    // La cota de la bomba = primera cota del perfil; la del tanque = ultima cota
+    const verts = proj.vertices ?? [];
+    const cotaIni = verts.length ? verts[0].cota : null;
+    const cotaFin = verts.length ? verts[verts.length - 1].cota : null;
     if (saved) {
       const { useEconomic: ue, ...rest } = saved;
-      setInputs({ ...defaults, ...rest, tarifaCFE: rest.tarifaCFE && rest.tarifaCFE >= 3 ? rest.tarifaCFE : 4.50, Qmd_ls: rest.Qmd_ls ?? projQ });
+      setInputs({
+        ...defaults, ...rest,
+        tarifaCFE: rest.tarifaCFE && rest.tarifaCFE >= 3 ? rest.tarifaCFE : 4.50,
+        Qmd_ls: rest.Qmd_ls ?? proj.q_ls,
+        L: rest.L ?? proj.longitud,
+      });
       if (ue != null) setUseEconomic(ue);
-    } else if (projQ != null) {
-      setInputs({ ...defaults, Qmd_ls: projQ });
+    } else {
+      // Proyecto nuevo: sembrar desde la linea de conduccion
+      setInputs({
+        ...defaults,
+        Qmd_ls: proj.q_ls,
+        L: proj.longitud ?? defaults.L,
+        materialName: proj.material || defaults.materialName,
+        C: proj.c ?? defaults.C,
+        cotaBomba: cotaIni ?? defaults.cotaBomba,
+        cotaTanque: cotaFin ?? defaults.cotaTanque,
+      });
     }
   }, []);
 
