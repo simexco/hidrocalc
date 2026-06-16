@@ -33,13 +33,16 @@ export default function AsistentePage() {
   const valvDone = p.valvulas.filter((v) => v.cad || v.tipo).length > 0;
   const bombeoDone = p.incluyeBombeo ? p.he != null : null;
 
+  const vrpRecomendada = p.presionMaxLinea != null && p.pnLinea != null && p.presionMaxLinea > p.pnLinea;
   const steps: Step[] = [
     { n: 1, title: "Cálculo de gasto", desc: "Demanda de agua: población, dotación → Qmd.", href: "/demanda", done: gastoDone, summary: r.qmd != null ? `Qmd ${r.qmd.toFixed(2)} L/s` : "Pendiente" },
     { n: 2, title: "Línea de conducción", desc: "Caudal, material, diámetro del tubo, longitud, perfil y presiones.", href: "/perfil", done: condDone, summary: condDone ? `${p.material} ${p.dn} · ${p.longitud} m` : "Pendiente" },
     { n: 3, title: "Diámetro económico", desc: "Si la línea es por bombeo: CDT y diámetro económico.", href: "/impulsion", done: bombeoDone, summary: p.incluyeBombeo ? (p.he != null ? `He ${p.he} m` : "Pendiente") : "Opcional (solo bombeo)" },
-    { n: 4, title: "Despiece de piezas", desc: "Lista de materiales y accesorios con SKU Sigma Flow.", href: "/despiece", done: null, summary: "Arma el despiece por tramo" },
-    { n: 5, title: "Válvulas de aire y control", desc: "Ubicación de válvulas de aire, seccionamiento y desfogue.", href: "/valvulas-aire", done: valvDone, summary: valvDone ? `${p.valvulas.length} válvulas/accesorios` : "Pendiente" },
-    { n: 6, title: "Generar reporte", desc: "Reporte PDF consolidado de marca Sigma Flow.", href: "/entregable", done: null, summary: "Documento final" },
+    { n: 4, title: "Golpe de ariete", desc: "¿La tubería resiste el golpe? Si no, válvula de protección.", href: "/golpe-ariete", done: null, summary: "Protección contra sobrepresión / vacío" },
+    { n: 5, title: "Válvula reductora (VRP)", desc: "Si la presión excede la clase del tubo: reducir presión.", href: "/vrp", done: null, summary: vrpRecomendada ? "Recomendada (presión alta)" : "Revisar si aplica" },
+    { n: 6, title: "Válvulas de aire", desc: "Ubicación de ventosas, seccionamiento y desfogue.", href: "/valvulas-aire", done: valvDone, summary: valvDone ? `${p.valvulas.length} válvulas/accesorios` : "Pendiente" },
+    { n: 7, title: "Despiece de piezas", desc: "Lista de materiales y accesorios con SKU Sigma Flow.", href: "/despiece", done: null, summary: "Arma el despiece por tramo" },
+    { n: 8, title: "Generar reporte", desc: "Reporte PDF consolidado de marca Sigma Flow.", href: "/entregable", done: null, summary: "Documento final" },
   ];
 
   const nextStep = steps.find((s) => s.done === false);
