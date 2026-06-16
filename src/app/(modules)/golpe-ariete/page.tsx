@@ -175,6 +175,39 @@ export default function GolpeArietePage() {
   const assumed: AssumedValue[] = [];
   if (inputs.P0 == null) assumed.push({ field: "P0", value: 0, label: "Sin presión estática — resultados parciales" });
 
+  // ¿La tubería que elegiste resiste el golpe? (PN de la clase seleccionada vs Pmax)
+  const matClassesSel = inputs.materialName === "PVC"
+    ? getPVCClasses(pvcSystem, pvcSystem === "c905")
+    : PIPE_CLASSES_BY_MATERIAL[inputs.materialName];
+  let userPN: number | null = null;
+  if (matClassesSel && computedDR != null && inputs.materialName !== "Hierro dúctil") {
+    const row = matClassesSel.classes.find((c) => {
+      const dParsed = parseFloat(c.clase.replace(/[^0-9.]/g, ""));
+      return !isNaN(dParsed) && Math.abs(dParsed - computedDR) < 1.5;
+    });
+    userPN = row?.pn ?? null;
+  }
+  const resiste: boolean | null = (userPN != null && results?.Pmax_bar != null) ? results.Pmax_bar <= userPN : null;
+
+  // Válvula de protección recomendada (alivio/anticipadora) — opción B cuando no resiste
+  const protecValvula = (() => {
+    if (!results || results.deltaP_bar == null || results.deltaP_bar <= 0 || inputs.D == null || inputs.V0 == null) return null;
+    const CV_TABLE = [
+      { dn: '2"', dn_mm: 50, cv_max: 15 }, { dn: '3"', dn_mm: 75, cv_max: 38 }, { dn: '4"', dn_mm: 100, cv_max: 72 },
+      { dn: '6"', dn_mm: 150, cv_max: 165 }, { dn: '8"', dn_mm: 200, cv_max: 295 }, { dn: '10"', dn_mm: 250, cv_max: 460 }, { dn: '12"', dn_mm: 300, cv_max: 665 },
+    ];
+    const dInt_m = inputs.D / 1000;
+    const Q_linea_m3h = inputs.V0 * Math.PI * Math.pow(dInt_m / 2, 2) * 3600;
+    const p0 = inputs.P0 ?? 0;
+    const pMax_kgcm2 = results.Pmax != null ? mcaToKgcm2(results.Pmax) : 0;
+    const pSet = p0 > 0 ? p0 * 1.10 : pMax_kgcm2 * 0.85;
+    const deltaP_valv_bar = (pMax_kgcm2 - pSet) * 0.9807;
+    const Cv = deltaP_valv_bar > 0 ? Q_linea_m3h / Math.sqrt(deltaP_valv_bar) : 0;
+    if (Cv <= 0) return null;
+    const v = CV_TABLE.find((x) => x.cv_max * 0.75 >= Cv);
+    return { dn: v?.dn ?? null, cv: Cv, pSet };
+  })();
+
   return (
     <div className="max-w-6xl mx-auto space-y-6">
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
@@ -422,35 +455,58 @@ export default function GolpeArietePage() {
 
               {/* \u2500\u2500 RESULTADO PRINCIPAL (lenguaje simple) \u2500\u2500 */}
               {(() => {
-                const classOk = results.pipeClass != null && !results.pipeClass.startsWith("Excede");
                 const pmaxK = results.Pmax != null ? mcaToKgcm2(results.Pmax) : null;
                 const negPres = inputs.P0 != null && results.Pmin != null && results.Pmin < 0;
-                const hasClass = results.pipeClass != null;
+                // Veredicto: \u00BFla tuber\u00EDa elegida resiste? (si no se pudo evaluar la clase, cae a si alguna clase resiste)
+                const claseExiste = results.pipeClass != null && !results.pipeClass.startsWith("Excede");
+                const ok = resiste != null ? resiste : claseExiste;
                 return (
-                  <div className={`rounded-xl border p-5 ${hasClass && classOk ? "bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800" : "bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800"}`}>
-                    <p className="text-[11px] uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1">Clase de tuberia recomendada</p>
-                    <p className={`text-3xl font-bold ${hasClass && classOk ? "text-green-700 dark:text-green-300" : "text-red-600 dark:text-red-400"}`}>
-                      {results.pipeClass ?? "\u2014"}
+                  <div className={`rounded-xl border p-5 ${ok ? "bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800" : "bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800"}`}>
+                    <p className="text-[11px] uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1">
+                      {resiste != null ? "\u00BFTu tuber\u00EDa resiste el golpe de ariete?" : "Resultado"}
+                    </p>
+                    <p className={`text-2xl font-bold ${ok ? "text-green-700 dark:text-green-300" : "text-red-600 dark:text-red-400"}`}>
+                      {resiste != null
+                        ? (resiste ? "S\u00ED \u2014 tu tuber\u00EDa resiste el golpe" : "No \u2014 tu tuber\u00EDa NO resiste el golpe")
+                        : (claseExiste ? `Clase recomendada: ${results.pipeClass}` : `Excede el cat\u00E1logo`)}
                     </p>
                     {pmaxK != null && (
                       <p className="text-sm text-gray-700 dark:text-gray-300 mt-2">
-                        El cierre de la valvula eleva la presion hasta <strong>{formatNumber(pmaxK, 1)} kg/cm\u00B2</strong>
-                        {inputs.P0 != null ? <> (presion normal de operacion {formatNumber(inputs.P0, 1)} kg/cm\u00B2).</> : "."}
+                        El cierre de la v\u00E1lvula eleva la presi\u00F3n hasta <strong>{formatNumber(pmaxK, 1)} kg/cm\u00B2</strong>
+                        {userPN != null ? <> ; tu tuber\u00EDa aguanta <strong>{formatNumber(userPN / 0.9807, 1)} kg/cm\u00B2</strong> (clase elegida).</>
+                          : inputs.P0 != null ? <> (presi\u00F3n normal {formatNumber(inputs.P0, 1)} kg/cm\u00B2).</> : "."}
                       </p>
                     )}
+
+                    {/* Si NO resiste: dos opciones (como VRP, da la valvula concreta) */}
+                    {!ok && (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3">
+                        <div className="bg-white/70 dark:bg-gray-800/50 rounded-lg p-3 border border-red-200 dark:border-red-800">
+                          <p className="text-[10px] uppercase tracking-wide text-gray-500">Opci\u00F3n A \u2014 subir la tuber\u00EDa</p>
+                          <p className="text-base font-bold text-[#1C3D5A] dark:text-blue-200">{claseExiste ? `Clase ${results.pipeClass}` : "Sin clase suficiente"}</p>
+                          <p className="text-[10px] text-gray-500">{claseExiste ? "Clase m\u00EDnima que resiste el golpe (ver tabla)." : "Considerar hierro d\u00FActil o acero."}</p>
+                        </div>
+                        <div className="bg-white/70 dark:bg-gray-800/50 rounded-lg p-3 border border-amber-200 dark:border-amber-800">
+                          <p className="text-[10px] uppercase tracking-wide text-gray-500">Opci\u00F3n B \u2014 v\u00E1lvula de protecci\u00F3n</p>
+                          <p className="text-base font-bold text-amber-800 dark:text-amber-300">{protecValvula?.dn ? `V\u00E1lvula DN ${protecValvula.dn}` : "Consultar fabricante"}</p>
+                          <p className="text-[10px] text-gray-500">Alivio/anticipadora de golpe \u2014 deja la tuber\u00EDa actual (ver detalle abajo).</p>
+                        </div>
+                      </div>
+                    )}
+
                     <div className="flex flex-wrap gap-2 mt-3">
                       <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${results.closureType === "brusco" ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-300" : "bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300"}`}>
                         {results.closureType === "brusco" ? "\u26A0 Cierre brusco" : "\u2713 Cierre lento"}
                       </span>
                       {negPres && (
                         <span className="text-xs px-2.5 py-1 rounded-full font-medium bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300">
-                          Riesgo de presion negativa {"\u2014"} requiere proteccion
+                          Riesgo de presi\u00F3n negativa {"\u2014"} requiere protecci\u00F3n
                         </span>
                       )}
                     </div>
                     {inputs.P0 == null && (
                       <p className="text-[11px] text-amber-600 dark:text-amber-400 mt-2">
-                        Falta la presion de operacion P0. Sin ella la presion maxima y minima son parciales (se asume P0 = 0). Captura P0 para una recomendacion completa.
+                        Falta la presi\u00F3n de operaci\u00F3n P0. Sin ella la presi\u00F3n m\u00E1xima es parcial (se asume P0 = 0). Capt\u00FArala para el veredicto exacto.
                       </p>
                     )}
                   </div>
