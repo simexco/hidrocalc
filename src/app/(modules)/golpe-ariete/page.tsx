@@ -493,33 +493,62 @@ export default function GolpeArietePage() {
                 );
               })()}
 
-              {/* ── RESULTADO PRINCIPAL (lenguaje simple) ── */}
+              {/* ── SEMÁFORO DE PROTECCIÓN ── */}
               {(() => {
                 const pmaxK = results.Pmax != null ? mcaToKgcm2(results.Pmax) : null;
                 const negPres = inputs.P0 != null && results.Pmin != null && results.Pmin < 0;
-                // Veredicto: ¿la tubería elegida resiste? (si no se pudo evaluar la clase, cae a si alguna clase resiste)
+                const pmaxBar = results.Pmax_bar;
+                const pnK = userPN != null ? userPN / 0.9807 : null;
+                const fs = (userPN != null && pmaxBar != null && pmaxBar > 0) ? userPN / pmaxBar : null;
                 const claseExiste = results.pipeClass != null && !results.pipeClass.startsWith("Excede");
-                const ok = resiste != null ? resiste : claseExiste;
+                // Semáforo: verde = la tubería lo absorbe; amarillo = precaución (cerca del límite); rojo = requiere protección
+                let semaforo: "verde" | "amarillo" | "rojo" | null = null;
+                if (userPN != null && pmaxBar != null) {
+                  if (pmaxBar > userPN) semaforo = "rojo";
+                  else if (pmaxBar > 0.9 * userPN) semaforo = "amarillo";
+                  else semaforo = "verde";
+                }
+                const C = {
+                  verde: { card: "bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800", dot: "bg-green-500", text: "text-green-700 dark:text-green-300", titulo: "Verde — tu tubería absorbe el golpe", sub: "No necesitas válvula de alivio: la clase elegida resiste la sobrepresión con margen." },
+                  amarillo: { card: "bg-yellow-50 dark:bg-yellow-900/20 border-yellow-300 dark:border-yellow-800", dot: "bg-yellow-400", text: "text-yellow-700 dark:text-yellow-300", titulo: "Amarillo — zona de precaución", sub: "El golpe queda cerca del límite de tu clase. Revisa el cierre o considera subir de clase como margen de seguridad. Aún no es obligatoria una válvula." },
+                  rojo: { card: "bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800", dot: "bg-red-500", text: "text-red-600 dark:text-red-400", titulo: "Rojo — se requiere protección", sub: "El golpe supera lo que aguanta tu tubería. Elige una de las dos opciones de abajo." },
+                };
+                if (semaforo == null) {
+                  return (
+                    <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/60 p-5">
+                      <p className="text-[11px] uppercase tracking-wide text-gray-500 mb-1">Resultado</p>
+                      <p className="text-sm text-gray-600 dark:text-gray-300">
+                        Selecciona la <strong>clase de tubería</strong>{inputs.P0 == null ? <> y captura la <strong>presión de operación P0</strong></> : null} para saber, con semáforo, si necesitas protección contra golpe de ariete.
+                      </p>
+                      {pmaxK != null && <p className="text-xs text-gray-500 mt-2">El cierre eleva la presión a <strong>{formatNumber(pmaxK, 1)} kg/cm²</strong>.</p>}
+                    </div>
+                  );
+                }
+                const st = C[semaforo];
                 return (
-                  <div className={`rounded-xl border p-5 ${ok ? "bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800" : "bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800"}`}>
-                    <p className="text-[11px] uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1">
-                      {resiste != null ? "¿Tu tubería resiste el golpe de ariete?" : "Resultado"}
-                    </p>
-                    <p className={`text-2xl font-bold ${ok ? "text-green-700 dark:text-green-300" : "text-red-600 dark:text-red-400"}`}>
-                      {resiste != null
-                        ? (resiste ? "Sí — tu tubería resiste el golpe" : "No — tu tubería NO resiste el golpe")
-                        : (claseExiste ? `Clase recomendada: ${results.pipeClass}` : `Excede el catálogo`)}
-                    </p>
+                  <div className={`rounded-xl border p-5 ${st.card}`}>
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className={`inline-block w-3 h-3 rounded-full ${st.dot}`} />
+                      <p className="text-[11px] uppercase tracking-wide text-gray-500 dark:text-gray-400">Semáforo de protección — golpe de ariete</p>
+                    </div>
+                    <p className={`text-xl font-bold ${st.text}`}>{st.titulo}</p>
+                    <p className="text-sm text-gray-700 dark:text-gray-300 mt-1">{st.sub}</p>
                     {pmaxK != null && (
-                      <p className="text-sm text-gray-700 dark:text-gray-300 mt-2">
-                        El cierre de la válvula eleva la presión hasta <strong>{formatNumber(pmaxK, 1)} kg/cm²</strong>
-                        {userPN != null ? <> ; tu tubería aguanta <strong>{formatNumber(userPN / 0.9807, 1)} kg/cm²</strong> (clase elegida).</>
-                          : inputs.P0 != null ? <> (presión normal {formatNumber(inputs.P0, 1)} kg/cm²).</> : "."}
+                      <p className="text-xs text-gray-600 dark:text-gray-400 mt-2">
+                        El cierre eleva la presión a <strong>{formatNumber(pmaxK, 1)} kg/cm²</strong>
+                        {pnK != null ? <> ; tu tubería aguanta <strong>{formatNumber(pnK, 1)} kg/cm²</strong>{fs != null ? <> (factor de seguridad {formatNumber(fs, 2)})</> : null}.</> : "."}
                       </p>
                     )}
 
-                    {/* Si NO resiste: dos opciones (como VRP, da la valvula concreta) */}
-                    {!ok && (
+                    {/* Amarillo: sugerir subir de clase (sin obligar válvula) */}
+                    {semaforo === "amarillo" && claseExiste && (
+                      <p className="text-xs text-gray-700 dark:text-gray-300 mt-2 bg-white/60 dark:bg-gray-800/40 rounded-lg px-3 py-2">
+                        Como margen, podrías subir a <strong>clase {results.pipeClass}</strong> (ver tabla). No requiere válvula.
+                      </p>
+                    )}
+
+                    {/* Rojo: dos opciones (subir clase / válvula concreta) */}
+                    {semaforo === "rojo" && (
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3">
                         <div className="bg-white/70 dark:bg-gray-800/50 rounded-lg p-3 border border-red-200 dark:border-red-800">
                           <p className="text-[10px] uppercase tracking-wide text-gray-500">Opción A — subir la tubería</p>
@@ -530,7 +559,7 @@ export default function GolpeArietePage() {
                           <p className="text-[10px] uppercase tracking-wide text-gray-500">Opción B — válvula de protección</p>
                           <p className="text-base font-bold text-amber-800 dark:text-amber-300">{protecValvula?.dn ? `Válvula DN ${protecValvula.dn}` : "Consultar fabricante"}</p>
                           <p className="text-[10px] text-gray-500">Alivio/anticipadora de golpe — deja tu tubería actual.</p>
-                          <p className="text-[10px] text-gray-500 mt-1"><strong>Dónde:</strong> {proyectoBombeo ? "en la descarga de la bomba, justo después de la válvula check (es donde nace la sobrepresión al parar la bomba)." : "aguas arriba de la válvula de cierre rápido, o en el punto bajo de la línea."}</p>
+                          <p className="text-[10px] text-gray-500 mt-1"><strong>Dónde:</strong> {proyectoBombeo ? "en la descarga de la bomba, después de la válvula check." : "aguas arriba de la válvula de cierre rápido, o en el punto bajo de la línea."}</p>
                         </div>
                       </div>
                     )}
@@ -541,15 +570,10 @@ export default function GolpeArietePage() {
                       </span>
                       {negPres && (
                         <span className="text-xs px-2.5 py-1 rounded-full font-medium bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300">
-                          Riesgo de presión negativa {"—"} requiere protección
+                          Riesgo de presión negativa {"—"} ver ventosa abajo
                         </span>
                       )}
                     </div>
-                    {inputs.P0 == null && (
-                      <p className="text-[11px] text-amber-600 dark:text-amber-400 mt-2">
-                        Falta la presión de operación P0. Sin ella la presión máxima es parcial (se asume P0 = 0). Captúrala para el veredicto exacto.
-                      </p>
-                    )}
                   </div>
                 );
               })()}
