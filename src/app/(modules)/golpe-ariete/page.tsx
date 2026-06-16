@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useCallback, useRef, useState } from "react";
+import Link from "next/link";
 import { useWaterHammerStore, useSinglePipeStore } from "@/store/calculationStore";
 import { InputField } from "@/components/ui/InputField";
 import { MetricCard } from "@/components/ui/MetricCard";
@@ -543,6 +544,25 @@ export default function GolpeArietePage() {
                   </div>
                 );
               })()}
+
+              {/* Proteccion contra presion negativa (vacio) — ventosa de admision de aire */}
+              {inputs.P0 != null && results.Pmin != null && results.Pmin < 0 && (
+                <div className="rounded-xl border border-red-300 dark:border-red-700 bg-red-50 dark:bg-red-900/20 p-4 space-y-2">
+                  <p className="text-sm font-semibold text-red-700 dark:text-red-300">Protección contra presión negativa (vacío)</p>
+                  <p className="text-xs text-red-700/90 dark:text-red-300/80 leading-relaxed">
+                    La presión mínima cae a <strong>{formatNumber(mcaToKgcm2(results.Pmin), 1)} kg/cm²</strong> (negativa).
+                    {results.Pmin < -10
+                      ? " Es prácticamente vacío total → cavitación probable y riesgo de colapso del tubo (crítico)."
+                      : " Hay riesgo de vacío parcial → un tubo de pared delgada puede colapsar (implosión)."}
+                  </p>
+                  <p className="text-xs text-gray-700 dark:text-gray-300 leading-relaxed">
+                    <strong>Qué instalar:</strong> una <strong>válvula de admisión de aire (ventosa)</strong> en los <strong>puntos altos</strong> de la línea. Deja entrar aire y rompe el vacío. Es <em>distinta</em> de la válvula de alivio (esa es para la sobrepresión).
+                  </p>
+                  <Link href="/valvulas-aire" className="inline-block text-xs bg-[#1C3D5A] text-white px-3 py-1.5 rounded-lg hover:bg-[#0F2438] transition-colors font-medium">
+                    Ubicar las ventosas en el módulo Válvulas de aire →
+                  </Link>
+                </div>
+              )}
 
               {/* Detalle tecnico — colapsable */}
               <button onClick={() => setShowDetail(!showDetail)} className="text-xs text-[#1C3D5A] dark:text-blue-300 underline decoration-dotted">
