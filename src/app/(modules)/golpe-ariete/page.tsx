@@ -10,8 +10,25 @@ import { ExportPDFButton } from "@/components/ui/ExportPDFButton";
 import { FormulaDetail, waterHammerFormula, waveSpeedFormula } from "@/components/ui/FormulaDetail";
 import { calculateWaterHammer } from "@/lib/calculations/water-hammer";
 import { formatNumber, mcaToKgcm2 } from "@/lib/calculations/conversions";
-import { PIPE_ELASTICITY, THICKNESS_BY_MATERIAL, PIPE_CLASSES_BY_MATERIAL, PVC_THICKNESS, getPVCClasses, PVC_SYSTEM_LABELS, type PVCSystem, PIPE_CATALOG, type PipeCatalogGroup } from "@/lib/constants";
+import { PIPE_ELASTICITY, THICKNESS_BY_MATERIAL, PIPE_CLASSES_BY_MATERIAL, PVC_THICKNESS, getPVCClasses, PVC_SYSTEM_LABELS, type PVCSystem, PIPE_CATALOG, type PipeCatalogGroup, STANDARD_DNS_LABELED } from "@/lib/constants";
 import { saveFormState, loadFormState } from "@/lib/storage/form-persistence";
+import { useProjectStore } from "@/store/projectStore";
+
+// Busca en el catalogo del golpe el grupo/tamano/clase que corresponde al material, DN y clase del proyecto
+function matchGolpeCatalog(material: string, dnMm: number | null, clase: string) {
+  let gi = PIPE_CATALOG.findIndex((g) => g.label === material || g.material === material || (!!material && g.label.startsWith(material)));
+  if (gi < 0 && material) gi = PIPE_CATALOG.findIndex((g) => material.includes(g.material));
+  if (gi < 0) return null;
+  const g = PIPE_CATALOG[gi];
+  let si = 0;
+  if (dnMm != null) {
+    const inch = STANDARD_DNS_LABELED.find((d) => d.dn === dnMm)?.label.match(/(\d+(?:\.\d+)?)"/)?.[1];
+    if (inch) { const f = g.sizes.findIndex((s) => s.label.startsWith(inch + '"')); if (f >= 0) si = f; }
+  }
+  let ci = 0;
+  if (clase) { const f = g.sizes[si].classes.findIndex((c) => c.name === clase || c.name.includes(clase) || clase.includes(c.name)); if (f >= 0) ci = f; }
+  return { gi, si, ci };
+}
 import { ResetButton } from "@/components/ui/ResetButton";
 import type { AssumedValue } from "@/types/hydraulic";
 
@@ -25,6 +42,7 @@ export default function GolpeArietePage() {
   // Velocidad o caudal: si el ing tiene el caudal, calculamos V0 = Q/A con el diametro interno
   const [velMode, setVelMode] = useState<"velocidad" | "caudal">("caudal");
   const [caudalQ, setCaudalQ] = useState<number | null>(null);
+  const proyectoBombeo = useProjectStore((s) => s.project.incluyeBombeo);
 
   // Velocidad calculada a partir del caudal (L/s) y el diametro interno D (mm)
   const velFromQ = caudalQ != null && caudalQ > 0 && inputs.D != null && inputs.D > 0
@@ -57,9 +75,10 @@ export default function GolpeArietePage() {
     }
   }, [entryMode, selectedCatalog, selectedSize, selectedClass, catalog, sizeEntry, classEntry, setInput]);
 
-  // Reset size/class when catalog changes
-  useEffect(() => { setSelectedSize(0); setSelectedClass(0); }, [selectedCatalog]);
-  useEffect(() => { setSelectedClass(0); }, [selectedSize]);
+  // Reset size/class when catalog changes (salvo durante el prefill del proyecto)
+  const prefillingRef = useRef(false);
+  useEffect(() => { if (prefillingRef.current) return; setSelectedSize(0); setSelectedClass(0); }, [selectedCatalog]);
+  useEffect(() => { if (prefillingRef.current) return; setSelectedClass(0); }, [selectedSize]);
 
   // Computed OD and DR for display
   const computedOD = inputs.D != null && inputs.e != null ? inputs.D + 2 * inputs.e : null;
@@ -73,7 +92,18 @@ export default function GolpeArietePage() {
       Object.entries(saved).forEach(([key, value]) => {
         setInput(key as keyof typeof inputs, value as never);
       });
+      return;
     }
+    // Sin datos propios: ligar caudal, presion y tuberia del proyecto activo
+    const p = useProjectStore.getState().project;
+    if (p.q_ls == null && p.presionMaxLinea == null && p.longitud == null) return;
+    prefillingRef.current = true;
+    if (p.q_ls != null) { setVelMode("caudal"); setCaudalQ(p.q_ls); }
+    if (p.presionMaxLinea != null) setInput("P0", Math.round(p.presionMaxLinea * 10) / 10);
+    if (p.longitud != null) setInput("L", p.longitud);
+    const m = matchGolpeCatalog(p.material, p.diametroInterior, p.clase);
+    if (m) { setSelectedCatalog(m.gi); setSelectedSize(m.si); setSelectedClass(m.ci); }
+    setTimeout(() => { prefillingRef.current = false; }, 0);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -489,7 +519,8 @@ export default function GolpeArietePage() {
                         <div className="bg-white/70 dark:bg-gray-800/50 rounded-lg p-3 border border-amber-200 dark:border-amber-800">
                           <p className="text-[10px] uppercase tracking-wide text-gray-500">Opción B — válvula de protección</p>
                           <p className="text-base font-bold text-amber-800 dark:text-amber-300">{protecValvula?.dn ? `Válvula DN ${protecValvula.dn}` : "Consultar fabricante"}</p>
-                          <p className="text-[10px] text-gray-500">Alivio/anticipadora de golpe — deja la tubería actual (ver detalle abajo).</p>
+                          <p className="text-[10px] text-gray-500">Alivio/anticipadora de golpe — deja tu tubería actual.</p>
+                          <p className="text-[10px] text-gray-500 mt-1"><strong>Dónde:</strong> {proyectoBombeo ? "en la descarga de la bomba, justo después de la válvula check (es donde nace la sobrepresión al parar la bomba)." : "aguas arriba de la válvula de cierre rápido, o en el punto bajo de la línea."}</p>
                         </div>
                       </div>
                     )}
