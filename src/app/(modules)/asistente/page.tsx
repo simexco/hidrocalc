@@ -35,8 +35,8 @@ export default function AsistentePage() {
 
   const steps: Step[] = [
     { n: 1, title: "Cálculo de gasto", desc: "Demanda de agua: población, dotación → Qmd.", href: "/demanda", done: gastoDone, summary: r.qmd != null ? `Qmd ${r.qmd.toFixed(2)} L/s` : "Pendiente" },
-    { n: 2, title: "Diámetro económico", desc: "Si la línea es por bombeo: CDT y diámetro económico.", href: "/impulsion", done: bombeoDone, summary: p.incluyeBombeo ? (p.he != null ? `He ${p.he} m` : "Pendiente") : "Opcional (solo bombeo)" },
-    { n: 3, title: "Línea de conducción", desc: "Material, diámetro, longitud, perfil y presiones.", href: "/perfil", done: condDone, summary: condDone ? `${p.material} ${p.dn} · ${p.longitud} m` : "Pendiente" },
+    { n: 2, title: "Línea de conducción", desc: "Caudal, material, diámetro del tubo, longitud, perfil y presiones.", href: "/perfil", done: condDone, summary: condDone ? `${p.material} ${p.dn} · ${p.longitud} m` : "Pendiente" },
+    { n: 3, title: "Diámetro económico", desc: "Si la línea es por bombeo: CDT y diámetro económico.", href: "/impulsion", done: bombeoDone, summary: p.incluyeBombeo ? (p.he != null ? `He ${p.he} m` : "Pendiente") : "Opcional (solo bombeo)" },
     { n: 4, title: "Despiece de piezas", desc: "Lista de materiales y accesorios con SKU Sigma Flow.", href: "/despiece", done: null, summary: "Arma el despiece por tramo" },
     { n: 5, title: "Válvulas de aire y control", desc: "Ubicación de válvulas de aire, seccionamiento y desfogue.", href: "/valvulas-aire", done: valvDone, summary: valvDone ? `${p.valvulas.length} válvulas/accesorios` : "Pendiente" },
     { n: 6, title: "Generar reporte", desc: "Reporte PDF consolidado de marca Sigma Flow.", href: "/entregable", done: null, summary: "Documento final" },

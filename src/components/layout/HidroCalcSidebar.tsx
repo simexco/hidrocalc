@@ -43,8 +43,8 @@ const sections = [
   {
     title: "Conducción",
     items: [
-      { href: "/impulsion", label: "Diámetro económico", icon: icons.impulsion },
       { href: "/perfil", label: "Línea de conducción", icon: icons.conduccion },
+      { href: "/impulsion", label: "Diámetro económico", icon: icons.impulsion },
     ],
   },
   {

@@ -8,8 +8,8 @@ import { useProjectStore } from "@/store/projectStore";
 // Orden del flujo de proyecto (asistente)
 const FLOW = [
   { href: "/demanda", label: "Cálculo de gasto" },
-  { href: "/impulsion", label: "Diámetro económico" },
   { href: "/perfil", label: "Línea de conducción" },
+  { href: "/impulsion", label: "Diámetro económico" },
   { href: "/despiece", label: "Despiece" },
   { href: "/valvulas-aire", label: "Válvulas de aire" },
   { href: "/entregable", label: "Reporte" },
