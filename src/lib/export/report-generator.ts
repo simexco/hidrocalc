@@ -40,6 +40,8 @@ export interface ReportData {
   c: number | null;
   presionMaxLinea: number | null;  // kg/cm² — presión máxima de operación en la línea (del perfil)
   pnLinea: number | null;          // kg/cm² — presión que resiste la clase elegida
+  p1: number | null;               // kg/cm² — presión de entrada al inicio de la línea
+  presionFinalLinea: number | null; // kg/cm² — presión calculada al final (del perfil, con P1)
   vertices: ReportVertex[];
   valvulas: ReportValve[];
   // Módulo 3 — Bombeo
@@ -107,8 +109,17 @@ export function computeReport(d: ReportData): ReportResults {
       r.hf = (10.67 * d.longitud * Math.pow(Q_m3s, 1.852)) / (Math.pow(d.c, 1.852) * Math.pow(D_m, 4.87));
       r.hac = 0.1 * r.hf;
       r.perdidaTotal = r.hf + r.hac;
-      // Presión final (línea por gravedad): carga disponible = desnivel; menos pérdidas
-      if (d.desnivel != null) r.presionFinal = d.desnivel - r.perdidaTotal;
+      // Presión final:
+      //  1) si la conducción ya la calculó (con P1), usar ese valor exacto
+      //  2) si solo se conoce P1, P_final = P1 + desnivel - pérdidas
+      //  3) sin P1 no se puede estimar (no inventar un negativo) → queda null
+      if (d.presionFinalLinea != null) {
+        r.presionFinal = d.presionFinalLinea * 10; // kg/cm² → m.c.a.
+      } else if (d.p1 != null && d.desnivel != null) {
+        r.presionFinal = d.p1 * 10 + d.desnivel - r.perdidaTotal;
+      } else {
+        r.presionFinal = null;
+      }
     }
   }
 
@@ -380,7 +391,9 @@ export async function generateReportPDF(d: ReportData): Promise<jsPDF> {
       ["Perdida por friccion (Hf)", `${n(r.hf, 2)} m`],
       ["Perdida por accesorios (10%)", `${n(r.hac, 2)} m`],
       ["Perdida total", `${n(r.perdidaTotal, 2)} m`],
-      ["Presion estimada al final", `${n(r.presionFinal, 1)} m.c.a. ${r.presionFinal != null && d.presionRequerida != null && r.presionFinal >= d.presionRequerida ? "CUMPLE" : "REVISAR"}`],
+      ["Presion estimada al final", r.presionFinal == null
+        ? "Requiere P1 (presion de entrada) en la conduccion"
+        : `${n(r.presionFinal, 1)} m.c.a. ${d.presionRequerida != null && r.presionFinal >= d.presionRequerida ? "CUMPLE" : "REVISAR"}`],
     ],
     margin: { left: 14, right: 14 },
   });

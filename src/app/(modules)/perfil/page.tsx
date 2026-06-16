@@ -98,10 +98,12 @@ export default function PerfilPage() {
         vertices: sorted.map((v) => ({ cad: v.dist, cota: v.cota, desc: v.desc || "" })),
         presionMaxLinea: presiones.length ? Math.max(...presiones) : null,
         pnLinea: pns.length ? Math.min(...pns) : null,
+        p1: calcMode === "calcularP1" ? computedP1 : P1,
+        presionFinalLinea: results?.finalPressure_kgcm2 ?? null,
       });
     }, 700);
     return () => clearTimeout(t);
-  }, [vertices, tramos, results, patchProject]);
+  }, [vertices, tramos, results, P1, computedP1, calcMode, patchProject]);
 
   // Calculate
   const runCalc = useCallback(() => {

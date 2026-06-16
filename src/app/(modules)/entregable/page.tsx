@@ -101,6 +101,7 @@ export default function EntregablePage() {
           <InputField label="Gasto de diseño Q" value={d.q_ls} onChange={(v) => set("q_ls", num(v))} unit="L/s" tooltip="Normalmente el Qmd de la hoja 1" />
           <InputField label="Longitud L" value={d.longitud} onChange={(v) => set("longitud", num(v))} unit="m" />
           <InputField label="Desnivel (inicio-fin)" value={d.desnivel} onChange={(v) => set("desnivel", num(v))} unit="m" />
+          <InputField label="Presión de entrada P1" value={d.p1} onChange={(v) => set("p1", num(v))} unit="kg/cm²" tooltip="Presión disponible al inicio de la línea. Necesaria para estimar la presión final." />
           <InputField label="Presión requerida final" value={d.presionRequerida} onChange={(v) => set("presionRequerida", num(v))} unit="m.c.a." />
           <div className="space-y-1">
             <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Material</label>
