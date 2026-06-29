@@ -43,6 +43,12 @@ const modules = [
     icon: (<svg viewBox="0 0 24 24" className={iconCls} fill="none" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" /></svg>),
   },
   {
+    title: "Conversor de unidades",
+    desc: "Presión, caudal, diámetro, área, volumen, temperatura y más — conversiones comunes en agua.",
+    href: "/conversor",
+    icon: (<svg viewBox="0 0 24 24" className={iconCls} fill="none" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M8 7h12m0 0l-4-4m4 4l-4 4m4 6H4m0 0l4 4m-4-4l4-4" /></svg>),
+  },
+  {
     title: "Cálculo de lista de materiales (despiece)",
     desc: "Lista de materiales y accesorios con SKU Sigma Flow. Exporta a Excel y PDF.",
     href: "/despiece",
