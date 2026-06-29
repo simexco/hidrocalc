@@ -31,11 +31,14 @@ const CATEGORIAS: Categoria[] = [
   {
     key: "longitud", label: "Longitud / Diámetro", base: "m",
     units: [
-      { u: "m", f: 1 },
-      { u: "cm", f: 100 },
       { u: "mm", f: 1000 },
+      { u: "cm", f: 100 },
+      { u: "m", f: 1 },
+      { u: "km", f: 0.001 },
       { u: 'pulg (")', f: 39.370079 },
       { u: "pie (ft)", f: 3.2808399 },
+      { u: "yarda (yd)", f: 1.0936133 },
+      { u: "milla (mi)", f: 0.000621371 },
     ],
   },
   {
