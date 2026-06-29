@@ -104,15 +104,19 @@ const tempFromC = (c: number, u: string) => (u.includes("Celsius") ? c : u.inclu
 const PERIM_UNITS = ["Centímetros (cm)", "Milímetros (mm)", "Metros (m)", "Pulgadas (in)"];
 const perimToMM = (v: number, u: string) => (u.includes("Milímetros") ? v : u.includes("Centímetros") ? v * 10 : u.includes("Metros") ? v * 1000 : v * 25.4);
 
-// Formato legible (evita 0.0000001 y 123456.999)
+// Formato legible: decimales según la magnitud, con separador de miles y sin notación exponencial
 function fmt(v: number): string {
   if (!isFinite(v)) return "—";
   if (v === 0) return "0";
   const abs = Math.abs(v);
-  if (abs >= 100000 || abs < 0.001) return v.toExponential(3);
-  if (abs >= 100) return v.toFixed(2);
-  if (abs >= 1) return v.toFixed(3);
-  return v.toFixed(5);
+  let dec: number;
+  if (abs >= 1000) dec = 2;
+  else if (abs >= 10) dec = 3;
+  else if (abs >= 1) dec = 4;
+  else if (abs >= 0.01) dec = 5;
+  else if (abs >= 0.0001) dec = 7;
+  else dec = 9;
+  return v.toLocaleString("es-MX", { minimumFractionDigits: 0, maximumFractionDigits: dec });
 }
 
 export default function ConversorPage() {
