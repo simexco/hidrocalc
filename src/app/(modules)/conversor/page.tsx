@@ -8,101 +8,101 @@ interface Categoria { key: string; label: string; base: string; units: Unit[] }
 
 const CATEGORIAS: Categoria[] = [
   {
-    key: "presion", label: "Presión", base: "kg/cm²",
+    key: "presion", label: "Presión", base: "Kilogramos por cm² (kg/cm²)",
     units: [
-      { u: "kg/cm²", f: 1 },
-      { u: "m.c.a.", f: 10, nota: "metros de columna de agua" },
-      { u: "bar", f: 0.980665 },
-      { u: "kPa", f: 98.0665 },
-      { u: "psi", f: 14.223343 },
-      { u: "atm", f: 0.967841 },
+      { u: "Kilogramos por cm² (kg/cm²)", f: 1 },
+      { u: "Metros de columna de agua (m.c.a.)", f: 10 },
+      { u: "Bar", f: 0.980665 },
+      { u: "Kilopascales (kPa)", f: 98.0665 },
+      { u: "Libras por pulgada² (psi)", f: 14.223343 },
+      { u: "Atmósferas (atm)", f: 0.967841 },
     ],
   },
   {
-    key: "caudal", label: "Caudal / Gasto", base: "L/s",
+    key: "caudal", label: "Caudal / Gasto", base: "Litros por segundo (L/s)",
     units: [
-      { u: "L/s", f: 1 },
-      { u: "m³/h", f: 3.6 },
-      { u: "m³/día", f: 86.4 },
-      { u: "L/min", f: 60 },
-      { u: "GPM (US)", f: 15.850323, nota: "galones por minuto" },
+      { u: "Litros por segundo (L/s)", f: 1 },
+      { u: "Metros cúbicos por hora (m³/h)", f: 3.6 },
+      { u: "Metros cúbicos por día (m³/día)", f: 86.4 },
+      { u: "Litros por minuto (L/min)", f: 60 },
+      { u: "Galones por minuto US (GPM)", f: 15.850323 },
     ],
   },
   {
-    key: "longitud", label: "Longitud", base: "m",
+    key: "longitud", label: "Longitud", base: "Metros (m)",
     units: [
-      { u: "mm", f: 1000 },
-      { u: "cm", f: 100 },
-      { u: "m", f: 1 },
-      { u: "km", f: 0.001 },
-      { u: 'pulg (")', f: 39.370079 },
-      { u: "pie (ft)", f: 3.2808399 },
-      { u: "yarda (yd)", f: 1.0936133 },
-      { u: "milla (mi)", f: 0.000621371 },
+      { u: "Milímetros (mm)", f: 1000 },
+      { u: "Centímetros (cm)", f: 100 },
+      { u: "Metros (m)", f: 1 },
+      { u: "Kilómetros (km)", f: 0.001 },
+      { u: "Pulgadas (in)", f: 39.370079 },
+      { u: "Pies (ft)", f: 3.2808399 },
+      { u: "Yardas (yd)", f: 1.0936133 },
+      { u: "Millas (mi)", f: 0.000621371 },
     ],
   },
   {
-    key: "area", label: "Área", base: "m²",
+    key: "area", label: "Área", base: "Metros cuadrados (m²)",
     units: [
-      { u: "mm²", f: 1000000 },
-      { u: "cm²", f: 10000 },
-      { u: "m²", f: 1 },
-      { u: "ha", f: 0.0001, nota: "hectárea" },
-      { u: 'pulg² (in²)', f: 1550.0031 },
-      { u: "ft²", f: 10.76391, nota: "pie cuadrado" },
-      { u: "acre", f: 0.000247105 },
+      { u: "Milímetros cuadrados (mm²)", f: 1000000 },
+      { u: "Centímetros cuadrados (cm²)", f: 10000 },
+      { u: "Metros cuadrados (m²)", f: 1 },
+      { u: "Hectáreas (ha)", f: 0.0001 },
+      { u: "Pulgadas cuadradas (in²)", f: 1550.0031 },
+      { u: "Pies cuadrados (ft²)", f: 10.76391 },
+      { u: "Acres", f: 0.000247105 },
     ],
   },
   {
-    key: "volumen", label: "Volumen", base: "m³",
+    key: "volumen", label: "Volumen", base: "Metros cúbicos (m³)",
     units: [
-      { u: "mL", f: 1000000, nota: "= cm³" },
-      { u: "cm³", f: 1000000 },
-      { u: "L", f: 1000, nota: "litros" },
-      { u: "m³", f: 1 },
-      { u: "pulg³ (in³)", f: 61023.744 },
-      { u: "ft³", f: 35.314667, nota: "pie cúbico" },
-      { u: "gal (US)", f: 264.17205, nota: "galón US" },
-      { u: "oz fl (US)", f: 33814.023, nota: "onza líquida" },
+      { u: "Mililitros (mL)", f: 1000000 },
+      { u: "Centímetros cúbicos (cm³)", f: 1000000 },
+      { u: "Litros (L)", f: 1000 },
+      { u: "Metros cúbicos (m³)", f: 1 },
+      { u: "Pulgadas cúbicas (in³)", f: 61023.744 },
+      { u: "Pies cúbicos (ft³)", f: 35.314667 },
+      { u: "Galones US (gal)", f: 264.17205 },
+      { u: "Onzas líquidas US (oz fl)", f: 33814.023 },
     ],
   },
   {
-    key: "velocidad", label: "Velocidad", base: "m/s",
+    key: "velocidad", label: "Velocidad", base: "Metros por segundo (m/s)",
     units: [
-      { u: "m/s", f: 1 },
-      { u: "ft/s", f: 3.2808399 },
-      { u: "km/h", f: 3.6 },
+      { u: "Metros por segundo (m/s)", f: 1 },
+      { u: "Pies por segundo (ft/s)", f: 3.2808399 },
+      { u: "Kilómetros por hora (km/h)", f: 3.6 },
     ],
   },
   {
-    key: "peso", label: "Peso / Masa", base: "kg",
+    key: "peso", label: "Peso / Masa", base: "Kilogramos (kg)",
     units: [
-      { u: "g", f: 1000, nota: "gramos" },
-      { u: "kg", f: 1 },
-      { u: "t", f: 0.001, nota: "tonelada métrica" },
-      { u: "oz", f: 35.273962, nota: "onza" },
-      { u: "lb", f: 2.2046226, nota: "libra" },
-      { u: "ton US", f: 0.0011023113, nota: "short ton" },
+      { u: "Gramos (g)", f: 1000 },
+      { u: "Kilogramos (kg)", f: 1 },
+      { u: "Toneladas métricas (t)", f: 0.001 },
+      { u: "Onzas (oz)", f: 35.273962 },
+      { u: "Libras (lb)", f: 2.2046226 },
+      { u: "Toneladas US (short ton)", f: 0.0011023113 },
     ],
   },
   {
-    key: "potencia", label: "Potencia", base: "kW",
+    key: "potencia", label: "Potencia", base: "Kilovatios (kW)",
     units: [
-      { u: "kW", f: 1 },
-      { u: "HP", f: 1.3410221 },
-      { u: "CV", f: 1.3596216, nota: "caballos de vapor" },
+      { u: "Kilovatios (kW)", f: 1 },
+      { u: "Caballos de fuerza (HP)", f: 1.3410221 },
+      { u: "Caballos de vapor (CV)", f: 1.3596216 },
     ],
   },
 ];
 
 // Temperatura se maneja aparte (tiene offset, no es proporcional)
-const TEMP_UNITS = ["°C", "°F", "K"];
-const tempToC = (v: number, u: string) => (u === "°C" ? v : u === "°F" ? (v - 32) * 5 / 9 : v - 273.15);
-const tempFromC = (c: number, u: string) => (u === "°C" ? c : u === "°F" ? c * 9 / 5 + 32 : c + 273.15);
+const TEMP_UNITS = ["Grados Celsius (°C)", "Grados Fahrenheit (°F)", "Kelvin (K)"];
+const tempToC = (v: number, u: string) => (u.includes("Celsius") ? v : u.includes("Fahrenheit") ? (v - 32) * 5 / 9 : v - 273.15);
+const tempFromC = (c: number, u: string) => (u.includes("Celsius") ? c : u.includes("Fahrenheit") ? c * 9 / 5 + 32 : c + 273.15);
 
 // Diámetro por circunferencia: mides la circunferencia y D exterior = circunferencia / π
-const PERIM_UNITS = ["cm", "mm", "m", 'pulg (")'];
-const perimToMM = (v: number, u: string) => (u === "mm" ? v : u === "cm" ? v * 10 : u === "m" ? v * 1000 : v * 25.4);
+const PERIM_UNITS = ["Centímetros (cm)", "Milímetros (mm)", "Metros (m)", "Pulgadas (in)"];
+const perimToMM = (v: number, u: string) => (u.includes("Milímetros") ? v : u.includes("Centímetros") ? v * 10 : u.includes("Metros") ? v * 1000 : v * 25.4);
 
 // Formato legible (evita 0.0000001 y 123456.999)
 function fmt(v: number): string {
@@ -118,9 +118,9 @@ function fmt(v: number): string {
 export default function ConversorPage() {
   const [catKey, setCatKey] = useState("presion");
   const [valor, setValor] = useState<string>("1");
-  const [fromUnit, setFromUnit] = useState<string>("kg/cm²");
-  const [tempFrom, setTempFrom] = useState<string>("°C");
-  const [perimUnit, setPerimUnit] = useState<string>("cm");
+  const [fromUnit, setFromUnit] = useState<string>("Kilogramos por cm² (kg/cm²)");
+  const [tempFrom, setTempFrom] = useState<string>("Grados Celsius (°C)");
+  const [perimUnit, setPerimUnit] = useState<string>("Centímetros (cm)");
 
   const cat = CATEGORIAS.find((c) => c.key === catKey);
   const esTemp = catKey === "temperatura";
@@ -130,8 +130,8 @@ export default function ConversorPage() {
 
   const cambiarCategoria = (key: string) => {
     setCatKey(key);
-    if (key === "temperatura") setTempFrom("°C");
-    else if (key === "perimetro") setPerimUnit("cm");
+    if (key === "temperatura") setTempFrom("Grados Celsius (°C)");
+    else if (key === "perimetro") setPerimUnit("Centímetros (cm)");
     else { const c = CATEGORIAS.find((x) => x.key === key)!; setFromUnit(c.units[0].u); }
   };
 
@@ -141,9 +141,9 @@ export default function ConversorPage() {
     const perimMM = perimToMM(v, perimUnit);
     const dMM = perimMM / Math.PI; // diámetro exterior
     resultados = [
-      { u: "Diámetro exterior — mm", val: dMM, from: false },
-      { u: "Diámetro exterior — cm", val: dMM / 10, from: false },
-      { u: 'Diámetro exterior — pulg (")', val: dMM / 25.4, from: false },
+      { u: "Diámetro exterior — milímetros (mm)", val: dMM, from: false },
+      { u: "Diámetro exterior — centímetros (cm)", val: dMM / 10, from: false },
+      { u: "Diámetro exterior — pulgadas (in)", val: dMM / 25.4, from: false },
     ];
   } else if (esTemp && valido) {
     const c = tempToC(v, tempFrom);
@@ -177,18 +177,18 @@ export default function ConversorPage() {
       {/* Entrada */}
       <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 space-y-3">
         <label className="text-sm font-medium text-gray-700 dark:text-gray-300">{esPerim ? "Circunferencia medida (con cinta métrica)" : "Valor a convertir"}</label>
-        <div className="flex gap-2">
+        <div className="flex flex-col sm:flex-row gap-2">
           <input
             type="number"
             value={valor}
             onChange={(e) => setValor(e.target.value)}
-            className="flex-1 px-3 py-2 text-lg border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 dark:text-white"
+            className="w-full sm:w-40 px-3 py-2 text-lg border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 dark:text-white"
             placeholder="0"
           />
           <select
             value={esTemp ? tempFrom : esPerim ? perimUnit : fromUnit}
             onChange={(e) => (esTemp ? setTempFrom(e.target.value) : esPerim ? setPerimUnit(e.target.value) : setFromUnit(e.target.value))}
-            className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 dark:text-white min-w-[120px]"
+            className="flex-1 px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 dark:text-white"
           >
             {(esTemp ? TEMP_UNITS : esPerim ? PERIM_UNITS : (cat?.units.map((u) => u.u) ?? [])).map((u) => <option key={u} value={u}>{u}</option>)}
           </select>
