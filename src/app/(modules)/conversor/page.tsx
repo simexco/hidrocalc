@@ -79,7 +79,7 @@ const TEMP_UNITS = ["°C", "°F", "K"];
 const tempToC = (v: number, u: string) => (u === "°C" ? v : u === "°F" ? (v - 32) * 5 / 9 : v - 273.15);
 const tempFromC = (c: number, u: string) => (u === "°C" ? c : u === "°F" ? c * 9 / 5 + 32 : c + 273.15);
 
-// Diámetro por hilo: mides el perímetro y D exterior = perímetro / π
+// Diámetro por circunferencia: mides la circunferencia y D exterior = circunferencia / π
 const PERIM_UNITS = ["cm", "mm", "m", 'pulg (")'];
 const perimToMM = (v: number, u: string) => (u === "mm" ? v : u === "cm" ? v * 10 : u === "m" ? v * 1000 : v * 25.4);
 
@@ -142,7 +142,7 @@ export default function ConversorPage() {
 
       {/* Categorías */}
       <div className="flex flex-wrap gap-2">
-        {[...CATEGORIAS.map((c) => ({ key: c.key, label: c.label })), { key: "temperatura", label: "Temperatura" }, { key: "perimetro", label: "Diámetro por hilo" }].map((c) => (
+        {[...CATEGORIAS.map((c) => ({ key: c.key, label: c.label })), { key: "temperatura", label: "Temperatura" }, { key: "perimetro", label: "Diámetro por circunferencia" }].map((c) => (
           <button
             key={c.key}
             onClick={() => cambiarCategoria(c.key)}
@@ -155,7 +155,7 @@ export default function ConversorPage() {
 
       {/* Entrada */}
       <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 space-y-3">
-        <label className="text-sm font-medium text-gray-700 dark:text-gray-300">{esPerim ? "Perímetro medido (hilo alrededor del tubo)" : "Valor a convertir"}</label>
+        <label className="text-sm font-medium text-gray-700 dark:text-gray-300">{esPerim ? "Circunferencia medida (con cinta métrica)" : "Valor a convertir"}</label>
         <div className="flex gap-2">
           <input
             type="number"
@@ -172,7 +172,7 @@ export default function ConversorPage() {
             {(esTemp ? TEMP_UNITS : esPerim ? PERIM_UNITS : (cat?.units.map((u) => u.u) ?? [])).map((u) => <option key={u} value={u}>{u}</option>)}
           </select>
         </div>
-        {esPerim && <p className="text-[11px] text-gray-500 dark:text-gray-400">Rodea el tubo con un hilo, mide su longitud y el diámetro exterior se calcula como perímetro ÷ π.</p>}
+        {esPerim && <p className="text-[11px] text-gray-500 dark:text-gray-400">Mide la circunferencia exterior del tubo con una cinta métrica (flexómetro). El diámetro exterior = circunferencia ÷ π.</p>}
       </div>
 
       {/* Resultados */}
