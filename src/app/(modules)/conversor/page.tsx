@@ -29,7 +29,7 @@ const CATEGORIAS: Categoria[] = [
     ],
   },
   {
-    key: "longitud", label: "Longitud / Diámetro", base: "m",
+    key: "longitud", label: "Longitud", base: "m",
     units: [
       { u: "mm", f: 1000 },
       { u: "cm", f: 100 },
