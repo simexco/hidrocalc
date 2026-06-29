@@ -75,6 +75,17 @@ const CATEGORIAS: Categoria[] = [
     ],
   },
   {
+    key: "peso", label: "Peso / Masa", base: "kg",
+    units: [
+      { u: "g", f: 1000, nota: "gramos" },
+      { u: "kg", f: 1 },
+      { u: "t", f: 0.001, nota: "tonelada métrica" },
+      { u: "oz", f: 35.273962, nota: "onza" },
+      { u: "lb", f: 2.2046226, nota: "libra" },
+      { u: "ton US", f: 0.0011023113, nota: "short ton" },
+    ],
+  },
+  {
     key: "potencia", label: "Potencia", base: "kW",
     units: [
       { u: "kW", f: 1 },
