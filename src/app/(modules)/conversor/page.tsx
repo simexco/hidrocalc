@@ -79,6 +79,10 @@ const TEMP_UNITS = ["°C", "°F", "K"];
 const tempToC = (v: number, u: string) => (u === "°C" ? v : u === "°F" ? (v - 32) * 5 / 9 : v - 273.15);
 const tempFromC = (c: number, u: string) => (u === "°C" ? c : u === "°F" ? c * 9 / 5 + 32 : c + 273.15);
 
+// Diámetro por hilo: mides el perímetro y D exterior = perímetro / π
+const PERIM_UNITS = ["cm", "mm", "m", 'pulg (")'];
+const perimToMM = (v: number, u: string) => (u === "mm" ? v : u === "cm" ? v * 10 : u === "m" ? v * 1000 : v * 25.4);
+
 // Formato legible (evita 0.0000001 y 123456.999)
 function fmt(v: number): string {
   if (!isFinite(v)) return "—";
@@ -95,27 +99,38 @@ export default function ConversorPage() {
   const [valor, setValor] = useState<string>("1");
   const [fromUnit, setFromUnit] = useState<string>("kg/cm²");
   const [tempFrom, setTempFrom] = useState<string>("°C");
+  const [perimUnit, setPerimUnit] = useState<string>("cm");
 
-  const cat = CATEGORIAS.find((c) => c.key === catKey)!;
+  const cat = CATEGORIAS.find((c) => c.key === catKey);
   const esTemp = catKey === "temperatura";
+  const esPerim = catKey === "perimetro";
   const v = parseFloat(valor);
   const valido = valor.trim() !== "" && isFinite(v);
 
   const cambiarCategoria = (key: string) => {
     setCatKey(key);
-    if (key === "temperatura") { setTempFrom("°C"); }
+    if (key === "temperatura") setTempFrom("°C");
+    else if (key === "perimetro") setPerimUnit("cm");
     else { const c = CATEGORIAS.find((x) => x.key === key)!; setFromUnit(c.units[0].u); }
   };
 
   // Resultados
   let resultados: { u: string; val: number; nota?: string; from: boolean }[] = [];
-  if (!esTemp && valido) {
-    const fu = cat.units.find((u) => u.u === fromUnit) ?? cat.units[0];
-    const baseVal = v / fu.f; // valor en unidad base
-    resultados = cat.units.map((u) => ({ u: u.u, val: baseVal * u.f, nota: u.nota, from: u.u === fu.u }));
+  if (esPerim && valido) {
+    const perimMM = perimToMM(v, perimUnit);
+    const dMM = perimMM / Math.PI; // diámetro exterior
+    resultados = [
+      { u: "Diámetro exterior — mm", val: dMM, from: false },
+      { u: "Diámetro exterior — cm", val: dMM / 10, from: false },
+      { u: 'Diámetro exterior — pulg (")', val: dMM / 25.4, from: false },
+    ];
   } else if (esTemp && valido) {
     const c = tempToC(v, tempFrom);
     resultados = TEMP_UNITS.map((u) => ({ u, val: tempFromC(c, u), from: u === tempFrom }));
+  } else if (cat && valido) {
+    const fu = cat.units.find((u) => u.u === fromUnit) ?? cat.units[0];
+    const baseVal = v / fu.f; // valor en unidad base
+    resultados = cat.units.map((u) => ({ u: u.u, val: baseVal * u.f, nota: u.nota, from: u.u === fu.u }));
   }
 
   return (
@@ -127,7 +142,7 @@ export default function ConversorPage() {
 
       {/* Categorías */}
       <div className="flex flex-wrap gap-2">
-        {[...CATEGORIAS.map((c) => ({ key: c.key, label: c.label })), { key: "temperatura", label: "Temperatura" }].map((c) => (
+        {[...CATEGORIAS.map((c) => ({ key: c.key, label: c.label })), { key: "temperatura", label: "Temperatura" }, { key: "perimetro", label: "Diámetro por hilo" }].map((c) => (
           <button
             key={c.key}
             onClick={() => cambiarCategoria(c.key)}
@@ -140,7 +155,7 @@ export default function ConversorPage() {
 
       {/* Entrada */}
       <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 space-y-3">
-        <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Valor a convertir</label>
+        <label className="text-sm font-medium text-gray-700 dark:text-gray-300">{esPerim ? "Perímetro medido (hilo alrededor del tubo)" : "Valor a convertir"}</label>
         <div className="flex gap-2">
           <input
             type="number"
@@ -150,19 +165,20 @@ export default function ConversorPage() {
             placeholder="0"
           />
           <select
-            value={esTemp ? tempFrom : fromUnit}
-            onChange={(e) => (esTemp ? setTempFrom(e.target.value) : setFromUnit(e.target.value))}
+            value={esTemp ? tempFrom : esPerim ? perimUnit : fromUnit}
+            onChange={(e) => (esTemp ? setTempFrom(e.target.value) : esPerim ? setPerimUnit(e.target.value) : setFromUnit(e.target.value))}
             className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 dark:text-white min-w-[120px]"
           >
-            {(esTemp ? TEMP_UNITS : cat.units.map((u) => u.u)).map((u) => <option key={u} value={u}>{u}</option>)}
+            {(esTemp ? TEMP_UNITS : esPerim ? PERIM_UNITS : (cat?.units.map((u) => u.u) ?? [])).map((u) => <option key={u} value={u}>{u}</option>)}
           </select>
         </div>
+        {esPerim && <p className="text-[11px] text-gray-500 dark:text-gray-400">Rodea el tubo con un hilo, mide su longitud y el diámetro exterior se calcula como perímetro ÷ π.</p>}
       </div>
 
       {/* Resultados */}
       <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
         <div className="bg-[#1C3D5A] px-4 py-2">
-          <h3 className="text-xs font-semibold text-white">Equivalencias{esTemp ? " — Temperatura" : ` — ${cat.label}`}</h3>
+          <h3 className="text-xs font-semibold text-white">{esPerim ? "Diámetro exterior de la tubería" : `Equivalencias${esTemp ? " — Temperatura" : cat ? ` — ${cat.label}` : ""}`}</h3>
         </div>
         {!valido ? (
           <div className="p-6 text-center text-sm text-gray-400">Escribe un valor para ver las equivalencias.</div>
