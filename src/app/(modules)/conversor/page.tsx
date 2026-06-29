@@ -44,10 +44,13 @@ const CATEGORIAS: Categoria[] = [
   {
     key: "area", label: "Área", base: "m²",
     units: [
-      { u: "m²", f: 1 },
+      { u: "mm²", f: 1000000 },
       { u: "cm²", f: 10000 },
+      { u: "m²", f: 1 },
       { u: "ha", f: 0.0001, nota: "hectárea" },
-      { u: "ft²", f: 10.76391 },
+      { u: 'pulg² (in²)', f: 1550.0031 },
+      { u: "ft²", f: 10.76391, nota: "pie cuadrado" },
+      { u: "acre", f: 0.000247105 },
     ],
   },
   {
