@@ -56,10 +56,14 @@ const CATEGORIAS: Categoria[] = [
   {
     key: "volumen", label: "Volumen", base: "m³",
     units: [
+      { u: "mL", f: 1000000, nota: "= cm³" },
+      { u: "cm³", f: 1000000 },
+      { u: "L", f: 1000, nota: "litros" },
       { u: "m³", f: 1 },
-      { u: "L", f: 1000 },
-      { u: "gal (US)", f: 264.17205 },
-      { u: "ft³", f: 35.314667 },
+      { u: "pulg³ (in³)", f: 61023.744 },
+      { u: "ft³", f: 35.314667, nota: "pie cúbico" },
+      { u: "gal (US)", f: 264.17205, nota: "galón US" },
+      { u: "oz fl (US)", f: 33814.023, nota: "onza líquida" },
     ],
   },
   {
