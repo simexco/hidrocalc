@@ -145,9 +145,9 @@ export default function ConversorPage() {
     const perimMM = perimToMM(v, perimUnit);
     const dMM = perimMM / Math.PI; // diámetro exterior
     resultados = [
-      { u: "Diámetro exterior — milímetros (mm)", val: dMM, from: false },
-      { u: "Diámetro exterior — centímetros (cm)", val: dMM / 10, from: false },
-      { u: "Diámetro exterior — pulgadas (in)", val: dMM / 25.4, from: false },
+      { u: "Milímetros (mm)", val: dMM, from: false },
+      { u: "Centímetros (cm)", val: dMM / 10, from: false },
+      { u: "Pulgadas (in)", val: dMM / 25.4, from: false },
     ];
   } else if (esTemp && valido) {
     const c = tempToC(v, tempFrom);
