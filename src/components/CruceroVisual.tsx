@@ -27,10 +27,14 @@ export interface VizNode {
   parentPort: number | null
 }
 
-// Disponibilidad de válvulas de aire según catálogo SIMEX (VI-VAC / VI-VEA)
-const AIRE_VAC = new Set(['2"', '3"', '4"', '6"'])
-const AIRE_VEA = new Set(['2"'])
-const AIRE_VAE = new Set(['2"', '3"', '4"', '6"'])
+// Válvulas de aire: el tamaño NO es el de la tubería — el ing lo calcula aparte y lo elige libre.
+// El tamaño elegido se guarda en dn2; la válvula se monta sobre la brida del ramal (dn del puerto).
+const AIRE_SIZES: Record<string, string[]> = {
+  vac: ['½"', '¾"', '1"', '2"', '3"', '4"', '6"', '8"'],   // combinada hasta 8"
+  vae: ['½"', '¾"', '1"', '2"', '3"', '4"', '6"', '8"'],   // admisión/expulsión (VAEA)
+  vea: ['½"', '¾"', '1"', '2"'],                             // eliminadora
+}
+const AIRE_TOK: Record<string, string> = { '½"': '1/2', '¾"': '3/4' }  // tokens de SKU fraccionarios
 
 const num = (d: string) => d.replace('"', '').replace('½', '.5')
 // Diámetro a 2 dígitos para SKUs de carrete: 2"→02, 6"→06, 10"→10 (CN-CAR-2506 = corto 25 de 6")
@@ -84,11 +88,14 @@ export function vizToAccsConex(nodes: VizNode[]): { accs: SIMEXAcc[]; conex: SIM
         return { id: n.id, label: bronce ? `Check Compuerta Bronce ${d} Sigma Flow` : `Check Resilente C508 ${d} Sigma Flow`, sku: bronce ? `VI-CHK-${num(d)}` : `VI-CHK-R${num(d)}`, dn: d, bridas: 2, leKey: 'check', norma: 'AWWA C508', qty: 1 }
       }
       case 'tapa': return { id: n.id, label: `Tapa Ciega HD ${d} Sigma`, sku: TAPA[d] ?? '← CONF', dn: d, bridas: 1, leKey: 'tapa-ciega', norma: 'AWWA C110', qty: 1 }
-      case 'vaea': return n.sub === 'vae'
-        ? { id: n.id, label: `Válvula de Aire Adm/Exp (VAEA) ${d} Sigma Flow`, sku: `VI-VAE-${num(d)}`, dn: d, bridas: 1, leKey: 'tapa-ciega', norma: 'AWWA C512', qty: 1 }
-        : n.sub === 'vea'
-        ? { id: n.id, label: `Válvula Eliminadora de Aire ${d} Sigma Flow`, sku: `VI-VEA-${num(d)}`, dn: d, bridas: 1, leKey: 'tapa-ciega', norma: 'AWWA C512', qty: 1 }
-        : { id: n.id, label: `Válvula de Aire Combinada ${d} Sigma Flow`, sku: `VI-VAC-${num(d)}`, dn: d, bridas: 1, leKey: 'tapa-ciega', norma: 'AWWA C512', qty: 1 }
+      case 'vaea': {
+        // El tamaño de la válvula (dn2) lo elige el ing; la brida de montaje es la del ramal (dn)
+        const size = d2 ?? d
+        const tok = AIRE_TOK[size] ?? num(size)
+        if (n.sub === 'vae') return { id: n.id, label: `Válvula de Aire Adm/Exp (VAEA) ${size} Sigma Flow`, sku: `VI-VAE-${tok}`, dn: d, bridas: 1, leKey: 'tapa-ciega', norma: 'AWWA C512', qty: 1 }
+        if (n.sub === 'vea') return { id: n.id, label: `Válvula Eliminadora de Aire ${size} Sigma Flow`, sku: `VI-VEA-${tok}`, dn: d, bridas: 1, leKey: 'tapa-ciega', norma: 'AWWA C512', qty: 1 }
+        return { id: n.id, label: `Válvula de Aire Combinada ${size} Sigma Flow`, sku: `VI-VAC-${tok}`, dn: d, bridas: 1, leKey: 'tapa-ciega', norma: 'AWWA C512', qty: 1 }
+      }
     }
   })
   const conex: SIMEXConex[] = nodes
@@ -220,7 +227,7 @@ const NOMBRE: Record<string, (n: VizNode) => string> = {
   carrete: n => `${n.sub === 'corto' ? 'Carrete corto' : n.sub === 'largo' ? 'Carrete largo' : 'Carrete desm.'} ${n.dn}`,
   tapa: n => `Tapa ${n.dn}`,
   check: n => `Check ${n.dn}`,
-  vaea: n => `${n.sub === 'vea' ? 'V. Elim.' : n.sub === 'vae' ? 'VAEA' : 'V. Aire'} ${n.dn}`,
+  vaea: n => `${n.sub === 'vea' ? 'V. Elim.' : n.sub === 'vae' ? 'VAEA' : 'V. Aire'} ${n.dn2 ?? n.dn}`,
   medidor: n => `Medidor ${n.dn}`,
   vcontrol: n => `${n.sub === 'sost' ? 'V. Sostenedora' : n.sub === 'alt' ? 'V. Altitud' : 'VRP'} ${n.dn}`,
   filtro: n => `${n.sub === 'canasta' ? 'Filtro canasta' : 'Filtro Y'} ${n.dn}`,
@@ -236,7 +243,7 @@ interface Props {
 export default function CruceroVisual({ dn, nodes, onChange }: Props) {
   const [pending, setPending] = useState<{ nodeId: number | null; port: number | null; dn: string } | null>(null)
   const [sel, setSel] = useState<number | null>(null)
-  const [subPick, setSubPick] = useState<'tee-red' | 'cruz-red' | 'reduc' | 'vcontrol' | null>(null)
+  const [subPick, setSubPick] = useState<'tee-red' | 'cruz-red' | 'reduc' | 'vcontrol' | 'aire-vac' | 'aire-vae' | 'aire-vea' | null>(null)
 
   const { pos, links } = computeLayout(nodes)
   const byId = new Map(nodes.map(n => [n.id, n]))
@@ -407,15 +414,28 @@ export default function CruceroVisual({ dn, nodes, onChange }: Props) {
             <div className="flex flex-wrap items-center gap-1.5">
               <span className="text-[10px] text-gray-400 w-20 shrink-0">Medición/aire:</span>
               <button onClick={() => addNode('medidor')} className="px-3 py-1.5 text-[11px] rounded-lg border border-gray-200 dark:border-gray-600 hover:bg-[#1C3D5A] hover:text-white transition-colors">Ⓜ Medidor de flujo</button>
-              {AIRE_VAC.has(pending.dn) && <button onClick={() => addNode('vaea', 'vac')} className="px-3 py-1.5 text-[11px] rounded-lg border border-blue-200 text-blue-700 dark:text-blue-300 hover:bg-blue-600 hover:text-white transition-colors">◍ V. aire combinada</button>}
-              {AIRE_VAE.has(pending.dn) && <button onClick={() => addNode('vaea', 'vae')} className="px-3 py-1.5 text-[11px] rounded-lg border border-blue-200 text-blue-700 dark:text-blue-300 hover:bg-blue-600 hover:text-white transition-colors">◍ VAEA adm/exp</button>}
-              {AIRE_VEA.has(pending.dn) && <button onClick={() => addNode('vaea', 'vea')} className="px-3 py-1.5 text-[11px] rounded-lg border border-blue-200 text-blue-700 dark:text-blue-300 hover:bg-blue-600 hover:text-white transition-colors">◍ Eliminadora</button>}
+              <button onClick={() => setSubPick(x => x === 'aire-vac' ? null : 'aire-vac')} className={`px-3 py-1.5 text-[11px] rounded-lg border transition-colors ${subPick === 'aire-vac' ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 font-medium text-blue-700 dark:text-blue-300' : 'border-blue-200 text-blue-700 dark:text-blue-300'}`}>◍ V. aire combinada…</button>
+              <button onClick={() => setSubPick(x => x === 'aire-vae' ? null : 'aire-vae')} className={`px-3 py-1.5 text-[11px] rounded-lg border transition-colors ${subPick === 'aire-vae' ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 font-medium text-blue-700 dark:text-blue-300' : 'border-blue-200 text-blue-700 dark:text-blue-300'}`}>◍ VAEA adm/exp…</button>
+              <button onClick={() => setSubPick(x => x === 'aire-vea' ? null : 'aire-vea')} className={`px-3 py-1.5 text-[11px] rounded-lg border transition-colors ${subPick === 'aire-vea' ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 font-medium text-blue-700 dark:text-blue-300' : 'border-blue-200 text-blue-700 dark:text-blue-300'}`}>◍ Eliminadora…</button>
             </div>
             <div className="flex flex-wrap items-center gap-1.5">
               <span className="text-[10px] text-gray-400 w-20 shrink-0">Fin de línea:</span>
               <button onClick={() => addNode('tapa')} className="px-3 py-1.5 text-[11px] rounded-lg border border-gray-200 dark:border-gray-600 hover:bg-[#1C3D5A] hover:text-white transition-colors">◉ Tapa ciega</button>
             </div>
           </div>
+
+          {subPick?.startsWith('aire') && (
+            <div className="bg-blue-50/60 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-900/30 rounded-lg p-3">
+              <p className="text-[10px] text-blue-700 dark:text-blue-300 mb-1.5 font-medium">
+                Tamaño de la válvula de aire — NO es el diámetro de la tubería. Calcúlalo primero en el módulo «Válvulas de aire» y elige aquí el que resultó:
+              </p>
+              <div className="flex flex-wrap gap-1.5">
+                {AIRE_SIZES[subPick.replace('aire-', '')].map(sz => (
+                  <button key={sz} onClick={() => addNode('vaea', subPick.replace('aire-', ''), sz)} className="px-3 py-1.5 text-[11px] rounded-lg border border-blue-200 dark:border-blue-800 hover:bg-blue-600 hover:text-white transition-colors">{sz}</button>
+                ))}
+              </div>
+            </div>
+          )}
 
           {subPick === 'vcontrol' && (
             <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-3">
@@ -428,7 +448,7 @@ export default function CruceroVisual({ dn, nodes, onChange }: Props) {
             </div>
           )}
 
-          {subPick && subPick !== 'vcontrol' && (
+          {subPick && subPick !== 'vcontrol' && !subPick.startsWith('aire') && (
             <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-3">
               <p className="text-[10px] text-gray-500 dark:text-gray-300 mb-1.5">{subPick === 'reduc' ? `Reducir de ${pending.dn} a:` : `Diámetro del ramal:`}</p>
               <div className="flex flex-wrap gap-1.5">
