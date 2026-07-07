@@ -16,6 +16,8 @@ interface DespieceTramo {
   DN: number;
   material: string;
   modo?: "visual" | "lista";
+  cantidad?: number;    // veces que se repite este crucero en el proyecto
+  colapsado?: boolean;  // tarjeta encogida a una línea de resumen
 }
 
 export default function DespiecePage() {
@@ -80,10 +82,11 @@ export default function DespiecePage() {
       const acc: Record<string, { desc: string; sku: string; qty: number }> = {};
       tramos.forEach((t2) => {
         if ((accsPorTramo[t2.id]?.length ?? 0) === 0) return;
+        const veces = Math.max(1, t2.cantidad ?? 1);
         (listaPorTramo[t2.id] ?? []).forEach((p) => {
           const key = p.sku && p.sku !== "—" ? p.sku : p.desc;
           if (!acc[key]) acc[key] = { desc: p.desc, sku: p.sku || "—", qty: 0 };
-          acc[key].qty += p.qty;
+          acc[key].qty += p.qty * veces;
         });
       });
       patchProject({ despiece: Object.values(acc) });
@@ -92,7 +95,8 @@ export default function DespiecePage() {
   }, [listaPorTramo, accsPorTramo, tramos, patchProject]);
 
   const addTramo = () => {
-    setTramos((prev) => [...prev, { id: uuid(), name: `Crucero ${prev.length + 1}`, DN: 150, material: "PVC Inglés", modo: "visual" }]);
+    // Al crear uno nuevo, los cruceros anteriores se colapsan para que la página no se haga interminable
+    setTramos((prev) => [...prev.map((t) => ({ ...t, colapsado: true })), { id: uuid(), name: `Crucero ${prev.length + 1}`, DN: 150, material: "PVC Inglés", modo: "visual", cantidad: 1 }]);
   };
   const updateTramo = (id: string, patch: Partial<DespieceTramo>) => {
     setTramos((prev) => prev.map((t) => (t.id === id ? { ...t, ...patch } : t)));
@@ -119,19 +123,21 @@ export default function DespiecePage() {
 
   const crucerosConPiezas = tramos.filter((t) => (accsPorTramo[t.id]?.length ?? 0) > 0);
 
-  // Lista consolidada: suma de TODOS los cruceros, agrupada por SKU (los «CONF» se agrupan por descripción)
+  // Lista consolidada: suma de TODOS los cruceros ×(veces que se repiten), agrupada por SKU
   const consolidada = (() => {
     const map: Record<string, { desc: string; sku: string; qty: number }> = {};
     crucerosConPiezas.forEach((t) => {
+      const veces = Math.max(1, t.cantidad ?? 1);
       (listaPorTramo[t.id] ?? []).forEach((p) => {
         const key = p.sku && p.sku !== "—" && p.sku !== "← CONF" ? p.sku : p.desc;
         if (!map[key]) map[key] = { desc: p.desc, sku: p.sku || "—", qty: 0 };
-        map[key].qty += p.qty;
+        map[key].qty += p.qty * veces;
       });
     });
     return Object.values(map);
   })();
   const totalPiezas = consolidada.reduce((s, r) => s + r.qty, 0);
+  const totalCruceros = crucerosConPiezas.reduce((s, t) => s + Math.max(1, t.cantidad ?? 1), 0);
 
   const copiarConsolidada = () => {
     const lines = ["SKU\tDescripción\tCantidad"];
@@ -181,38 +187,64 @@ export default function DespiecePage() {
           <div key={t.id} className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
             {/* Cabecera del crucero */}
             <div className="bg-[#1C3D5A]/[0.04] dark:bg-gray-800/60 px-4 py-3 border-b border-gray-100 dark:border-gray-700 flex items-center gap-3 flex-wrap">
+              <button
+                onClick={() => updateTramo(t.id, { colapsado: !t.colapsado })}
+                title={t.colapsado ? "Expandir crucero" : "Colapsar crucero"}
+                className="w-6 h-6 rounded-lg border border-gray-300 dark:border-gray-600 flex items-center justify-center text-[10px] text-gray-500 hover:border-[#1C3D5A] hover:text-[#1C3D5A] transition-colors shrink-0"
+              >{t.colapsado ? "▸" : "▾"}</button>
               <span className="w-6 h-6 rounded-full bg-[#1C3D5A] text-white flex items-center justify-center text-[11px] font-bold shrink-0">{i + 1}</span>
               <input
                 value={t.name}
                 onChange={(e) => updateTramo(t.id, { name: e.target.value })}
-                className="text-sm font-semibold bg-transparent border-b border-transparent hover:border-gray-300 focus:border-[#1C3D5A] dark:text-white focus:outline-none min-w-[140px]"
+                className="text-sm font-semibold bg-transparent border-b border-transparent hover:border-gray-300 focus:border-[#1C3D5A] dark:text-white focus:outline-none min-w-[120px]"
               />
-              <div className="flex items-center gap-2 ml-auto">
-                <div className="flex rounded-lg border border-gray-200 dark:border-gray-600 overflow-hidden">
-                  <button onClick={() => cambiarModo(t, "visual")} className={`px-2.5 py-1.5 text-[11px] transition-colors ${(t.modo ?? "visual") === "visual" ? "bg-[#1C3D5A] text-white font-medium" : "bg-white dark:bg-gray-800 text-gray-500 hover:bg-gray-50"}`}>🧩 Visual</button>
-                  <button onClick={() => cambiarModo(t, "lista")} className={`px-2.5 py-1.5 text-[11px] transition-colors ${(t.modo ?? "visual") === "lista" ? "bg-[#1C3D5A] text-white font-medium" : "bg-white dark:bg-gray-800 text-gray-500 hover:bg-gray-50"}`}>☰ Botones</button>
+              {t.colapsado ? (
+                <div className="flex items-center gap-2 ml-auto flex-wrap">
+                  <span className="text-[11px] text-gray-500 dark:text-gray-400">
+                    {STANDARD_DNS_LABELED.find((d) => d.dn === t.DN)?.label ?? `${t.DN} mm`} · {t.material} · {(accsPorTramo[t.id] ?? []).reduce((s, a) => s + a.qty, 0)} pieza(s)
+                  </span>
+                  <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${(t.cantidad ?? 1) > 1 ? "bg-[#1C3D5A] text-white" : "bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-300"}`}>×{t.cantidad ?? 1}</span>
                 </div>
-                <span className="text-[10px] text-gray-400 uppercase tracking-wider">DN principal</span>
-                <select
-                  value={t.DN}
-                  onChange={(e) => updateTramo(t.id, { DN: parseInt(e.target.value) })}
-                  className="px-2 py-1.5 text-xs border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 dark:text-white"
-                >
-                  {STANDARD_DNS_LABELED.map((d) => <option key={d.dn} value={d.dn}>{d.label}</option>)}
-                </select>
-                <select
-                  value={t.material}
-                  onChange={(e) => updateTramo(t.id, { material: e.target.value })}
-                  className="px-2 py-1.5 text-xs border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 dark:text-white"
-                >
-                  {MATERIALS.map((m) => <option key={m.name} value={m.name}>{m.name}</option>)}
-                </select>
-                <button onClick={() => removeTramo(t.id)} title="Eliminar crucero" className="text-red-400 hover:text-red-600 text-sm px-1">&#10005;</button>
-              </div>
+              ) : (
+                <div className="flex items-center gap-2 ml-auto flex-wrap">
+                  <div className="flex rounded-lg border border-gray-200 dark:border-gray-600 overflow-hidden">
+                    <button onClick={() => cambiarModo(t, "visual")} className={`px-2.5 py-1.5 text-[11px] transition-colors ${(t.modo ?? "visual") === "visual" ? "bg-[#1C3D5A] text-white font-medium" : "bg-white dark:bg-gray-800 text-gray-500 hover:bg-gray-50"}`}>🧩 Visual</button>
+                    <button onClick={() => cambiarModo(t, "lista")} className={`px-2.5 py-1.5 text-[11px] transition-colors ${(t.modo ?? "visual") === "lista" ? "bg-[#1C3D5A] text-white font-medium" : "bg-white dark:bg-gray-800 text-gray-500 hover:bg-gray-50"}`}>☰ Botones</button>
+                  </div>
+                  <select
+                    value={t.DN}
+                    onChange={(e) => updateTramo(t.id, { DN: parseInt(e.target.value) })}
+                    title="Diámetro principal del crucero"
+                    className="px-2 py-1.5 text-xs border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 dark:text-white"
+                  >
+                    {STANDARD_DNS_LABELED.map((d) => <option key={d.dn} value={d.dn}>{d.label}</option>)}
+                  </select>
+                  <select
+                    value={t.material}
+                    onChange={(e) => updateTramo(t.id, { material: e.target.value })}
+                    className="px-2 py-1.5 text-xs border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 dark:text-white"
+                  >
+                    {MATERIALS.map((m) => <option key={m.name} value={m.name}>{m.name}</option>)}
+                  </select>
+                  <div className="flex items-center gap-0.5 border border-gray-300 dark:border-gray-600 rounded-lg px-1.5 py-1 bg-white dark:bg-gray-800" title="¿Cuántas veces se repite este crucero en el proyecto? El consolidado multiplica sus materiales.">
+                    <span className="text-[10px] text-gray-400 mr-1">Se repite</span>
+                    <button onClick={() => updateTramo(t.id, { cantidad: Math.max(1, (t.cantidad ?? 1) - 1) })} className="px-1.5 text-xs font-bold text-gray-400 hover:text-[#1C3D5A]">−</button>
+                    <span className="text-xs font-bold text-[#1C3D5A] dark:text-blue-300 w-7 text-center">×{t.cantidad ?? 1}</span>
+                    <button onClick={() => updateTramo(t.id, { cantidad: (t.cantidad ?? 1) + 1 })} className="px-1.5 text-xs font-bold text-gray-400 hover:text-[#1C3D5A]">+</button>
+                  </div>
+                  <button onClick={() => removeTramo(t.id)} title="Eliminar crucero" className="text-red-400 hover:text-red-600 text-sm px-1">&#10005;</button>
+                </div>
+              )}
             </div>
 
             {/* Cuerpo: armado visual o botones, + tabla de materiales */}
+            {!t.colapsado && (
             <div className="p-4 space-y-4">
+              {(t.cantidad ?? 1) > 1 && (
+                <p className="text-[10px] text-[#1C3D5A]/70 dark:text-blue-300/70 bg-[#1C3D5A]/[0.05] dark:bg-blue-900/20 rounded-lg px-3 py-1.5">
+                  Este crucero se repite <strong>×{t.cantidad}</strong> en el proyecto. La tabla muestra los materiales de UNO; la lista consolidada de abajo ya los multiplica.
+                </p>
+              )}
               {(t.modo ?? "visual") === "visual" ? (
                 <>
                   <CruceroVisual
@@ -260,6 +292,7 @@ export default function DespiecePage() {
                 </>
               )}
             </div>
+            )}
           </div>
         ))}
       </div>
@@ -270,7 +303,7 @@ export default function DespiecePage() {
           <div className="bg-gradient-to-r from-[#1C3D5A] to-[#2A5A7A] px-5 py-3 flex items-center justify-between gap-3">
             <div>
               <h3 className="text-sm font-semibold text-white tracking-wide">Lista de materiales consolidada{projectName ? ` — ${projectName}` : ""}</h3>
-              <p className="text-[10px] text-white/50 mt-0.5">Suma de todos los cruceros · {crucerosConPiezas.length} crucero(s) · {totalPiezas} pieza(s) · acoplamiento incluido</p>
+              <p className="text-[10px] text-white/50 mt-0.5">{crucerosConPiezas.length} crucero(s) distinto(s) · {totalCruceros} en total con repeticiones · {totalPiezas} pieza(s) · acoplamiento incluido</p>
             </div>
             <button onClick={copiarConsolidada} className="shrink-0 text-[11px] bg-white/10 hover:bg-white/20 text-white px-3 py-1.5 rounded-lg transition-colors">Copiar SKUs</button>
           </div>
