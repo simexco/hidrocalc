@@ -24,9 +24,13 @@ export interface VizNode {
   dn2?: string          // tee/cruz reducida, reducción
   flip?: boolean        // voltear el lado del codo / ramal de la tee
   atraque?: boolean     // atraque de concreto en la espalda (codos, tees, tapas)
+  conPor?: 'paso' | 'ramal'  // tee: por cuál puerto se conecta al padre (default: paso)
   parentId: number | null
   parentPort: number | null
 }
+
+// Puerto de la pieza que mira al padre (la tee puede conectarse por su ramal)
+export const portPadre = (n: VizNode) => (n.tipo === 'tee' && n.conPor === 'ramal' ? 2 : 0)
 
 // Válvulas de aire: el tamaño NO es el de la tubería — el ing lo calcula aparte y lo elige libre.
 // El tamaño elegido se guarda en dn2; la válvula se monta sobre la brida del ramal (dn del puerto).
@@ -139,7 +143,10 @@ function computeLayout(nodes: VizNode[]) {
     const s = n.flip ? -1 : 1
     const back = angIn + 180
     switch (n.tipo) {
-      case 'tee': return [back, angIn, angIn + s * 90]
+      case 'tee':
+        // Conectada por el ramal: el paso queda transversal (crossbar) y el ramal mira al padre
+        if (n.conPor === 'ramal') return [angIn - s * 90, angIn + s * 90, back]
+        return [back, angIn, angIn + s * 90]
       case 'cruz': return [back, angIn, angIn + 90, angIn - 90]
       case 'codo': return [back, angIn + s * (ANG_CODO[n.sub ?? '90'] ?? 90)]
       case 'tapa': case 'vaea': case 'desfogue': return [back]
@@ -292,7 +299,7 @@ export default function CruceroVisual({ dn, nodes, onChange }: Props) {
     const p = pos.get(n.id); if (!p) return
     const prts = puertos(n)
     prts.forEach((prt, i) => {
-      if (i === 0 && n.parentId != null) return                      // conecta al padre
+      if (i === portPadre(n) && n.parentId != null) return           // conecta al padre
       if (nodes.some(k => k.parentId === n.id && k.parentPort === i)) return  // tiene hijo
       stubs.push({ nodeId: n.id, port: i, dn: prt.dn, ang: p.dirs[i] ?? 0, x: p.x, y: p.y })
     })
@@ -372,12 +379,13 @@ export default function CruceroVisual({ dn, nodes, onChange }: Props) {
                 const p = pos.get(n.id); if (!p) return null
                 const cx = p.x * CELL, cy = p.y * CELL
                 const seleccionada = sel === n.id
-                const conn = puertos(n).map((_, i) => (i === 0 && n.parentId != null) || nodes.some(k => k.parentId === n.id && k.parentPort === i))
+                const conn = puertos(n).map((_, i) => (i === portPadre(n) && n.parentId != null) || nodes.some(k => k.parentId === n.id && k.parentPort === i))
+                const rotExtra = n.tipo === 'tee' && n.conPor === 'ramal' ? 180 - 90 * (n.flip ? -1 : 1) : 0
                 return (<g key={n.id} className="cursor-pointer" onClick={() => { setSel(x => x === n.id ? null : n.id); setPending(null) }}>
                   {/* zona de clic grande e invisible (las líneas solas son muy delgadas para atinarle) */}
                   <rect x={cx - 34} y={cy - 34} width={68} height={68} fill="transparent" stroke="none" />
                   {seleccionada && <rect x={cx - 32} y={cy - 32} width={64} height={64} rx={10} fill="currentColor" opacity={0.08} strokeDasharray="5 4" strokeWidth={1.5} />}
-                  <g transform={`translate(${cx},${cy}) rotate(${p.ang})`}><Simbolo n={n} conn={conn} /><AtraqueMark n={n} /></g>
+                  <g transform={`translate(${cx},${cy}) rotate(${p.ang + rotExtra})`}><Simbolo n={n} conn={conn} /><AtraqueMark n={n} /></g>
                   <text x={cx} y={cy + 47} textAnchor="middle" fontSize={9} className="fill-gray-500 dark:fill-gray-400" stroke="none">{NOMBRE[n.tipo](n)}</text>
                   {seleccionada && (
                     <g onClick={(e) => { e.stopPropagation(); delNode(n.id) }}>
@@ -400,6 +408,19 @@ export default function CruceroVisual({ dn, nodes, onChange }: Props) {
       {selNode && (
         <div className="flex items-center gap-3 bg-[#1C3D5A]/[0.04] dark:bg-gray-800/50 border border-[#1C3D5A]/15 rounded-lg px-3 py-2 flex-wrap">
           <span className="text-xs text-gray-600 dark:text-gray-300 flex-1"><strong>{NOMBRE[selNode.tipo](selNode)}</strong></span>
+          {selNode.tipo === 'tee' && selNode.parentId != null && (() => {
+            const esRamal = selNode.conPor === 'ramal'
+            const puertoDestino = esRamal ? 0 : 2
+            const ocupado = nodes.some(k => k.parentId === selNode.id && k.parentPort === puertoDestino)
+            return (
+              <button
+                disabled={ocupado}
+                onClick={() => onChange(nodes.map(n => n.id === sel ? { ...n, conPor: esRamal ? 'paso' : 'ramal' } : n))}
+                title={ocupado ? 'Ese puerto ya tiene una pieza conectada — bórrala primero' : 'Elegir si la tee recibe la conexión por el paso (línea recta) o por el ramal (perpendicular)'}
+                className={`text-[11px] rounded-lg px-2.5 py-1 border transition-colors disabled:opacity-40 ${esRamal ? 'bg-[#1C3D5A] text-white border-[#1C3D5A]' : 'text-[#1C3D5A] dark:text-blue-300 border-[#1C3D5A]/25 hover:bg-[#1C3D5A]/10'}`}
+              >{esRamal ? '✓ Por el ramal — volver al paso' : '⤴ Conectar por el ramal'}</button>
+            )
+          })()}
           {['codo', 'tee', 'tapa'].includes(selNode.tipo) && (
             <button
               onClick={() => onChange(nodes.map(n => n.id === sel ? { ...n, atraque: !n.atraque } : n))}
