@@ -5,7 +5,7 @@ const modules = [
   // ── Flujo de proyecto ──
   {
     title: "Asistente de proyecto",
-    desc: "Guía paso a paso: gasto → conducción → despiece → válvulas → reporte. Los datos avanzan solos.",
+    desc: "Guía paso a paso: gasto → conducción → válvulas → cruceros → reporte. Los datos avanzan solos.",
     href: "/asistente",
     icon: (<svg viewBox="0 0 24 24" className={iconCls} fill="none" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" /></svg>),
   },
@@ -49,8 +49,8 @@ const modules = [
     icon: (<svg viewBox="0 0 24 24" className={iconCls} fill="none" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M8 7h12m0 0l-4-4m4 4l-4 4m4 6H4m0 0l4 4m-4-4l4-4" /></svg>),
   },
   {
-    title: "Cálculo de lista de materiales (despiece)",
-    desc: "Lista de materiales y accesorios con SKU Sigma Flow. Exporta a Excel y PDF.",
+    title: "Generador de cruceros",
+    desc: "Arma tus cruceros pieza por pieza con símbolos de plano; la lista de materiales (despiece) con SKU Sigma Flow se genera sola.",
     href: "/despiece",
     icon: (<svg viewBox="0 0 24 24" className={iconCls} fill="none" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" /></svg>),
   },
