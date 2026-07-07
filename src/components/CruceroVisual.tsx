@@ -18,7 +18,7 @@ const { findConn, VALV, VALV_LABEL, VALV_NORMA, TAPA, CDM, DN_ORDER } = SIMEX_CA
 // ─── Tipos ──────────────────────────────────────────────────────
 export interface VizNode {
   id: number
-  tipo: 'valv' | 'codo' | 'tee' | 'cruz' | 'reduccion' | 'carrete' | 'tapa' | 'check' | 'vaea' | 'medidor' | 'vcontrol' | 'filtro' | 'desfogue'
+  tipo: 'valv' | 'codo' | 'tee' | 'cruz' | 'reduccion' | 'carrete' | 'tapa' | 'check' | 'vaea' | 'medidor' | 'vcontrol' | 'filtro' | 'desfogue' | 'bomba'
   sub?: string          // valv: vcg-r|vcg-b|vmb-c · codo: 11|22|45|90 · vaea: vac|vae|vea · carrete: corto|largo|(desmontaje) · vcontrol: vrp|sost|alt
   dn: string
   dn2?: string          // tee/cruz reducida, reducción
@@ -91,6 +91,7 @@ export function vizToAccsConex(nodes: VizNode[]): { accs: SIMEXAcc[]; conex: SIM
         ? { id: n.id, label: `Filtro tipo Canasta ${d} Sigma`, sku: `DI-FTC-${num(d)}`, dn: d, bridas: 2, leKey: 'cople', norma: '—', qty: 1 }
         : { id: n.id, label: `Filtro tipo Y ${d} Sigma`, sku: `DI-FYD-${num(d)}`, dn: d, bridas: 2, leKey: 'cople', norma: '—', qty: 1 }
       case 'desfogue': return { id: n.id, label: `Desfogue (descarga) ${d}`, sku: '—', dn: d, bridas: 1, leKey: 'tapa-ciega', norma: '—', qty: 1 }
+      case 'bomba': return { id: n.id, label: `Equipo de bombeo (bomba) ${d} — especificar modelo`, sku: '← CONF', dn: d, bridas: 2, leKey: 'cople', norma: '—', qty: 1 }
       case 'check': {
         const bronce = DN_ORDER.indexOf(d) >= DN_ORDER.indexOf('18"')
         return { id: n.id, label: bronce ? `Check Compuerta Bronce ${d} Sigma Flow` : `Check Resilente C508 ${d} Sigma Flow`, sku: bronce ? `VI-CHK-${num(d)}` : `VI-CHK-R${num(d)}`, dn: d, bridas: 2, leKey: 'check', norma: 'AWWA C508', qty: 1 }
@@ -237,7 +238,11 @@ function Simbolo({ n, conn }: { n: VizNode; conn: boolean[] }) {
     case 'tapa':
       return (<g><line x1={-38} y1={0} x2={-4} y2={0} /><rect x={-4} y={-13} width={6} height={26} fill="currentColor" stroke="none" />{t(0) && <TickAt r={16} ang={180} />}</g>)
     case 'check':
-      return (<g><line x1={-38} y1={0} x2={-18} y2={0} /><line x1={18} y1={0} x2={38} y2={0} /><path d="M -18 -11 L -18 11 L 0 0 Z" fill="none" /><path d="M 18 -11 L 18 11 L 0 0 Z" fill="none" /><line x1={-8} y1={-16} x2={8} y2={-16} /><path d="M 8 -16 L 3 -19.5 M 8 -16 L 3 -12.5" fill="none" />{t(0) && <TickAt r={27} ang={180} />}{t(1) && <TickAt r={27} />}</g>)
+      // La flecha indica el sentido del flujo permitido — se voltea con "Voltear lado"
+      return (<g><line x1={-38} y1={0} x2={-18} y2={0} /><line x1={18} y1={0} x2={38} y2={0} /><path d="M -18 -11 L -18 11 L 0 0 Z" fill="none" /><path d="M 18 -11 L 18 11 L 0 0 Z" fill="none" /><line x1={-8 * s} y1={-16} x2={8 * s} y2={-16} /><path d={`M ${8 * s} -16 L ${3 * s} -19.5 M ${8 * s} -16 L ${3 * s} -12.5`} fill="none" />{t(0) && <TickAt r={27} ang={180} />}{t(1) && <TickAt r={27} />}</g>)
+    case 'bomba':
+      // Bomba: círculo con triángulo en el sentido del flujo — se voltea con "Voltear lado"
+      return (<g><line x1={-38} y1={0} x2={-13} y2={0} /><circle cx={0} cy={0} r={13} fill="none" /><path d={`M ${-5 * s} -7 L ${8 * s} 0 L ${-5 * s} 7 Z`} fill="currentColor" stroke="none" /><line x1={13} y1={0} x2={38} y2={0} />{t(0) && <TickAt r={25} ang={180} />}{t(1) && <TickAt r={25} />}</g>)
     case 'vaea':
       return (<g><line x1={-38} y1={0} x2={-14} y2={0} /><circle cx={-2} cy={0} r={11} fill="none" /><line x1={4} y1={-14} x2={12} y2={-19} /><line x1={7} y1={-9} x2={16} y2={-12} />{t(0) && <TickAt r={24} ang={180} />}</g>)
     case 'desfogue':
@@ -285,6 +290,7 @@ const NOMBRE: Record<string, (n: VizNode) => string> = {
   vcontrol: n => `${n.sub === 'sost' ? 'V. Sostenedora' : n.sub === 'alt' ? 'V. Altitud' : 'VRP'} ${n.dn}`,
   filtro: n => `${n.sub === 'canasta' ? 'Filtro canasta' : 'Filtro Y'} ${n.dn}`,
   desfogue: () => `Desfogue`,
+  bomba: n => `Bomba ${n.dn}`,
 }
 
 // ─── Componente ─────────────────────────────────────────────────
@@ -343,7 +349,7 @@ export default function CruceroVisual({ dn, nodes, onChange }: Props) {
 
   const dnsMenores = (d: string) => DN_ORDER.filter(x => DN_ORDER.indexOf(x) < DN_ORDER.indexOf(d))
   const selNode = sel != null ? byId.get(sel) : undefined
-  const volteable = selNode && (selNode.tipo === 'codo' || selNode.tipo === 'tee')
+  const volteable = selNode && ['codo', 'tee', 'check', 'bomba'].includes(selNode.tipo)
 
   return (
     <div className="space-y-3">
@@ -448,7 +454,11 @@ export default function CruceroVisual({ dn, nodes, onChange }: Props) {
             >{selNode.atraque ? '✓ Con atraque — quitar' : '⊞ Agregar atraque'}</button>
           )}
           {volteable && (
-            <button onClick={() => onChange(nodes.map(n => n.id === sel ? { ...n, flip: !n.flip } : n))} title="Voltea hacia qué lado quiebra el codo o hacia dónde sale el ramal de la tee" className="text-xs font-semibold rounded-lg px-3.5 py-2 shadow-sm bg-[#1C3D5A] text-white hover:bg-[#0F2438] transition-colors">⇅ Voltear lado</button>
+            <button
+              onClick={() => onChange(nodes.map(n => n.id === sel ? { ...n, flip: !n.flip } : n))}
+              title={['check', 'bomba'].includes(selNode.tipo) ? 'Invierte el sentido del flujo (la flecha)' : 'Voltea hacia qué lado quiebra el codo o hacia dónde sale el ramal de la tee'}
+              className="text-xs font-semibold rounded-lg px-3.5 py-2 shadow-sm bg-[#1C3D5A] text-white hover:bg-[#0F2438] transition-colors"
+            >{['check', 'bomba'].includes(selNode.tipo) ? '⇄ Invertir sentido' : '⇅ Voltear lado'}</button>
           )}
           <button onClick={() => delNode(sel!)} className="text-xs font-semibold rounded-lg px-3.5 py-2 border-2 border-red-300 text-red-500 hover:bg-red-500 hover:text-white hover:border-red-500 transition-colors">✕ Eliminar</button>
           <button onClick={() => setSel(null)} title="Cerrar" className="text-sm text-gray-400 hover:text-gray-600 px-1.5">✕</button>
@@ -473,8 +483,6 @@ export default function CruceroVisual({ dn, nodes, onChange }: Props) {
               ))}
               <button onClick={() => addNode('check')} className="px-3 py-1.5 text-[11px] rounded-lg border border-gray-200 dark:border-gray-600 hover:bg-[#1C3D5A] hover:text-white transition-colors">⧓→ Check</button>
               <button onClick={() => setSubPick(x => x === 'vcontrol' ? null : 'vcontrol')} className={`px-3 py-1.5 text-[11px] rounded-lg border transition-colors ${subPick === 'vcontrol' ? 'border-[#1C3D5A] bg-[#1C3D5A]/5 font-medium' : 'border-gray-200 dark:border-gray-600'}`}>⚙ De control…</button>
-              <button onClick={() => addNode('filtro')} className="px-3 py-1.5 text-[11px] rounded-lg border border-gray-200 dark:border-gray-600 hover:bg-[#1C3D5A] hover:text-white transition-colors">⋔ Filtro Y</button>
-              <button onClick={() => addNode('filtro', 'canasta')} className="px-3 py-1.5 text-[11px] rounded-lg border border-gray-200 dark:border-gray-600 hover:bg-[#1C3D5A] hover:text-white transition-colors">⊔ Filtro canasta</button>
             </div>
             <div className="flex flex-wrap items-center gap-1.5">
               <span className="text-[10px] text-gray-400 w-20 shrink-0">Codos:</span>
@@ -497,8 +505,14 @@ export default function CruceroVisual({ dn, nodes, onChange }: Props) {
               <button onClick={() => addNode('carrete')} className="px-3 py-1.5 text-[11px] rounded-lg border border-gray-200 dark:border-gray-600 hover:bg-[#1C3D5A] hover:text-white transition-colors">⚙ De desmontaje</button>
             </div>
             <div className="flex flex-wrap items-center gap-1.5">
-              <span className="text-[10px] text-gray-400 w-20 shrink-0">Medición/aire:</span>
+              <span className="text-[10px] text-gray-400 w-20 shrink-0">Equipo:</span>
               <button onClick={() => addNode('medidor')} className="px-3 py-1.5 text-[11px] rounded-lg border border-gray-200 dark:border-gray-600 hover:bg-[#1C3D5A] hover:text-white transition-colors">Ⓜ Medidor de flujo</button>
+              <button onClick={() => addNode('bomba')} className="px-3 py-1.5 text-[11px] rounded-lg border border-gray-200 dark:border-gray-600 hover:bg-[#1C3D5A] hover:text-white transition-colors">◉▷ Bomba</button>
+              <button onClick={() => addNode('filtro')} className="px-3 py-1.5 text-[11px] rounded-lg border border-gray-200 dark:border-gray-600 hover:bg-[#1C3D5A] hover:text-white transition-colors">⋔ Filtro Y</button>
+              <button onClick={() => addNode('filtro', 'canasta')} className="px-3 py-1.5 text-[11px] rounded-lg border border-gray-200 dark:border-gray-600 hover:bg-[#1C3D5A] hover:text-white transition-colors">⊔ Filtro canasta</button>
+            </div>
+            <div className="flex flex-wrap items-center gap-1.5">
+              <span className="text-[10px] text-gray-400 w-20 shrink-0">V. de aire:</span>
               <button onClick={() => setSubPick(x => x === 'aire-vac' ? null : 'aire-vac')} className={`px-3 py-1.5 text-[11px] rounded-lg border transition-colors ${subPick === 'aire-vac' ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 font-medium text-blue-700 dark:text-blue-300' : 'border-blue-200 text-blue-700 dark:text-blue-300'}`}>◍ V. aire combinada…</button>
               <button onClick={() => setSubPick(x => x === 'aire-vae' ? null : 'aire-vae')} className={`px-3 py-1.5 text-[11px] rounded-lg border transition-colors ${subPick === 'aire-vae' ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 font-medium text-blue-700 dark:text-blue-300' : 'border-blue-200 text-blue-700 dark:text-blue-300'}`}>◍ VAEA adm/exp…</button>
               <button onClick={() => setSubPick(x => x === 'aire-vea' ? null : 'aire-vea')} className={`px-3 py-1.5 text-[11px] rounded-lg border transition-colors ${subPick === 'aire-vea' ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 font-medium text-blue-700 dark:text-blue-300' : 'border-blue-200 text-blue-700 dark:text-blue-300'}`}>◍ Eliminadora…</button>
