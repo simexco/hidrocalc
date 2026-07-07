@@ -186,26 +186,30 @@ export default function DespiecePage() {
         {tramos.map((t, i) => (
           <div key={t.id} className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
             {/* Cabecera del crucero */}
-            <div className="bg-[#1C3D5A]/[0.04] dark:bg-gray-800/60 px-4 py-3 border-b border-gray-100 dark:border-gray-700 flex items-center gap-3 flex-wrap">
-              <button
-                onClick={() => updateTramo(t.id, { colapsado: !t.colapsado })}
-                title={t.colapsado ? "Expandir crucero" : "Colapsar crucero"}
-                className="w-6 h-6 rounded-lg border border-gray-300 dark:border-gray-600 flex items-center justify-center text-[10px] text-gray-500 hover:border-[#1C3D5A] hover:text-[#1C3D5A] transition-colors shrink-0"
-              >{t.colapsado ? "▸" : "▾"}</button>
+            <div
+              className={`bg-[#1C3D5A]/[0.04] dark:bg-gray-800/60 px-4 py-3 border-b border-gray-100 dark:border-gray-700 flex items-center gap-3 flex-wrap ${t.colapsado ? "cursor-pointer hover:bg-[#1C3D5A]/[0.09] transition-colors" : ""}`}
+              onClick={t.colapsado ? () => updateTramo(t.id, { colapsado: false }) : undefined}
+              title={t.colapsado ? "Clic para abrir y editar este crucero" : undefined}
+            >
               <span className="w-6 h-6 rounded-full bg-[#1C3D5A] text-white flex items-center justify-center text-[11px] font-bold shrink-0">{i + 1}</span>
+              {t.colapsado ? (
+                <>
+                  <span className="text-sm font-semibold text-gray-700 dark:text-white">{t.name}</span>
+                  <div className="flex items-center gap-2 ml-auto flex-wrap">
+                    <span className="text-[11px] text-gray-500 dark:text-gray-400">
+                      {STANDARD_DNS_LABELED.find((d) => d.dn === t.DN)?.label ?? `${t.DN} mm`} · {t.material} · {(accsPorTramo[t.id] ?? []).reduce((s, a) => s + a.qty, 0)} pieza(s)
+                    </span>
+                    <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${(t.cantidad ?? 1) > 1 ? "bg-[#1C3D5A] text-white" : "bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-300"}`}>×{t.cantidad ?? 1}</span>
+                    <span className="text-[11px] font-medium text-[#1C3D5A] dark:text-blue-300 border border-[#1C3D5A]/30 dark:border-blue-300/30 rounded-lg px-2.5 py-1 bg-white dark:bg-gray-800">▾ Abrir para editar</span>
+                  </div>
+                </>
+              ) : (
+                <>
               <input
                 value={t.name}
                 onChange={(e) => updateTramo(t.id, { name: e.target.value })}
                 className="text-sm font-semibold bg-transparent border-b border-transparent hover:border-gray-300 focus:border-[#1C3D5A] dark:text-white focus:outline-none min-w-[120px]"
               />
-              {t.colapsado ? (
-                <div className="flex items-center gap-2 ml-auto flex-wrap">
-                  <span className="text-[11px] text-gray-500 dark:text-gray-400">
-                    {STANDARD_DNS_LABELED.find((d) => d.dn === t.DN)?.label ?? `${t.DN} mm`} · {t.material} · {(accsPorTramo[t.id] ?? []).reduce((s, a) => s + a.qty, 0)} pieza(s)
-                  </span>
-                  <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${(t.cantidad ?? 1) > 1 ? "bg-[#1C3D5A] text-white" : "bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-300"}`}>×{t.cantidad ?? 1}</span>
-                </div>
-              ) : (
                 <div className="flex items-center gap-2 ml-auto flex-wrap">
                   <div className="flex rounded-lg border border-gray-200 dark:border-gray-600 overflow-hidden">
                     <button onClick={() => cambiarModo(t, "visual")} className={`px-2.5 py-1.5 text-[11px] transition-colors ${(t.modo ?? "visual") === "visual" ? "bg-[#1C3D5A] text-white font-medium" : "bg-white dark:bg-gray-800 text-gray-500 hover:bg-gray-50"}`}>🧩 Visual</button>
@@ -232,8 +236,10 @@ export default function DespiecePage() {
                     <span className="text-xs font-bold text-[#1C3D5A] dark:text-blue-300 w-7 text-center">×{t.cantidad ?? 1}</span>
                     <button onClick={() => updateTramo(t.id, { cantidad: (t.cantidad ?? 1) + 1 })} className="px-1.5 text-xs font-bold text-gray-400 hover:text-[#1C3D5A]">+</button>
                   </div>
+                  <button onClick={() => updateTramo(t.id, { colapsado: true })} title="Terminar y encoger este crucero a una línea (lo puedes reabrir cuando quieras)" className="text-[11px] bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg px-3 py-1.5 font-medium transition-colors shadow-sm">✓ Listo</button>
                   <button onClick={() => removeTramo(t.id)} title="Eliminar crucero" className="text-red-400 hover:text-red-600 text-sm px-1">&#10005;</button>
                 </div>
+                </>
               )}
             </div>
 
