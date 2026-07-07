@@ -424,8 +424,9 @@ export default function CruceroVisual({ dn, nodes, onChange }: Props) {
 
       {/* Pieza seleccionada */}
       {selNode && (
-        <div className="flex items-center gap-3 bg-[#1C3D5A]/[0.04] dark:bg-gray-800/50 border border-[#1C3D5A]/15 rounded-lg px-3 py-2 flex-wrap">
-          <span className="text-xs text-gray-600 dark:text-gray-300 flex-1"><strong>{NOMBRE[selNode.tipo](selNode)}</strong></span>
+        <div className="flex items-center gap-2 bg-[#1C3D5A]/[0.05] dark:bg-gray-800/60 border-2 border-[#1C3D5A]/30 rounded-xl px-3 py-2.5 flex-wrap shadow-sm">
+          <span className="text-xs text-gray-600 dark:text-gray-300 mr-1"><span className="text-[10px] text-gray-400 block">Pieza seleccionada</span><strong className="text-[#1C3D5A] dark:text-blue-300">{NOMBRE[selNode.tipo](selNode)}</strong></span>
+          <span className="flex-1" />
           {selNode.tipo === 'tee' && selNode.parentId != null && (() => {
             const esRamal = selNode.conPor === 'ramal'
             const puertoDestino = esRamal ? 0 : 2
@@ -435,7 +436,7 @@ export default function CruceroVisual({ dn, nodes, onChange }: Props) {
                 disabled={ocupado}
                 onClick={() => onChange(nodes.map(n => n.id === sel ? { ...n, conPor: esRamal ? 'paso' : 'ramal' } : n))}
                 title={ocupado ? 'Ese puerto ya tiene una pieza conectada — bórrala primero' : 'Elegir si la tee recibe la conexión por el paso (línea recta) o por el ramal (perpendicular)'}
-                className={`text-[11px] rounded-lg px-2.5 py-1 border transition-colors disabled:opacity-40 ${esRamal ? 'bg-[#1C3D5A] text-white border-[#1C3D5A]' : 'text-[#1C3D5A] dark:text-blue-300 border-[#1C3D5A]/25 hover:bg-[#1C3D5A]/10'}`}
+                className={`text-xs font-semibold rounded-lg px-3.5 py-2 shadow-sm transition-colors disabled:opacity-40 ${esRamal ? 'bg-violet-600 text-white hover:bg-violet-700' : 'bg-violet-100 text-violet-700 hover:bg-violet-200 dark:bg-violet-900/40 dark:text-violet-300'}`}
               >{esRamal ? '✓ Por el ramal — volver al paso' : '⤴ Conectar por el ramal'}</button>
             )
           })()}
@@ -443,14 +444,14 @@ export default function CruceroVisual({ dn, nodes, onChange }: Props) {
             <button
               onClick={() => onChange(nodes.map(n => n.id === sel ? { ...n, atraque: !n.atraque } : n))}
               title="Atraque de concreto en la espalda de la pieza (cambio de dirección). Dimensiones según el anexo del reporte."
-              className={`text-[11px] rounded-lg px-2.5 py-1 border transition-colors ${selNode.atraque ? 'bg-[#1C3D5A] text-white border-[#1C3D5A]' : 'text-[#1C3D5A] dark:text-blue-300 border-[#1C3D5A]/25 hover:bg-[#1C3D5A]/10'}`}
+              className={`text-xs font-semibold rounded-lg px-3.5 py-2 shadow-sm transition-colors ${selNode.atraque ? 'bg-emerald-600 text-white hover:bg-emerald-700' : 'bg-amber-500 text-white hover:bg-amber-600'}`}
             >{selNode.atraque ? '✓ Con atraque — quitar' : '⊞ Agregar atraque'}</button>
           )}
           {volteable && (
-            <button onClick={() => onChange(nodes.map(n => n.id === sel ? { ...n, flip: !n.flip } : n))} className="text-[11px] text-[#1C3D5A] dark:text-blue-300 hover:bg-[#1C3D5A]/10 border border-[#1C3D5A]/25 rounded-lg px-2.5 py-1">⇅ Voltear lado</button>
+            <button onClick={() => onChange(nodes.map(n => n.id === sel ? { ...n, flip: !n.flip } : n))} title="Voltea hacia qué lado quiebra el codo o hacia dónde sale el ramal de la tee" className="text-xs font-semibold rounded-lg px-3.5 py-2 shadow-sm bg-[#1C3D5A] text-white hover:bg-[#0F2438] transition-colors">⇅ Voltear lado</button>
           )}
-          <button onClick={() => delNode(sel!)} className="text-[11px] text-red-500 hover:text-red-700 border border-red-200 rounded-lg px-2.5 py-1">Eliminar pieza</button>
-          <button onClick={() => setSel(null)} className="text-[11px] text-gray-400 px-1">✕</button>
+          <button onClick={() => delNode(sel!)} className="text-xs font-semibold rounded-lg px-3.5 py-2 border-2 border-red-300 text-red-500 hover:bg-red-500 hover:text-white hover:border-red-500 transition-colors">✕ Eliminar</button>
+          <button onClick={() => setSel(null)} title="Cerrar" className="text-sm text-gray-400 hover:text-gray-600 px-1.5">✕</button>
         </div>
       )}
 
