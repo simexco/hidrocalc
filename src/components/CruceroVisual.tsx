@@ -18,7 +18,7 @@ const { findConn, VALV, VALV_LABEL, VALV_NORMA, TAPA, CDM, DN_ORDER } = SIMEX_CA
 // ─── Tipos ──────────────────────────────────────────────────────
 export interface VizNode {
   id: number
-  tipo: 'valv' | 'codo' | 'tee' | 'cruz' | 'reduccion' | 'carrete' | 'tapa' | 'check' | 'vaea' | 'medidor' | 'vcontrol' | 'filtro'
+  tipo: 'valv' | 'codo' | 'tee' | 'cruz' | 'reduccion' | 'carrete' | 'tapa' | 'check' | 'vaea' | 'medidor' | 'vcontrol' | 'filtro' | 'desfogue'
   sub?: string          // valv: vcg-r|vcg-b|vmb-c · codo: 11|22|45|90 · vaea: vac|vae|vea · carrete: corto|largo|(desmontaje) · vcontrol: vrp|sost|alt
   dn: string
   dn2?: string          // tee/cruz reducida, reducción
@@ -48,7 +48,7 @@ export function puertos(n: VizNode): { dn: string }[] {
     case 'tee':  return [{ dn: n.dn }, { dn: n.dn }, { dn: n.dn2 ?? n.dn }]
     case 'cruz': return [{ dn: n.dn }, { dn: n.dn }, { dn: n.dn2 ?? n.dn }, { dn: n.dn2 ?? n.dn }]
     case 'reduccion': return [{ dn: n.dn }, { dn: n.dn2 ?? n.dn }]
-    case 'tapa': case 'vaea': return [{ dn: n.dn }]
+    case 'tapa': case 'vaea': case 'desfogue': return [{ dn: n.dn }]
     default: return [{ dn: n.dn }, { dn: n.dn }]  // valv, codo, carrete, check
   }
 }
@@ -83,6 +83,7 @@ export function vizToAccsConex(nodes: VizNode[]): { accs: SIMEXAcc[]; conex: SIM
       case 'filtro': return n.sub === 'canasta'
         ? { id: n.id, label: `Filtro tipo Canasta ${d} Sigma`, sku: `DI-FTC-${num(d)}`, dn: d, bridas: 2, leKey: 'cople', norma: '—', qty: 1 }
         : { id: n.id, label: `Filtro tipo Y ${d} Sigma`, sku: `DI-FYD-${num(d)}`, dn: d, bridas: 2, leKey: 'cople', norma: '—', qty: 1 }
+      case 'desfogue': return { id: n.id, label: `Desfogue (descarga) ${d}`, sku: '—', dn: d, bridas: 1, leKey: 'tapa-ciega', norma: '—', qty: 1 }
       case 'check': {
         const bronce = DN_ORDER.indexOf(d) >= DN_ORDER.indexOf('18"')
         return { id: n.id, label: bronce ? `Check Compuerta Bronce ${d} Sigma Flow` : `Check Resilente C508 ${d} Sigma Flow`, sku: bronce ? `VI-CHK-${num(d)}` : `VI-CHK-R${num(d)}`, dn: d, bridas: 2, leKey: 'check', norma: 'AWWA C508', qty: 1 }
@@ -126,7 +127,7 @@ function computeLayout(nodes: VizNode[]) {
       case 'tee': return [back, angIn, angIn + s * 90]
       case 'cruz': return [back, angIn, angIn + 90, angIn - 90]
       case 'codo': return [back, angIn + s * (ANG_CODO[n.sub ?? '90'] ?? 90)]
-      case 'tapa': case 'vaea': return [back]
+      case 'tapa': case 'vaea': case 'desfogue': return [back]
       default: return [back, angIn]
     }
   }
@@ -215,6 +216,9 @@ function Simbolo({ n, conn }: { n: VizNode; conn: boolean[] }) {
       return (<g><line x1={-38} y1={0} x2={-18} y2={0} /><line x1={18} y1={0} x2={38} y2={0} /><path d="M -18 -11 L -18 11 L 0 0 Z" fill="none" /><path d="M 18 -11 L 18 11 L 0 0 Z" fill="none" /><line x1={-8} y1={-16} x2={8} y2={-16} /><path d="M 8 -16 L 3 -19.5 M 8 -16 L 3 -12.5" fill="none" />{t(0) && <TickAt r={27} ang={180} />}{t(1) && <TickAt r={27} />}</g>)
     case 'vaea':
       return (<g><line x1={-38} y1={0} x2={-14} y2={0} /><circle cx={-2} cy={0} r={11} fill="none" /><line x1={4} y1={-14} x2={12} y2={-19} /><line x1={7} y1={-9} x2={16} y2={-12} />{t(0) && <TickAt r={24} ang={180} />}</g>)
+    case 'desfogue':
+      // Descarga: la línea remata en el bloque sólido (atraque), como en el plano
+      return (<g><line x1={-38} y1={0} x2={4} y2={0} /><path d="M 4 -9 L 20 -14 L 20 14 L 4 9 Z" fill="currentColor" stroke="none" />{t(0) && <TickAt r={18} ang={180} />}</g>)
   }
 }
 
@@ -231,6 +235,7 @@ const NOMBRE: Record<string, (n: VizNode) => string> = {
   medidor: n => `Medidor ${n.dn}`,
   vcontrol: n => `${n.sub === 'sost' ? 'V. Sostenedora' : n.sub === 'alt' ? 'V. Altitud' : 'VRP'} ${n.dn}`,
   filtro: n => `${n.sub === 'canasta' ? 'Filtro canasta' : 'Filtro Y'} ${n.dn}`,
+  desfogue: n => `Desfogue ${n.dn}`,
 }
 
 // ─── Componente ─────────────────────────────────────────────────
@@ -421,6 +426,7 @@ export default function CruceroVisual({ dn, nodes, onChange }: Props) {
             <div className="flex flex-wrap items-center gap-1.5">
               <span className="text-[10px] text-gray-400 w-20 shrink-0">Fin de línea:</span>
               <button onClick={() => addNode('tapa')} className="px-3 py-1.5 text-[11px] rounded-lg border border-gray-200 dark:border-gray-600 hover:bg-[#1C3D5A] hover:text-white transition-colors">◉ Tapa ciega</button>
+              <button onClick={() => addNode('desfogue')} className="px-3 py-1.5 text-[11px] rounded-lg border border-gray-200 dark:border-gray-600 hover:bg-[#1C3D5A] hover:text-white transition-colors">◤ Desfogue</button>
             </div>
           </div>
 
