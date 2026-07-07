@@ -111,6 +111,11 @@ export default function DespiecePage() {
   };
   // Borrar una pieza del armado visual desde la lista (quita también las conectadas después de ella)
   const borrarPiezaVisual = (tramoId: string, accId: number) => {
+    // Ids negativos = atraques (obra): quitar solo el atraque de esa pieza
+    if (accId < 0) {
+      setVizPorTramo((prev) => ({ ...prev, [tramoId]: (prev[tramoId] ?? []).map((n) => n.id === -accId ? { ...n, atraque: false } : n) }));
+      return;
+    }
     const nodes = vizPorTramo[tramoId] ?? [];
     const drop = new Set<number>([accId]);
     let grew = true;

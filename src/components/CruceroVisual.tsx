@@ -23,6 +23,7 @@ export interface VizNode {
   dn: string
   dn2?: string          // tee/cruz reducida, reducción
   flip?: boolean        // voltear el lado del codo / ramal de la tee
+  atraque?: boolean     // atraque de concreto en la espalda (codos, tees, tapas)
   parentId: number | null
   parentPort: number | null
 }
@@ -100,6 +101,10 @@ export function vizToAccsConex(nodes: VizNode[]): { accs: SIMEXAcc[]; conex: SIM
         return { id: n.id, label: `Válvula de Aire Combinada ${size} Sigma Flow`, sku: `VI-VAC-${tok}`, dn: d, bridas: 1, leKey: 'tapa-ciega', norma: 'AWWA C512', qty: 1 }
       }
     }
+  })
+  // Atraques de concreto (obra): un renglón por pieza marcada; dimensiones según el anexo del reporte
+  nodes.filter(n => n.atraque && n.tipo !== 'desfogue').forEach(n => {
+    accs.push({ id: -n.id, label: `Atraque de concreto — ${NOMBRE[n.tipo](n)} (dims. según anexo)`, sku: '—', dn: n.dn, bridas: 0, leKey: 'tapa-ciega', norma: 'CONAGUA', isObra: true, qty: 1 })
   })
   // Descontar la brida del puerto donde se monta cada desfogue (salida de agua: ni adaptador ni unión)
   nodes.filter(n => n.tipo === 'desfogue' && n.parentId != null).forEach(n => {
@@ -234,6 +239,22 @@ function Simbolo({ n, conn }: { n: VizNode; conn: boolean[] }) {
   }
 }
 
+// Atraque: bloque sólido en la espalda de la pieza, del lado donde empuja el agua
+function AtraqueMark({ n }: { n: VizNode }) {
+  if (!n.atraque) return null
+  const s = n.flip ? -1 : 1
+  if (n.tipo === 'codo') {
+    const th = rad(s * (ANG_CODO[n.sub ?? '90'] ?? 90))
+    let dx = 1 - Math.cos(th), dy = -Math.sin(th)
+    const m = Math.hypot(dx, dy) || 1; dx /= m; dy /= m
+    const ang = Math.atan2(dy, dx) * 180 / Math.PI
+    return (<g transform={`translate(${dx * 20},${dy * 20}) rotate(${ang})`}><rect x={-2.5} y={-10} width={5.5} height={20} fill="currentColor" stroke="none" /></g>)
+  }
+  if (n.tipo === 'tee') return <rect x={-9} y={s === 1 ? -21 : 15} width={18} height={6} fill="currentColor" stroke="none" />
+  if (n.tipo === 'tapa') return <rect x={7} y={-11} width={6} height={22} fill="currentColor" stroke="none" />
+  return null
+}
+
 const NOMBRE: Record<string, (n: VizNode) => string> = {
   valv: n => (n.sub === 'vcg-r' ? 'V. Compuerta' : n.sub === 'vcg-b' ? 'V. Comp. Bronce' : 'V. Mariposa') + ` ${n.dn}`,
   codo: n => `Codo ${n.sub}° ${n.dn}`,
@@ -356,7 +377,7 @@ export default function CruceroVisual({ dn, nodes, onChange }: Props) {
                   {/* zona de clic grande e invisible (las líneas solas son muy delgadas para atinarle) */}
                   <rect x={cx - 34} y={cy - 34} width={68} height={68} fill="transparent" stroke="none" />
                   {seleccionada && <rect x={cx - 32} y={cy - 32} width={64} height={64} rx={10} fill="currentColor" opacity={0.08} strokeDasharray="5 4" strokeWidth={1.5} />}
-                  <g transform={`translate(${cx},${cy}) rotate(${p.ang})`}><Simbolo n={n} conn={conn} /></g>
+                  <g transform={`translate(${cx},${cy}) rotate(${p.ang})`}><Simbolo n={n} conn={conn} /><AtraqueMark n={n} /></g>
                   <text x={cx} y={cy + 47} textAnchor="middle" fontSize={9} className="fill-gray-500 dark:fill-gray-400" stroke="none">{NOMBRE[n.tipo](n)}</text>
                   {seleccionada && (
                     <g onClick={(e) => { e.stopPropagation(); delNode(n.id) }}>
@@ -379,6 +400,13 @@ export default function CruceroVisual({ dn, nodes, onChange }: Props) {
       {selNode && (
         <div className="flex items-center gap-3 bg-[#1C3D5A]/[0.04] dark:bg-gray-800/50 border border-[#1C3D5A]/15 rounded-lg px-3 py-2 flex-wrap">
           <span className="text-xs text-gray-600 dark:text-gray-300 flex-1"><strong>{NOMBRE[selNode.tipo](selNode)}</strong></span>
+          {['codo', 'tee', 'tapa'].includes(selNode.tipo) && (
+            <button
+              onClick={() => onChange(nodes.map(n => n.id === sel ? { ...n, atraque: !n.atraque } : n))}
+              title="Atraque de concreto en la espalda de la pieza (cambio de dirección). Dimensiones según el anexo del reporte."
+              className={`text-[11px] rounded-lg px-2.5 py-1 border transition-colors ${selNode.atraque ? 'bg-[#1C3D5A] text-white border-[#1C3D5A]' : 'text-[#1C3D5A] dark:text-blue-300 border-[#1C3D5A]/25 hover:bg-[#1C3D5A]/10'}`}
+            >{selNode.atraque ? '✓ Con atraque — quitar' : '⊞ Agregar atraque'}</button>
+          )}
           {volteable && (
             <button onClick={() => onChange(nodes.map(n => n.id === sel ? { ...n, flip: !n.flip } : n))} className="text-[11px] text-[#1C3D5A] dark:text-blue-300 hover:bg-[#1C3D5A]/10 border border-[#1C3D5A]/25 rounded-lg px-2.5 py-1">⇅ Voltear lado</button>
           )}
