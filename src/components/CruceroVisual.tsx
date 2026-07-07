@@ -56,7 +56,9 @@ export function puertos(n: VizNode): { dn: string }[] {
 // ─── Derivación: grafo → piezas + uniones (motor existente) ────
 export function vizToAccsConex(nodes: VizNode[]): { accs: SIMEXAcc[]; conex: SIMEXConex[] } {
   const byId = new Map(nodes.map(n => [n.id, n]))
-  const accs: SIMEXAcc[] = nodes.map(n => {
+  // El desfogue NO es producto: es la salida del agua. No genera renglón ni unión;
+  // solo consume la brida donde se monta (esa salida queda libre, sin adaptador).
+  const accs: SIMEXAcc[] = nodes.filter(n => n.tipo !== 'desfogue').map(n => {
     const d = n.dn, d2 = n.dn2
     switch (n.tipo) {
       case 'codo': return { id: n.id, label: `Codo ${d}×${n.sub}° Sigma`, sku: findConn('Codo', d, `${n.sub}°`)?.sk ?? `CI-CFB-${num(d)}${n.sub}`, dn: d, bridas: 2, leKey: `codo-${n.sub}`, norma: 'AWWA C110', qty: 1 }
@@ -99,8 +101,16 @@ export function vizToAccsConex(nodes: VizNode[]): { accs: SIMEXAcc[]; conex: SIM
       }
     }
   })
+  // Descontar la brida del puerto donde se monta cada desfogue (salida de agua: ni adaptador ni unión)
+  nodes.filter(n => n.tipo === 'desfogue' && n.parentId != null).forEach(n => {
+    const p = byId.get(n.parentId!); if (!p) return
+    const acc = accs.find(a => a.id === p.id); if (!acc) return
+    const pdn = puertos(p)[n.parentPort ?? 0]?.dn
+    if (acc.dn2 && pdn === acc.dn2 && (acc.bridas2 ?? 0) > 0) acc.bridas2 = (acc.bridas2 ?? 0) - 1
+    else if (acc.bridas > 0) acc.bridas = acc.bridas - 1
+  })
   const conex: SIMEXConex[] = nodes
-    .filter(n => n.parentId != null && byId.has(n.parentId!))
+    .filter(n => n.parentId != null && byId.has(n.parentId!) && n.tipo !== 'desfogue')
     .map(n => {
       const p = byId.get(n.parentId!)!
       const pdn = puertos(p)[n.parentPort ?? 0]?.dn ?? n.dn
@@ -138,6 +148,8 @@ function computeLayout(nodes: VizNode[]) {
     nodes.filter(k => k.parentId === n.id).forEach(k => {
       const a = dirs[k.parentPort ?? 0] ?? angIn
       const c = Math.cos(rad(a)), s = Math.sin(rad(a))
+      // El desfogue va pegado a la salida de la pieza: sin tubo de unión ni marca de brida
+      if (k.tipo === 'desfogue') { place(k, x + c * 0.62, y + s * 0.62, a); return }
       let nx = x + c, ny = y + s, guard = 0
       const choca = (px: number, py: number) => Array.from(pos.values()).some(q => Math.hypot(q.x - px, q.y - py) < 0.62)
       while (choca(nx, ny) && guard < 8) { nx += c; ny += s; guard++ }
@@ -217,8 +229,8 @@ function Simbolo({ n, conn }: { n: VizNode; conn: boolean[] }) {
     case 'vaea':
       return (<g><line x1={-38} y1={0} x2={-14} y2={0} /><circle cx={-2} cy={0} r={11} fill="none" /><line x1={4} y1={-14} x2={12} y2={-19} /><line x1={7} y1={-9} x2={16} y2={-12} />{t(0) && <TickAt r={24} ang={180} />}</g>)
     case 'desfogue':
-      // Descarga: la línea remata en el trazo zigzag (la "W invertida" del plano)
-      return (<g><line x1={-38} y1={0} x2={6} y2={0} /><path d="M 6 -14 L 17 -7 L 6 0 L 17 7 L 6 14" fill="none" />{t(0) && <TickAt r={16} ang={180} />}</g>)
+      // Salida de agua: el trazo zigzag (la "W invertida") pegado a la salida de la pieza
+      return (<g><line x1={-24} y1={0} x2={-4} y2={0} /><path d="M -4 -14 L 8 -7 L -4 0 L 8 7 L -4 14" fill="none" /></g>)
   }
 }
 
@@ -235,7 +247,7 @@ const NOMBRE: Record<string, (n: VizNode) => string> = {
   medidor: n => `Medidor ${n.dn}`,
   vcontrol: n => `${n.sub === 'sost' ? 'V. Sostenedora' : n.sub === 'alt' ? 'V. Altitud' : 'VRP'} ${n.dn}`,
   filtro: n => `${n.sub === 'canasta' ? 'Filtro canasta' : 'Filtro Y'} ${n.dn}`,
-  desfogue: n => `Desfogue ${n.dn}`,
+  desfogue: () => `Desfogue`,
 }
 
 // ─── Componente ─────────────────────────────────────────────────
