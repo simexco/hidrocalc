@@ -326,7 +326,11 @@ export default function CruceroVisual({ dn, nodes, onChange }: Props) {
   // Bounding box en píxeles (piezas + stubs + etiquetas)
   let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity
   const meter = (px: number, py: number, m: number) => { minX = Math.min(minX, px - m); maxX = Math.max(maxX, px + m); minY = Math.min(minY, py - m); maxY = Math.max(maxY, py + m) }
-  pos.forEach(p => meter(p.x * CELL, p.y * CELL, 56))
+  pos.forEach(p => {
+    meter(p.x * CELL, p.y * CELL, 58)
+    // etiqueta lateral de los tramos verticales: reservar espacio a la derecha
+    if (Math.abs(Math.sin(rad(p.ang))) > 0.7) meter(p.x * CELL + 78, p.y * CELL, 36)
+  })
   stubs.forEach(st => meter(st.x * CELL + Math.cos(rad(st.ang)) * 78, st.y * CELL + Math.sin(rad(st.ang)) * 78, 26))
   if (!isFinite(minX)) { minX = -60; maxX = 60; minY = -60; maxY = 60 }
   const vb = `${minX} ${minY} ${maxX - minX} ${maxY - minY}`
@@ -396,6 +400,9 @@ export default function CruceroVisual({ dn, nodes, onChange }: Props) {
                 const seleccionada = sel === n.id
                 const conn = puertos(n).map((_, i) => (i === portPadre(n) && n.parentId != null) || nodes.some(k => k.parentId === n.id && k.parentPort === i))
                 const rotExtra = n.tipo === 'tee' && n.conPor === 'ramal' ? 180 - 90 * (n.flip ? -1 : 1) : 0
+                // Etiqueta sin empalmes: de lado en tramos verticales; escalonada entre vecinos horizontales
+                const esVertical = Math.abs(Math.sin(rad(p.ang))) > 0.7
+                const escalon = Math.round(p.x * 2 + p.y * 2) % 2 === 0
                 return (<g key={n.id} className="cursor-pointer group" onClick={() => { setSel(x => x === n.id ? null : n.id); setPending(null) }}>
                   {/* zona de clic grande e invisible (las líneas solas son muy delgadas para atinarle) */}
                   <rect x={cx - 34} y={cy - 34} width={68} height={68} fill="transparent" stroke="none" />
@@ -403,7 +410,16 @@ export default function CruceroVisual({ dn, nodes, onChange }: Props) {
                   {!seleccionada && <rect x={cx - 32} y={cy - 32} width={64} height={64} rx={10} fill="currentColor" stroke="none" className="opacity-0 group-hover:opacity-[0.07] transition-opacity" />}
                   {seleccionada && <rect x={cx - 32} y={cy - 32} width={64} height={64} rx={10} fill="currentColor" opacity={0.08} strokeDasharray="5 4" strokeWidth={1.5} />}
                   <g transform={`translate(${cx},${cy}) rotate(${p.ang + rotExtra})`}><Simbolo n={n} conn={conn} /><AtraqueMark n={n} /></g>
-                  <text x={cx} y={cy + 47} textAnchor="middle" fontSize={9} className="fill-gray-500 dark:fill-gray-400" stroke="none">{NOMBRE[n.tipo](n)}</text>
+                  <text
+                    x={esVertical ? cx + 42 : cx}
+                    y={esVertical ? cy + 3 : cy + (escalon ? 46 : 58)}
+                    textAnchor={esVertical ? 'start' : 'middle'}
+                    fontSize={9}
+                    paintOrder="stroke"
+                    strokeWidth={3}
+                    strokeLinejoin="round"
+                    className="fill-gray-500 dark:fill-gray-400 stroke-white dark:stroke-gray-900"
+                  >{NOMBRE[n.tipo](n)}</text>
                   {/* botón ⋯ siempre visible: indica que la pieza tiene opciones */}
                   {!seleccionada && (
                     <g>
