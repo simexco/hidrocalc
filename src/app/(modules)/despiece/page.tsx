@@ -7,13 +7,15 @@ import { ResetButton } from "@/components/ui/ResetButton";
 import { saveFormState, loadFormState } from "@/lib/storage/form-persistence";
 import { STANDARD_DNS_LABELED, MATERIALS } from "@/lib/constants";
 import { useProjectStore } from "@/store/projectStore";
-import ListaMaterialesSIMEX, { type SIMEXAcc, type SIMEXConex } from "@/components/ListaMaterialesSIMEX";
+import ListaMaterialesSIMEX, { type SIMEXAcc, type SIMEXConex, dnStrFromMM } from "@/components/ListaMaterialesSIMEX";
+import CruceroVisual, { vizToAccsConex, type VizNode } from "@/components/CruceroVisual";
 
 interface DespieceTramo {
   id: string;
   name: string;
   DN: number;
   material: string;
+  modo?: "visual" | "lista";
 }
 
 export default function DespiecePage() {
@@ -22,25 +24,31 @@ export default function DespiecePage() {
   const [accsPorTramo, setAccsPorTramo] = useState<Record<string, SIMEXAcc[]>>({});
   // Uniones brida-con-brida entre piezas del crucero, por tramo
   const [conexPorTramo, setConexPorTramo] = useState<Record<string, SIMEXConex[]>>({});
+  // Armado visual (grafo de piezas) por tramo
+  const [vizPorTramo, setVizPorTramo] = useState<Record<string, VizNode[]>>({});
   // Lista completa computada por tramo (piezas + acoplamiento) para el reporte
   const [listaPorTramo, setListaPorTramo] = useState<Record<string, { sku: string; desc: string; qty: number }[]>>({});
 
   // Cargar guardado / flujo de proyecto
   useEffect(() => {
-    const saved = loadFormState<{ projectName?: string; tramos?: DespieceTramo[]; accsPorTramo?: Record<string, SIMEXAcc[]>; conexPorTramo?: Record<string, SIMEXConex[]> }>("despiece");
+    const saved = loadFormState<{ projectName?: string; tramos?: DespieceTramo[]; accsPorTramo?: Record<string, SIMEXAcc[]>; conexPorTramo?: Record<string, SIMEXConex[]>; vizPorTramo?: Record<string, VizNode[]> }>("despiece");
     const tieneTramos = saved && Array.isArray(saved.tramos) && saved.tramos.length > 0;
     if (saved) {
       if (saved.projectName) setProjectName(saved.projectName);
-      if (Array.isArray(saved.tramos)) setTramos(saved.tramos);
+      if (Array.isArray(saved.tramos)) {
+        // Cruceros guardados sin modo: si ya tenían lista armada con botones, respetarla
+        setTramos(saved.tramos.map((t) => t.modo ? t : { ...t, modo: (saved.vizPorTramo?.[t.id]?.length ?? 0) === 0 && (saved.accsPorTramo?.[t.id]?.length ?? 0) > 0 ? "lista" : "visual" }));
+      }
       if (saved.accsPorTramo) setAccsPorTramo(saved.accsPorTramo);
       if (saved.conexPorTramo) setConexPorTramo(saved.conexPorTramo);
+      if (saved.vizPorTramo) setVizPorTramo(saved.vizPorTramo);
     }
     // Si no hay tramos propios, sembrar el primero con el material/DN del proyecto activo
     if (!tieneTramos) {
       const proj = useProjectStore.getState().project;
       if (proj.proyecto && !saved?.projectName) setProjectName(proj.proyecto);
       if (proj.diametroInterior != null || proj.material) {
-        setTramos([{ id: uuid(), name: "Crucero 1", DN: proj.diametroInterior ?? 150, material: proj.material || "PVC Inglés" }]);
+        setTramos([{ id: uuid(), name: "Crucero 1", DN: proj.diametroInterior ?? 150, material: proj.material || "PVC Inglés", modo: "visual" }]);
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -50,8 +58,18 @@ export default function DespiecePage() {
   const persistRef = useRef<ReturnType<typeof setTimeout>>(undefined);
   useEffect(() => {
     clearTimeout(persistRef.current);
-    persistRef.current = setTimeout(() => saveFormState("despiece", { projectName, tramos, accsPorTramo, conexPorTramo }), 800);
-  }, [projectName, tramos, accsPorTramo, conexPorTramo]);
+    persistRef.current = setTimeout(() => saveFormState("despiece", { projectName, tramos, accsPorTramo, conexPorTramo, vizPorTramo }), 800);
+  }, [projectName, tramos, accsPorTramo, conexPorTramo, vizPorTramo]);
+
+  // Armado visual → derivar piezas + uniones (alimentan la tabla, el consolidado y el reporte)
+  useEffect(() => {
+    tramos.forEach((t) => {
+      if ((t.modo ?? "visual") !== "visual") return;
+      const { accs, conex } = vizToAccsConex(vizPorTramo[t.id] ?? []);
+      setAccsPorTramo((prev) => JSON.stringify(prev[t.id] ?? []) === JSON.stringify(accs) ? prev : { ...prev, [t.id]: accs });
+      setConexPorTramo((prev) => JSON.stringify(prev[t.id] ?? []) === JSON.stringify(conex) ? prev : { ...prev, [t.id]: conex });
+    });
+  }, [vizPorTramo, tramos]);
 
   // Flujo de proyecto: escribir el despiece consolidado al proyecto (sale en el reporte)
   const patchProject = useProjectStore((s) => s.patch);
@@ -74,7 +92,7 @@ export default function DespiecePage() {
   }, [listaPorTramo, accsPorTramo, tramos, patchProject]);
 
   const addTramo = () => {
-    setTramos((prev) => [...prev, { id: uuid(), name: `Crucero ${prev.length + 1}`, DN: 150, material: "PVC Inglés" }]);
+    setTramos((prev) => [...prev, { id: uuid(), name: `Crucero ${prev.length + 1}`, DN: 150, material: "PVC Inglés", modo: "visual" }]);
   };
   const updateTramo = (id: string, patch: Partial<DespieceTramo>) => {
     setTramos((prev) => prev.map((t) => (t.id === id ? { ...t, ...patch } : t)));
@@ -83,10 +101,20 @@ export default function DespiecePage() {
     setTramos((prev) => prev.filter((t) => t.id !== id));
     setAccsPorTramo((prev) => { const n = { ...prev }; delete n[id]; return n; });
     setConexPorTramo((prev) => { const n = { ...prev }; delete n[id]; return n; });
+    setVizPorTramo((prev) => { const n = { ...prev }; delete n[id]; return n; });
+  };
+  const cambiarModo = (t: DespieceTramo, modo: "visual" | "lista") => {
+    if ((t.modo ?? "visual") === modo) return;
+    if (modo === "visual" && (vizPorTramo[t.id]?.length ?? 0) === 0 && (accsPorTramo[t.id]?.length ?? 0) > 0) {
+      if (!confirm("Este crucero ya tiene una lista armada con botones. El armado visual empieza desde cero y la reemplazará. ¿Continuar?")) return;
+      setAccsPorTramo((prev) => ({ ...prev, [t.id]: [] }));
+      setConexPorTramo((prev) => ({ ...prev, [t.id]: [] }));
+    }
+    updateTramo(t.id, { modo });
   };
 
   const handleReset = () => {
-    setTramos([]); setAccsPorTramo({}); setConexPorTramo({}); setProjectName("");
+    setTramos([]); setAccsPorTramo({}); setConexPorTramo({}); setVizPorTramo({}); setProjectName("");
   };
 
   const crucerosConPiezas = tramos.filter((t) => (accsPorTramo[t.id]?.length ?? 0) > 0);
@@ -118,7 +146,7 @@ export default function DespiecePage() {
         <div>
           <h1 className="text-lg font-semibold text-gray-800 dark:text-gray-200">Genera tus cruceros</h1>
           <p className="text-xs text-gray-500 dark:text-gray-400 max-w-2xl mt-0.5">
-            Arma cada crucero con sus piezas y sus uniones brida con brida. La lista de materiales —con adaptadores, empaques y tornillería— se genera automáticamente abajo, lista para cotizar.
+            Arma cada crucero visualmente, pieza por pieza, como en el plano: toca ⊕ en cada brida libre para conectar la siguiente pieza. La lista de materiales —con adaptadores, empaques y tornillería— se genera sola abajo, lista para cotizar.
           </p>
         </div>
         <ResetButton moduleKey="despiece" onReset={handleReset} />
@@ -160,6 +188,10 @@ export default function DespiecePage() {
                 className="text-sm font-semibold bg-transparent border-b border-transparent hover:border-gray-300 focus:border-[#1C3D5A] dark:text-white focus:outline-none min-w-[140px]"
               />
               <div className="flex items-center gap-2 ml-auto">
+                <div className="flex rounded-lg border border-gray-200 dark:border-gray-600 overflow-hidden">
+                  <button onClick={() => cambiarModo(t, "visual")} className={`px-2.5 py-1.5 text-[11px] transition-colors ${(t.modo ?? "visual") === "visual" ? "bg-[#1C3D5A] text-white font-medium" : "bg-white dark:bg-gray-800 text-gray-500 hover:bg-gray-50"}`}>🧩 Visual</button>
+                  <button onClick={() => cambiarModo(t, "lista")} className={`px-2.5 py-1.5 text-[11px] transition-colors ${(t.modo ?? "visual") === "lista" ? "bg-[#1C3D5A] text-white font-medium" : "bg-white dark:bg-gray-800 text-gray-500 hover:bg-gray-50"}`}>☰ Botones</button>
+                </div>
                 <span className="text-[10px] text-gray-400 uppercase tracking-wider">DN principal</span>
                 <select
                   value={t.DN}
@@ -179,28 +211,53 @@ export default function DespiecePage() {
               </div>
             </div>
 
-            {/* Cuerpo: agregar piezas + tabla con uniones */}
+            {/* Cuerpo: armado visual o botones, + tabla de materiales */}
             <div className="p-4 space-y-4">
-              <ListaMaterialesSIMEX
-                mode="selector"
-                dnMM={t.DN}
-                materialRaw={t.material}
-                externalAccs={accsPorTramo[t.id] || []}
-                onAccsChange={(accs) => setAccsPorTramo((prev) => ({ ...prev, [t.id]: accs }))}
-                externalConex={conexPorTramo[t.id] || []}
-                onConexChange={(cx) => setConexPorTramo((prev) => ({ ...prev, [t.id]: cx }))}
-              />
-              {(accsPorTramo[t.id]?.length ?? 0) > 0 && (
-                <ListaMaterialesSIMEX
-                  mode="table"
-                  dnMM={t.DN}
-                  materialRaw={t.material}
-                  externalAccs={accsPorTramo[t.id] || []}
-                  onAccsChange={(accs) => setAccsPorTramo((prev) => ({ ...prev, [t.id]: accs }))}
-                  externalConex={conexPorTramo[t.id] || []}
-                  onConexChange={(cx) => setConexPorTramo((prev) => ({ ...prev, [t.id]: cx }))}
-                  onComputed={(rows) => setListaPorTramo((prev) => ({ ...prev, [t.id]: rows }))}
-                />
+              {(t.modo ?? "visual") === "visual" ? (
+                <>
+                  <CruceroVisual
+                    dn={dnStrFromMM(t.DN)}
+                    nodes={vizPorTramo[t.id] || []}
+                    onChange={(nodes) => setVizPorTramo((prev) => ({ ...prev, [t.id]: nodes }))}
+                  />
+                  {(accsPorTramo[t.id]?.length ?? 0) > 0 && (
+                    <ListaMaterialesSIMEX
+                      mode="table"
+                      dnMM={t.DN}
+                      materialRaw={t.material}
+                      externalAccs={accsPorTramo[t.id] || []}
+                      onAccsChange={(accs) => setAccsPorTramo((prev) => ({ ...prev, [t.id]: accs }))}
+                      externalConex={conexPorTramo[t.id] || []}
+                      onConexChange={(cx) => setConexPorTramo((prev) => ({ ...prev, [t.id]: cx }))}
+                      readOnly
+                      onComputed={(rows) => setListaPorTramo((prev) => ({ ...prev, [t.id]: rows }))}
+                    />
+                  )}
+                </>
+              ) : (
+                <>
+                  <ListaMaterialesSIMEX
+                    mode="selector"
+                    dnMM={t.DN}
+                    materialRaw={t.material}
+                    externalAccs={accsPorTramo[t.id] || []}
+                    onAccsChange={(accs) => setAccsPorTramo((prev) => ({ ...prev, [t.id]: accs }))}
+                    externalConex={conexPorTramo[t.id] || []}
+                    onConexChange={(cx) => setConexPorTramo((prev) => ({ ...prev, [t.id]: cx }))}
+                  />
+                  {(accsPorTramo[t.id]?.length ?? 0) > 0 && (
+                    <ListaMaterialesSIMEX
+                      mode="table"
+                      dnMM={t.DN}
+                      materialRaw={t.material}
+                      externalAccs={accsPorTramo[t.id] || []}
+                      onAccsChange={(accs) => setAccsPorTramo((prev) => ({ ...prev, [t.id]: accs }))}
+                      externalConex={conexPorTramo[t.id] || []}
+                      onConexChange={(cx) => setConexPorTramo((prev) => ({ ...prev, [t.id]: cx }))}
+                      onComputed={(rows) => setListaPorTramo((prev) => ({ ...prev, [t.id]: rows }))}
+                    />
+                  )}
+                </>
               )}
             </div>
           </div>

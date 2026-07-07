@@ -488,6 +488,12 @@ function findConn(fam:string, d1:string, d2:string) {
 }
 const DN_ORDER = ['2"','2½"','3"','4"','6"','8"','10"','12"','14"','16"','18"','20"','24"','30"','36"']
 
+// Catálogo compartido con el constructor visual de cruceros (CruceroVisual)
+export const SIMEX_CAT = { findConn, VALV, VALV_LABEL, VALV_NORMA, TAPA, CDM, DN_ORDER, DN_MM }
+export function dnStrFromMM(mm:number):string {
+  return DN_MM[mm] ?? ({50:'2"',63:'2"',75:'3"',100:'4"',150:'6"',200:'8"',250:'10"',300:'12"',350:'14"',400:'16"',450:'18"',500:'20"',600:'24"',750:'30"',900:'36"'} as Record<number,string>)[mm] ?? ''
+}
+
 // ═══ TIPOS ══════════════════════════════════════════════════
 interface Acc {
   id:number; label:string; sku:string; dn:string; dn2?:string
@@ -511,6 +517,7 @@ interface Props {
   onAccsChange?: (accs: Acc[]) => void
   externalConex?: Conex[]
   onConexChange?: (conex: Conex[]) => void
+  readOnly?: boolean  // tabla sin edición (el armado visual controla piezas y uniones)
   onComputed?: (rows: { sku: string; desc: string; qty: number }[]) => void  // lista completa (piezas + kit) para el reporte
 }
 
@@ -520,7 +527,7 @@ interface Props {
 export { type Acc as SIMEXAcc, type Conex as SIMEXConex }
 
 export default function ListaMaterialesSIMEX({
-  dnMM, dnStr, materialRaw, hf, longitud, onHmChange, mode = 'full', externalAccs, onAccsChange, externalConex, onConexChange, onComputed
+  dnMM, dnStr, materialRaw, hf, longitud, onHmChange, mode = 'full', externalAccs, onAccsChange, externalConex, onConexChange, readOnly = false, onComputed
 }: Props) {
 
   // Resolver DN — acepta número en mm O string con comillas
@@ -796,20 +803,20 @@ export default function ListaMaterialesSIMEX({
       {kitData && (<div className="flex items-center gap-3 flex-wrap"><span className="text-xs text-gray-500">¿Cómo conectar a la tubería?</span><div className="flex rounded-lg border border-gray-200 dark:border-gray-600 overflow-hidden"><button onClick={()=>setOpcion('A')} className={`px-4 py-1.5 text-xs transition-colors ${opcion==='A'?'bg-[#1C3D5A] text-white font-medium':'bg-white dark:bg-gray-800 text-gray-600 hover:bg-gray-50'}`}>A — Adaptador Bridado Universal</button><button onClick={()=>!noABU&&setOpcion('B')} disabled={noABU} className={`px-4 py-1.5 text-xs transition-colors ${noABU?'opacity-40 cursor-not-allowed':'cursor-pointer'} ${opcion==='B'?'bg-[#1C3D5A] text-white font-medium':'bg-white dark:bg-gray-800 text-gray-600 hover:bg-gray-50'}`}>B — Extremidad Bridada + Junta Gibault</button></div>{noABU && <span className="text-[10px] text-gray-400">Sin ABU — solo Extremidad + Gibault</span>}</div>)}
       <div className="rounded-xl border border-[#1C3D5A]/20 overflow-hidden simex-print-area">
         {piezasPrinc.length>0 && (<><div className="bg-[#1C3D5A] px-4 py-2 text-[10px] font-semibold text-white uppercase tracking-wider">Piezas principales</div>{piezasPrinc.map(a=>(<div key={a.id} className="flex items-center gap-3 px-4 py-2 border-b border-gray-100 dark:border-gray-700"><span className="font-mono text-xs text-[#1C3D5A] dark:text-blue-300 w-28 shrink-0">{a.sku}</span><span className="flex-1 text-[13px] font-medium text-gray-700 dark:text-gray-300">{a.label}</span>
-          <span className="flex items-center bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden shrink-0">
+          {readOnly ? <span className="text-sm font-semibold text-gray-600 dark:text-gray-300 shrink-0 w-8 text-center">×{a.qty}</span> : <span className="flex items-center bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden shrink-0">
             <button onClick={()=>updateQty(a.id,-1)} className="px-2 py-1 text-xs text-gray-400 hover:text-[#1C3D5A] hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors font-bold">−</button>
             <input type="number" value={a.qty} onChange={e=>setQty(a.id,parseInt(e.target.value)||1)} className="w-8 text-center text-sm font-semibold bg-transparent border-none outline-none text-gray-700 dark:text-gray-200 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" />
             <button onClick={()=>updateQty(a.id,+1)} className="px-2 py-1 text-xs text-gray-400 hover:text-[#1C3D5A] hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors font-bold">+</button>
-          </span>
-          <span className="text-[10px] text-gray-400 w-20 text-right">{a.norma}</span>{a.isWafer && <span className="text-[10px] text-yellow-600 bg-yellow-100 px-1.5 py-0.5 rounded">wafer</span>}<button onClick={()=>del(a.id)} className="text-gray-300 hover:text-red-500 transition-colors text-xs ml-1">✕</button></div>))}</>)}
+          </span>}
+          <span className="text-[10px] text-gray-400 w-20 text-right">{a.norma}</span>{a.isWafer && <span className="text-[10px] text-yellow-600 bg-yellow-100 px-1.5 py-0.5 rounded">wafer</span>}{!readOnly && <button onClick={()=>del(a.id)} className="text-gray-300 hover:text-red-500 transition-colors text-xs ml-1">✕</button>}</div>))}</>)}
         {kitItems.length>0 && (<><div className="bg-gray-100 dark:bg-gray-700 px-4 py-2 text-[10px] font-semibold text-gray-500 uppercase tracking-wider">{multipleDNs?Object.entries(bridasPorDN).map(([d,n])=>`${n} bridas ${d}`).join(' + '):(opcion==='A'?'Adaptadores Bridados Universales (ABU)':'Extremidades Bridadas + Juntas Gibault')}{totalBridas>0?(totalConex>0?` · ${totalLibres} a tubería + ${totalConex} entre piezas`:` · ${totalBridas} conexiones totales`):''}</div>{kitItems.map((k,i)=>(<div key={i} className="flex items-center gap-3 px-4 py-2 border-b border-gray-50 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/30"><span className="font-mono text-xs text-[#1C3D5A]/70 w-28 shrink-0">{k.sku}</span><span className="flex-1 text-xs text-gray-500">{k.desc}</span><span className="text-xs font-medium text-gray-500 w-8 text-center">{k.qty===0?'×?':`×${k.qty}`}</span><span className="text-[10px] text-gray-400 w-20 text-right">{k.norma}</span></div>))}</>)}
         {piezasObra.length>0 && (<><div className="bg-blue-50 dark:bg-blue-900/10 px-4 py-2 text-[10px] font-semibold text-blue-500 uppercase tracking-wider">Accesorios de obra</div>{piezasObra.map(a=>(<div key={a.id} className="flex items-center gap-3 px-4 py-2 border-b border-blue-100 bg-blue-50/50"><span className="font-mono text-xs text-blue-600 w-28 shrink-0">{a.sku}</span><span className="flex-1 text-xs text-blue-700">{a.label}</span>
-          <span className="flex items-center bg-blue-100 rounded-lg overflow-hidden shrink-0">
+          {readOnly ? <span className="text-sm font-semibold text-blue-700 shrink-0 w-8 text-center">×{a.qty}</span> : <span className="flex items-center bg-blue-100 rounded-lg overflow-hidden shrink-0">
             <button onClick={()=>updateQty(a.id,-1)} className="px-2 py-1 text-xs text-blue-400 hover:text-blue-700 hover:bg-blue-200 transition-colors font-bold">−</button>
             <input type="number" value={a.qty} onChange={e=>setQty(a.id,parseInt(e.target.value)||1)} className="w-8 text-center text-sm font-semibold bg-transparent border-none outline-none text-blue-700 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" />
             <button onClick={()=>updateQty(a.id,+1)} className="px-2 py-1 text-xs text-blue-400 hover:text-blue-700 hover:bg-blue-200 transition-colors font-bold">+</button>
-          </span>
-          <span className="text-[10px] text-blue-400 w-20 text-right">{a.norma}</span><button onClick={()=>del(a.id)} className="text-blue-300 hover:text-red-500 transition-colors text-xs ml-1">✕</button></div>))}</>)}
+          </span>}
+          <span className="text-[10px] text-blue-400 w-20 text-right">{a.norma}</span>{!readOnly && <button onClick={()=>del(a.id)} className="text-blue-300 hover:text-red-500 transition-colors text-xs ml-1">✕</button>}</div>))}</>)}
         {detalleHm.length>0 && (<><div className="bg-gray-100 dark:bg-gray-700 px-4 py-2 text-[10px] font-semibold text-gray-500 uppercase tracking-wider">Pérdidas por accesorio — Crane TP-410 / AWWA</div><div className="px-4 py-2"><table className="w-full text-[11px]"><thead><tr className="border-b border-gray-200 text-gray-400"><th className="text-left px-1 py-1 font-medium">Accesorio</th><th className="text-center px-1 py-1 font-medium">Le/D</th><th className="text-center px-1 py-1 font-medium">Le (m)</th><th className="text-center px-1 py-1 font-medium">ΔhF (m)</th></tr></thead><tbody>{detalleHm.map((d,i)=>(<tr key={i} className="border-b border-gray-100"><td className="px-1 py-1 text-gray-600">{d.label}</td><td className="px-1 py-1 text-center text-gray-400 font-mono">{d.leD}</td><td className="px-1 py-1 text-center font-mono">{d.Le.toFixed(2)}</td><td className="px-1 py-1 text-center font-mono text-red-500">{d.dH.toFixed(3)}</td></tr>))}<tr className="border-t-2 border-gray-300 font-semibold"><td className="px-1 py-1.5">TOTAL</td><td></td><td className="px-1 py-1.5 text-center font-mono">{sumaLe.toFixed(2)}</td><td className="px-1 py-1.5 text-center font-mono text-red-500">{hmReal}</td></tr></tbody></table></div></>)}
         {accs.length===0 && (<div className="p-8 text-center text-gray-400 text-sm">Agrega accesorios en el panel izquierdo</div>)}
         {/* Items pending confirmation */}
@@ -828,7 +835,7 @@ export default function ListaMaterialesSIMEX({
         )}
       </div>
       {/* ── Constructor de crucero: unir piezas entre sí ── */}
-      {piezasPrinc.filter(a=>!a.isWafer&&!a.isObra&&(a.bridas>0||(a.bridas2??0)>0)).length >= 2 && (
+      {!readOnly && piezasPrinc.filter(a=>!a.isWafer&&!a.isObra&&(a.bridas>0||(a.bridas2??0)>0)).length >= 2 && (
         <div className="rounded-xl border border-[#1C3D5A]/25 bg-[#1C3D5A]/[0.03] dark:bg-gray-800/40 p-4 space-y-2">
           <div className="flex items-center gap-2">
             <span className="text-sm">🔗</span>
@@ -973,12 +980,12 @@ export default function ListaMaterialesSIMEX({
 
         <div className="rounded-xl border border-[#1C3D5A]/20 overflow-hidden simex-print-area">
           {piezasPrinc.length>0 && (<><div className="bg-[#1C3D5A] px-4 py-2 text-[10px] font-semibold text-white uppercase tracking-wider">Piezas principales</div>{piezasPrinc.map(a=>(<div key={a.id} className="flex items-center gap-3 px-4 py-2 border-b border-gray-100 dark:border-gray-700"><span className="font-mono text-xs text-[#1C3D5A] dark:text-blue-300 w-28 shrink-0">{a.sku}</span><span className="flex-1 text-[13px] font-medium text-gray-700 dark:text-gray-300">{a.label}</span>
-          <span className="flex items-center bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden shrink-0">
+          {readOnly ? <span className="text-sm font-semibold text-gray-600 dark:text-gray-300 shrink-0 w-8 text-center">×{a.qty}</span> : <span className="flex items-center bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden shrink-0">
             <button onClick={()=>updateQty(a.id,-1)} className="px-2 py-1 text-xs text-gray-400 hover:text-[#1C3D5A] hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors font-bold">−</button>
             <input type="number" value={a.qty} onChange={e=>setQty(a.id,parseInt(e.target.value)||1)} className="w-8 text-center text-sm font-semibold bg-transparent border-none outline-none text-gray-700 dark:text-gray-200 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" />
             <button onClick={()=>updateQty(a.id,+1)} className="px-2 py-1 text-xs text-gray-400 hover:text-[#1C3D5A] hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors font-bold">+</button>
-          </span>
-          <span className="text-[10px] text-gray-400 w-20 text-right">{a.norma}</span>{a.isWafer && <span className="text-[10px] text-yellow-600 bg-yellow-100 px-1.5 py-0.5 rounded">wafer</span>}<button onClick={()=>del(a.id)} className="text-gray-300 hover:text-red-500 transition-colors text-xs ml-1">✕</button></div>))}</>)}
+          </span>}
+          <span className="text-[10px] text-gray-400 w-20 text-right">{a.norma}</span>{a.isWafer && <span className="text-[10px] text-yellow-600 bg-yellow-100 px-1.5 py-0.5 rounded">wafer</span>}{!readOnly && <button onClick={()=>del(a.id)} className="text-gray-300 hover:text-red-500 transition-colors text-xs ml-1">✕</button>}</div>))}</>)}
 
           {kitItems.length>0 && (<><div className="bg-gray-100 dark:bg-gray-700 px-4 py-2 text-[10px] font-semibold text-gray-500 uppercase tracking-wider">{multipleDNs?`Unión a tubería (mixto) · ${Object.entries(bridasPorDN).map(([d,n])=>`${n}×${d}`).join(' + ')}`:`Unión a tubería — ${opcion==='A'?'Adaptadores Bridados Universales (ABU)':'Extremidades Bridadas + Juntas Gibault'}${totalBridas>0?` · ${totalBridas} conexiones`:''}`}</div>{kitItems.map((k,i)=>(<div key={i} className="flex items-center gap-3 px-4 py-2 border-b border-gray-50 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/30"><span className="font-mono text-xs text-[#1C3D5A]/70 w-28 shrink-0">{k.sku}</span><span className="flex-1 text-xs text-gray-500">{k.desc}</span><span className="text-xs font-medium text-gray-500 w-8 text-center">{k.qty===0?'×?':`×${k.qty}`}</span><span className="text-[10px] text-gray-400 w-20 text-right">{k.norma}</span></div>))}</>)}
 
