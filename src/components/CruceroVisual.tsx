@@ -76,7 +76,9 @@ export function vizToAccsConex(nodes: VizNode[]): { accs: SIMEXAcc[]; conex: SIM
         const nom = n.sub === 'sost' ? 'Válvula Sostenedora / Alivio de Presión' : n.sub === 'alt' ? 'Válvula de Altitud (control de tanque)' : 'Válvula Reductora de Presión (VRP)'
         return { id: n.id, label: `${nom} ${d} — control hidráulico`, sku: '← CONF', dn: d, bridas: 2, leKey: 'check', norma: '—', qty: 1 }
       }
-      case 'filtro': return { id: n.id, label: `Filtro Colador tipo Y ${d}`, sku: '← CONF', dn: d, bridas: 2, leKey: 'cople', norma: '—', qty: 1 }
+      case 'filtro': return n.sub === 'canasta'
+        ? { id: n.id, label: `Filtro tipo Canasta ${d} Sigma`, sku: `DI-FTC-${num(d)}`, dn: d, bridas: 2, leKey: 'cople', norma: '—', qty: 1 }
+        : { id: n.id, label: `Filtro tipo Y ${d} Sigma`, sku: `DI-FYD-${num(d)}`, dn: d, bridas: 2, leKey: 'cople', norma: '—', qty: 1 }
       case 'check': {
         const bronce = DN_ORDER.indexOf(d) >= DN_ORDER.indexOf('18"')
         return { id: n.id, label: bronce ? `Check Compuerta Bronce ${d} Sigma Flow` : `Check Resilente C508 ${d} Sigma Flow`, sku: bronce ? `VI-CHK-${num(d)}` : `VI-CHK-R${num(d)}`, dn: d, bridas: 2, leKey: 'check', norma: 'AWWA C508', qty: 1 }
@@ -197,7 +199,9 @@ function Simbolo({ n, conn }: { n: VizNode; conn: boolean[] }) {
         {t(0) && <TickAt r={27} ang={180} />}{t(1) && <TickAt r={27} />}
       </g>)
     case 'filtro':
-      return (<g><line x1={-38} y1={0} x2={38} y2={0} /><line x1={-4} y1={0} x2={11} y2={16} /><line x1={6} y1={19} x2={16} y2={12} />{t(0) && <TickAt r={30} ang={180} />}{t(1) && <TickAt r={30} />}</g>)
+      return n.sub === 'canasta'
+        ? (<g><line x1={-38} y1={0} x2={38} y2={0} /><path d="M -9 2 L -9 16 Q 0 22 9 16 L 9 2" fill="none" /><line x1={-6} y1={8} x2={6} y2={8} /><line x1={-6} y1={13} x2={6} y2={13} />{t(0) && <TickAt r={30} ang={180} />}{t(1) && <TickAt r={30} />}</g>)
+        : (<g><line x1={-38} y1={0} x2={38} y2={0} /><line x1={-4} y1={0} x2={11} y2={16} /><line x1={6} y1={19} x2={16} y2={12} />{t(0) && <TickAt r={30} ang={180} />}{t(1) && <TickAt r={30} />}</g>)
     case 'tapa':
       return (<g><line x1={-38} y1={0} x2={-4} y2={0} /><rect x={-4} y={-13} width={6} height={26} fill="currentColor" stroke="none" />{t(0) && <TickAt r={16} ang={180} />}</g>)
     case 'check':
@@ -219,7 +223,7 @@ const NOMBRE: Record<string, (n: VizNode) => string> = {
   vaea: n => `${n.sub === 'vea' ? 'V. Elim.' : n.sub === 'vae' ? 'VAEA' : 'V. Aire'} ${n.dn}`,
   medidor: n => `Medidor ${n.dn}`,
   vcontrol: n => `${n.sub === 'sost' ? 'V. Sostenedora' : n.sub === 'alt' ? 'V. Altitud' : 'VRP'} ${n.dn}`,
-  filtro: n => `Filtro Y ${n.dn}`,
+  filtro: n => `${n.sub === 'canasta' ? 'Filtro canasta' : 'Filtro Y'} ${n.dn}`,
 }
 
 // ─── Componente ─────────────────────────────────────────────────
@@ -378,6 +382,7 @@ export default function CruceroVisual({ dn, nodes, onChange }: Props) {
               <button onClick={() => addNode('check')} className="px-3 py-1.5 text-[11px] rounded-lg border border-gray-200 dark:border-gray-600 hover:bg-[#1C3D5A] hover:text-white transition-colors">⧓→ Check</button>
               <button onClick={() => setSubPick(x => x === 'vcontrol' ? null : 'vcontrol')} className={`px-3 py-1.5 text-[11px] rounded-lg border transition-colors ${subPick === 'vcontrol' ? 'border-[#1C3D5A] bg-[#1C3D5A]/5 font-medium' : 'border-gray-200 dark:border-gray-600'}`}>⚙ De control…</button>
               <button onClick={() => addNode('filtro')} className="px-3 py-1.5 text-[11px] rounded-lg border border-gray-200 dark:border-gray-600 hover:bg-[#1C3D5A] hover:text-white transition-colors">⋔ Filtro Y</button>
+              <button onClick={() => addNode('filtro', 'canasta')} className="px-3 py-1.5 text-[11px] rounded-lg border border-gray-200 dark:border-gray-600 hover:bg-[#1C3D5A] hover:text-white transition-colors">⊔ Filtro canasta</button>
             </div>
             <div className="flex flex-wrap items-center gap-1.5">
               <span className="text-[10px] text-gray-400 w-20 shrink-0">Codos:</span>

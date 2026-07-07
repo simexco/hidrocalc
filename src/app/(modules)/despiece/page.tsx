@@ -7,7 +7,7 @@ import { ResetButton } from "@/components/ui/ResetButton";
 import { saveFormState, loadFormState } from "@/lib/storage/form-persistence";
 import { STANDARD_DNS_LABELED, MATERIALS } from "@/lib/constants";
 import { useProjectStore } from "@/store/projectStore";
-import ListaMaterialesSIMEX, { type SIMEXAcc, type SIMEXConex, dnStrFromMM } from "@/components/ListaMaterialesSIMEX";
+import ListaMaterialesSIMEX, { type SIMEXAcc, type SIMEXConex, dnStrFromMM, SIMEX_CAT } from "@/components/ListaMaterialesSIMEX";
 import CruceroVisual, { vizToAccsConex, type VizNode } from "@/components/CruceroVisual";
 
 interface DespieceTramo {
@@ -22,6 +22,7 @@ interface DespieceTramo {
 
 export default function DespiecePage() {
   const [projectName, setProjectName] = useState("");
+  const [jGrad, setJGrad] = useState("");  // gradiente hidráulico opcional (m/km) para convertir ΣLe a pérdida
   const [tramos, setTramos] = useState<DespieceTramo[]>([]);
   const [accsPorTramo, setAccsPorTramo] = useState<Record<string, SIMEXAcc[]>>({});
   // Uniones brida-con-brida entre piezas del crucero, por tramo
@@ -33,10 +34,11 @@ export default function DespiecePage() {
 
   // Cargar guardado / flujo de proyecto
   useEffect(() => {
-    const saved = loadFormState<{ projectName?: string; tramos?: DespieceTramo[]; accsPorTramo?: Record<string, SIMEXAcc[]>; conexPorTramo?: Record<string, SIMEXConex[]>; vizPorTramo?: Record<string, VizNode[]> }>("despiece");
+    const saved = loadFormState<{ projectName?: string; jGrad?: string; tramos?: DespieceTramo[]; accsPorTramo?: Record<string, SIMEXAcc[]>; conexPorTramo?: Record<string, SIMEXConex[]>; vizPorTramo?: Record<string, VizNode[]> }>("despiece");
     const tieneTramos = saved && Array.isArray(saved.tramos) && saved.tramos.length > 0;
     if (saved) {
       if (saved.projectName) setProjectName(saved.projectName);
+      if (saved.jGrad) setJGrad(saved.jGrad);
       if (Array.isArray(saved.tramos)) {
         // Cruceros guardados sin modo: si ya tenían lista armada con botones, respetarla
         setTramos(saved.tramos.map((t) => t.modo ? t : { ...t, modo: (saved.vizPorTramo?.[t.id]?.length ?? 0) === 0 && (saved.accsPorTramo?.[t.id]?.length ?? 0) > 0 ? "lista" : "visual" }));
@@ -60,8 +62,8 @@ export default function DespiecePage() {
   const persistRef = useRef<ReturnType<typeof setTimeout>>(undefined);
   useEffect(() => {
     clearTimeout(persistRef.current);
-    persistRef.current = setTimeout(() => saveFormState("despiece", { projectName, tramos, accsPorTramo, conexPorTramo, vizPorTramo }), 800);
-  }, [projectName, tramos, accsPorTramo, conexPorTramo, vizPorTramo]);
+    persistRef.current = setTimeout(() => saveFormState("despiece", { projectName, jGrad, tramos, accsPorTramo, conexPorTramo, vizPorTramo }), 800);
+  }, [projectName, jGrad, tramos, accsPorTramo, conexPorTramo, vizPorTramo]);
 
   // Armado visual → derivar piezas + uniones (alimentan la tabla, el consolidado y el reporte)
   useEffect(() => {
@@ -148,6 +150,27 @@ export default function DespiecePage() {
   })();
   const totalPiezas = consolidada.reduce((s, r) => s + r.qty, 0);
   const totalCruceros = crucerosConPiezas.reduce((s, t) => s + Math.max(1, t.cantidad ?? 1), 0);
+
+  // Pérdidas por accesorios consolidadas (Crane TP-410): ΣLe de TODOS los cruceros con repeticiones
+  const perdidas = (() => {
+    const strToMM: Record<string, number> = {};
+    Object.entries(SIMEX_CAT.DN_MM).forEach(([mm, s]) => { strToMM[s] = Number(mm); });
+    const map: Record<string, { desc: string; leD: number; qty: number; Le: number }> = {};
+    crucerosConPiezas.forEach((t) => {
+      const veces = Math.max(1, t.cantidad ?? 1);
+      (accsPorTramo[t.id] ?? []).forEach((a) => {
+        const leD = SIMEX_CAT.LE_D[a.leKey] ?? 0;
+        if (leD <= 0) return;  // tapas y válvulas de aire no agregan pérdida en línea
+        const mm = strToMM[a.dn] ?? t.DN;
+        if (!map[a.label]) map[a.label] = { desc: a.label, leD, qty: 0, Le: 0 };
+        map[a.label].qty += a.qty * veces;
+        map[a.label].Le += leD * (mm / 1000) * a.qty * veces;
+      });
+    });
+    return Object.values(map);
+  })();
+  const sumLe = perdidas.reduce((s, p) => s + p.Le, 0);
+  const jNum = parseFloat(jGrad) || 0;
 
   const copiarConsolidada = () => {
     const lines = ["SKU\tDescripción\tCantidad"];
@@ -271,6 +294,7 @@ export default function DespiecePage() {
                   {(accsPorTramo[t.id]?.length ?? 0) > 0 && (
                     <ListaMaterialesSIMEX
                       mode="table"
+                        hidePerdidas
                       dnMM={t.DN}
                       materialRaw={t.material}
                       externalAccs={accsPorTramo[t.id] || []}
@@ -297,6 +321,7 @@ export default function DespiecePage() {
                   {(accsPorTramo[t.id]?.length ?? 0) > 0 && (
                     <ListaMaterialesSIMEX
                       mode="table"
+                        hidePerdidas
                       dnMM={t.DN}
                       materialRaw={t.material}
                       externalAccs={accsPorTramo[t.id] || []}
@@ -336,6 +361,62 @@ export default function DespiecePage() {
           <p className="px-5 py-3 text-[10px] text-gray-400 border-t border-gray-100 dark:border-gray-700">
             Contacte a su distribuidor Sigma Flow autorizado para cotización — S.H.I. de México · simexco.com.mx
           </p>
+        </div>
+      )}
+
+      {/* ── Pérdidas por accesorios consolidadas (todos los cruceros) ── */}
+      {perdidas.length > 0 && (
+        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+          <div className="px-5 py-3 border-b border-gray-100 dark:border-gray-700">
+            <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300">Pérdidas por accesorios — todos los cruceros</h3>
+            <p className="text-[10px] text-gray-400 mt-0.5">Longitud equivalente (Crane TP-410 / AWWA) sumada de todos los cruceros, con repeticiones incluidas</p>
+          </div>
+          <div className="px-5 py-3">
+            <table className="w-full text-[11px]">
+              <thead>
+                <tr className="border-b border-gray-200 dark:border-gray-600 text-gray-400">
+                  <th className="text-left px-1 py-1 font-medium">Accesorio</th>
+                  <th className="text-center px-1 py-1 font-medium">Cant. total</th>
+                  <th className="text-center px-1 py-1 font-medium">Le/D</th>
+                  <th className="text-center px-1 py-1 font-medium">Le total (m)</th>
+                </tr>
+              </thead>
+              <tbody>
+                {perdidas.map((p, i) => (
+                  <tr key={i} className="border-b border-gray-100 dark:border-gray-700">
+                    <td className="px-1 py-1 text-gray-600 dark:text-gray-300">{p.desc}</td>
+                    <td className="px-1 py-1 text-center font-mono">{p.qty}</td>
+                    <td className="px-1 py-1 text-center text-gray-400 font-mono">{p.leD}</td>
+                    <td className="px-1 py-1 text-center font-mono">{p.Le.toFixed(2)}</td>
+                  </tr>
+                ))}
+                <tr className="border-t-2 border-gray-300 dark:border-gray-500 font-semibold">
+                  <td className="px-1 py-1.5 dark:text-gray-200">TOTAL — longitud equivalente ΣLe</td>
+                  <td></td><td></td>
+                  <td className="px-1 py-1.5 text-center font-mono text-[#1C3D5A] dark:text-blue-300">{sumLe.toFixed(2)} m</td>
+                </tr>
+              </tbody>
+            </table>
+            <div className="flex items-center gap-2 mt-3 flex-wrap">
+              <label className="text-xs text-gray-600 dark:text-gray-300">Gradiente hidráulico J:</label>
+              <input
+                type="number"
+                value={jGrad}
+                onChange={(e) => setJGrad(e.target.value)}
+                placeholder="ej. 4.5"
+                className="w-24 px-2 py-1.5 text-xs border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 dark:text-white"
+              />
+              <span className="text-[11px] text-gray-400">m/km</span>
+              {jNum > 0 && (
+                <span className="text-xs font-semibold text-[#1C3D5A] dark:text-blue-300 bg-[#1C3D5A]/[0.06] dark:bg-blue-900/20 rounded-lg px-3 py-1.5">
+                  Pérdida total por accesorios: hm ≈ {(sumLe * jNum / 1000).toFixed(2)} m
+                </span>
+              )}
+            </div>
+            <p className="text-[10px] text-gray-400 mt-2">
+              hm = J × ΣLe. El gradiente J (m/km) sale del cálculo de la Línea de conducción (pérdida por fricción ÷ longitud). Las tapas ciegas y válvulas de aire no agregan pérdida en la línea.
+            </p>
+          </div>
         </div>
       )}
     </div>
