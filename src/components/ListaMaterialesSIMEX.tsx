@@ -518,6 +518,7 @@ interface Props {
   externalConex?: Conex[]
   onConexChange?: (conex: Conex[]) => void
   readOnly?: boolean  // tabla sin edición (el armado visual controla piezas y uniones)
+  onDelete?: (id: number) => void  // borrar pieza desde la lista aun en readOnly (lo maneja el armado visual)
   onComputed?: (rows: { sku: string; desc: string; qty: number }[]) => void  // lista completa (piezas + kit) para el reporte
 }
 
@@ -527,7 +528,7 @@ interface Props {
 export { type Acc as SIMEXAcc, type Conex as SIMEXConex }
 
 export default function ListaMaterialesSIMEX({
-  dnMM, dnStr, materialRaw, hf, longitud, onHmChange, mode = 'full', externalAccs, onAccsChange, externalConex, onConexChange, readOnly = false, onComputed
+  dnMM, dnStr, materialRaw, hf, longitud, onHmChange, mode = 'full', externalAccs, onAccsChange, externalConex, onConexChange, readOnly = false, onDelete, onComputed
 }: Props) {
 
   // Resolver DN — acepta número en mm O string con comillas
@@ -808,7 +809,7 @@ export default function ListaMaterialesSIMEX({
             <input type="number" value={a.qty} onChange={e=>setQty(a.id,parseInt(e.target.value)||1)} className="w-8 text-center text-sm font-semibold bg-transparent border-none outline-none text-gray-700 dark:text-gray-200 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" />
             <button onClick={()=>updateQty(a.id,+1)} className="px-2 py-1 text-xs text-gray-400 hover:text-[#1C3D5A] hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors font-bold">+</button>
           </span>}
-          <span className="text-[10px] text-gray-400 w-20 text-right">{a.norma}</span>{a.isWafer && <span className="text-[10px] text-yellow-600 bg-yellow-100 px-1.5 py-0.5 rounded">wafer</span>}{!readOnly && <button onClick={()=>del(a.id)} className="text-gray-300 hover:text-red-500 transition-colors text-xs ml-1">✕</button>}</div>))}</>)}
+          <span className="text-[10px] text-gray-400 w-20 text-right">{a.norma}</span>{a.isWafer && <span className="text-[10px] text-yellow-600 bg-yellow-100 px-1.5 py-0.5 rounded">wafer</span>}{(!readOnly || onDelete) && <button onClick={()=> onDelete ? onDelete(a.id) : del(a.id)} title="Borrar esta pieza" className="text-gray-300 hover:text-red-500 transition-colors text-xs ml-1">✕</button>}</div>))}</>)}
         {kitItems.length>0 && (<><div className="bg-gray-100 dark:bg-gray-700 px-4 py-2 text-[10px] font-semibold text-gray-500 uppercase tracking-wider">{multipleDNs?Object.entries(bridasPorDN).map(([d,n])=>`${n} bridas ${d}`).join(' + '):(opcion==='A'?'Adaptadores Bridados Universales (ABU)':'Extremidades Bridadas + Juntas Gibault')}{totalBridas>0?(totalConex>0?` · ${totalLibres} a tubería + ${totalConex} entre piezas`:` · ${totalBridas} conexiones totales`):''}</div>{kitItems.map((k,i)=>(<div key={i} className="flex items-center gap-3 px-4 py-2 border-b border-gray-50 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/30"><span className="font-mono text-xs text-[#1C3D5A]/70 w-28 shrink-0">{k.sku}</span><span className="flex-1 text-xs text-gray-500">{k.desc}</span><span className="text-xs font-medium text-gray-500 w-8 text-center">{k.qty===0?'×?':`×${k.qty}`}</span><span className="text-[10px] text-gray-400 w-20 text-right">{k.norma}</span></div>))}</>)}
         {piezasObra.length>0 && (<><div className="bg-blue-50 dark:bg-blue-900/10 px-4 py-2 text-[10px] font-semibold text-blue-500 uppercase tracking-wider">Accesorios de obra</div>{piezasObra.map(a=>(<div key={a.id} className="flex items-center gap-3 px-4 py-2 border-b border-blue-100 bg-blue-50/50"><span className="font-mono text-xs text-blue-600 w-28 shrink-0">{a.sku}</span><span className="flex-1 text-xs text-blue-700">{a.label}</span>
           {readOnly ? <span className="text-sm font-semibold text-blue-700 shrink-0 w-8 text-center">×{a.qty}</span> : <span className="flex items-center bg-blue-100 rounded-lg overflow-hidden shrink-0">
@@ -985,7 +986,7 @@ export default function ListaMaterialesSIMEX({
             <input type="number" value={a.qty} onChange={e=>setQty(a.id,parseInt(e.target.value)||1)} className="w-8 text-center text-sm font-semibold bg-transparent border-none outline-none text-gray-700 dark:text-gray-200 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" />
             <button onClick={()=>updateQty(a.id,+1)} className="px-2 py-1 text-xs text-gray-400 hover:text-[#1C3D5A] hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors font-bold">+</button>
           </span>}
-          <span className="text-[10px] text-gray-400 w-20 text-right">{a.norma}</span>{a.isWafer && <span className="text-[10px] text-yellow-600 bg-yellow-100 px-1.5 py-0.5 rounded">wafer</span>}{!readOnly && <button onClick={()=>del(a.id)} className="text-gray-300 hover:text-red-500 transition-colors text-xs ml-1">✕</button>}</div>))}</>)}
+          <span className="text-[10px] text-gray-400 w-20 text-right">{a.norma}</span>{a.isWafer && <span className="text-[10px] text-yellow-600 bg-yellow-100 px-1.5 py-0.5 rounded">wafer</span>}{(!readOnly || onDelete) && <button onClick={()=> onDelete ? onDelete(a.id) : del(a.id)} title="Borrar esta pieza" className="text-gray-300 hover:text-red-500 transition-colors text-xs ml-1">✕</button>}</div>))}</>)}
 
           {kitItems.length>0 && (<><div className="bg-gray-100 dark:bg-gray-700 px-4 py-2 text-[10px] font-semibold text-gray-500 uppercase tracking-wider">{multipleDNs?`Unión a tubería (mixto) · ${Object.entries(bridasPorDN).map(([d,n])=>`${n}×${d}`).join(' + ')}`:`Unión a tubería — ${opcion==='A'?'Adaptadores Bridados Universales (ABU)':'Extremidades Bridadas + Juntas Gibault'}${totalBridas>0?` · ${totalBridas} conexiones`:''}`}</div>{kitItems.map((k,i)=>(<div key={i} className="flex items-center gap-3 px-4 py-2 border-b border-gray-50 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/30"><span className="font-mono text-xs text-[#1C3D5A]/70 w-28 shrink-0">{k.sku}</span><span className="flex-1 text-xs text-gray-500">{k.desc}</span><span className="text-xs font-medium text-gray-500 w-8 text-center">{k.qty===0?'×?':`×${k.qty}`}</span><span className="text-[10px] text-gray-400 w-20 text-right">{k.norma}</span></div>))}</>)}
 

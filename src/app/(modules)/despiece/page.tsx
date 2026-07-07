@@ -107,6 +107,16 @@ export default function DespiecePage() {
     setConexPorTramo((prev) => { const n = { ...prev }; delete n[id]; return n; });
     setVizPorTramo((prev) => { const n = { ...prev }; delete n[id]; return n; });
   };
+  // Borrar una pieza del armado visual desde la lista (quita también las conectadas después de ella)
+  const borrarPiezaVisual = (tramoId: string, accId: number) => {
+    const nodes = vizPorTramo[tramoId] ?? [];
+    const drop = new Set<number>([accId]);
+    let grew = true;
+    while (grew) { grew = false; nodes.forEach((n) => { if (n.parentId != null && drop.has(n.parentId) && !drop.has(n.id)) { drop.add(n.id); grew = true; } }); }
+    if (drop.size > 1 && !confirm(`Esta pieza tiene ${drop.size - 1} pieza(s) conectada(s) después de ella; se borrarán también. ¿Continuar?`)) return;
+    setVizPorTramo((prev) => ({ ...prev, [tramoId]: nodes.filter((n) => !drop.has(n.id)) }));
+  };
+
   const cambiarModo = (t: DespieceTramo, modo: "visual" | "lista") => {
     if ((t.modo ?? "visual") === modo) return;
     if (modo === "visual" && (vizPorTramo[t.id]?.length ?? 0) === 0 && (accsPorTramo[t.id]?.length ?? 0) > 0) {
@@ -268,6 +278,7 @@ export default function DespiecePage() {
                       externalConex={conexPorTramo[t.id] || []}
                       onConexChange={(cx) => setConexPorTramo((prev) => ({ ...prev, [t.id]: cx }))}
                       readOnly
+                      onDelete={(accId) => borrarPiezaVisual(t.id, accId)}
                       onComputed={(rows) => setListaPorTramo((prev) => ({ ...prev, [t.id]: rows }))}
                     />
                   )}
