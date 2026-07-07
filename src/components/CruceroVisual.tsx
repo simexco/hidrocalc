@@ -33,6 +33,8 @@ const AIRE_VEA = new Set(['2"'])
 const AIRE_VAE = new Set(['2"', '3"', '4"', '6"'])
 
 const num = (d: string) => d.replace('"', '').replace('½', '.5')
+// Diámetro a 2 dígitos para SKUs de carrete: 2"→02, 6"→06, 10"→10 (CN-CAR-2506 = corto 25 de 6")
+const dn2dig = (d: string) => { const n = num(d); const ent = Math.floor(parseFloat(n)); return String(ent).padStart(2, '0') + (n.includes('.5') ? '.5' : '') }
 const rad = (deg: number) => (deg * Math.PI) / 180
 const ANG_CODO: Record<string, number> = { '11': 11.25, '22': 22.5, '45': 45, '90': 90 }
 
@@ -65,8 +67,8 @@ export function vizToAccsConex(nodes: VizNode[]): { accs: SIMEXAcc[]; conex: SIM
       case 'valv': return { id: n.id, label: `${VALV_LABEL[n.sub!] ?? 'Válvula'} ${d}`, sku: VALV[n.sub!]?.[d] ?? '← CONF', dn: d, bridas: 2, leKey: n.sub!, norma: VALV_NORMA[n.sub!] ?? 'AWWA', qty: 1 }
       case 'reduccion': return { id: n.id, label: `Reducción ${d}×${d2} Sigma`, sku: findConn('Redu', d, d2!)?.sk ?? '← CONF', dn: d, dn2: d2, bridas: 1, bridas2: 1, leKey: 'reduccion', norma: 'AWWA C110', qty: 1 }
       case 'carrete': {
-        if (n.sub === 'corto') return { id: n.id, label: `Carrete Bridado Corto 25 cm ${d} Sigma`, sku: `CN-CAR-25${num(d)}`, dn: d, bridas: 2, leKey: 'cople', norma: 'AWWA C110', qty: 1 }
-        if (n.sub === 'largo') return { id: n.id, label: `Carrete Bridado Largo 50 cm ${d} Sigma`, sku: `CN-CAR-50${num(d)}`, dn: d, bridas: 2, leKey: 'cople', norma: 'AWWA C110', qty: 1 }
+        if (n.sub === 'corto') return { id: n.id, label: `Carrete Bridado Corto 25 cm ${d} Sigma`, sku: `CN-CAR-25${dn2dig(d)}`, dn: d, bridas: 2, leKey: 'cople', norma: 'AWWA C110', qty: 1 }
+        if (n.sub === 'largo') return { id: n.id, label: `Carrete Bridado Largo 50 cm ${d} Sigma`, sku: `CN-CAR-50${dn2dig(d)}`, dn: d, bridas: 2, leKey: 'cople', norma: 'AWWA C110', qty: 1 }
         return { id: n.id, label: `Carrete de Desmontaje ${d} Sigma Flow`, sku: CDM[d] ?? '← CONF', dn: d, bridas: 2, leKey: 'cople', norma: 'AWWA', qty: 1 }
       }
       case 'medidor': return { id: n.id, label: `Medidor de Flujo (Macromedidor) ${d}`, sku: '← CONF', dn: d, bridas: 2, leKey: 'cople', norma: 'AWWA C701', qty: 1 }
