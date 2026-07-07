@@ -495,6 +495,9 @@ interface Acc {
   isWafer?:boolean; isObra?:boolean; qty:number
 }
 
+// Unión brida-con-brida entre dos piezas del crucero (no lleva adaptador, solo empaque+tornillos)
+interface Conex { id:number; aId:number; bId:number; dn:string }
+
 interface Props {
   dnMM?: number
   dnStr?: string
@@ -506,16 +509,18 @@ interface Props {
   mode?: 'full' | 'selector' | 'table'
   externalAccs?: Acc[]
   onAccsChange?: (accs: Acc[]) => void
+  externalConex?: Conex[]
+  onConexChange?: (conex: Conex[]) => void
   onComputed?: (rows: { sku: string; desc: string; qty: number }[]) => void  // lista completa (piezas + kit) para el reporte
 }
 
 // ═══════════════════════════════════════════════════════════════
 //  COMPONENTE PRINCIPAL
 // ═══════════════════════════════════════════════════════════════
-export { type Acc as SIMEXAcc }
+export { type Acc as SIMEXAcc, type Conex as SIMEXConex }
 
 export default function ListaMaterialesSIMEX({
-  dnMM, dnStr, materialRaw, hf, longitud, onHmChange, mode = 'full', externalAccs, onAccsChange, onComputed
+  dnMM, dnStr, materialRaw, hf, longitud, onHmChange, mode = 'full', externalAccs, onAccsChange, externalConex, onConexChange, onComputed
 }: Props) {
 
   // Resolver DN — acepta número en mm O string con comillas
@@ -545,6 +550,13 @@ export default function ListaMaterialesSIMEX({
   const [internalAccs, setInternalAccs]  = useState<Acc[]>([])
   const accs = externalAccs ?? internalAccs
   const setAccs = onAccsChange ?? setInternalAccs
+  const [internalConex, setInternalConex] = useState<Conex[]>([])
+  const conex = externalConex ?? internalConex
+  const setConex = onConexChange ?? setInternalConex
+  // Solo conexiones cuyas dos piezas siguen existiendo
+  const validConex = conex.filter(c => accs.some(a=>a.id===c.aId) && accs.some(a=>a.id===c.bId))
+  const [conexA, setConexA] = useState<number|''>('')
+  const [conexB, setConexB] = useState<number|''>('')
   const [opcion,       setOpcion]       = useState<'A'|'B'>('A')
   const [visible,      setVisible]      = useState(true)
   const [sub,          setSub]          = useState<string|null>(null)
@@ -597,8 +609,48 @@ export default function ListaMaterialesSIMEX({
   function del(id:number) {
     const newAccs = accs.filter(a=>a.id!==id)
     if (onAccsChange) onAccsChange(newAccs); else setInternalAccs(newAccs)
+    // Quitar uniones que dependían de esta pieza
+    const newConex = conex.filter(c => c.aId!==id && c.bId!==id)
+    if (newConex.length !== conex.length) { if(onConexChange) onConexChange(newConex); else setInternalConex(newConex) }
   }
-  function clear() { if(confirm('¿Limpiar todos los accesorios?')){ if(onAccsChange) onAccsChange([]); else setInternalAccs([]); setSugEnterrada(false) } }
+  function clear() { if(confirm('¿Limpiar todos los accesorios?')){ if(onAccsChange) onAccsChange([]); else setInternalAccs([]); if(onConexChange) onConexChange([]); else setInternalConex([]); setSugEnterrada(false) } }
+
+  // ── Uniones entre piezas (crucero) ───────────────────────────
+  function bridasDe(a:Acc):Record<string,number> {
+    const r:Record<string,number> = {}
+    if(a.isWafer||a.isObra) return r
+    if(a.bridas>0) r[a.dn]=(r[a.dn]??0)+a.bridas*a.qty
+    if(a.bridas2&&a.bridas2>0&&a.dn2) r[a.dn2]=(r[a.dn2]??0)+a.bridas2*a.qty
+    return r
+  }
+  function usadasEnConex(aId:number, dnv:string):number {
+    return validConex.filter(c=>(c.aId===aId||c.bId===aId)&&c.dn===dnv).length
+  }
+  function libresDe(a:Acc, dnv:string):number {
+    return (bridasDe(a)[dnv]??0) - usadasEnConex(a.id, dnv)
+  }
+  function totalLibresDe(a:Acc):number {
+    return Object.keys(bridasDe(a)).reduce((s,d)=>s+Math.max(0,libresDe(a,d)),0)
+  }
+  function dnCompartido(a:Acc, b:Acc):string|null {
+    const da=bridasDe(a), db=bridasDe(b)
+    const sh=Object.keys(da).filter(d=>db[d]&&libresDe(a,d)>0&&libresDe(b,d)>0)
+    if(!sh.length) return null
+    sh.sort((x,y)=>DN_ORDER.indexOf(y)-DN_ORDER.indexOf(x))
+    return sh[0]
+  }
+  function addConex(aId:number, bId:number) {
+    const a=accs.find(x=>x.id===aId), b=accs.find(x=>x.id===bId)
+    if(!a||!b||aId===bId) return
+    const dnv=dnCompartido(a,b); if(!dnv) return
+    const id=(conex.reduce((m,e)=>Math.max(m,e.id),0)||Date.now())+1
+    const nc=[...conex,{id,aId,bId,dn:dnv}]
+    if(onConexChange) onConexChange(nc); else setInternalConex(nc)
+  }
+  function delConex(id:number) {
+    const nc=conex.filter(c=>c.id!==id)
+    if(onConexChange) onConexChange(nc); else setInternalConex(nc)
+  }
 
   // ── handlers ─────────────────────────────────────────────────
   function addCodo(ang:string) {
@@ -672,10 +724,21 @@ export default function ListaMaterialesSIMEX({
   const totalBridas = Object.values(bridasPorDN).reduce((s,v)=>s+v,0)
   const multipleDNs = Object.keys(bridasPorDN).length > 1
 
+  // Uniones brida-con-brida entre piezas del crucero, por DN
+  const conexPorDN: Record<string,number> = {}
+  validConex.forEach(c => { conexPorDN[c.dn] = (conexPorDN[c.dn]??0)+1 })
+  const totalConex = validConex.length
+  const totalLibres = Math.max(0, totalBridas - 2*totalConex)  // bridas que van a tubería
+
   const kitItems: Array<{sku:string,desc:string,qty:number,norma:string,dnKit:string}> = []
   if(needsKit && totalBridas>0) {
     Object.entries(bridasPorDN).forEach(([dnKit,nBridas])=>{
       if(nBridas===0) return
+      // Descontar las uniones entre piezas: cada unión consume 2 bridas (una de cada pieza)
+      // y NO lleva adaptador — solo empaque + tornillos.
+      const conexN = Math.min(conexPorDN[dnKit] ?? 0, Math.floor(nBridas/2))
+      const libres = nBridas - 2*conexN     // bridas que van a tubería → necesitan adaptador
+      const uniones = libres + conexN         // juntas totales (a tubería + entre piezas) → empaque+tornillos
       let kd = KIT[`${dnKit}|${matCat}`] ?? null
       let aprox = false
       // Fallback: si la clase de la linea no existe en ese DN (ej. C900 no viene en 3"),
@@ -688,20 +751,24 @@ export default function ListaMaterialesSIMEX({
       }
       // Si no hay ningun kit para ese DN, no lo omitas: marcalo para confirmar
       if(!kd) {
-        kitItems.push({sku:'← CONF', desc:`Adaptador/transicion ${dnKit} para el ramal — confirmar con distribuidor`, qty:nBridas, norma:'—', dnKit})
+        if(libres>0) kitItems.push({sku:'← CONF', desc:`Adaptador/transicion ${dnKit} para el ramal — confirmar con distribuidor`, qty:libres, norma:'—', dnKit})
         return
       }
       const suf = aprox ? ' (verificar OD del ramal)' : ''
       const extOD=kd.eo??kd.od??''
       const gibOD=kd.g?.replace('JN-JGI-','')??''
-      if(opcion==='A'&&kd.a) {
-        kitItems.push({sku:kd.a, desc:(ABU_DESC[kd.a]||`Adaptador de Brida Universal ${dnKit} Sigma Flow`)+suf, qty:nBridas, norma:'EN 14525', dnKit})
-      } else if(kd.e) {
-        kitItems.push({sku:kd.e, desc:`Extremidad Bridada ${dnKit} OD ${extOD}mm Sigma Flow${suf}`, qty:nBridas, norma:'AWWA C110', dnKit})
-        if(kd.g) kitItems.push({sku:kd.g, desc:`Junta Gibault ${gibOD}mm Sigma Flow${suf}`, qty:nBridas, norma:'AWWA', dnKit})
+      // Adaptador/transición: SOLO para las bridas que van a tubería
+      if(libres>0) {
+        if(opcion==='A'&&kd.a) {
+          kitItems.push({sku:kd.a, desc:(ABU_DESC[kd.a]||`Adaptador de Brida Universal ${dnKit} Sigma Flow`)+suf, qty:libres, norma:'EN 14525', dnKit})
+        } else if(kd.e) {
+          kitItems.push({sku:kd.e, desc:`Extremidad Bridada ${dnKit} OD ${extOD}mm Sigma Flow${suf}`, qty:libres, norma:'AWWA C110', dnKit})
+          if(kd.g) kitItems.push({sku:kd.g, desc:`Junta Gibault ${gibOD}mm Sigma Flow${suf}`, qty:libres, norma:'AWWA', dnKit})
+        }
       }
-      if(kd.em) kitItems.push({sku:kd.em, desc:`Empaque SBR ${dnKit} Sigma Flow`, qty:nBridas, norma:'—', dnKit})
-      if(kd.t) kitItems.push({sku:kd.t, desc:`${TOR_DESC[kd.t]??`Tornillo ${dnKit}`}`, qty:nBridas*(kd.b??8), norma:'—', dnKit})
+      // Empaque + tornillería: por cada junta (a tubería y entre piezas)
+      if(kd.em && uniones>0) kitItems.push({sku:kd.em, desc:`Empaque SBR ${dnKit} Sigma Flow`, qty:uniones, norma:'—', dnKit})
+      if(kd.t && uniones>0) kitItems.push({sku:kd.t, desc:`${TOR_DESC[kd.t]??`Tornillo ${dnKit}`}`, qty:uniones*(kd.b??8), norma:'—', dnKit})
     })
   }
 
@@ -735,7 +802,7 @@ export default function ListaMaterialesSIMEX({
             <button onClick={()=>updateQty(a.id,+1)} className="px-2 py-1 text-xs text-gray-400 hover:text-[#1C3D5A] hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors font-bold">+</button>
           </span>
           <span className="text-[10px] text-gray-400 w-20 text-right">{a.norma}</span>{a.isWafer && <span className="text-[10px] text-yellow-600 bg-yellow-100 px-1.5 py-0.5 rounded">wafer</span>}<button onClick={()=>del(a.id)} className="text-gray-300 hover:text-red-500 transition-colors text-xs ml-1">✕</button></div>))}</>)}
-        {kitItems.length>0 && (<><div className="bg-gray-100 dark:bg-gray-700 px-4 py-2 text-[10px] font-semibold text-gray-500 uppercase tracking-wider">{multipleDNs?Object.entries(bridasPorDN).map(([d,n])=>`${n} bridas ${d}`).join(' + '):(opcion==='A'?'Adaptadores Bridados Universales (ABU)':'Extremidades Bridadas + Juntas Gibault')}{totalBridas>0?` · ${totalBridas} conexiones totales`:''}</div>{kitItems.map((k,i)=>(<div key={i} className="flex items-center gap-3 px-4 py-2 border-b border-gray-50 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/30"><span className="font-mono text-xs text-[#1C3D5A]/70 w-28 shrink-0">{k.sku}</span><span className="flex-1 text-xs text-gray-500">{k.desc}</span><span className="text-xs font-medium text-gray-500 w-8 text-center">{k.qty===0?'×?':`×${k.qty}`}</span><span className="text-[10px] text-gray-400 w-20 text-right">{k.norma}</span></div>))}</>)}
+        {kitItems.length>0 && (<><div className="bg-gray-100 dark:bg-gray-700 px-4 py-2 text-[10px] font-semibold text-gray-500 uppercase tracking-wider">{multipleDNs?Object.entries(bridasPorDN).map(([d,n])=>`${n} bridas ${d}`).join(' + '):(opcion==='A'?'Adaptadores Bridados Universales (ABU)':'Extremidades Bridadas + Juntas Gibault')}{totalBridas>0?(totalConex>0?` · ${totalLibres} a tubería + ${totalConex} entre piezas`:` · ${totalBridas} conexiones totales`):''}</div>{kitItems.map((k,i)=>(<div key={i} className="flex items-center gap-3 px-4 py-2 border-b border-gray-50 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/30"><span className="font-mono text-xs text-[#1C3D5A]/70 w-28 shrink-0">{k.sku}</span><span className="flex-1 text-xs text-gray-500">{k.desc}</span><span className="text-xs font-medium text-gray-500 w-8 text-center">{k.qty===0?'×?':`×${k.qty}`}</span><span className="text-[10px] text-gray-400 w-20 text-right">{k.norma}</span></div>))}</>)}
         {piezasObra.length>0 && (<><div className="bg-blue-50 dark:bg-blue-900/10 px-4 py-2 text-[10px] font-semibold text-blue-500 uppercase tracking-wider">Accesorios de obra</div>{piezasObra.map(a=>(<div key={a.id} className="flex items-center gap-3 px-4 py-2 border-b border-blue-100 bg-blue-50/50"><span className="font-mono text-xs text-blue-600 w-28 shrink-0">{a.sku}</span><span className="flex-1 text-xs text-blue-700">{a.label}</span>
           <span className="flex items-center bg-blue-100 rounded-lg overflow-hidden shrink-0">
             <button onClick={()=>updateQty(a.id,-1)} className="px-2 py-1 text-xs text-blue-400 hover:text-blue-700 hover:bg-blue-200 transition-colors font-bold">−</button>
@@ -760,6 +827,55 @@ export default function ListaMaterialesSIMEX({
           </div>
         )}
       </div>
+      {/* ── Constructor de crucero: unir piezas entre sí ── */}
+      {piezasPrinc.filter(a=>!a.isWafer&&!a.isObra&&(a.bridas>0||(a.bridas2??0)>0)).length >= 2 && (
+        <div className="rounded-xl border border-[#1C3D5A]/25 bg-[#1C3D5A]/[0.03] dark:bg-gray-800/40 p-4 space-y-2">
+          <div className="flex items-center gap-2">
+            <span className="text-sm">🔗</span>
+            <h4 className="text-xs font-semibold text-[#1C3D5A] dark:text-blue-300">Uniones entre piezas (crucero)</h4>
+          </div>
+          <p className="text-[11px] text-gray-500 dark:text-gray-400 leading-relaxed">
+            Si dos piezas se conectan brida con brida (un codo con una válvula, una válvula con una tee…), márcalas aquí. Esa unión <strong>no lleva adaptador</strong>, solo empaque + tornillos. Las bridas que no unas entre piezas se cuentan como conexión a la tubería (con su adaptador).
+          </p>
+          {validConex.length>0 && (
+            <div className="space-y-1">
+              {validConex.map(c=>{
+                const a=accs.find(x=>x.id===c.aId), b=accs.find(x=>x.id===c.bId)
+                return (
+                  <div key={c.id} className="flex items-center gap-2 text-[11px] bg-white dark:bg-gray-800 rounded-lg px-3 py-1.5 border border-gray-100 dark:border-gray-700">
+                    <span className="flex-1 text-gray-700 dark:text-gray-300"><strong>{a?.label}</strong> <span className="text-[#1C3D5A]/50">↔</span> <strong>{b?.label}</strong></span>
+                    <span className="text-[10px] text-gray-400 font-mono">{c.dn}</span>
+                    <button onClick={()=>delConex(c.id)} className="text-gray-300 hover:text-red-500 text-xs">✕</button>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+          {(() => {
+            const conectables = piezasPrinc.filter(a=>!a.isWafer&&!a.isObra&&totalLibresDe(a)>0)
+            const aObj = conexA!=='' ? accs.find(x=>x.id===conexA) : undefined
+            const opcionesB = aObj ? conectables.filter(b=>b.id!==aObj.id && dnCompartido(aObj,b)) : []
+            const bObj = conexB!=='' ? accs.find(x=>x.id===conexB) : undefined
+            const dnPrev = aObj&&bObj ? dnCompartido(aObj,bObj) : null
+            if (conectables.length < 2) return <p className="text-[10px] text-gray-400 italic pt-1">Se necesitan al menos dos piezas con bridas libres para unirlas.</p>
+            return (
+              <div className="flex flex-wrap items-center gap-2 pt-1">
+                <select value={conexA} onChange={e=>{setConexA(e.target.value?Number(e.target.value):''); setConexB('')}} className="flex-1 min-w-[130px] px-2 py-1.5 text-[11px] border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 dark:text-white">
+                  <option value="">Pieza A…</option>
+                  {conectables.map(a=><option key={a.id} value={a.id}>{a.label}</option>)}
+                </select>
+                <span className="text-gray-400 text-xs">↔</span>
+                <select value={conexB} onChange={e=>setConexB(e.target.value?Number(e.target.value):'')} disabled={!aObj} className="flex-1 min-w-[130px] px-2 py-1.5 text-[11px] border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 dark:text-white disabled:opacity-50">
+                  <option value="">{aObj?'Pieza B…':'Elige A primero'}</option>
+                  {opcionesB.map(b=><option key={b.id} value={b.id}>{b.label}</option>)}
+                </select>
+                <button onClick={()=>{ if(conexA!==''&&conexB!==''){ addConex(Number(conexA),Number(conexB)); setConexA(''); setConexB('') } }} disabled={conexA===''||conexB===''||!dnPrev} className="px-3 py-1.5 text-[11px] rounded-lg bg-[#1C3D5A] text-white font-medium disabled:opacity-40 hover:bg-[#0F2438] transition-colors">+ Unir{dnPrev?` (${dnPrev})`:''}</button>
+              </div>
+            )
+          })()}
+          {totalConex>0 && <p className="text-[10px] text-emerald-600 dark:text-emerald-400">✓ {totalConex} unión(es) entre piezas — se quitaron {totalConex*2} adaptadores del despiece.</p>}
+        </div>
+      )}
       <div className="flex gap-2 flex-wrap"><button onClick={()=>window.print()} className="px-4 py-2 rounded-lg bg-[#1C3D5A] text-white text-xs font-medium hover:bg-[#0F2438] transition-colors shadow-sm">Generar PDF para distribuidor</button><button onClick={()=>{const lines=['SKU\tDescripción\tCantidad\tNorma'];piezasPrinc.forEach(a=>lines.push(`${a.sku}\t${a.label}\t${a.qty}\t${a.norma}`));kitItems.forEach(k=>lines.push(`${k.sku}\t${k.desc}\t${k.qty||'?'}\t${k.norma}`));piezasObra.forEach(a=>lines.push(`${a.sku}\t${a.label}\t${a.qty}\t${a.norma}`));navigator.clipboard.writeText(lines.join('\n')).then(()=>alert('Lista copiada'))}} className="px-4 py-2 rounded-lg border border-gray-200 text-xs text-gray-600 hover:bg-gray-50 transition-colors">Copiar SKUs</button></div>
       <p className="text-[9px] text-gray-400 pt-2 border-t border-gray-100">Contacte a su distribuidor SIMEX autorizado · simexco.com.mx</p>
     </div>

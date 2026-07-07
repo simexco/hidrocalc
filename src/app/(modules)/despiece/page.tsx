@@ -7,7 +7,7 @@ import { ResetButton } from "@/components/ui/ResetButton";
 import { saveFormState, loadFormState } from "@/lib/storage/form-persistence";
 import { STANDARD_DNS_LABELED, MATERIALS } from "@/lib/constants";
 import { useProjectStore } from "@/store/projectStore";
-import ListaMaterialesSIMEX, { type SIMEXAcc } from "@/components/ListaMaterialesSIMEX";
+import ListaMaterialesSIMEX, { type SIMEXAcc, type SIMEXConex } from "@/components/ListaMaterialesSIMEX";
 
 interface DespieceTramo {
   id: string;
@@ -20,17 +20,20 @@ export default function DespiecePage() {
   const [projectName, setProjectName] = useState("");
   const [tramos, setTramos] = useState<DespieceTramo[]>([]);
   const [accsPorTramo, setAccsPorTramo] = useState<Record<string, SIMEXAcc[]>>({});
+  // Uniones brida-con-brida entre piezas del crucero, por tramo
+  const [conexPorTramo, setConexPorTramo] = useState<Record<string, SIMEXConex[]>>({});
   // Lista completa computada por tramo (piezas + acoplamiento) para el reporte
   const [listaPorTramo, setListaPorTramo] = useState<Record<string, { sku: string; desc: string; qty: number }[]>>({});
 
   // Cargar guardado / flujo de proyecto
   useEffect(() => {
-    const saved = loadFormState<{ projectName?: string; tramos?: DespieceTramo[]; accsPorTramo?: Record<string, SIMEXAcc[]> }>("despiece");
+    const saved = loadFormState<{ projectName?: string; tramos?: DespieceTramo[]; accsPorTramo?: Record<string, SIMEXAcc[]>; conexPorTramo?: Record<string, SIMEXConex[]> }>("despiece");
     const tieneTramos = saved && Array.isArray(saved.tramos) && saved.tramos.length > 0;
     if (saved) {
       if (saved.projectName) setProjectName(saved.projectName);
       if (Array.isArray(saved.tramos)) setTramos(saved.tramos);
       if (saved.accsPorTramo) setAccsPorTramo(saved.accsPorTramo);
+      if (saved.conexPorTramo) setConexPorTramo(saved.conexPorTramo);
     }
     // Si no hay tramos propios, sembrar el primero con el material/DN del proyecto activo
     if (!tieneTramos) {
@@ -47,8 +50,8 @@ export default function DespiecePage() {
   const persistRef = useRef<ReturnType<typeof setTimeout>>(undefined);
   useEffect(() => {
     clearTimeout(persistRef.current);
-    persistRef.current = setTimeout(() => saveFormState("despiece", { projectName, tramos, accsPorTramo }), 800);
-  }, [projectName, tramos, accsPorTramo]);
+    persistRef.current = setTimeout(() => saveFormState("despiece", { projectName, tramos, accsPorTramo, conexPorTramo }), 800);
+  }, [projectName, tramos, accsPorTramo, conexPorTramo]);
 
   // Flujo de proyecto: escribir el despiece consolidado al proyecto (sale en el reporte)
   const patchProject = useProjectStore((s) => s.patch);
@@ -79,10 +82,11 @@ export default function DespiecePage() {
   const removeTramo = (id: string) => {
     setTramos((prev) => prev.filter((t) => t.id !== id));
     setAccsPorTramo((prev) => { const n = { ...prev }; delete n[id]; return n; });
+    setConexPorTramo((prev) => { const n = { ...prev }; delete n[id]; return n; });
   };
 
   const handleReset = () => {
-    setTramos([]); setAccsPorTramo({}); setProjectName("");
+    setTramos([]); setAccsPorTramo({}); setConexPorTramo({}); setProjectName("");
   };
 
   const tramosConAccs = tramos.filter((t) => (accsPorTramo[t.id]?.length ?? 0) > 0);
@@ -154,6 +158,8 @@ export default function DespiecePage() {
                     materialRaw={t.material}
                     externalAccs={accsPorTramo[t.id] || []}
                     onAccsChange={(accs) => setAccsPorTramo((prev) => ({ ...prev, [t.id]: accs }))}
+                    externalConex={conexPorTramo[t.id] || []}
+                    onConexChange={(cx) => setConexPorTramo((prev) => ({ ...prev, [t.id]: cx }))}
                   />
                   {(accsPorTramo[t.id]?.length ?? 0) > 0 && (
                     <p className="text-[10px] text-[#1C3D5A]/60 dark:text-blue-300/50 mt-1 font-medium">
@@ -199,6 +205,8 @@ export default function DespiecePage() {
                         materialRaw={t.material}
                         externalAccs={accsPorTramo[t.id] || []}
                         onAccsChange={(accs) => setAccsPorTramo((prev) => ({ ...prev, [t.id]: accs }))}
+                        externalConex={conexPorTramo[t.id] || []}
+                        onConexChange={(cx) => setConexPorTramo((prev) => ({ ...prev, [t.id]: cx }))}
                         onComputed={(rows) => setListaPorTramo((prev) => ({ ...prev, [t.id]: rows }))}
                       />
                     </div>
