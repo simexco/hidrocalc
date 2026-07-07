@@ -18,14 +18,19 @@ const { findConn, VALV, VALV_LABEL, VALV_NORMA, TAPA, CDM, DN_ORDER } = SIMEX_CA
 // ─── Tipos ──────────────────────────────────────────────────────
 export interface VizNode {
   id: number
-  tipo: 'valv' | 'codo' | 'tee' | 'cruz' | 'reduccion' | 'carrete' | 'tapa' | 'check' | 'vaea'
-  sub?: string          // valv: vcg-r|vcg-b|vmb-c · codo: 11|22|45|90 · vaea: vac|vae
+  tipo: 'valv' | 'codo' | 'tee' | 'cruz' | 'reduccion' | 'carrete' | 'tapa' | 'check' | 'vaea' | 'medidor' | 'vcontrol' | 'filtro'
+  sub?: string          // valv: vcg-r|vcg-b|vmb-c · codo: 11|22|45|90 · vaea: vac|vae|vea · carrete: corto|largo|(desmontaje) · vcontrol: vrp|sost|alt
   dn: string
   dn2?: string          // tee/cruz reducida, reducción
   flip?: boolean        // voltear el lado del codo / ramal de la tee
   parentId: number | null
   parentPort: number | null
 }
+
+// Disponibilidad de válvulas de aire según catálogo SIMEX (VI-VAC / VI-VEA)
+const AIRE_VAC = new Set(['2"', '3"', '4"', '6"'])
+const AIRE_VEA = new Set(['2"'])
+const AIRE_VAE = new Set(['2"', '3"', '4"', '6"'])
 
 const num = (d: string) => d.replace('"', '').replace('½', '.5')
 const rad = (deg: number) => (deg * Math.PI) / 180
@@ -59,7 +64,17 @@ export function vizToAccsConex(nodes: VizNode[]): { accs: SIMEXAcc[]; conex: SIM
       }
       case 'valv': return { id: n.id, label: `${VALV_LABEL[n.sub!] ?? 'Válvula'} ${d}`, sku: VALV[n.sub!]?.[d] ?? '← CONF', dn: d, bridas: 2, leKey: n.sub!, norma: VALV_NORMA[n.sub!] ?? 'AWWA', qty: 1 }
       case 'reduccion': return { id: n.id, label: `Reducción ${d}×${d2} Sigma`, sku: findConn('Redu', d, d2!)?.sk ?? '← CONF', dn: d, dn2: d2, bridas: 1, bridas2: 1, leKey: 'reduccion', norma: 'AWWA C110', qty: 1 }
-      case 'carrete': return { id: n.id, label: `Carrete de Desmontaje ${d} Sigma Flow`, sku: CDM[d] ?? '← CONF', dn: d, bridas: 2, leKey: 'cople', norma: 'AWWA', qty: 1 }
+      case 'carrete': {
+        if (n.sub === 'corto') return { id: n.id, label: `Carrete Bridado Corto ${d}`, sku: '← CONF', dn: d, bridas: 2, leKey: 'cople', norma: 'AWWA C110', qty: 1 }
+        if (n.sub === 'largo') return { id: n.id, label: `Carrete Bridado Largo ${d}`, sku: '← CONF', dn: d, bridas: 2, leKey: 'cople', norma: 'AWWA C110', qty: 1 }
+        return { id: n.id, label: `Carrete de Desmontaje ${d} Sigma Flow`, sku: CDM[d] ?? '← CONF', dn: d, bridas: 2, leKey: 'cople', norma: 'AWWA', qty: 1 }
+      }
+      case 'medidor': return { id: n.id, label: `Medidor de Flujo (Macromedidor) ${d}`, sku: '← CONF', dn: d, bridas: 2, leKey: 'cople', norma: 'AWWA C701', qty: 1 }
+      case 'vcontrol': {
+        const nom = n.sub === 'sost' ? 'Válvula Sostenedora / Alivio de Presión' : n.sub === 'alt' ? 'Válvula de Altitud (control de tanque)' : 'Válvula Reductora de Presión (VRP)'
+        return { id: n.id, label: `${nom} ${d} — control hidráulico`, sku: '← CONF', dn: d, bridas: 2, leKey: 'check', norma: '—', qty: 1 }
+      }
+      case 'filtro': return { id: n.id, label: `Filtro Colador tipo Y ${d}`, sku: '← CONF', dn: d, bridas: 2, leKey: 'cople', norma: '—', qty: 1 }
       case 'check': {
         const bronce = DN_ORDER.indexOf(d) >= DN_ORDER.indexOf('18"')
         return { id: n.id, label: bronce ? `Check Compuerta Bronce ${d} Sigma Flow` : `Check Resilente C508 ${d} Sigma Flow`, sku: bronce ? `VI-CHK-${num(d)}` : `VI-CHK-R${num(d)}`, dn: d, bridas: 2, leKey: 'check', norma: 'AWWA C508', qty: 1 }
@@ -67,6 +82,8 @@ export function vizToAccsConex(nodes: VizNode[]): { accs: SIMEXAcc[]; conex: SIM
       case 'tapa': return { id: n.id, label: `Tapa Ciega HD ${d} Sigma`, sku: TAPA[d] ?? '← CONF', dn: d, bridas: 1, leKey: 'tapa-ciega', norma: 'AWWA C110', qty: 1 }
       case 'vaea': return n.sub === 'vae'
         ? { id: n.id, label: `Válvula de Aire Adm/Exp (VAEA) ${d} Sigma Flow`, sku: `VI-VAE-${num(d)}`, dn: d, bridas: 1, leKey: 'tapa-ciega', norma: 'AWWA C512', qty: 1 }
+        : n.sub === 'vea'
+        ? { id: n.id, label: `Válvula Eliminadora de Aire ${d} Sigma Flow`, sku: `VI-VEA-${num(d)}`, dn: d, bridas: 1, leKey: 'tapa-ciega', norma: 'AWWA C512', qty: 1 }
         : { id: n.id, label: `Válvula de Aire Combinada ${d} Sigma Flow`, sku: `VI-VAC-${num(d)}`, dn: d, bridas: 1, leKey: 'tapa-ciega', norma: 'AWWA C512', qty: 1 }
     }
   })
@@ -163,8 +180,22 @@ function Simbolo({ n, conn }: { n: VizNode; conn: boolean[] }) {
       return (<g><line x1={-38} y1={0} x2={38} y2={0} /><line x1={0} y1={-38} x2={0} y2={38} />{t(0) && <TickAt r={30} ang={180} />}{t(1) && <TickAt r={30} />}{t(2) && <TickAt r={30} ang={90} />}{t(3) && <TickAt r={30} ang={-90} />}</g>)
     case 'reduccion':
       return (<g><line x1={-38} y1={0} x2={-20} y2={0} /><path d="M -20 -11 L 8 -5 L 8 5 L -20 11 Z" fill="none" /><line x1={8} y1={0} x2={38} y2={0} />{t(0) && <TickAt r={30} ang={180} />}{t(1) && <TickAt r={27} />}</g>)
-    case 'carrete':
+    case 'carrete': {
+      if (n.sub === 'corto') return (<g><line x1={-38} y1={0} x2={-9} y2={0} /><rect x={-9} y={-8} width={18} height={16} fill="none" /><line x1={9} y1={0} x2={38} y2={0} />{t(0) && <TickAt r={22} ang={180} />}{t(1) && <TickAt r={22} />}</g>)
+      if (n.sub === 'largo') return (<g><line x1={-38} y1={0} x2={-26} y2={0} /><rect x={-26} y={-7} width={52} height={14} fill="none" /><line x1={26} y1={0} x2={38} y2={0} />{t(0) && <TickAt r={32} ang={180} />}{t(1) && <TickAt r={32} />}</g>)
       return (<g><line x1={-38} y1={0} x2={-16} y2={0} /><rect x={-16} y={-9} width={32} height={18} fill="none" /><line x1={-8} y1={-9} x2={-8} y2={9} /><line x1={8} y1={-9} x2={8} y2={9} /><line x1={16} y1={0} x2={38} y2={0} />{t(0) && <TickAt r={27} ang={180} />}{t(1) && <TickAt r={27} />}</g>)
+    }
+    case 'medidor':
+      return (<g><line x1={-38} y1={0} x2={-12} y2={0} /><circle cx={0} cy={0} r={12} fill="none" /><text x={0} y={3.8} textAnchor="middle" fontSize={11} fontWeight={700} fill="currentColor" stroke="none">M</text><line x1={12} y1={0} x2={38} y2={0} />{t(0) && <TickAt r={24} ang={180} />}{t(1) && <TickAt r={24} />}</g>)
+    case 'vcontrol':
+      return (<g>
+        <line x1={-38} y1={0} x2={-18} y2={0} /><line x1={18} y1={0} x2={38} y2={0} />
+        <path d="M -18 -11 L -18 11 L 0 0 Z" fill="none" /><path d="M 18 -11 L 18 11 L 0 0 Z" fill="none" />
+        <line x1={0} y1={0} x2={0} y2={-14} /><circle cx={0} cy={-20} r={6} fill="none" />
+        {t(0) && <TickAt r={27} ang={180} />}{t(1) && <TickAt r={27} />}
+      </g>)
+    case 'filtro':
+      return (<g><line x1={-38} y1={0} x2={38} y2={0} /><line x1={-4} y1={0} x2={11} y2={16} /><line x1={6} y1={19} x2={16} y2={12} />{t(0) && <TickAt r={30} ang={180} />}{t(1) && <TickAt r={30} />}</g>)
     case 'tapa':
       return (<g><line x1={-38} y1={0} x2={-4} y2={0} /><rect x={-4} y={-13} width={6} height={26} fill="currentColor" stroke="none" />{t(0) && <TickAt r={16} ang={180} />}</g>)
     case 'check':
@@ -180,10 +211,13 @@ const NOMBRE: Record<string, (n: VizNode) => string> = {
   tee: n => `Tee ${n.dn}${n.dn2 && n.dn2 !== n.dn ? '×' + n.dn2 : ''}`,
   cruz: n => `Cruz ${n.dn}${n.dn2 && n.dn2 !== n.dn ? '×' + n.dn2 : ''}`,
   reduccion: n => `Red. ${n.dn}×${n.dn2}`,
-  carrete: n => `Carrete ${n.dn}`,
+  carrete: n => `${n.sub === 'corto' ? 'Carrete corto' : n.sub === 'largo' ? 'Carrete largo' : 'Carrete desm.'} ${n.dn}`,
   tapa: n => `Tapa ${n.dn}`,
   check: n => `Check ${n.dn}`,
-  vaea: n => `V. Aire ${n.dn}`,
+  vaea: n => `${n.sub === 'vea' ? 'V. Elim.' : n.sub === 'vae' ? 'VAEA' : 'V. Aire'} ${n.dn}`,
+  medidor: n => `Medidor ${n.dn}`,
+  vcontrol: n => `${n.sub === 'sost' ? 'V. Sostenedora' : n.sub === 'alt' ? 'V. Altitud' : 'VRP'} ${n.dn}`,
+  filtro: n => `Filtro Y ${n.dn}`,
 }
 
 // ─── Componente ─────────────────────────────────────────────────
@@ -196,7 +230,7 @@ interface Props {
 export default function CruceroVisual({ dn, nodes, onChange }: Props) {
   const [pending, setPending] = useState<{ nodeId: number | null; port: number | null; dn: string } | null>(null)
   const [sel, setSel] = useState<number | null>(null)
-  const [subPick, setSubPick] = useState<'tee-red' | 'cruz-red' | 'reduc' | null>(null)
+  const [subPick, setSubPick] = useState<'tee-red' | 'cruz-red' | 'reduc' | 'vcontrol' | null>(null)
 
   const { pos, links } = computeLayout(nodes)
   const byId = new Map(nodes.map(n => [n.id, n]))
@@ -241,7 +275,6 @@ export default function CruceroVisual({ dn, nodes, onChange }: Props) {
   }
 
   const dnsMenores = (d: string) => DN_ORDER.filter(x => DN_ORDER.indexOf(x) < DN_ORDER.indexOf(d))
-  const esDnChico = pending ? ['2"', '2½"', '3"'].includes(pending.dn) : false
   const selNode = sel != null ? byId.get(sel) : undefined
   const volteable = selNode && (selNode.tipo === 'codo' || selNode.tipo === 'tee')
 
@@ -334,28 +367,61 @@ export default function CruceroVisual({ dn, nodes, onChange }: Props) {
             <button onClick={() => { setPending(null); setSubPick(null) }} className="text-[11px] text-gray-400 hover:text-gray-600 px-1">✕ Cancelar</button>
           </div>
 
-          <div className="flex flex-wrap gap-1.5">
-            {(['vcg-r', 'vcg-b', 'vmb-c'] as const).filter(t => VALV[t]?.[pending.dn]).map(t => (
-              <button key={t} onClick={() => addNode('valv', t)} className="px-3 py-1.5 text-[11px] rounded-lg border border-gray-200 dark:border-gray-600 hover:bg-[#1C3D5A] hover:text-white transition-colors">{t === 'vcg-r' ? '⧓ V. Compuerta' : t === 'vcg-b' ? '⧓ V. Comp. Bronce' : '⧓ V. Mariposa'}</button>
-            ))}
-            {['11', '22', '45', '90'].map(a => (
-              <button key={a} onClick={() => addNode('codo', a)} className="px-3 py-1.5 text-[11px] rounded-lg border border-gray-200 dark:border-gray-600 hover:bg-[#1C3D5A] hover:text-white transition-colors">↩ Codo {a}°</button>
-            ))}
-            <button onClick={() => addNode('tee', undefined, undefined)} className="px-3 py-1.5 text-[11px] rounded-lg border border-gray-200 dark:border-gray-600 hover:bg-[#1C3D5A] hover:text-white transition-colors">⑂ Tee {pending.dn}</button>
-            <button onClick={() => setSubPick(x => x === 'tee-red' ? null : 'tee-red')} className={`px-3 py-1.5 text-[11px] rounded-lg border transition-colors ${subPick === 'tee-red' ? 'border-[#1C3D5A] bg-[#1C3D5A]/5 font-medium' : 'border-gray-200 dark:border-gray-600'}`}>⑂ Tee reducida…</button>
-            <button onClick={() => addNode('cruz', undefined, undefined)} className="px-3 py-1.5 text-[11px] rounded-lg border border-gray-200 dark:border-gray-600 hover:bg-[#1C3D5A] hover:text-white transition-colors">✚ Cruz {pending.dn}</button>
-            <button onClick={() => setSubPick(x => x === 'cruz-red' ? null : 'cruz-red')} className={`px-3 py-1.5 text-[11px] rounded-lg border transition-colors ${subPick === 'cruz-red' ? 'border-[#1C3D5A] bg-[#1C3D5A]/5 font-medium' : 'border-gray-200 dark:border-gray-600'}`}>✚ Cruz reducida…</button>
-            <button onClick={() => setSubPick(x => x === 'reduc' ? null : 'reduc')} className={`px-3 py-1.5 text-[11px] rounded-lg border transition-colors ${subPick === 'reduc' ? 'border-[#1C3D5A] bg-[#1C3D5A]/5 font-medium' : 'border-gray-200 dark:border-gray-600'}`}>▷ Reducción…</button>
-            <button onClick={() => addNode('carrete')} className="px-3 py-1.5 text-[11px] rounded-lg border border-gray-200 dark:border-gray-600 hover:bg-[#1C3D5A] hover:text-white transition-colors">▭ Carrete desmontaje</button>
-            <button onClick={() => addNode('check')} className="px-3 py-1.5 text-[11px] rounded-lg border border-gray-200 dark:border-gray-600 hover:bg-[#1C3D5A] hover:text-white transition-colors">⧓→ Check</button>
-            <button onClick={() => addNode('tapa')} className="px-3 py-1.5 text-[11px] rounded-lg border border-gray-200 dark:border-gray-600 hover:bg-[#1C3D5A] hover:text-white transition-colors">◉ Tapa ciega</button>
-            {esDnChico && (<>
-              <button onClick={() => addNode('vaea', 'vac')} className="px-3 py-1.5 text-[11px] rounded-lg border border-blue-200 text-blue-700 dark:text-blue-300 hover:bg-blue-600 hover:text-white transition-colors">◍ V. aire combinada</button>
-              <button onClick={() => addNode('vaea', 'vae')} className="px-3 py-1.5 text-[11px] rounded-lg border border-blue-200 text-blue-700 dark:text-blue-300 hover:bg-blue-600 hover:text-white transition-colors">◍ VAEA adm/exp</button>
-            </>)}
+          <div className="space-y-1.5">
+            <div className="flex flex-wrap items-center gap-1.5">
+              <span className="text-[10px] text-gray-400 w-20 shrink-0">Válvulas:</span>
+              {(['vcg-r', 'vcg-b', 'vmb-c'] as const).filter(t => VALV[t]?.[pending.dn]).map(t => (
+                <button key={t} onClick={() => addNode('valv', t)} className="px-3 py-1.5 text-[11px] rounded-lg border border-gray-200 dark:border-gray-600 hover:bg-[#1C3D5A] hover:text-white transition-colors">{t === 'vcg-r' ? '⧓ Compuerta' : t === 'vcg-b' ? '⧓ Comp. Bronce' : '⧓ Mariposa'}</button>
+              ))}
+              <button onClick={() => addNode('check')} className="px-3 py-1.5 text-[11px] rounded-lg border border-gray-200 dark:border-gray-600 hover:bg-[#1C3D5A] hover:text-white transition-colors">⧓→ Check</button>
+              <button onClick={() => setSubPick(x => x === 'vcontrol' ? null : 'vcontrol')} className={`px-3 py-1.5 text-[11px] rounded-lg border transition-colors ${subPick === 'vcontrol' ? 'border-[#1C3D5A] bg-[#1C3D5A]/5 font-medium' : 'border-gray-200 dark:border-gray-600'}`}>⚙ De control…</button>
+              <button onClick={() => addNode('filtro')} className="px-3 py-1.5 text-[11px] rounded-lg border border-gray-200 dark:border-gray-600 hover:bg-[#1C3D5A] hover:text-white transition-colors">⋔ Filtro Y</button>
+            </div>
+            <div className="flex flex-wrap items-center gap-1.5">
+              <span className="text-[10px] text-gray-400 w-20 shrink-0">Codos:</span>
+              {['11', '22', '45', '90'].map(a => (
+                <button key={a} onClick={() => addNode('codo', a)} className="px-3 py-1.5 text-[11px] rounded-lg border border-gray-200 dark:border-gray-600 hover:bg-[#1C3D5A] hover:text-white transition-colors">↩ {a}°</button>
+              ))}
+            </div>
+            <div className="flex flex-wrap items-center gap-1.5">
+              <span className="text-[10px] text-gray-400 w-20 shrink-0">Derivación:</span>
+              <button onClick={() => addNode('tee', undefined, undefined)} className="px-3 py-1.5 text-[11px] rounded-lg border border-gray-200 dark:border-gray-600 hover:bg-[#1C3D5A] hover:text-white transition-colors">⑂ Tee {pending.dn}</button>
+              <button onClick={() => setSubPick(x => x === 'tee-red' ? null : 'tee-red')} className={`px-3 py-1.5 text-[11px] rounded-lg border transition-colors ${subPick === 'tee-red' ? 'border-[#1C3D5A] bg-[#1C3D5A]/5 font-medium' : 'border-gray-200 dark:border-gray-600'}`}>⑂ Tee reducida…</button>
+              <button onClick={() => addNode('cruz', undefined, undefined)} className="px-3 py-1.5 text-[11px] rounded-lg border border-gray-200 dark:border-gray-600 hover:bg-[#1C3D5A] hover:text-white transition-colors">✚ Cruz {pending.dn}</button>
+              <button onClick={() => setSubPick(x => x === 'cruz-red' ? null : 'cruz-red')} className={`px-3 py-1.5 text-[11px] rounded-lg border transition-colors ${subPick === 'cruz-red' ? 'border-[#1C3D5A] bg-[#1C3D5A]/5 font-medium' : 'border-gray-200 dark:border-gray-600'}`}>✚ Cruz reducida…</button>
+              <button onClick={() => setSubPick(x => x === 'reduc' ? null : 'reduc')} className={`px-3 py-1.5 text-[11px] rounded-lg border transition-colors ${subPick === 'reduc' ? 'border-[#1C3D5A] bg-[#1C3D5A]/5 font-medium' : 'border-gray-200 dark:border-gray-600'}`}>▷ Reducción…</button>
+            </div>
+            <div className="flex flex-wrap items-center gap-1.5">
+              <span className="text-[10px] text-gray-400 w-20 shrink-0">Carretes:</span>
+              <button onClick={() => addNode('carrete', 'corto')} className="px-3 py-1.5 text-[11px] rounded-lg border border-gray-200 dark:border-gray-600 hover:bg-[#1C3D5A] hover:text-white transition-colors">▯ Corto</button>
+              <button onClick={() => addNode('carrete', 'largo')} className="px-3 py-1.5 text-[11px] rounded-lg border border-gray-200 dark:border-gray-600 hover:bg-[#1C3D5A] hover:text-white transition-colors">▭ Largo</button>
+              <button onClick={() => addNode('carrete')} className="px-3 py-1.5 text-[11px] rounded-lg border border-gray-200 dark:border-gray-600 hover:bg-[#1C3D5A] hover:text-white transition-colors">⚙ De desmontaje</button>
+            </div>
+            <div className="flex flex-wrap items-center gap-1.5">
+              <span className="text-[10px] text-gray-400 w-20 shrink-0">Medición/aire:</span>
+              <button onClick={() => addNode('medidor')} className="px-3 py-1.5 text-[11px] rounded-lg border border-gray-200 dark:border-gray-600 hover:bg-[#1C3D5A] hover:text-white transition-colors">Ⓜ Medidor de flujo</button>
+              {AIRE_VAC.has(pending.dn) && <button onClick={() => addNode('vaea', 'vac')} className="px-3 py-1.5 text-[11px] rounded-lg border border-blue-200 text-blue-700 dark:text-blue-300 hover:bg-blue-600 hover:text-white transition-colors">◍ V. aire combinada</button>}
+              {AIRE_VAE.has(pending.dn) && <button onClick={() => addNode('vaea', 'vae')} className="px-3 py-1.5 text-[11px] rounded-lg border border-blue-200 text-blue-700 dark:text-blue-300 hover:bg-blue-600 hover:text-white transition-colors">◍ VAEA adm/exp</button>}
+              {AIRE_VEA.has(pending.dn) && <button onClick={() => addNode('vaea', 'vea')} className="px-3 py-1.5 text-[11px] rounded-lg border border-blue-200 text-blue-700 dark:text-blue-300 hover:bg-blue-600 hover:text-white transition-colors">◍ Eliminadora</button>}
+            </div>
+            <div className="flex flex-wrap items-center gap-1.5">
+              <span className="text-[10px] text-gray-400 w-20 shrink-0">Fin de línea:</span>
+              <button onClick={() => addNode('tapa')} className="px-3 py-1.5 text-[11px] rounded-lg border border-gray-200 dark:border-gray-600 hover:bg-[#1C3D5A] hover:text-white transition-colors">◉ Tapa ciega</button>
+            </div>
           </div>
 
-          {subPick && (
+          {subPick === 'vcontrol' && (
+            <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-3">
+              <p className="text-[10px] text-gray-500 dark:text-gray-300 mb-1.5">Tipo de válvula de control hidráulica (SKU a confirmar con distribuidor):</p>
+              <div className="flex flex-wrap gap-1.5">
+                <button onClick={() => addNode('vcontrol', 'vrp')} className="px-3 py-1.5 text-[11px] rounded-lg border border-gray-200 dark:border-gray-500 hover:bg-[#1C3D5A] hover:text-white transition-colors">Reductora de presión (VRP)</button>
+                <button onClick={() => addNode('vcontrol', 'sost')} className="px-3 py-1.5 text-[11px] rounded-lg border border-gray-200 dark:border-gray-500 hover:bg-[#1C3D5A] hover:text-white transition-colors">Sostenedora / Alivio</button>
+                <button onClick={() => addNode('vcontrol', 'alt')} className="px-3 py-1.5 text-[11px] rounded-lg border border-gray-200 dark:border-gray-500 hover:bg-[#1C3D5A] hover:text-white transition-colors">De altitud (tanque)</button>
+              </div>
+            </div>
+          )}
+
+          {subPick && subPick !== 'vcontrol' && (
             <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-3">
               <p className="text-[10px] text-gray-500 dark:text-gray-300 mb-1.5">{subPick === 'reduc' ? `Reducir de ${pending.dn} a:` : `Diámetro del ramal:`}</p>
               <div className="flex flex-wrap gap-1.5">
