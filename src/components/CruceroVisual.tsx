@@ -217,8 +217,8 @@ function Simbolo({ n, conn }: { n: VizNode; conn: boolean[] }) {
     case 'vaea':
       return (<g><line x1={-38} y1={0} x2={-14} y2={0} /><circle cx={-2} cy={0} r={11} fill="none" /><line x1={4} y1={-14} x2={12} y2={-19} /><line x1={7} y1={-9} x2={16} y2={-12} />{t(0) && <TickAt r={24} ang={180} />}</g>)
     case 'desfogue':
-      // Descarga: la línea remata en el bloque sólido (atraque), como en el plano
-      return (<g><line x1={-38} y1={0} x2={4} y2={0} /><path d="M 4 -9 L 20 -14 L 20 14 L 4 9 Z" fill="currentColor" stroke="none" />{t(0) && <TickAt r={18} ang={180} />}</g>)
+      // Descarga: la línea remata en el trazo zigzag (la "W invertida" del plano)
+      return (<g><line x1={-38} y1={0} x2={6} y2={0} /><path d="M 6 -14 L 17 -7 L 6 0 L 17 7 L 6 14" fill="none" />{t(0) && <TickAt r={16} ang={180} />}</g>)
   }
 }
 
