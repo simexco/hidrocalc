@@ -65,8 +65,8 @@ export function vizToAccsConex(nodes: VizNode[]): { accs: SIMEXAcc[]; conex: SIM
       case 'valv': return { id: n.id, label: `${VALV_LABEL[n.sub!] ?? 'Válvula'} ${d}`, sku: VALV[n.sub!]?.[d] ?? '← CONF', dn: d, bridas: 2, leKey: n.sub!, norma: VALV_NORMA[n.sub!] ?? 'AWWA', qty: 1 }
       case 'reduccion': return { id: n.id, label: `Reducción ${d}×${d2} Sigma`, sku: findConn('Redu', d, d2!)?.sk ?? '← CONF', dn: d, dn2: d2, bridas: 1, bridas2: 1, leKey: 'reduccion', norma: 'AWWA C110', qty: 1 }
       case 'carrete': {
-        if (n.sub === 'corto') return { id: n.id, label: `Carrete Bridado Corto ${d}`, sku: '← CONF', dn: d, bridas: 2, leKey: 'cople', norma: 'AWWA C110', qty: 1 }
-        if (n.sub === 'largo') return { id: n.id, label: `Carrete Bridado Largo ${d}`, sku: '← CONF', dn: d, bridas: 2, leKey: 'cople', norma: 'AWWA C110', qty: 1 }
+        if (n.sub === 'corto') return { id: n.id, label: `Carrete Bridado Corto 25 cm ${d} Sigma`, sku: `CN-CAR-25${num(d)}`, dn: d, bridas: 2, leKey: 'cople', norma: 'AWWA C110', qty: 1 }
+        if (n.sub === 'largo') return { id: n.id, label: `Carrete Bridado Largo 50 cm ${d} Sigma`, sku: `CN-CAR-50${num(d)}`, dn: d, bridas: 2, leKey: 'cople', norma: 'AWWA C110', qty: 1 }
         return { id: n.id, label: `Carrete de Desmontaje ${d} Sigma Flow`, sku: CDM[d] ?? '← CONF', dn: d, bridas: 2, leKey: 'cople', norma: 'AWWA', qty: 1 }
       }
       case 'medidor': return { id: n.id, label: `Medidor de Flujo (Macromedidor) ${d}`, sku: '← CONF', dn: d, bridas: 2, leKey: 'cople', norma: 'AWWA C701', qty: 1 }
