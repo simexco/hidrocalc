@@ -390,12 +390,21 @@ export default function CruceroVisual({ dn, nodes, onChange }: Props) {
                 const seleccionada = sel === n.id
                 const conn = puertos(n).map((_, i) => (i === portPadre(n) && n.parentId != null) || nodes.some(k => k.parentId === n.id && k.parentPort === i))
                 const rotExtra = n.tipo === 'tee' && n.conPor === 'ramal' ? 180 - 90 * (n.flip ? -1 : 1) : 0
-                return (<g key={n.id} className="cursor-pointer" onClick={() => { setSel(x => x === n.id ? null : n.id); setPending(null) }}>
+                return (<g key={n.id} className="cursor-pointer group" onClick={() => { setSel(x => x === n.id ? null : n.id); setPending(null) }}>
                   {/* zona de clic grande e invisible (las líneas solas son muy delgadas para atinarle) */}
                   <rect x={cx - 34} y={cy - 34} width={68} height={68} fill="transparent" stroke="none" />
+                  {/* resaltado al pasar el mouse: la pieza se ve interactiva */}
+                  {!seleccionada && <rect x={cx - 32} y={cy - 32} width={64} height={64} rx={10} fill="currentColor" stroke="none" className="opacity-0 group-hover:opacity-[0.07] transition-opacity" />}
                   {seleccionada && <rect x={cx - 32} y={cy - 32} width={64} height={64} rx={10} fill="currentColor" opacity={0.08} strokeDasharray="5 4" strokeWidth={1.5} />}
                   <g transform={`translate(${cx},${cy}) rotate(${p.ang + rotExtra})`}><Simbolo n={n} conn={conn} /><AtraqueMark n={n} /></g>
                   <text x={cx} y={cy + 47} textAnchor="middle" fontSize={9} className="fill-gray-500 dark:fill-gray-400" stroke="none">{NOMBRE[n.tipo](n)}</text>
+                  {/* botón ⋯ siempre visible: indica que la pieza tiene opciones */}
+                  {!seleccionada && (
+                    <g>
+                      <circle cx={cx + 30} cy={cy - 30} r={8.5} fill="white" className="dark:fill-gray-800" strokeWidth={1.2} opacity={0.85} />
+                      <text x={cx + 30} y={cy - 26.8} textAnchor="middle" fontSize={10} fontWeight={700} fill="currentColor" stroke="none">⋯</text>
+                    </g>
+                  )}
                   {seleccionada && (
                     <g onClick={(e) => { e.stopPropagation(); delNode(n.id) }}>
                       <circle cx={cx + 32} cy={cy - 32} r={10} fill="#ef4444" stroke="none" />
@@ -407,7 +416,7 @@ export default function CruceroVisual({ dn, nodes, onChange }: Props) {
             </g>
           </svg>
           <div className="flex items-center justify-between gap-2 px-3 py-2 border-t border-gray-100 dark:border-gray-700 flex-wrap">
-            <p className="text-[10px] text-gray-400">⊕ conectar pieza · ‖ unión bridada (empaque + tornillos) · ┄ brida libre → a tubería (con adaptador) · toca una pieza para borrarla ✕</p>
+            <p className="text-[10px] text-gray-400">⊕ conectar pieza · ‖ unión bridada (empaque + tornillos) · ┄ brida libre → a tubería (con adaptador) · <strong className="text-[#1C3D5A] dark:text-blue-300">⋯ toca una pieza para ver sus opciones</strong> (voltear · atraque · conectar por ramal · borrar)</p>
             <p className="text-[10px] font-medium text-[#1C3D5A] dark:text-blue-300">{nodes.length} pieza(s) · {nUniones} unión(es) · {nLibres} a tubería</p>
           </div>
         </div>
