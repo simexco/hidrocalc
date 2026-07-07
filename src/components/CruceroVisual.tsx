@@ -132,8 +132,11 @@ function TickAt({ r, ang = 0 }: { r: number; ang?: number }) {
   return <g>{seg(-2.5)}{seg(2.5)}</g>
 }
 
-function Simbolo({ n }: { n: VizNode }) {
+// conn[i] = true si el puerto i está unido a otra pieza (la marca ‖ de la unión
+// se dibuja UNA sola vez sobre el tubo de unión, no en cada pieza)
+function Simbolo({ n, conn }: { n: VizNode; conn: boolean[] }) {
   const s = n.flip ? -1 : 1
+  const t = (i: number) => !conn[i]  // dibujar brida solo si el puerto está libre
   switch (n.tipo) {
     case 'valv': {
       const mariposa = n.sub?.startsWith('vmb')
@@ -141,7 +144,7 @@ function Simbolo({ n }: { n: VizNode }) {
         <line x1={-38} y1={0} x2={-18} y2={0} /><line x1={18} y1={0} x2={38} y2={0} />
         <path d="M -18 -11 L -18 11 L 0 0 Z" fill="none" /><path d="M 18 -11 L 18 11 L 0 0 Z" fill="none" />
         {mariposa ? <circle cx={0} cy={0} r={5.5} fill="none" /> : <><line x1={0} y1={0} x2={0} y2={-17} /><line x1={-6} y1={-17} x2={6} y2={-17} /></>}
-        <TickAt r={27} ang={180} /><TickAt r={27} />
+        {t(0) && <TickAt r={27} ang={180} />}{t(1) && <TickAt r={27} />}
       </g>)
     }
     case 'codo': {
@@ -151,23 +154,23 @@ function Simbolo({ n }: { n: VizNode }) {
       return (<g>
         <line x1={-38} y1={0} x2={0} y2={0} />
         <line x1={0} y1={0} x2={ex} y2={ey} />
-        <TickAt r={30} ang={180} /><TickAt r={30} ang={th} />
+        {t(0) && <TickAt r={30} ang={180} />}{t(1) && <TickAt r={30} ang={th} />}
       </g>)
     }
     case 'tee':
-      return (<g><line x1={-38} y1={0} x2={38} y2={0} /><line x1={0} y1={0} x2={0} y2={38 * s} /><TickAt r={30} ang={180} /><TickAt r={30} /><TickAt r={30} ang={90 * s} /></g>)
+      return (<g><line x1={-38} y1={0} x2={38} y2={0} /><line x1={0} y1={0} x2={0} y2={38 * s} />{t(0) && <TickAt r={30} ang={180} />}{t(1) && <TickAt r={30} />}{t(2) && <TickAt r={30} ang={90 * s} />}</g>)
     case 'cruz':
-      return (<g><line x1={-38} y1={0} x2={38} y2={0} /><line x1={0} y1={-38} x2={0} y2={38} /><TickAt r={30} ang={180} /><TickAt r={30} /><TickAt r={30} ang={90} /><TickAt r={30} ang={-90} /></g>)
+      return (<g><line x1={-38} y1={0} x2={38} y2={0} /><line x1={0} y1={-38} x2={0} y2={38} />{t(0) && <TickAt r={30} ang={180} />}{t(1) && <TickAt r={30} />}{t(2) && <TickAt r={30} ang={90} />}{t(3) && <TickAt r={30} ang={-90} />}</g>)
     case 'reduccion':
-      return (<g><line x1={-38} y1={0} x2={-20} y2={0} /><path d="M -20 -11 L 8 -5 L 8 5 L -20 11 Z" fill="none" /><line x1={8} y1={0} x2={38} y2={0} /><TickAt r={30} ang={180} /><TickAt r={27} /></g>)
+      return (<g><line x1={-38} y1={0} x2={-20} y2={0} /><path d="M -20 -11 L 8 -5 L 8 5 L -20 11 Z" fill="none" /><line x1={8} y1={0} x2={38} y2={0} />{t(0) && <TickAt r={30} ang={180} />}{t(1) && <TickAt r={27} />}</g>)
     case 'carrete':
-      return (<g><line x1={-38} y1={0} x2={-16} y2={0} /><rect x={-16} y={-9} width={32} height={18} fill="none" /><line x1={-8} y1={-9} x2={-8} y2={9} /><line x1={8} y1={-9} x2={8} y2={9} /><line x1={16} y1={0} x2={38} y2={0} /><TickAt r={27} ang={180} /><TickAt r={27} /></g>)
+      return (<g><line x1={-38} y1={0} x2={-16} y2={0} /><rect x={-16} y={-9} width={32} height={18} fill="none" /><line x1={-8} y1={-9} x2={-8} y2={9} /><line x1={8} y1={-9} x2={8} y2={9} /><line x1={16} y1={0} x2={38} y2={0} />{t(0) && <TickAt r={27} ang={180} />}{t(1) && <TickAt r={27} />}</g>)
     case 'tapa':
-      return (<g><line x1={-38} y1={0} x2={-4} y2={0} /><rect x={-4} y={-13} width={6} height={26} fill="currentColor" stroke="none" /><TickAt r={16} ang={180} /></g>)
+      return (<g><line x1={-38} y1={0} x2={-4} y2={0} /><rect x={-4} y={-13} width={6} height={26} fill="currentColor" stroke="none" />{t(0) && <TickAt r={16} ang={180} />}</g>)
     case 'check':
-      return (<g><line x1={-38} y1={0} x2={-18} y2={0} /><line x1={18} y1={0} x2={38} y2={0} /><path d="M -18 -11 L -18 11 L 0 0 Z" fill="none" /><path d="M 18 -11 L 18 11 L 0 0 Z" fill="none" /><line x1={-8} y1={-16} x2={8} y2={-16} /><path d="M 8 -16 L 3 -19.5 M 8 -16 L 3 -12.5" fill="none" /><TickAt r={27} ang={180} /><TickAt r={27} /></g>)
+      return (<g><line x1={-38} y1={0} x2={-18} y2={0} /><line x1={18} y1={0} x2={38} y2={0} /><path d="M -18 -11 L -18 11 L 0 0 Z" fill="none" /><path d="M 18 -11 L 18 11 L 0 0 Z" fill="none" /><line x1={-8} y1={-16} x2={8} y2={-16} /><path d="M 8 -16 L 3 -19.5 M 8 -16 L 3 -12.5" fill="none" />{t(0) && <TickAt r={27} ang={180} />}{t(1) && <TickAt r={27} />}</g>)
     case 'vaea':
-      return (<g><line x1={-38} y1={0} x2={-14} y2={0} /><circle cx={-2} cy={0} r={11} fill="none" /><line x1={4} y1={-14} x2={12} y2={-19} /><line x1={7} y1={-9} x2={16} y2={-12} /><TickAt r={24} ang={180} /></g>)
+      return (<g><line x1={-38} y1={0} x2={-14} y2={0} /><circle cx={-2} cy={0} r={11} fill="none" /><line x1={4} y1={-14} x2={12} y2={-19} /><line x1={7} y1={-9} x2={16} y2={-12} />{t(0) && <TickAt r={24} ang={180} />}</g>)
   }
 }
 
@@ -260,7 +263,7 @@ export default function CruceroVisual({ dn, nodes, onChange }: Props) {
                 const x1 = l.x1 * CELL + c * 38, y1 = l.y1 * CELL + s * 38
                 const x2 = l.x2 * CELL - c * 38, y2 = l.y2 * CELL - s * 38
                 const mx = (x1 + x2) / 2, my = (y1 + y2) / 2
-                const px = -s * 9, py = c * 9
+                const px = -s * 10, py = c * 10
                 return (<g key={`l${i}`}>
                   <line x1={x1} y1={y1} x2={x2} y2={y2} />
                   <line x1={mx - px - c * 2.5} y1={my - py - s * 2.5} x2={mx + px - c * 2.5} y2={my + py - s * 2.5} />
@@ -285,9 +288,10 @@ export default function CruceroVisual({ dn, nodes, onChange }: Props) {
                 const p = pos.get(n.id); if (!p) return null
                 const cx = p.x * CELL, cy = p.y * CELL
                 const seleccionada = sel === n.id
+                const conn = puertos(n).map((_, i) => (i === 0 && n.parentId != null) || nodes.some(k => k.parentId === n.id && k.parentPort === i))
                 return (<g key={n.id} className="cursor-pointer" onClick={() => { setSel(x => x === n.id ? null : n.id); setPending(null) }}>
                   {seleccionada && <rect x={cx - 32} y={cy - 32} width={64} height={64} rx={10} fill="currentColor" opacity={0.08} strokeDasharray="5 4" strokeWidth={1.5} />}
-                  <g transform={`translate(${cx},${cy}) rotate(${p.ang})`}><Simbolo n={n} /></g>
+                  <g transform={`translate(${cx},${cy}) rotate(${p.ang})`}><Simbolo n={n} conn={conn} /></g>
                   <text x={cx} y={cy + 47} textAnchor="middle" fontSize={9} className="fill-gray-500 dark:fill-gray-400" stroke="none">{NOMBRE[n.tipo](n)}</text>
                 </g>)
               })}
