@@ -6,6 +6,8 @@
 //  un botón + para conectar la siguiente pieza. Las bridas libres
 //  van "a tubería" (con adaptador); las uniones entre piezas solo
 //  llevan empaque + tornillos. De aquí se deriva la lista SIMEX.
+//  Los codos desvían el trazo con su ángulo real (11¼°, 22½°, 45°, 90°)
+//  como en la simbología normada de los planos.
 // ═══════════════════════════════════════════════════════════════
 
 import { useState } from 'react'
@@ -20,11 +22,14 @@ export interface VizNode {
   sub?: string          // valv: vcg-r|vcg-b|vmb-c · codo: 11|22|45|90 · vaea: vac|vae
   dn: string
   dn2?: string          // tee/cruz reducida, reducción
+  flip?: boolean        // voltear el lado del codo / ramal de la tee
   parentId: number | null
   parentPort: number | null
 }
 
 const num = (d: string) => d.replace('"', '').replace('½', '.5')
+const rad = (deg: number) => (deg * Math.PI) / 180
+const ANG_CODO: Record<string, number> = { '11': 11.25, '22': 22.5, '45': 45, '90': 90 }
 
 // Puertos (bridas) de cada pieza; el puerto 0 siempre mira al padre
 export function puertos(n: VizNode): { dn: string }[] {
@@ -75,55 +80,60 @@ export function vizToAccsConex(nodes: VizNode[]): { accs: SIMEXAcc[]; conex: SIM
   return { accs, conex }
 }
 
-// ─── Layout ortogonal ───────────────────────────────────────────
-const DX = [1, 0, -1, 0], DY = [0, 1, 0, -1]  // E, S, W, N
+// ─── Layout con ángulos libres (los codos desvían el trazo) ────
 const CELL = 96
 
-interface Placed { x: number; y: number; dirIn: number; dirs: number[] }
+interface Placed { x: number; y: number; ang: number; dirs: number[] }
 
 function computeLayout(nodes: VizNode[]) {
   const root = nodes.find(n => n.parentId == null)
   const pos = new Map<number, Placed>()
-  if (!root) return { pos, links: [] as { x1: number; y1: number; x2: number; y2: number; d: number }[] }
-  const occ = new Set<string>()
-  const links: { x1: number; y1: number; x2: number; y2: number; d: number }[] = []
+  const links: { x1: number; y1: number; x2: number; y2: number; ang: number }[] = []
+  if (!root) return { pos, links }
 
-  function dirsDe(n: VizNode, dirIn: number): number[] {
-    const cw = (dirIn + 1) % 4, ccw = (dirIn + 3) % 4, opp = (dirIn + 2) % 4
+  function dirsDe(n: VizNode, angIn: number): number[] {
+    const s = n.flip ? -1 : 1
+    const back = angIn + 180
     switch (n.tipo) {
-      case 'tee': return [opp, dirIn, cw]
-      case 'cruz': return [opp, dirIn, cw, ccw]
-      case 'codo': return [opp, n.sub === '90' ? cw : dirIn]
-      case 'tapa': case 'vaea': return [opp]
-      default: return [opp, dirIn]
+      case 'tee': return [back, angIn, angIn + s * 90]
+      case 'cruz': return [back, angIn, angIn + 90, angIn - 90]
+      case 'codo': return [back, angIn + s * (ANG_CODO[n.sub ?? '90'] ?? 90)]
+      case 'tapa': case 'vaea': return [back]
+      default: return [back, angIn]
     }
   }
 
-  function place(n: VizNode, x: number, y: number, dirIn: number) {
-    occ.add(`${x},${y}`)
-    const dirs = dirsDe(n, dirIn)
-    pos.set(n.id, { x, y, dirIn, dirs })
+  function place(n: VizNode, x: number, y: number, angIn: number) {
+    pos.set(n.id, { x, y, ang: angIn, dirs: dirsDe(n, angIn) })
+    const dirs = pos.get(n.id)!.dirs
     nodes.filter(k => k.parentId === n.id).forEach(k => {
-      const d = dirs[k.parentPort ?? 0] ?? dirIn
-      let nx = x + DX[d], ny = y + DY[d], guard = 0
-      while (occ.has(`${nx},${ny}`) && guard < 8) { nx += DX[d]; ny += DY[d]; guard++ }
-      links.push({ x1: x, y1: y, x2: nx, y2: ny, d })
-      place(k, nx, ny, d)
+      const a = dirs[k.parentPort ?? 0] ?? angIn
+      const c = Math.cos(rad(a)), s = Math.sin(rad(a))
+      let nx = x + c, ny = y + s, guard = 0
+      const choca = (px: number, py: number) => Array.from(pos.values()).some(q => Math.hypot(q.x - px, q.y - py) < 0.62)
+      while (choca(nx, ny) && guard < 8) { nx += c; ny += s; guard++ }
+      links.push({ x1: x, y1: y, x2: nx, y2: ny, ang: a })
+      place(k, nx, ny, a)
     })
   }
   place(root, 0, 0, 0)
   return { pos, links }
 }
 
-// ─── Símbolos de plano (coords locales, flujo +X) ──────────────
-function Ticks({ at, branch = false }: { at: number; branch?: boolean }) {
-  // par de rayitas (brida); branch=true → en el eje Y (ramal)
-  return branch
-    ? <g><line x1={-10} y1={at - 2.5} x2={10} y2={at - 2.5} /><line x1={-10} y1={at + 2.5} x2={10} y2={at + 2.5} /></g>
-    : <g><line x1={at - 2.5} y1={-10} x2={at - 2.5} y2={10} /><line x1={at + 2.5} y1={-10} x2={at + 2.5} y2={10} /></g>
+// ─── Símbolos de plano (coords locales, flujo entra por -X) ────
+// Rayitas de brida perpendiculares al eje, colocadas a radio r en dirección ang
+function TickAt({ r, ang = 0 }: { r: number; ang?: number }) {
+  const a = rad(ang), c = Math.cos(a), s = Math.sin(a)
+  const px = -s, py = c
+  const seg = (off: number) => {
+    const cx = (r + off) * c, cy = (r + off) * s
+    return <line x1={cx - px * 10} y1={cy - py * 10} x2={cx + px * 10} y2={cy + py * 10} />
+  }
+  return <g>{seg(-2.5)}{seg(2.5)}</g>
 }
 
 function Simbolo({ n }: { n: VizNode }) {
+  const s = n.flip ? -1 : 1
   switch (n.tipo) {
     case 'valv': {
       const mariposa = n.sub?.startsWith('vmb')
@@ -131,27 +141,33 @@ function Simbolo({ n }: { n: VizNode }) {
         <line x1={-38} y1={0} x2={-18} y2={0} /><line x1={18} y1={0} x2={38} y2={0} />
         <path d="M -18 -11 L -18 11 L 0 0 Z" fill="none" /><path d="M 18 -11 L 18 11 L 0 0 Z" fill="none" />
         {mariposa ? <circle cx={0} cy={0} r={5.5} fill="none" /> : <><line x1={0} y1={0} x2={0} y2={-17} /><line x1={-6} y1={-17} x2={6} y2={-17} /></>}
-        <Ticks at={-27} /><Ticks at={27} />
+        <TickAt r={27} ang={180} /><TickAt r={27} />
       </g>)
     }
-    case 'codo':
-      return n.sub === '90'
-        ? (<g><path d="M -38 0 L -8 0 Q 0 0 0 8 L 0 38" fill="none" /><Ticks at={-30} /><Ticks at={30} branch /></g>)
-        : (<g><path d="M -38 0 L -10 0 L 0 -7 L 10 0 L 38 0" fill="none" /><Ticks at={-30} /><Ticks at={30} /></g>)
+    case 'codo': {
+      // Simbología normada: la línea entra, se quiebra en el ángulo real y sale desviada
+      const th = s * (ANG_CODO[n.sub ?? '90'] ?? 90)
+      const ex = 38 * Math.cos(rad(th)), ey = 38 * Math.sin(rad(th))
+      return (<g>
+        <line x1={-38} y1={0} x2={0} y2={0} />
+        <line x1={0} y1={0} x2={ex} y2={ey} />
+        <TickAt r={30} ang={180} /><TickAt r={30} ang={th} />
+      </g>)
+    }
     case 'tee':
-      return (<g><line x1={-38} y1={0} x2={38} y2={0} /><line x1={0} y1={0} x2={0} y2={38} /><Ticks at={-30} /><Ticks at={30} /><Ticks at={30} branch /></g>)
+      return (<g><line x1={-38} y1={0} x2={38} y2={0} /><line x1={0} y1={0} x2={0} y2={38 * s} /><TickAt r={30} ang={180} /><TickAt r={30} /><TickAt r={30} ang={90 * s} /></g>)
     case 'cruz':
-      return (<g><line x1={-38} y1={0} x2={38} y2={0} /><line x1={0} y1={-38} x2={0} y2={38} /><Ticks at={-30} /><Ticks at={30} /><Ticks at={30} branch /><Ticks at={-30} branch /></g>)
+      return (<g><line x1={-38} y1={0} x2={38} y2={0} /><line x1={0} y1={-38} x2={0} y2={38} /><TickAt r={30} ang={180} /><TickAt r={30} /><TickAt r={30} ang={90} /><TickAt r={30} ang={-90} /></g>)
     case 'reduccion':
-      return (<g><line x1={-38} y1={0} x2={-20} y2={0} /><path d="M -20 -11 L 8 -5 L 8 5 L -20 11 Z" fill="none" /><line x1={8} y1={0} x2={38} y2={0} /><Ticks at={-30} /><Ticks at={27} /></g>)
+      return (<g><line x1={-38} y1={0} x2={-20} y2={0} /><path d="M -20 -11 L 8 -5 L 8 5 L -20 11 Z" fill="none" /><line x1={8} y1={0} x2={38} y2={0} /><TickAt r={30} ang={180} /><TickAt r={27} /></g>)
     case 'carrete':
-      return (<g><line x1={-38} y1={0} x2={-16} y2={0} /><rect x={-16} y={-9} width={32} height={18} fill="none" /><line x1={-8} y1={-9} x2={-8} y2={9} /><line x1={8} y1={-9} x2={8} y2={9} /><line x1={16} y1={0} x2={38} y2={0} /><Ticks at={-27} /><Ticks at={27} /></g>)
+      return (<g><line x1={-38} y1={0} x2={-16} y2={0} /><rect x={-16} y={-9} width={32} height={18} fill="none" /><line x1={-8} y1={-9} x2={-8} y2={9} /><line x1={8} y1={-9} x2={8} y2={9} /><line x1={16} y1={0} x2={38} y2={0} /><TickAt r={27} ang={180} /><TickAt r={27} /></g>)
     case 'tapa':
-      return (<g><line x1={-38} y1={0} x2={-4} y2={0} /><rect x={-4} y={-13} width={6} height={26} fill="currentColor" stroke="none" /><Ticks at={-16} /></g>)
+      return (<g><line x1={-38} y1={0} x2={-4} y2={0} /><rect x={-4} y={-13} width={6} height={26} fill="currentColor" stroke="none" /><TickAt r={16} ang={180} /></g>)
     case 'check':
-      return (<g><line x1={-38} y1={0} x2={-18} y2={0} /><line x1={18} y1={0} x2={38} y2={0} /><path d="M -18 -11 L -18 11 L 0 0 Z" fill="none" /><path d="M 18 -11 L 18 11 L 0 0 Z" fill="none" /><line x1={-8} y1={-16} x2={8} y2={-16} /><path d="M 8 -16 L 3 -19.5 M 8 -16 L 3 -12.5" fill="none" /><Ticks at={-27} /><Ticks at={27} /></g>)
+      return (<g><line x1={-38} y1={0} x2={-18} y2={0} /><line x1={18} y1={0} x2={38} y2={0} /><path d="M -18 -11 L -18 11 L 0 0 Z" fill="none" /><path d="M 18 -11 L 18 11 L 0 0 Z" fill="none" /><line x1={-8} y1={-16} x2={8} y2={-16} /><path d="M 8 -16 L 3 -19.5 M 8 -16 L 3 -12.5" fill="none" /><TickAt r={27} ang={180} /><TickAt r={27} /></g>)
     case 'vaea':
-      return (<g><line x1={-38} y1={0} x2={-14} y2={0} /><circle cx={-2} cy={0} r={11} fill="none" /><line x1={4} y1={-14} x2={12} y2={-19} /><line x1={7} y1={-9} x2={16} y2={-12} /><Ticks at={-24} /></g>)
+      return (<g><line x1={-38} y1={0} x2={-14} y2={0} /><circle cx={-2} cy={0} r={11} fill="none" /><line x1={4} y1={-14} x2={12} y2={-19} /><line x1={7} y1={-9} x2={16} y2={-12} /><TickAt r={24} ang={180} /></g>)
   }
 }
 
@@ -183,26 +199,27 @@ export default function CruceroVisual({ dn, nodes, onChange }: Props) {
   const byId = new Map(nodes.map(n => [n.id, n]))
 
   // Bridas libres (stubs): puertos sin padre ni hijo
-  const stubs: { nodeId: number; port: number; dn: string; d: number; x: number; y: number }[] = []
+  const stubs: { nodeId: number; port: number; dn: string; ang: number; x: number; y: number }[] = []
   nodes.forEach(n => {
     const p = pos.get(n.id); if (!p) return
     const prts = puertos(n)
     prts.forEach((prt, i) => {
       if (i === 0 && n.parentId != null) return                      // conecta al padre
       if (nodes.some(k => k.parentId === n.id && k.parentPort === i)) return  // tiene hijo
-      stubs.push({ nodeId: n.id, port: i, dn: prt.dn, d: p.dirs[i] ?? 0, x: p.x, y: p.y })
+      stubs.push({ nodeId: n.id, port: i, dn: prt.dn, ang: p.dirs[i] ?? 0, x: p.x, y: p.y })
     })
   })
 
   const nUniones = nodes.filter(n => n.parentId != null).length
   const nLibres = stubs.length
 
-  // Bounding box
-  let minX = 0, maxX = 0, minY = 0, maxY = 0
-  pos.forEach(p => { minX = Math.min(minX, p.x); maxX = Math.max(maxX, p.x); minY = Math.min(minY, p.y); maxY = Math.max(maxY, p.y) })
-  stubs.forEach(s => { minX = Math.min(minX, s.x + DX[s.d]); maxX = Math.max(maxX, s.x + DX[s.d]); minY = Math.min(minY, s.y + DY[s.d]); maxY = Math.max(maxY, s.y + DY[s.d]) })
-  const PAD = 58
-  const vb = `${minX * CELL - PAD} ${minY * CELL - PAD} ${(maxX - minX) * CELL + 2 * PAD} ${(maxY - minY) * CELL + 2 * PAD + 14}`
+  // Bounding box en píxeles (piezas + stubs + etiquetas)
+  let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity
+  const meter = (px: number, py: number, m: number) => { minX = Math.min(minX, px - m); maxX = Math.max(maxX, px + m); minY = Math.min(minY, py - m); maxY = Math.max(maxY, py + m) }
+  pos.forEach(p => meter(p.x * CELL, p.y * CELL, 56))
+  stubs.forEach(st => meter(st.x * CELL + Math.cos(rad(st.ang)) * 78, st.y * CELL + Math.sin(rad(st.ang)) * 78, 26))
+  if (!isFinite(minX)) { minX = -60; maxX = 60; minY = -60; maxY = 60 }
+  const vb = `${minX} ${minY} ${maxX - minX} ${maxY - minY}`
 
   function addNode(tipo: VizNode['tipo'], sub?: string, dn2?: string) {
     if (!pending) return
@@ -222,6 +239,8 @@ export default function CruceroVisual({ dn, nodes, onChange }: Props) {
 
   const dnsMenores = (d: string) => DN_ORDER.filter(x => DN_ORDER.indexOf(x) < DN_ORDER.indexOf(d))
   const esDnChico = pending ? ['2"', '2½"', '3"'].includes(pending.dn) : false
+  const selNode = sel != null ? byId.get(sel) : undefined
+  const volteable = selNode && (selNode.tipo === 'codo' || selNode.tipo === 'tee')
 
   return (
     <div className="space-y-3">
@@ -237,26 +256,28 @@ export default function CruceroVisual({ dn, nodes, onChange }: Props) {
             <g className="text-[#1C3D5A] dark:text-blue-300" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
               {/* tubos de unión pieza-pieza + marca de unión bridada */}
               {links.map((l, i) => {
-                const x1 = l.x1 * CELL + DX[l.d] * 38, y1 = l.y1 * CELL + DY[l.d] * 38
-                const x2 = l.x2 * CELL - DX[l.d] * 38, y2 = l.y2 * CELL - DY[l.d] * 38
+                const c = Math.cos(rad(l.ang)), s = Math.sin(rad(l.ang))
+                const x1 = l.x1 * CELL + c * 38, y1 = l.y1 * CELL + s * 38
+                const x2 = l.x2 * CELL - c * 38, y2 = l.y2 * CELL - s * 38
                 const mx = (x1 + x2) / 2, my = (y1 + y2) / 2
-                const px = DY[l.d] * 9, py = DX[l.d] * 9  // perpendicular
+                const px = -s * 9, py = c * 9
                 return (<g key={`l${i}`}>
                   <line x1={x1} y1={y1} x2={x2} y2={y2} />
-                  <line x1={mx - px - DX[l.d] * 2.5} y1={my - py - DY[l.d] * 2.5} x2={mx + px - DX[l.d] * 2.5} y2={my + py - DY[l.d] * 2.5} />
-                  <line x1={mx - px + DX[l.d] * 2.5} y1={my - py + DY[l.d] * 2.5} x2={mx + px + DX[l.d] * 2.5} y2={my + py + DY[l.d] * 2.5} />
+                  <line x1={mx - px - c * 2.5} y1={my - py - s * 2.5} x2={mx + px - c * 2.5} y2={my + py - s * 2.5} />
+                  <line x1={mx - px + c * 2.5} y1={my - py + s * 2.5} x2={mx + px + c * 2.5} y2={my + py + s * 2.5} />
                 </g>)
               })}
               {/* bridas libres → a tubería (+ botón) */}
-              {stubs.map((s, i) => {
-                const cx = s.x * CELL, cy = s.y * CELL
-                const bx = cx + DX[s.d] * 78, by = cy + DY[s.d] * 78
-                const activo = pending && pending.nodeId === s.nodeId && pending.port === s.port
-                return (<g key={`s${i}`} className="cursor-pointer" onClick={() => { setPending({ nodeId: s.nodeId, port: s.port, dn: s.dn }); setSubPick(null); setSel(null) }}>
-                  <line x1={cx + DX[s.d] * 40} y1={cy + DY[s.d] * 40} x2={cx + DX[s.d] * 62} y2={cy + DY[s.d] * 62} strokeDasharray="4 4" opacity={0.55} />
+              {stubs.map((st, i) => {
+                const c = Math.cos(rad(st.ang)), s = Math.sin(rad(st.ang))
+                const cx = st.x * CELL, cy = st.y * CELL
+                const bx = cx + c * 78, by = cy + s * 78
+                const activo = pending && pending.nodeId === st.nodeId && pending.port === st.port
+                return (<g key={`s${i}`} className="cursor-pointer" onClick={() => { setPending({ nodeId: st.nodeId, port: st.port, dn: st.dn }); setSubPick(null); setSel(null) }}>
+                  <line x1={cx + c * 40} y1={cy + s * 40} x2={cx + c * 62} y2={cy + s * 62} strokeDasharray="4 4" opacity={0.55} />
                   <circle cx={bx} cy={by} r={11} fill={activo ? 'currentColor' : 'white'} className={activo ? '' : 'dark:fill-gray-800'} />
                   <text x={bx} y={by + 4} textAnchor="middle" fontSize={14} fontWeight={700} fill={activo ? 'white' : 'currentColor'} stroke="none">+</text>
-                  {s.dn !== dn && <text x={bx} y={by + 22} textAnchor="middle" fontSize={8} className="fill-gray-400" stroke="none">{s.dn}</text>}
+                  {st.dn !== dn && <text x={bx} y={by + 24} textAnchor="middle" fontSize={8} className="fill-gray-400" stroke="none">{st.dn}</text>}
                 </g>)
               })}
               {/* piezas */}
@@ -266,7 +287,7 @@ export default function CruceroVisual({ dn, nodes, onChange }: Props) {
                 const seleccionada = sel === n.id
                 return (<g key={n.id} className="cursor-pointer" onClick={() => { setSel(x => x === n.id ? null : n.id); setPending(null) }}>
                   {seleccionada && <rect x={cx - 32} y={cy - 32} width={64} height={64} rx={10} fill="currentColor" opacity={0.08} strokeDasharray="5 4" strokeWidth={1.5} />}
-                  <g transform={`translate(${cx},${cy}) rotate(${p.dirIn * 90})`}><Simbolo n={n} /></g>
+                  <g transform={`translate(${cx},${cy}) rotate(${p.ang})`}><Simbolo n={n} /></g>
                   <text x={cx} y={cy + 47} textAnchor="middle" fontSize={9} className="fill-gray-500 dark:fill-gray-400" stroke="none">{NOMBRE[n.tipo](n)}</text>
                 </g>)
               })}
@@ -280,10 +301,13 @@ export default function CruceroVisual({ dn, nodes, onChange }: Props) {
       )}
 
       {/* Pieza seleccionada */}
-      {sel != null && byId.has(sel) && (
-        <div className="flex items-center gap-3 bg-[#1C3D5A]/[0.04] dark:bg-gray-800/50 border border-[#1C3D5A]/15 rounded-lg px-3 py-2">
-          <span className="text-xs text-gray-600 dark:text-gray-300 flex-1"><strong>{NOMBRE[byId.get(sel)!.tipo](byId.get(sel)!)}</strong></span>
-          <button onClick={() => delNode(sel)} className="text-[11px] text-red-500 hover:text-red-700 border border-red-200 rounded-lg px-2.5 py-1">Eliminar pieza</button>
+      {selNode && (
+        <div className="flex items-center gap-3 bg-[#1C3D5A]/[0.04] dark:bg-gray-800/50 border border-[#1C3D5A]/15 rounded-lg px-3 py-2 flex-wrap">
+          <span className="text-xs text-gray-600 dark:text-gray-300 flex-1"><strong>{NOMBRE[selNode.tipo](selNode)}</strong></span>
+          {volteable && (
+            <button onClick={() => onChange(nodes.map(n => n.id === sel ? { ...n, flip: !n.flip } : n))} className="text-[11px] text-[#1C3D5A] dark:text-blue-300 hover:bg-[#1C3D5A]/10 border border-[#1C3D5A]/25 rounded-lg px-2.5 py-1">⇅ Voltear lado</button>
+          )}
+          <button onClick={() => delNode(sel!)} className="text-[11px] text-red-500 hover:text-red-700 border border-red-200 rounded-lg px-2.5 py-1">Eliminar pieza</button>
           <button onClick={() => setSel(null)} className="text-[11px] text-gray-400 px-1">✕</button>
         </div>
       )}
@@ -293,7 +317,7 @@ export default function CruceroVisual({ dn, nodes, onChange }: Props) {
         <div className="rounded-xl border border-[#1C3D5A]/25 bg-white dark:bg-gray-800 p-4 space-y-3 shadow-sm">
           <div className="flex items-center justify-between">
             <p className="text-xs font-semibold text-[#1C3D5A] dark:text-blue-300">
-              {pending.nodeId == null ? `Primera pieza del crucero — ${pending.dn}` : `Conectar en ${NOMBRE[byId.get(pending.nodeId)!.tipo](byId.get(pending.nodeId)!)} — brida ${pending.dn}`}
+              {pending.nodeId == null || !byId.has(pending.nodeId) ? `Primera pieza del crucero — ${pending.dn}` : `Conectar en ${NOMBRE[byId.get(pending.nodeId)!.tipo](byId.get(pending.nodeId)!)} — brida ${pending.dn}`}
             </p>
             <button onClick={() => { setPending(null); setSubPick(null) }} className="text-[11px] text-gray-400 hover:text-gray-600 px-1">✕ Cancelar</button>
           </div>
