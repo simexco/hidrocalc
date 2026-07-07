@@ -246,7 +246,16 @@ function Simbolo({ n, conn }: { n: VizNode; conn: boolean[] }) {
   }
 }
 
-// Atraque: bloque sólido en la espalda de la pieza, del lado donde empuja el agua
+// Atraque: cuña de concreto con achurado (rayado diagonal) en la espalda de la pieza,
+// del lado donde empuja el agua — distinto de la tapa ciega (que es barra sólida)
+function CunaConcreto() {
+  return (<g>
+    <path d="M 0 -10 L 11 -14 L 11 14 L 0 10 Z" fill="none" strokeWidth={1.6} />
+    <line x1={2.5} y1={-4.5} x2={8.5} y2={-9.5} strokeWidth={1.1} />
+    <line x1={2.5} y1={1.5} x2={8.5} y2={-3.5} strokeWidth={1.1} />
+    <line x1={2.5} y1={7.5} x2={8.5} y2={2.5} strokeWidth={1.1} />
+  </g>)
+}
 function AtraqueMark({ n }: { n: VizNode }) {
   if (!n.atraque) return null
   const s = n.flip ? -1 : 1
@@ -255,10 +264,10 @@ function AtraqueMark({ n }: { n: VizNode }) {
     let dx = 1 - Math.cos(th), dy = -Math.sin(th)
     const m = Math.hypot(dx, dy) || 1; dx /= m; dy /= m
     const ang = Math.atan2(dy, dx) * 180 / Math.PI
-    return (<g transform={`translate(${dx * 20},${dy * 20}) rotate(${ang})`}><rect x={-2.5} y={-10} width={5.5} height={20} fill="currentColor" stroke="none" /></g>)
+    return (<g transform={`translate(${dx * 16},${dy * 16}) rotate(${ang})`}><CunaConcreto /></g>)
   }
-  if (n.tipo === 'tee') return <rect x={-9} y={s === 1 ? -21 : 15} width={18} height={6} fill="currentColor" stroke="none" />
-  if (n.tipo === 'tapa') return <rect x={7} y={-11} width={6} height={22} fill="currentColor" stroke="none" />
+  if (n.tipo === 'tee') return (<g transform={`translate(0,${-14 * s}) rotate(${-90 * s})`}><CunaConcreto /></g>)
+  if (n.tipo === 'tapa') return (<g transform="translate(9,0)"><CunaConcreto /></g>)
   return null
 }
 
