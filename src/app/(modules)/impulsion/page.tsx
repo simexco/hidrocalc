@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { InputField } from "@/components/ui/InputField";
 import { MetricCard } from "@/components/ui/MetricCard";
@@ -105,15 +106,19 @@ export default function ImpulsionPage() {
     return () => clearTimeout(debounceRef.current);
   }, [runCalc]);
 
-  // Flujo de proyecto: usar este modulo marca la linea como por bombeo y pasa He y eficiencia al reporte
+  // Flujo de proyecto: usar este modulo marca la linea como por bombeo.
+  // He y eficiencia solo se SIEMBRAN si aun no existen — el paso "Equipo de bombeo"
+  // (cotas reales) es la fuente fina y no debe pisarse al regresar aqui.
   useEffect(() => {
     if (!results) return;
     const ef = Math.round((inputs.eficienciaBomba ?? 0.7) * (inputs.eficienciaMotor ?? 0.9) * 100);
-    const t = setTimeout(() => patchProject({
-      incluyeBombeo: true,
-      he: results.Hg != null ? Math.round(results.Hg * 10) / 10 : null,
-      eficiencia: ef,
-    }), 600);
+    const t = setTimeout(() => {
+      const proj = useProjectStore.getState().project;
+      patchProject({
+        incluyeBombeo: true,
+        ...(proj.he == null ? { he: results.Hg != null ? Math.round(results.Hg * 10) / 10 : null, eficiencia: ef } : {}),
+      });
+    }, 600);
     return () => clearTimeout(t);
   }, [results, inputs.eficienciaBomba, inputs.eficienciaMotor, patchProject]);
 
@@ -333,7 +338,7 @@ export default function ImpulsionPage() {
 
               {/* Power */}
               <div className="bg-amber-50 dark:bg-amber-900/20 rounded-xl border border-amber-200 dark:border-amber-800 p-4 space-y-3">
-                <p className="text-xs text-amber-700 font-semibold">Potencia de la bomba</p>
+                <p className="text-xs text-amber-700 font-semibold">Potencia preliminar — para comparar diámetros</p>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                   <div>
                     <p className="text-[10px] text-amber-600">Hidraulica</p>
@@ -372,6 +377,10 @@ export default function ImpulsionPage() {
                   reference="Potencia de bombeo"
                   norm="CONAGUA MAPAS / Crane TP-410"
                 />
+                <div className="flex items-center justify-between gap-3 bg-white/70 dark:bg-gray-800/50 border border-[#1C3D5A]/20 rounded-lg px-3 py-2.5 flex-wrap">
+                  <p className="text-[11px] text-[#1C3D5A] dark:text-blue-300 flex-1 min-w-[220px]">Esta potencia es <strong>preliminar</strong> (sirve para comparar diámetros). La <strong>potencia para cotizar la bomba</strong> —con cotas reales, nivel dinámico, presión de servicio y HP comercial por equipo— se calcula en el siguiente paso.</p>
+                  <Link href="/equipo-bombeo" className="shrink-0 text-[11px] bg-[#1C3D5A] text-white px-3 py-1.5 rounded-lg hover:bg-[#0F2438] transition-colors font-medium">Ir a Equipo de bombeo →</Link>
+                </div>
               </div>
 
               {/* Energy cost */}
