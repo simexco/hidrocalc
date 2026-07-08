@@ -37,6 +37,7 @@ interface BombeoState {
   presion: number; uPresion: "mca" | "kg";
   nbombas: 1 | 2 | 3; tipoEquipo: string;
   pctLocal: number; efic: number;
+  horasBombeo: number; tarifaCFE: number;
 }
 
 const DEFAULTS: BombeoState = {
@@ -49,6 +50,7 @@ const DEFAULTS: BombeoState = {
   presion: 0, uPresion: "mca",
   nbombas: 1, tipoEquipo: "Bomba centrífuga horizontal",
   pctLocal: 5, efic: 70,
+  horasBombeo: 12, tarifaCFE: 4.5,
 };
 
 const selCls = "w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 dark:text-white";
@@ -133,7 +135,14 @@ export default function EquipoBombeoPage() {
     const etiquetaArreglo = st.nbombas === 3 ? "2+1" : st.nbombas === 2 ? "1+1" : "1";
     const varios = st.caso === "tanque" && st.nbombas !== 1;
 
-    return { C, presionMca, cotaSucc, cotaDesc, Hest, Qb, hf, hl, CDT, vel, hpHid, hpCom, tipo, etiquetaArreglo, varios, nOper };
+    // Costo de operación con la potencia real al freno (ya incluye la eficiencia global)
+    const kWbomba = hpHid * 0.746;
+    const kWtotal = kWbomba * (st.caso === "tanque" ? nOper : 1);
+    const kWh_dia = kWtotal * st.horasBombeo;
+    const costo_mes = kWh_dia * 30 * st.tarifaCFE;
+    const costo_anual = kWh_dia * 365 * st.tarifaCFE;
+
+    return { C, presionMca, cotaSucc, cotaDesc, Hest, Qb, hf, hl, CDT, vel, hpHid, hpCom, tipo, etiquetaArreglo, varios, nOper, kWbomba, kWtotal, kWh_dia, costo_mes, costo_anual };
   }, [st]);
 
   // Flujo de proyecto: carga estática y eficiencia alimentan la hoja de bombeo del reporte
@@ -385,6 +394,41 @@ export default function EquipoBombeoPage() {
 
             <p className="text-[11px] opacity-80 mt-4 leading-relaxed">
               <strong>Potencia estimada.</strong> Estos valores son un predimensionamiento orientativo: la potencia depende de la curva real de cada bomba y de su eficiencia. Para afinar el resultado se recomienda acercarse a un <strong>proveedor de bombas</strong> con el par <strong>Q + CDT</strong>, que definirá el modelo y el motor definitivos. Cálculo de fricción por Hazen-Williams.
+            </p>
+          </div>
+
+          {/* Costo de operación (energía) — con la potencia fina de este módulo */}
+          <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 space-y-3">
+            <p className="text-xs text-gray-500 font-semibold">Costo de operación (energía)</p>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Horas de bombeo al día</label>
+                <select value={st.horasBombeo} onChange={(e) => set("horasBombeo", parseInt(e.target.value))} className={selCls}>
+                  {[8, 12, 16, 20, 24].map((h) => <option key={h} value={h}>{h} h/día</option>)}
+                </select>
+              </div>
+              <InputField label="Tarifa CFE comercial" value={st.tarifaCFE} onChange={(v) => set("tarifaCFE", num(v) || 4.5)} unit="$/kWh" tooltip="Tarifa comercial CFE (PDBT) que pagan los organismos operadores. Ajustar al recibo real; varía por región y mes." />
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <div>
+                <p className="text-[10px] text-gray-400">kWh/día</p>
+                <p className="text-sm font-bold text-gray-700 dark:text-gray-200">{r.kWh_dia.toLocaleString("es-MX", { maximumFractionDigits: 1 })}</p>
+              </div>
+              <div>
+                <p className="text-[10px] text-gray-400">kWh/mes</p>
+                <p className="text-sm font-bold text-gray-700 dark:text-gray-200">{(r.kWh_dia * 30).toLocaleString("es-MX", { maximumFractionDigits: 0 })}</p>
+              </div>
+              <div>
+                <p className="text-[10px] text-gray-400">Costo mensual</p>
+                <p className="text-lg font-bold text-[#1C3D5A] dark:text-blue-300">${r.costo_mes.toLocaleString("es-MX", { maximumFractionDigits: 0 })}</p>
+              </div>
+              <div>
+                <p className="text-[10px] text-gray-400">Costo anual</p>
+                <p className="text-lg font-bold text-[#1C3D5A] dark:text-blue-300">${r.costo_anual.toLocaleString("es-MX", { maximumFractionDigits: 0 })}</p>
+              </div>
+            </div>
+            <p className="text-[10px] text-gray-400">
+              Con la potencia real al freno: {r.kWbomba.toLocaleString("es-MX", { maximumFractionDigits: 1 })} kW por bomba{st.caso === "tanque" && r.nOper > 1 ? ` × ${r.nOper} en operación` : ""} × {st.horasBombeo} h/día × ${st.tarifaCFE}/kWh. Este es el costo fino de operación; el del Diámetro económico es solo comparativo.
             </p>
           </div>
         </div>

@@ -385,7 +385,7 @@ export default function ImpulsionPage() {
 
               {/* Energy cost */}
               <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
-                <p className="text-xs text-gray-500 font-semibold mb-3">Costo de energia</p>
+                <p className="text-xs text-gray-500 font-semibold mb-3">Costo de energía preliminar — para comparar diámetros</p>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                   <div>
                     <p className="text-[10px] text-gray-400">kWh/dia</p>
@@ -405,6 +405,7 @@ export default function ImpulsionPage() {
                   </div>
                 </div>
                 <p className="text-[10px] text-gray-400 mt-2">Tarifa CFE: ${inputs.tarifaCFE}/kWh × {formatNumber(results.Pm_kW, 1)} kW × {inputs.horasBombeo} h/dia × 30 dias</p>
+                <p className="text-[10px] text-gray-400 mt-1">Sirve para ver cuánta energía ahorra cada diámetro. El costo fino de operación (cotas reales y arreglo de equipos) se calcula en <Link href="/equipo-bombeo" className="text-[#1C3D5A] dark:text-blue-300 underline">Equipo de bombeo</Link>.</p>
               </div>
 
               {/* Alerts */}
