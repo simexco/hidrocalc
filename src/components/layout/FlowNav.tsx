@@ -10,6 +10,7 @@ const FLOW = [
   { href: "/demanda", label: "Cálculo de gasto" },
   { href: "/perfil", label: "Línea de conducción" },
   { href: "/impulsion", label: "Diámetro económico" },
+  { href: "/equipo-bombeo", label: "Equipo de bombeo" },
   { href: "/golpe-ariete", label: "Golpe de ariete" },
   { href: "/vrp", label: "Válvula reductora" },
   { href: "/valvulas-aire", label: "Válvulas de aire" },

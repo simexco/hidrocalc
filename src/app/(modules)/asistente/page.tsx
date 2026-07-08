@@ -37,12 +37,13 @@ export default function AsistentePage() {
   const steps: Step[] = [
     { n: 1, title: "Cálculo de gasto", desc: "Demanda de agua: población, dotación → Qmd.", href: "/demanda", done: gastoDone, summary: r.qmd != null ? `Qmd ${r.qmd.toFixed(2)} L/s` : "Pendiente" },
     { n: 2, title: "Línea de conducción", desc: "Caudal, material, diámetro del tubo, longitud, perfil y presiones.", href: "/perfil", done: condDone, summary: condDone ? `${p.material} ${p.dn} · ${p.longitud} m` : "Pendiente" },
-    { n: 3, title: "Diámetro económico", desc: "Si la línea es por bombeo: CDT y diámetro económico.", href: "/impulsion", done: bombeoDone, summary: p.incluyeBombeo ? (p.he != null ? `He ${p.he} m` : "Pendiente") : "Opcional (solo bombeo)" },
-    { n: 4, title: "Golpe de ariete", desc: "¿La tubería resiste el golpe? Si no, válvula de protección.", href: "/golpe-ariete", done: null, summary: "Protección contra sobrepresión / vacío" },
-    { n: 5, title: "Válvula reductora (VRP)", desc: "Si la presión excede la clase del tubo: reducir presión.", href: "/vrp", done: null, summary: vrpRecomendada ? "Recomendada (presión alta)" : "Revisar si aplica" },
-    { n: 6, title: "Válvulas de aire", desc: "Ubicación de ventosas, seccionamiento y desfogue.", href: "/valvulas-aire", done: valvDone, summary: valvDone ? `${p.valvulas.length} válvulas/accesorios` : "Pendiente" },
-    { n: 7, title: "Generador de cruceros", desc: "Arma los cruceros pieza por pieza; la lista de materiales (despiece) con SKU Sigma Flow se genera sola.", href: "/despiece", done: null, summary: "Arma tus cruceros" },
-    { n: 8, title: "Generar reporte", desc: "Reporte PDF consolidado de marca Sigma Flow.", href: "/entregable", done: null, summary: "Documento final" },
+    { n: 3, title: "Diámetro económico", desc: "Si la línea es por bombeo: elegir el diámetro óptimo (costo del tubo vs energía).", href: "/impulsion", done: bombeoDone, summary: p.incluyeBombeo ? (p.he != null ? `He ${p.he} m` : "Pendiente") : "Opcional (solo bombeo)" },
+    { n: 4, title: "Equipo de bombeo", desc: "Con el tubo decidido: CDT con cotas reales y potencia comercial (HP) para cotizar la bomba.", href: "/equipo-bombeo", done: null, summary: p.incluyeBombeo ? "Q + CDT para el proveedor" : "Opcional (solo bombeo)" },
+    { n: 5, title: "Golpe de ariete", desc: "¿La tubería resiste el golpe? Si no, válvula de protección.", href: "/golpe-ariete", done: null, summary: "Protección contra sobrepresión / vacío" },
+    { n: 6, title: "Válvula reductora (VRP)", desc: "Si la presión excede la clase del tubo: reducir presión.", href: "/vrp", done: null, summary: vrpRecomendada ? "Recomendada (presión alta)" : "Revisar si aplica" },
+    { n: 7, title: "Válvulas de aire", desc: "Ubicación de ventosas, seccionamiento y desfogue.", href: "/valvulas-aire", done: valvDone, summary: valvDone ? `${p.valvulas.length} válvulas/accesorios` : "Pendiente" },
+    { n: 8, title: "Generador de cruceros", desc: "Arma los cruceros pieza por pieza; la lista de materiales (despiece) con SKU Sigma Flow se genera sola.", href: "/despiece", done: null, summary: "Arma tus cruceros" },
+    { n: 9, title: "Generar reporte", desc: "Reporte PDF consolidado de marca Sigma Flow.", href: "/entregable", done: null, summary: "Documento final" },
   ];
 
   const nextStep = steps.find((s) => s.done === false);
