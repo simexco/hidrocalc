@@ -10,7 +10,7 @@
 //  como en la simbología normada de los planos.
 // ═══════════════════════════════════════════════════════════════
 
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { SIMEX_CAT, type SIMEXAcc, type SIMEXConex } from './ListaMaterialesSIMEX'
 
 const { findConn, VALV, VALV_LABEL, VALV_NORMA, TAPA, CDM, DN_ORDER } = SIMEX_CAT
@@ -293,17 +293,66 @@ const NOMBRE: Record<string, (n: VizNode) => string> = {
   bomba: n => `Bomba ${n.dn}`,
 }
 
+// ─── Captura del diagrama a PNG (para el reporte) ───────────────
+// Clona el SVG, quita los elementos de interfaz (botones ⊕/⋯/✕, resaltados),
+// resuelve los colores de las clases y lo rasteriza sobre fondo blanco.
+async function svgAPng(svg: SVGSVGElement): Promise<string> {
+  const clon = svg.cloneNode(true) as SVGSVGElement
+  clon.setAttribute('xmlns', 'http://www.w3.org/2000/svg')
+  clon.querySelectorAll('[data-ui]').forEach(e => e.remove())
+  const g = clon.querySelector('g')
+  if (g) g.setAttribute('style', 'color:#1C3D5A')
+  clon.querySelectorAll('text').forEach(tx => {
+    const cls = tx.getAttribute('class') || ''
+    if (cls.includes('fill-gray')) tx.setAttribute('fill', '#6b7280')
+    if (cls.includes('stroke-white')) tx.setAttribute('stroke', '#ffffff')
+  })
+  clon.querySelectorAll('[class]').forEach(e => e.removeAttribute('class'))
+  const vb = svg.viewBox.baseVal
+  const W = Math.max(1, Math.round(vb.width)), H = Math.max(1, Math.round(vb.height))
+  clon.setAttribute('width', String(W)); clon.setAttribute('height', String(H))
+  const svgStr = new XMLSerializer().serializeToString(clon)
+  const img = new Image()
+  await new Promise<void>((res, rej) => { img.onload = () => res(); img.onerror = () => rej(new Error('svg-png')); img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svgStr) })
+  const esc = 2
+  const cv = document.createElement('canvas')
+  cv.width = W * esc; cv.height = H * esc
+  const ctx = cv.getContext('2d')
+  if (!ctx) throw new Error('canvas')
+  ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, cv.width, cv.height)
+  ctx.drawImage(img, 0, 0, cv.width, cv.height)
+  return cv.toDataURL('image/png')
+}
+
 // ─── Componente ─────────────────────────────────────────────────
 interface Props {
   dn: string                       // DN principal del crucero
   nodes: VizNode[]
   onChange: (nodes: VizNode[]) => void
+  onSnapshot?: (png: string | null) => void  // imagen limpia del crucero (para el reporte)
 }
 
-export default function CruceroVisual({ dn, nodes, onChange }: Props) {
+export default function CruceroVisual({ dn, nodes, onChange, onSnapshot }: Props) {
   const [pending, setPending] = useState<{ nodeId: number | null; port: number | null; dn: string } | null>(null)
   const [sel, setSel] = useState<number | null>(null)
   const [subPick, setSubPick] = useState<'tee-red' | 'cruz-red' | 'reduc' | 'vcontrol' | 'aire-vac' | 'aire-vae' | 'aire-vea' | null>(null)
+  const svgRef = useRef<SVGSVGElement | null>(null)
+
+  // Capturar el diagrama (debounced) cada vez que cambia el crucero
+  const snapRef = useRef(onSnapshot)
+  snapRef.current = onSnapshot
+  const nodesKey = JSON.stringify(nodes)
+  useEffect(() => {
+    if (!snapRef.current) return
+    if (nodes.length === 0) { snapRef.current(null); return }
+    const t = setTimeout(() => {
+      const el = svgRef.current
+      if (!el) return
+      svgAPng(el).then(png => snapRef.current?.(png)).catch(() => {})
+    }, 1100)
+    return () => clearTimeout(t)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [nodesKey])
 
   const { pos, links } = computeLayout(nodes)
   const byId = new Map(nodes.map(n => [n.id, n]))
@@ -365,7 +414,7 @@ export default function CruceroVisual({ dn, nodes, onChange }: Props) {
         </div>
       ) : (
         <div className="rounded-xl border border-[#1C3D5A]/20 bg-white dark:bg-gray-900 overflow-hidden">
-          <svg viewBox={vb} className="w-full" style={{ maxHeight: 380 }}>
+          <svg ref={svgRef} viewBox={vb} className="w-full" style={{ maxHeight: 380 }}>
             <g className="text-[#1C3D5A] dark:text-blue-300" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
               {/* tubos de unión pieza-pieza + marca de unión bridada */}
               {links.map((l, i) => {
@@ -388,8 +437,8 @@ export default function CruceroVisual({ dn, nodes, onChange }: Props) {
                 const activo = pending && pending.nodeId === st.nodeId && pending.port === st.port
                 return (<g key={`s${i}`} className="cursor-pointer" onClick={() => { setPending({ nodeId: st.nodeId, port: st.port, dn: st.dn }); setSubPick(null); setSel(null) }}>
                   <line x1={cx + c * 40} y1={cy + s * 40} x2={cx + c * 62} y2={cy + s * 62} strokeDasharray="4 4" opacity={0.55} />
-                  <circle cx={bx} cy={by} r={11} fill={activo ? 'currentColor' : 'white'} className={activo ? '' : 'dark:fill-gray-800'} />
-                  <text x={bx} y={by + 4} textAnchor="middle" fontSize={14} fontWeight={700} fill={activo ? 'white' : 'currentColor'} stroke="none">+</text>
+                  <circle data-ui="1" cx={bx} cy={by} r={11} fill={activo ? 'currentColor' : 'white'} className={activo ? '' : 'dark:fill-gray-800'} />
+                  <text data-ui="1" x={bx} y={by + 4} textAnchor="middle" fontSize={14} fontWeight={700} fill={activo ? 'white' : 'currentColor'} stroke="none">+</text>
                   {st.dn !== dn && <text x={bx} y={by + 24} textAnchor="middle" fontSize={8} className="fill-gray-400" stroke="none">{st.dn}</text>}
                 </g>)
               })}
@@ -407,8 +456,8 @@ export default function CruceroVisual({ dn, nodes, onChange }: Props) {
                   {/* zona de clic grande e invisible (las líneas solas son muy delgadas para atinarle) */}
                   <rect x={cx - 34} y={cy - 34} width={68} height={68} fill="transparent" stroke="none" />
                   {/* resaltado al pasar el mouse: la pieza se ve interactiva */}
-                  {!seleccionada && <rect x={cx - 32} y={cy - 32} width={64} height={64} rx={10} fill="currentColor" stroke="none" className="opacity-0 group-hover:opacity-[0.07] transition-opacity" />}
-                  {seleccionada && <rect x={cx - 32} y={cy - 32} width={64} height={64} rx={10} fill="currentColor" opacity={0.08} strokeDasharray="5 4" strokeWidth={1.5} />}
+                  {!seleccionada && <rect data-ui="1" x={cx - 32} y={cy - 32} width={64} height={64} rx={10} fill="currentColor" stroke="none" className="opacity-0 group-hover:opacity-[0.07] transition-opacity" />}
+                  {seleccionada && <rect data-ui="1" x={cx - 32} y={cy - 32} width={64} height={64} rx={10} fill="currentColor" opacity={0.08} strokeDasharray="5 4" strokeWidth={1.5} />}
                   <g transform={`translate(${cx},${cy}) rotate(${p.ang + rotExtra})`}><Simbolo n={n} conn={conn} /><AtraqueMark n={n} /></g>
                   <text
                     x={esVertical ? cx + 42 : cx}
@@ -422,13 +471,13 @@ export default function CruceroVisual({ dn, nodes, onChange }: Props) {
                   >{NOMBRE[n.tipo](n)}</text>
                   {/* botón ⋯ siempre visible: indica que la pieza tiene opciones */}
                   {!seleccionada && (
-                    <g>
+                    <g data-ui="1">
                       <circle cx={cx + 30} cy={cy - 30} r={8.5} fill="white" className="dark:fill-gray-800" strokeWidth={1.2} opacity={0.85} />
                       <text x={cx + 30} y={cy - 26.8} textAnchor="middle" fontSize={10} fontWeight={700} fill="currentColor" stroke="none">⋯</text>
                     </g>
                   )}
                   {seleccionada && (
-                    <g onClick={(e) => { e.stopPropagation(); delNode(n.id) }}>
+                    <g data-ui="1" onClick={(e) => { e.stopPropagation(); delNode(n.id) }}>
                       <circle cx={cx + 32} cy={cy - 32} r={10} fill="#ef4444" stroke="none" />
                       <text x={cx + 32} y={cy - 28.2} textAnchor="middle" fontSize={11} fontWeight={700} fill="white" stroke="none">✕</text>
                     </g>

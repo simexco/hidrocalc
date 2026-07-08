@@ -50,6 +50,8 @@ export interface ReportData {
   eficiencia: number | null;
   // Despiece (lista consolidada de piezas seleccionadas)
   despiece: { desc: string; sku: string; qty: number }[];
+  // Cruceros armados en el generador: imagen del diagrama + datos (para el reporte)
+  cruceros?: { tramoId?: string; nombre: string; dn: string; material: string; cantidad: number; png: string }[];
   // Válvulas de control determinadas por el proyecto
   vrpDN: string | null;          // DN de la válvula reductora recomendada
   golpeValvulaDN: string | null; // DN de la válvula de protección contra golpe (si se requiere)
@@ -303,7 +305,10 @@ export async function generateReportPDF(d: ReportData): Promise<jsPDF> {
   const piezasManual = (d.despiece ?? []).filter((p) => p.qty > 0);
   const hasDespiece = piezasManual.length > 0 || valvulasControl.length > 0;
   // Hojas: Demanda + Conducción + [Bombeo] + [Despiece] + Guía + Anexo (zanja/atraques)
-  const total = 2 + (d.incluyeBombeo ? 1 : 0) + (hasDespiece ? 1 : 0) + 1 + 1;
+  // Los diagramas de cruceros (2 por fila, ~67 mm por fila) pueden agregar hojas al despiece
+  const nCrucImg = (d.cruceros ?? []).filter((c) => c.png).length;
+  const crucerosExtra = hasDespiece ? Math.floor((Math.ceil(nCrucImg / 2) * 67) / 210) : 0;
+  const total = 2 + (d.incluyeBombeo ? 1 : 0) + (hasDespiece ? 1 : 0) + crucerosExtra + 1 + 1;
   // Diámetro nominal del proyecto (para resaltar su fila en las tablas del anexo)
   const projInch = (d.dn || "").match(/(\d+(?:\.\d+)?)\s*"/)?.[1] ?? null;
   let pg = 1;
@@ -519,10 +524,44 @@ export async function generateReportPDF(d: ReportData): Promise<jsPDF> {
     header(doc, d, pg, total);
     doc.setFontSize(13); doc.setFont("helvetica", "bold");
     doc.text("REPORTE DE PREDIMENSIONAMIENTO HIDRAULICO", 14, 32);
-    y = sectionTitle(doc, "DESPIECE", "LISTA DE MATERIALES Y ACCESORIOS", 38);
+    y = sectionTitle(doc, "DESPIECE", "CRUCEROS Y LISTA DE MATERIALES", 38);
     doc.setFontSize(8); doc.setTextColor(90, 90, 90);
-    doc.text(safe("Piezas y accesorios Sigma Flow para la linea. Cotizar con folio del proyecto."), 14, y);
+    doc.text(safe("Cruceros del proyecto y piezas Sigma Flow para la linea. Cotizar con folio del proyecto."), 14, y);
     doc.setTextColor(0, 0, 0); y += 6;
+
+    // Diagramas de los cruceros (imagen chica cada uno, 2 por fila) antes de la lista
+    const crucerosImg = (d.cruceros ?? []).filter((c) => c.png);
+    if (crucerosImg.length > 0) {
+      y = subhead(doc, "Cruceros del proyecto", y);
+      const colW = 88, gap = 6;
+      let idx = 0;
+      while (idx < crucerosImg.length) {
+        const fila = crucerosImg.slice(idx, idx + 2);
+        const dims = fila.map((c) => {
+          try {
+            const pr = doc.getImageProperties(c.png);
+            let w = colW, h = (pr.height / pr.width) * colW;
+            if (h > 58) { w = colW * (58 / h); h = 58; }
+            return { w, h };
+          } catch { return { w: colW, h: 0 }; }
+        });
+        const rowH = Math.max(...dims.map((dm) => dm.h), 20) + 9;
+        if (y + rowH > 268) { doc.addPage(); pg++; header(doc, d, pg, total); y = 32; }
+        fila.forEach((c, j) => {
+          if (dims[j].h <= 0) return;
+          const x = 14 + j * (colW + gap);
+          doc.setDrawColor(215, 220, 228);
+          doc.roundedRect(x, y, colW, dims[j].h + 1.5, 1.5, 1.5);
+          doc.addImage(c.png, "PNG", x + (colW - dims[j].w) / 2, y + 0.75, dims[j].w, dims[j].h);
+          doc.setFontSize(7.5); doc.setTextColor(60, 60, 60);
+          doc.text(safe(`${c.nombre} — ${c.dn} ${c.material}${c.cantidad > 1 ? ` · se repite x${c.cantidad}` : ""}`), x + colW / 2, y + dims[j].h + 6, { align: "center", maxWidth: colW });
+          doc.setTextColor(0, 0, 0);
+        });
+        y += rowH + 4;
+        idx += 2;
+      }
+      y += 2;
+    }
 
     // Válvulas de control determinadas por el proyecto (automáticas)
     if (valvulasControl.length > 0) {

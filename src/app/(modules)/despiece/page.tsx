@@ -31,6 +31,8 @@ export default function DespiecePage() {
   const [vizPorTramo, setVizPorTramo] = useState<Record<string, VizNode[]>>({});
   // Lista completa computada por tramo (piezas + acoplamiento) para el reporte
   const [listaPorTramo, setListaPorTramo] = useState<Record<string, { sku: string; desc: string; qty: number }[]>>({});
+  // Imagen PNG del diagrama de cada crucero (para el reporte)
+  const [pngPorTramo, setPngPorTramo] = useState<Record<string, string>>({});
 
   // Cargar guardado / flujo de proyecto
   useEffect(() => {
@@ -95,6 +97,26 @@ export default function DespiecePage() {
     }, 700);
     return () => clearTimeout(t);
   }, [listaPorTramo, accsPorTramo, tramos, patchProject]);
+
+  // Flujo de proyecto: guardar los diagramas de los cruceros (imagen + datos) para el reporte.
+  // Si un crucero está colapsado (su lienzo no está montado), se conserva la imagen previa.
+  useEffect(() => {
+    const t = setTimeout(() => {
+      const previos = useProjectStore.getState().project.cruceros ?? [];
+      const cruceros = tramos
+        .filter((t2) => (accsPorTramo[t2.id]?.length ?? 0) > 0)
+        .map((t2) => ({
+          tramoId: t2.id,
+          nombre: t2.name,
+          dn: dnStrFromMM(t2.DN),
+          material: t2.material,
+          cantidad: Math.max(1, t2.cantidad ?? 1),
+          png: pngPorTramo[t2.id] ?? previos.find((c) => c.tramoId === t2.id)?.png ?? "",
+        }));
+      patchProject({ cruceros });
+    }, 900);
+    return () => clearTimeout(t);
+  }, [pngPorTramo, tramos, accsPorTramo, patchProject]);
 
   const addTramo = () => {
     // Al crear uno nuevo, los cruceros anteriores se colapsan para que la página no se haga interminable
@@ -295,6 +317,10 @@ export default function DespiecePage() {
                     dn={dnStrFromMM(t.DN)}
                     nodes={vizPorTramo[t.id] || []}
                     onChange={(nodes) => setVizPorTramo((prev) => ({ ...prev, [t.id]: nodes }))}
+                    onSnapshot={(png) => setPngPorTramo((prev) => {
+                      if (png) return { ...prev, [t.id]: png };
+                      const n = { ...prev }; delete n[t.id]; return n;
+                    })}
                   />
                   {(accsPorTramo[t.id]?.length ?? 0) > 0 && (
                     <ListaMaterialesSIMEX
