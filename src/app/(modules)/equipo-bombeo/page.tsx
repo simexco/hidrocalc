@@ -13,7 +13,7 @@ import Link from "next/link";
 import { InputField } from "@/components/ui/InputField";
 import { ResetButton } from "@/components/ui/ResetButton";
 import { saveFormState, loadFormState } from "@/lib/storage/form-persistence";
-import { MATERIALS } from "@/lib/constants";
+import { MATERIALS, STANDARD_DNS_LABELED } from "@/lib/constants";
 import { useProjectStore } from "@/store/projectStore";
 
 const HP_COMERCIALES = [0.5, 0.75, 1, 1.5, 2, 3, 5, 7.5, 10, 15, 20, 25, 30, 40, 50, 60, 75, 100, 125, 150, 200];
@@ -234,7 +234,13 @@ export default function EquipoBombeoPage() {
           </div>
           <div className="grid grid-cols-2 gap-3">
             <InputField label="Caudal Q" value={st.Q} onChange={(v) => set("Q", num(v))} unit="L/s" assumed={heredado.q} assumedLabel="Del proyecto" />
-            <InputField label="Diámetro nominal" value={st.D} onChange={(v) => set("D", num(v))} unit="mm" assumed={heredado.d} assumedLabel="Del proyecto" />
+            <div className="space-y-1">
+              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Diámetro nominal {heredado.d && <span className="text-[10px] bg-[#E9EFF5] text-[#1C3D5A] rounded px-1 ml-1">del proyecto</span>}</label>
+              <select value={st.D} onChange={(e) => set("D", parseInt(e.target.value))} className={selCls}>
+                {!STANDARD_DNS_LABELED.some((d) => d.dn === st.D) && <option value={st.D}>{st.D} mm</option>}
+                {STANDARD_DNS_LABELED.map((d) => <option key={d.dn} value={d.dn}>{d.label}</option>)}
+              </select>
+            </div>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1">
