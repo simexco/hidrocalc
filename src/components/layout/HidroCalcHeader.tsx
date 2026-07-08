@@ -10,6 +10,7 @@ const moduleNames: Record<string, string> = {
   "/tramo-simple": "Verificar presión",
   "/perfil": "Linea de conduccion",
   "/impulsion": "Calculo de diametro economico",
+  "/equipo-bombeo": "Equipo de bombeo",
   "/golpe-ariete": "Golpe de ariete",
   "/dimensionamiento": "Elegir diámetro",
   "/conversor": "Conversor de unidades",
@@ -37,6 +38,15 @@ const moduleHelp: Record<string, { title: string; sections: { title: string; con
       { title: "Datos que necesitas", content: "- Velocidad V0: obtener del módulo Tramo Simple\n- Tipo de tuberia: seleccionar del catalogo\n- Tiempo de cierre Tc: dato del fabricante de la valvula\n- Presión estática P0: presión normal de operación\n- Longitud L: de la linea" },
       { title: "Paso a paso", content: "1. Ingresa V0 (velocidad de operación)\n2. Selecciona el tipo de tubería del catalogo\n3. Selecciona diámetro y clase (DR/SDR/K)\n4. Los datos de D, e, E se llenan automáticamente\n5. Ingresa P0, Tc y L\n6. Revisa 'Clase recomendada' y factor de seguridad\n7. Verifica que F.S. >= 1.5" },
       { title: "Interpretación", content: "Cierre lento (Tc >= Tfase): menor sobrepresion\nCierre brusco (Tc < Tfase): maxima sobrepresion\nP minima negativa: riesgo de cavitación\nFactor seg. >= 1.5 recomendado para agua potable" },
+    ],
+  },
+  "/equipo-bombeo": {
+    title: "Equipo de bombeo — Guia de uso",
+    sections: [
+      { title: "¿Cuándo usar?", content: "Para predimensionar la bomba de un sistema: obtener la Carga Dinámica Total (CDT) y la potencia de referencia (HP) con las que se solicita cotización a un proveedor de bombas." },
+      { title: "Los dos casos", content: "CASO 1 — Pozo → Tanque: la bomba está dentro de un pozo y eleva el agua a un tanque. La succión es el NIVEL DINÁMICO del agua (no la profundidad de la bomba).\n\nCASO 2 — Tanque → Red / otro tanque: la bomba toma de un tanque y envía a la red o a otro tanque. Permite varios equipos en paralelo (1, 1+1, 2+1) y elegir el tipo de bomba." },
+      { title: "Paso a paso", content: "1. Elegir el caso\n2. Capturar las cotas de succión y entrega (msnm, de Google Earth)\n3. Verificar Q, diámetro, material y longitud (se heredan del proyecto si ya se capturaron en Línea de conducción)\n4. Indicar la presión de servicio en la entrega (0 si solo llena un tanque; 15–20 m.c.a. a red)\n5. Leer los 4 datos para cotizar: CDT, gasto total, gasto por bomba y HP por bomba" },
+      { title: "Interpretación", content: "CDT = carga estática + fricción + pérdidas locales + presión de servicio.\nLa potencia mostrada es el HP comercial inmediato superior (eficiencia 70% por defecto).\nEl par Q + CDT es lo que el proveedor necesita para proponer el modelo definitivo.\nVelocidad recomendada en la línea: 0.3 a 2.5 m/s." },
     ],
   },
   "/bombeo": {

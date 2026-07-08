@@ -49,6 +49,12 @@ const modules = [
     icon: (<svg viewBox="0 0 24 24" className={iconCls} fill="none" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M8 7h12m0 0l-4-4m4 4l-4 4m4 6H4m0 0l4 4m-4-4l4-4" /></svg>),
   },
   {
+    title: "Equipo de bombeo",
+    desc: "CDT y potencia comercial (HP) para cotizar la bomba: pozo → tanque o tanque → red, con equipos en paralelo.",
+    href: "/equipo-bombeo",
+    icon: (<svg viewBox="0 0 24 24" className={iconCls} fill="none" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M12 8c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm0 0V4m0 16v-4m8-4h-4M4 12h4" /></svg>),
+  },
+  {
     title: "Generador de cruceros",
     desc: "Arma tus cruceros pieza por pieza con símbolos de plano; la lista de materiales (despiece) con SKU Sigma Flow se genera sola.",
     href: "/despiece",
