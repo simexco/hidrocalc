@@ -70,7 +70,6 @@ const sections = [
     title: "Entregables",
     items: [
       { href: "/entregable", label: "Reporte de proyecto", icon: icons.entregable },
-      { href: "/proyectos", label: "Proyectos", icon: icons.proyectos },
     ],
   },
 ];
