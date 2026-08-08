@@ -330,49 +330,106 @@ export default function EquipoBombeoPage() {
 
         {/* ── Columna diagrama + resultado ── */}
         <div className="space-y-5">
-          {/* Diagrama */}
-          <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-2">
-            <svg viewBox="0 0 560 320" className="w-full">
+          {/* Diagrama — escena con profundidad: cielo, estratos, tanque cilíndrico y tubería metálica */}
+          <div className="rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden shadow-sm">
+            <svg viewBox="0 0 560 320" className="w-full block">
+              <defs>
+                <linearGradient id="cielo" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#D6ECFA" /><stop offset="100%" stopColor="#F5FAFE" />
+                </linearGradient>
+                <linearGradient id="suelo" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#A98F63" /><stop offset="14%" stopColor="#8F7550" /><stop offset="100%" stopColor="#57452F" />
+                </linearGradient>
+                <linearGradient id="aguaTk" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#7CC4EA" /><stop offset="100%" stopColor="#2E86C1" />
+                </linearGradient>
+                <linearGradient id="tubo" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#3F7096" /><stop offset="45%" stopColor="#1C3D5A" /><stop offset="100%" stopColor="#0F2438" />
+                </linearGradient>
+                <linearGradient id="pozoSombra" x1="0" y1="0" x2="1" y2="0">
+                  <stop offset="0%" stopColor="#3A2E1F" /><stop offset="18%" stopColor="#6B5334" /><stop offset="82%" stopColor="#6B5334" /><stop offset="100%" stopColor="#3A2E1F" />
+                </linearGradient>
+                <filter id="sombra" x="-30%" y="-30%" width="160%" height="160%">
+                  <feDropShadow dx="0" dy="2.5" stdDeviation="2.5" floodColor="#0F2438" floodOpacity="0.28" />
+                </filter>
+              </defs>
+              <rect x="0" y="0" width="560" height="320" fill="url(#cielo)" />
               {st.caso === "pozo" ? (
                 <g>
-                  <rect x="0" y="120" width="200" height="200" fill="#cfa06a" opacity="0.35" />
-                  <line x1="0" y1="120" x2="200" y2="120" stroke="#cfa06a" strokeWidth="2" />
-                  <text x="8" y="114" fontSize="11" fill="#64748b">Terreno pozo</text>
-                  <text x="8" y="135" fontSize="11" fontWeight="bold" fill="#7d3c98">{st.cotaPozo} msnm</text>
-                  <rect x="60" y="120" width="26" height="170" fill="white" stroke="#1C3D5A" />
+                  {/* terreno con estratos */}
+                  <rect x="0" y="120" width="230" height="200" fill="url(#suelo)" />
+                  <line x1="0" y1="150" x2="230" y2="150" stroke="#7A6244" strokeWidth="1" opacity="0.5" />
+                  <line x1="0" y1="195" x2="230" y2="195" stroke="#6B5334" strokeWidth="1" opacity="0.5" />
+                  <line x1="0" y1="120" x2="230" y2="120" stroke="#5B7A4A" strokeWidth="4" strokeLinecap="round" />
+                  <text x="8" y="112" fontSize="11" fill="#475569" fontWeight="600">Terreno del pozo</text>
+                  <text x="8" y="136" fontSize="10.5" fontWeight="bold" fill="#fff">{st.cotaPozo} msnm</text>
+                  {/* pozo con profundidad */}
+                  <rect x="58" y="120" width="30" height="172" fill="url(#pozoSombra)" />
+                  <rect x="61" y="120" width="24" height="172" fill="#EDF2F7" />
                   {(() => { const yAgua = 120 + Math.min(st.nivelDin, 60) * 1.6; return (<g>
-                    <rect x="60" y={yAgua} width="26" height={290 - yAgua} fill="#5499C7" opacity="0.5" />
-                    <line x1="60" y1={yAgua} x2="120" y2={yAgua} stroke="#5499C7" strokeWidth="1.5" strokeDasharray="4 3" />
-                    <text x="92" y={yAgua - 3} fontSize="11" fontWeight="bold" fill="#1C3D5A">Nivel dinámico −{st.nivelDin} m</text>
+                    <rect x="61" y={yAgua} width="24" height={292 - yAgua} fill="url(#aguaTk)" opacity="0.85" />
+                    <line x1="55" y1={yAgua} x2="130" y2={yAgua} stroke="#0EA5E9" strokeWidth="1.6" strokeDasharray="5 3" />
+                    <text x="96" y={yAgua - 4} fontSize="10.5" fontWeight="bold" fill="#0369A1">Nivel dinámico −{st.nivelDin} m</text>
                   </g>); })()}
-                  <rect x="66" y="270" width="14" height="18" fill="#1C3D5A" />
-                  <text x="92" y="285" fontSize="11" fill="#64748b">Bomba sumergible a −{st.profBomba} m</text>
-                  <rect x="420" y="70" width="90" height="55" fill="none" stroke="#1C3D5A" strokeWidth="2" />
-                  <rect x="420" y="95" width="90" height="30" fill="#5499C7" opacity="0.5" />
-                  <rect x="415" y="125" width="100" height="40" fill="#cfa06a" opacity="0.4" />
-                  <text x="430" y="64" fontSize="11" fill="#64748b">Tanque</text>
-                  <text x="430" y="142" fontSize="11" fontWeight="bold" fill="#7d3c98">{st.cotaTanque + st.altTanque} msnm</text>
-                  <polyline points="73,272 73,114 455,114 455,78" fill="none" stroke="#1C3D5A" strokeWidth="3" />
+                  {/* bomba sumergible */}
+                  <rect x="65" y="268" width="16" height="22" rx="3" fill="url(#tubo)" filter="url(#sombra)" />
+                  <circle cx="73" cy="274" r="2.4" fill="#7FC4E8" />
+                  <text x="96" y="284" fontSize="10.5" fill="#475569">Bomba a −{st.profBomba} m</text>
+                  {/* tanque cilíndrico */}
+                  <g filter="url(#sombra)">
+                    <rect x="420" y="72" width="90" height="52" fill="#E9EFF5" stroke="#1C3D5A" strokeWidth="1.6" />
+                    <rect x="420" y="96" width="90" height="28" fill="url(#aguaTk)" />
+                    <ellipse cx="465" cy="72" rx="45" ry="9" fill="#F5F8FB" stroke="#1C3D5A" strokeWidth="1.6" />
+                    <ellipse cx="465" cy="124" rx="45" ry="9" fill="#1C3D5A" opacity="0.16" />
+                  </g>
+                  <rect x="412" y="128" width="106" height="34" fill="url(#suelo)" opacity="0.9" />
+                  <text x="430" y="62" fontSize="11" fill="#475569" fontWeight="600">Tanque</text>
+                  <text x="428" y="148" fontSize="10.5" fontWeight="bold" fill="#fff">{st.cotaTanque + st.altTanque} msnm</text>
+                  {/* tubería con cuerpo metálico */}
+                  <polyline points="73,272 73,114 455,114 455,80" fill="none" stroke="#0F2438" strokeWidth="7" strokeLinejoin="round" opacity="0.25" transform="translate(0,2)" />
+                  <polyline points="73,272 73,114 455,114 455,80" fill="none" stroke="url(#tubo)" strokeWidth="6" strokeLinejoin="round" />
+                  <polyline points="73,272 73,114 455,114 455,80" fill="none" stroke="#7FC4E8" strokeWidth="1.4" strokeLinejoin="round" opacity="0.8" transform="translate(-1.2,-1.2)" />
                 </g>
               ) : (
                 <g>
-                  <rect x="40" y="150" width="100" height="70" fill="none" stroke="#1C3D5A" strokeWidth="2" />
-                  <rect x="40" y="195" width="100" height="25" fill="#5499C7" opacity="0.5" />
-                  <rect x="35" y="220" width="110" height="40" fill="#cfa06a" opacity="0.4" />
-                  <text x="50" y="144" fontSize="11" fill="#64748b">Tanque origen</text>
-                  <text x="44" y="240" fontSize="11" fontWeight="bold" fill="#7d3c98">{st.cotaTanqueOrigen} msnm</text>
-                  <rect x="150" y="222" width="20" height="16" fill="#1C3D5A" />
-                  <text x="150" y="252" fontSize="11" fill="#64748b">Bombeo{r.varios ? ` (${r.etiquetaArreglo})` : ""}</text>
-                  <rect x="430" y="60" width="90" height="50" fill="none" stroke="#1C3D5A" strokeWidth="2" />
-                  <text x="438" y="54" fontSize="11" fill="#64748b">Red / tanque destino</text>
-                  <rect x="425" y="110" width="100" height="40" fill="#cfa06a" opacity="0.4" />
-                  <text x="440" y="128" fontSize="11" fontWeight="bold" fill="#7d3c98">{st.cotaEntrega} msnm</text>
-                  <polyline points="160,224 160,135 475,135 475,95" fill="none" stroke="#1C3D5A" strokeWidth="3" />
+                  {/* plataforma del tanque origen */}
+                  <rect x="28" y="222" width="124" height="98" fill="url(#suelo)" />
+                  <line x1="28" y1="222" x2="152" y2="222" stroke="#5B7A4A" strokeWidth="4" strokeLinecap="round" />
+                  {/* tanque origen cilíndrico */}
+                  <g filter="url(#sombra)">
+                    <rect x="40" y="152" width="100" height="68" fill="#E9EFF5" stroke="#1C3D5A" strokeWidth="1.6" />
+                    <rect x="40" y="192" width="100" height="28" fill="url(#aguaTk)" />
+                    <ellipse cx="90" cy="152" rx="50" ry="10" fill="#F5F8FB" stroke="#1C3D5A" strokeWidth="1.6" />
+                  </g>
+                  <text x="52" y="142" fontSize="11" fill="#475569" fontWeight="600">Tanque de origen</text>
+                  <text x="46" y="240" fontSize="10.5" fontWeight="bold" fill="#fff">{st.cotaTanqueOrigen} msnm</text>
+                  {/* equipo de bombeo */}
+                  <g filter="url(#sombra)">
+                    <rect x="150" y="218" width="26" height="18" rx="4" fill="url(#tubo)" />
+                    <circle cx="163" cy="227" r="5" fill="#0F2438" /><path d="M161 224l6 3-6 3z" fill="#7FC4E8" />
+                  </g>
+                  <text x="146" y="252" fontSize="10.5" fill="#475569">Bombeo{r.varios ? ` (${r.etiquetaArreglo})` : ""}</text>
+                  {/* terreno + entrega */}
+                  <rect x="418" y="112" width="114" height="46" fill="url(#suelo)" opacity="0.9" />
+                  <g filter="url(#sombra)">
+                    <rect x="430" y="64" width="90" height="46" fill="#E9EFF5" stroke="#1C3D5A" strokeWidth="1.6" />
+                    <ellipse cx="475" cy="64" rx="45" ry="8" fill="#F5F8FB" stroke="#1C3D5A" strokeWidth="1.6" />
+                  </g>
+                  <text x="438" y="54" fontSize="11" fill="#475569" fontWeight="600">Red / tanque destino</text>
+                  <text x="442" y="132" fontSize="10.5" fontWeight="bold" fill="#fff">{st.cotaEntrega} msnm</text>
+                  {/* tubería metálica */}
+                  <polyline points="163,220 163,135 475,135 475,98" fill="none" stroke="#0F2438" strokeWidth="7" strokeLinejoin="round" opacity="0.25" transform="translate(0,2)" />
+                  <polyline points="163,220 163,135 475,135 475,98" fill="none" stroke="url(#tubo)" strokeWidth="6" strokeLinejoin="round" />
+                  <polyline points="163,220 163,135 475,135 475,98" fill="none" stroke="#7FC4E8" strokeWidth="1.4" strokeLinejoin="round" opacity="0.8" transform="translate(-1.2,-1.2)" />
                 </g>
               )}
-              <rect x="205" y="14" width="160" height="46" rx="8" fill="#1C3D5A" />
-              <text x="285" y="33" textAnchor="middle" fill="white" fontSize="13" fontWeight="bold">CDT ≈ {r.CDT.toFixed(1)} m</text>
-              <text x="285" y="50" textAnchor="middle" fill="#cfe0ee" fontSize="11">Q = {st.Q} L/s · v = {r.vel.toFixed(2)} m/s</text>
+              {/* placa CDT con sombra */}
+              <g filter="url(#sombra)">
+                <rect x="200" y="14" width="170" height="48" rx="10" fill="#1C3D5A" />
+                <rect x="200" y="14" width="170" height="24" rx="10" fill="#ffffff" opacity="0.06" />
+              </g>
+              <text x="285" y="34" textAnchor="middle" fill="white" fontSize="13.5" fontWeight="bold">CDT ≈ {r.CDT.toFixed(1)} m</text>
+              <text x="285" y="52" textAnchor="middle" fill="#BBD8EC" fontSize="10.5">Q = {st.Q} L/s · v = {r.vel.toFixed(2)} m/s</text>
             </svg>
           </div>
 
