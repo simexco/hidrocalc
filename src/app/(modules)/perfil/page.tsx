@@ -33,8 +33,9 @@ export default function PerfilPage() {
     { id: uuid(), distFrom: 0, distTo: 1000, DN_mm: 150, C: MATERIALS[0].c, materialName: MATERIALS[0].name, pipeClass: "RD 26", PN_bar: 11.0 },
   ]);
   const [results, setResults] = useState<ProfileResults | null>(null);
-  // Default: calcular la P1 requerida (al diseñar no conoces P1; "verificar" es para líneas existentes)
-  const [calcMode, setCalcMode] = useState<'verificar' | 'calcularP1'>('calcularP1');
+  // El módulo siempre calcula la P1 requerida (para verificar líneas existentes está la
+  // herramienta "Verificar presión"). Se conserva la variable para no tocar el motor de cálculo.
+  const [calcMode] = useState<'verificar' | 'calcularP1'>('calcularP1');
   const [tipoLinea, setTipoLinea] = useState<'conduccion' | 'distribucion'>('conduccion');
 
   // Cambiar el tipo de línea trae el caudal correcto del proyecto (Qmd o Qmh = Qmd × CVh)
@@ -75,17 +76,14 @@ export default function PerfilPage() {
       if (saved.Pmin != null) setPmin(saved.Pmin);
       if (saved.vertices?.length >= 2) setVertices(saved.vertices);
       if (saved.tramos?.length >= 1) setTramos(saved.tramos);
-      // El modo se conserva al navegar, pero el default nuevo es "Calcular P1":
-      // solo se restaura la clave V2 (ignora la vieja) para migrar a todos al estándar
-      if (saved.calcModeV2) setCalcMode(saved.calcModeV2);
       if (saved.tipoLinea) setTipoLinea(saved.tipoLinea);
     }
   }, []);
 
   useEffect(() => {
-    const t = setTimeout(() => saveFormState("perfil", { projectName, rawQ, flowUnit, P1, Pmin, vertices, tramos, calcModeV2: calcMode, tipoLinea }), 1000);
+    const t = setTimeout(() => saveFormState("perfil", { projectName, rawQ, flowUnit, P1, Pmin, vertices, tramos, tipoLinea }), 1000);
     return () => clearTimeout(t);
-  }, [projectName, rawQ, flowUnit, P1, Pmin, vertices, tramos, calcMode, tipoLinea]);
+  }, [projectName, rawQ, flowUnit, P1, Pmin, vertices, tramos, tipoLinea]);
 
   // Flujo de proyecto: prefill del Q desde el proyecto si no hay dato guardado
   useEffect(() => {
@@ -166,7 +164,6 @@ export default function PerfilPage() {
     setTramos([
       { id: uuid(), distFrom: 0, distTo: 1000, DN_mm: 150, C: MATERIALS[0].c, materialName: MATERIALS[0].name, pipeClass: "RD 26", PN_bar: 11.0 },
     ]);
-    setCalcMode('verificar');
     setComputedP1(null);
     setShowScenarioB(false);
     setTramosB([{ id: uuid(), distFrom: 0, distTo: 1000, DN_mm: 150, C: MATERIALS[0].c, materialName: MATERIALS[0].name, pipeClass: "RD 26", PN_bar: 11.0 }]);
@@ -504,25 +501,7 @@ export default function PerfilPage() {
                 <option value="m³/h">m3/h</option>
               </select>
             </div>
-            {/* Mode toggle */}
-            <div className="space-y-1">
-              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Modo de calculo</label>
-              <div className="flex rounded-lg border border-gray-200 dark:border-gray-600 overflow-hidden">
-                <button
-                  onClick={() => setCalcMode('calcularP1')}
-                  className={`flex-1 text-xs py-2 px-3 transition-colors ${calcMode === 'calcularP1' ? 'bg-[#1C3D5A] text-white font-semibold' : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'}`}
-                >
-                  Calcular P1 requerida
-                </button>
-                <button
-                  onClick={() => setCalcMode('verificar')}
-                  className={`flex-1 text-xs py-2 px-3 transition-colors ${calcMode === 'verificar' ? 'bg-[#1C3D5A] text-white font-semibold' : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'}`}
-                >
-                  Verificar presion
-                </button>
-              </div>
-              <p className="text-[10px] text-gray-400">Al diseñar, el sistema te dice qué P1 necesitas para cumplir la presión mínima. «Verificar» es para líneas existentes donde ya conoces la P1.</p>
-            </div>
+            {/* El módulo siempre calcula la P1 requerida; para líneas existentes está la herramienta "Verificar presión" */}
             {calcMode === 'verificar' ? (
               <InputField label="Presion de entrada P1" value={P1} onChange={(v) => setP1(v === "" ? null : parseFloat(v))} unit="kg/cm2" required tooltip="Presion disponible al inicio de la linea" />
             ) : (
