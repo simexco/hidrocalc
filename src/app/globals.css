@@ -1,17 +1,47 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Source+Sans+3:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 body {
-  font-family: 'Source Sans 3', 'Inter', system-ui, sans-serif;
+  font-family: 'Manrope', 'Inter', system-ui, -apple-system, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
 }
 
 h1, h2, h3, h4, h5, h6 {
-  font-family: 'Inter', 'Source Sans 3', system-ui, sans-serif;
+  font-family: 'Manrope', system-ui, sans-serif;
+  letter-spacing: -0.01em;
+}
+
+/* Números tabulares en tablas y resultados: columnas perfectamente alineadas */
+table, .tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+/* SKUs y código con monoespaciada profesional */
+code, pre, .font-mono {
+  font-family: 'JetBrains Mono', ui-monospace, 'Cascadia Code', monospace;
+}
+
+/* Selección de texto con la marca */
+::selection {
+  background: #1C3D5A;
+  color: #fff;
+}
+
+/* Scrollbars finos y discretos */
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #c3ccd8; border-radius: 8px; border: 2px solid #f1f5f9; }
+::-webkit-scrollbar-thumb:hover { background: #9fb0c2; }
+
+/* Foco accesible con la marca */
+:focus-visible {
+  outline: 2px solid #1C3D5A;
+  outline-offset: 2px;
 }
 
 @media print {

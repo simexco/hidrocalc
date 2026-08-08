@@ -99,22 +99,22 @@ export function HidroCalcHeader() {
   const help = Object.entries(moduleHelp).find(([path]) => pathname.startsWith(path))?.[1];
 
   return (
-    <header className="bg-white border-b border-gray-200 shadow-sm" style={{ height: 56 }}>
+    <header className="bg-white/85 backdrop-blur-md border-b border-gray-200/80 shadow-[0_1px_3px_rgba(15,36,56,0.05)]" style={{ height: 56 }}>
       <div className="h-full px-6 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <Link href="/" className="text-xs text-[#1C3D5A]/40 hover:text-[#1C3D5A] transition-colors font-medium">
+        <div className="flex items-center gap-2.5">
+          <Link href="/" className="text-[11px] font-bold text-[#1C3D5A]/45 hover:text-[#1C3D5A] transition-colors tracking-[0.14em] uppercase">
             HidroCalc
           </Link>
           {moduleName && (
             <>
-              <span className="text-gray-300">/</span>
-              <h1 className="text-sm font-semibold text-[#1C3D5A] tracking-wide">{moduleName}</h1>
+              <span className="text-gray-300 text-xs">›</span>
+              <h1 className="text-[15px] font-bold text-[#0F2438] dark:text-white tracking-tight">{moduleName}</h1>
             </>
           )}
         </div>
         <div className="flex items-center gap-3">
           {help && <HelpButton moduleTitle={help.title} sections={help.sections} />}
-          <span className="text-[10px] text-gray-400 tracking-wider uppercase font-medium hidden sm:block">Solo uso tecnico</span>
+          <span className="text-[9px] text-gray-400 tracking-[0.12em] uppercase font-semibold hidden sm:inline-block border border-gray-200 rounded-full px-2.5 py-1 bg-gray-50/60">Uso técnico</span>
         </div>
       </div>
     </header>

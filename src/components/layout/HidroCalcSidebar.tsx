@@ -78,16 +78,16 @@ export function HidroCalcSidebar() {
   const pathname = usePathname();
 
   return (
-    <aside className="w-56 bg-[#0F2438] text-white flex flex-col shrink-0 min-h-screen">
+    <aside className="w-56 bg-gradient-to-b from-[#0B1D2E] via-[#0F2438] to-[#132C44] text-white flex flex-col shrink-0 min-h-screen">
       {/* Logo */}
-      <div className="px-3 py-5 border-b border-white/10">
+      <div className="px-3 py-5 border-b border-white/[0.08]">
         <Link href="/" className="block">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/sigmaflow-full.jpg" alt="Sigma Flow" className="h-14 w-auto bg-white rounded-lg px-3 py-2 shadow-sm" />
+          <img src="/sigmaflow-full.jpg" alt="Sigma Flow" className="h-14 w-auto bg-white rounded-lg px-3 py-2 shadow-lg shadow-black/20" />
         </Link>
-        <div className="mt-3 px-1">
-          <span className="text-sm font-semibold text-white/90 tracking-wide">HidroCalc</span>
-          <span className="text-[10px] text-white/30 ml-1.5">v1.4</span>
+        <div className="mt-3 px-1 flex items-center gap-2">
+          <span className="text-sm font-bold text-white tracking-wide">HidroCalc</span>
+          <span className="text-[9px] font-semibold text-[#7FC4E8] bg-[#7FC4E8]/10 border border-[#7FC4E8]/25 rounded-full px-1.5 py-px">v2.0</span>
         </div>
       </div>
 
@@ -106,10 +106,10 @@ export function HidroCalcSidebar() {
                   <Link
                     key={mod.href}
                     href={mod.href}
-                    className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all ${
+                    className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all duration-150 ${
                       isActive
-                        ? "bg-[#1C3D5A] text-white font-medium border-l-[3px] border-white/80 shadow-sm"
-                        : "text-white/50 hover:bg-white/5 hover:text-white/80 border-l-[3px] border-transparent"
+                        ? "bg-white/[0.12] text-white font-semibold border-l-[3px] border-[#7FC4E8] shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]"
+                        : "text-white/50 hover:bg-white/[0.06] hover:text-white/85 hover:translate-x-0.5 border-l-[3px] border-transparent"
                     }`}
                   >
                     <span className="shrink-0 opacity-80"><Icon>{mod.icon}</Icon></span>
@@ -122,10 +122,11 @@ export function HidroCalcSidebar() {
         ))}
       </nav>
 
-      <div className="px-4 py-4 border-t border-white/10">
-        <p className="text-[10px] text-white/20 leading-relaxed">
+      <div className="px-4 py-4 border-t border-white/[0.08]">
+        <p className="text-[10px] text-white/25 leading-relaxed">
           Sigma Flow<br />Soluciones en Infraestructura Hidráulica
         </p>
+        <p className="text-[9px] text-white/15 mt-2">© 2026 S.H.I. de México<br />Todos los derechos reservados</p>
       </div>
     </aside>
   );
