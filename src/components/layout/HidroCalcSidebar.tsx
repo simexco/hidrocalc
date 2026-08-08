@@ -45,13 +45,13 @@ const sections = [
     title: "Conducción",
     items: [
       { href: "/perfil", label: "Línea de conducción", icon: icons.conduccion },
-      { href: "/impulsion", label: "Diámetro económico", icon: icons.impulsion },
       { href: "/equipo-bombeo", label: "Equipo de bombeo", icon: icons.bomba },
     ],
   },
   {
     title: "Herramientas",
     items: [
+      { href: "/impulsion", label: "Diámetro económico", icon: icons.impulsion },
       { href: "/dimensionamiento", label: "Elegir diámetro", icon: icons.diametro },
       { href: "/tramo-simple", label: "Verificar presión", icon: icons.presion },
       { href: "/conversor", label: "Conversor de unidades", icon: icons.conversor },

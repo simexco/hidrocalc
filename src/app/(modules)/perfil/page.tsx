@@ -478,6 +478,12 @@ export default function PerfilPage() {
               <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300">Tramos de tuberia</h2>
               <button onClick={addTramo} className="text-xs bg-[#1C3D5A] text-white px-3 py-1.5 rounded-lg hover:bg-[#0F2438] transition-colors">+ Tramo</button>
             </div>
+            <div className="bg-[#1C3D5A]/[0.04] dark:bg-blue-900/15 border border-[#1C3D5A]/15 rounded-lg px-3 py-2">
+              <p className="text-[10px] text-[#1C3D5A]/80 dark:text-blue-300/80">
+                ¿Es línea de <strong>bombeo</strong> y no sabes qué diámetro poner? Calcúlalo con la herramienta{" "}
+                <a href="/impulsion" className="underline font-semibold">Diámetro económico</a> y aplícalo aquí con un clic.
+              </p>
+            </div>
             <p className="text-[10px] text-gray-400">Define en que distancia cambia el diametro o material</p>
 
             {/* DN Recommendation banner */}
