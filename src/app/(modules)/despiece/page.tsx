@@ -8,7 +8,7 @@ import { saveFormState, loadFormState } from "@/lib/storage/form-persistence";
 import { STANDARD_DNS_LABELED, MATERIALS } from "@/lib/constants";
 import { useProjectStore } from "@/store/projectStore";
 import ListaMaterialesSIMEX, { type SIMEXAcc, type SIMEXConex, dnStrFromMM, SIMEX_CAT } from "@/components/ListaMaterialesSIMEX";
-import CruceroVisual, { vizToAccsConex, type VizNode } from "@/components/CruceroVisual";
+import CruceroVisual, { vizToAccsConex, ICO, type VizNode } from "@/components/CruceroVisual";
 
 interface DespieceTramo {
   id: string;
@@ -236,7 +236,12 @@ export default function DespiecePage() {
 
         {tramos.length === 0 && (
           <div className="bg-white dark:bg-gray-800 rounded-xl border border-dashed border-gray-300 dark:border-gray-600 p-8 text-center">
-            <div className="text-3xl mb-2">🔧</div>
+            <svg viewBox="0 0 140 52" className="w-44 h-auto mx-auto mb-3 text-[#1C3D5A]/60 dark:text-blue-300/50" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round">
+              <path d="M4 26h30M14 18v16M19 18v16" strokeDasharray="0" />
+              <path d="M40 16v20l14-10-14-10z" /><path d="M68 16v20l-14-10 14-10z" />
+              <path d="M74 26h28M79 18v16M84 18v16" />
+              <path d="M108 26h26M120 26v16M114 42h12M120 8v10M116 8h8" />
+            </svg>
             <p className="text-sm text-gray-600 dark:text-gray-300 font-medium">Empieza creando tu primer crucero</p>
             <p className="text-xs text-gray-400 mt-1 max-w-md mx-auto">Agrega sus piezas (codos, válvulas, tees…) y únelas entre sí. El acoplamiento (adaptadores, empaques, tornillería) se calcula solo.</p>
             <button onClick={addTramo} className="mt-4 text-xs bg-[#1C3D5A] text-white px-4 py-2 rounded-lg hover:bg-[#0F2438] transition-colors">+ Crear crucero</button>
@@ -272,8 +277,8 @@ export default function DespiecePage() {
               />
                 <div className="flex items-center gap-2 ml-auto flex-wrap">
                   <div className="flex rounded-lg border border-gray-200 dark:border-gray-600 overflow-hidden">
-                    <button onClick={() => cambiarModo(t, "visual")} className={`px-2.5 py-1.5 text-[11px] transition-colors ${(t.modo ?? "visual") === "visual" ? "bg-[#1C3D5A] text-white font-medium" : "bg-white dark:bg-gray-800 text-gray-500 hover:bg-gray-50"}`}>🧩 Visual</button>
-                    <button onClick={() => cambiarModo(t, "lista")} className={`px-2.5 py-1.5 text-[11px] transition-colors ${(t.modo ?? "visual") === "lista" ? "bg-[#1C3D5A] text-white font-medium" : "bg-white dark:bg-gray-800 text-gray-500 hover:bg-gray-50"}`}>☰ Botones</button>
+                    <button onClick={() => cambiarModo(t, "visual")} className={`px-2.5 py-1.5 text-[11px] transition-colors ${(t.modo ?? "visual") === "visual" ? "bg-[#1C3D5A] text-white font-medium" : "bg-white dark:bg-gray-800 text-gray-500 hover:bg-gray-50"}`} style={{display:"inline-flex",alignItems:"center",gap:4}}>{ICO.visual}Visual</button>
+                    <button onClick={() => cambiarModo(t, "lista")} className={`px-2.5 py-1.5 text-[11px] transition-colors ${(t.modo ?? "visual") === "lista" ? "bg-[#1C3D5A] text-white font-medium" : "bg-white dark:bg-gray-800 text-gray-500 hover:bg-gray-50"}`} style={{display:"inline-flex",alignItems:"center",gap:4}}>{ICO.lista}Botones</button>
                   </div>
                   <select
                     value={t.DN}

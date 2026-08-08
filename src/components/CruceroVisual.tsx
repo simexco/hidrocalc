@@ -324,6 +324,32 @@ async function svgAPng(svg: SVGSVGElement): Promise<string> {
   return cv.toDataURL('image/png')
 }
 
+// ─── Iconos de paleta: mini-símbolos de plano en SVG (sin emojis) ──
+const I = ({ children }: { children: React.ReactNode }) => (
+  <svg viewBox="0 0 24 24" className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round">{children}</svg>
+)
+export const ICO = {
+  valv: <I><path d="M5 7v10l7-5-7-5z" /><path d="M19 7v10l-7-5 7-5z" /></I>,
+  check: <I><path d="M5 9v8l7-4-7-4z" /><path d="M19 9v8l-7-4 7-4z" /><path d="M7 4h10m0 0l-2.5-1.8M17 4l-2.5 1.8" /></I>,
+  vcontrol: <I><path d="M5 10v9l7-4.5L5 10z" /><path d="M19 10v9l-7-4.5L19 10z" /><path d="M12 14.5V8" /><circle cx="12" cy="5.5" r="2.2" /></I>,
+  codo: <I><path d="M4 10h7a3 3 0 0 1 3 3v7" /><path d="M4 7v6M17 17h3" /></I>,
+  tee: <I><path d="M4 8h16M12 8v11" /><path d="M4 5v6m16-6v6M9 19h6" /></I>,
+  cruz: <I><path d="M12 4v16M4 12h16" /></I>,
+  reduccion: <I><path d="M4 7v10l11-3.5v-3L4 7z" /><path d="M15 12h5" /></I>,
+  carreteCorto: <I><rect x="8" y="8" width="8" height="8" /><path d="M3 12h5m8 0h5" /></I>,
+  carreteLargo: <I><rect x="5" y="9" width="14" height="6" /><path d="M2 12h3m14 0h3" /></I>,
+  carreteDesm: <I><rect x="7" y="8" width="10" height="8" /><path d="M10.5 8v8m3-8v8M3 12h4m10 0h4" /></I>,
+  medidor: <I><circle cx="12" cy="12" r="5.5" /><path d="M3 12h3.5m11 0H21M12 12l2.5-2.5" /></I>,
+  bomba: <I><circle cx="12" cy="12" r="6.5" /><path d="M10 9l5 3-5 3V9z" /></I>,
+  filtroY: <I><path d="M3 10h18M11 10l4.5 8m1.5-1.5l-3.5 2" /></I>,
+  filtroCanasta: <I><path d="M3 9h18M8 9v4.5a4 4 0 0 0 8 0V9" /></I>,
+  aire: <I><circle cx="12" cy="14" r="5.5" /><path d="M8.5 5h7M10 2.5h4" /></I>,
+  tapa: <I><path d="M3 12h9M15 5v14m3.5-14v14" /></I>,
+  desfogue: <I><path d="M3 12h7m1.5 4.5l3-9 2 9 3.5-9" /></I>,
+  visual: <I><path d="M4 8h9M13 8v8m0 0h7M13 12h-3" /><circle cx="4" cy="8" r="1.6" /><circle cx="20" cy="16" r="1.6" /></I>,
+  lista: <I><path d="M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01" /></I>,
+}
+
 // ─── Componente ─────────────────────────────────────────────────
 interface Props {
   dn: string                       // DN principal del crucero
@@ -544,48 +570,48 @@ export default function CruceroVisual({ dn, nodes, onChange, onSnapshot }: Props
             <div className="flex flex-wrap items-center gap-1.5">
               <span className="text-[10px] text-gray-400 w-20 shrink-0">Válvulas:</span>
               {(['vcg-r', 'vcg-b', 'vmb-c'] as const).filter(t => VALV[t]?.[pending.dn]).map(t => (
-                <button key={t} onClick={() => addNode('valv', t)} className="px-3 py-1.5 text-[11px] rounded-lg border border-gray-200 dark:border-gray-600 hover:bg-[#1C3D5A] hover:text-white transition-colors">{t === 'vcg-r' ? '⧓ Compuerta' : t === 'vcg-b' ? '⧓ Comp. Bronce' : '⧓ Mariposa'}</button>
+                <button key={t} onClick={() => addNode('valv', t)} className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[11px] rounded-lg border border-gray-200 dark:border-gray-600 hover:bg-[#1C3D5A] hover:text-white transition-colors">{ICO.valv}{t === 'vcg-r' ? 'Compuerta' : t === 'vcg-b' ? 'Comp. Bronce' : 'Mariposa'}</button>
               ))}
-              <button onClick={() => addNode('check')} className="px-3 py-1.5 text-[11px] rounded-lg border border-gray-200 dark:border-gray-600 hover:bg-[#1C3D5A] hover:text-white transition-colors">⧓→ Check</button>
-              <button onClick={() => setSubPick(x => x === 'vcontrol' ? null : 'vcontrol')} className={`px-3 py-1.5 text-[11px] rounded-lg border transition-colors ${subPick === 'vcontrol' ? 'border-[#1C3D5A] bg-[#1C3D5A]/5 font-medium' : 'border-gray-200 dark:border-gray-600'}`}>⚙ De control…</button>
+              <button onClick={() => addNode('check')} className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[11px] rounded-lg border border-gray-200 dark:border-gray-600 hover:bg-[#1C3D5A] hover:text-white transition-colors">{ICO.check}Check</button>
+              <button onClick={() => setSubPick(x => x === 'vcontrol' ? null : 'vcontrol')} className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-[11px] rounded-lg border transition-colors ${subPick === 'vcontrol' ? 'border-[#1C3D5A] bg-[#1C3D5A]/5 font-medium' : 'border-gray-200 dark:border-gray-600'}`}>{ICO.vcontrol}De control…</button>
             </div>
             <div className="flex flex-wrap items-center gap-1.5">
               <span className="text-[10px] text-gray-400 w-20 shrink-0">Codos:</span>
               {['11', '22', '45', '90'].map(a => (
-                <button key={a} onClick={() => addNode('codo', a)} className="px-3 py-1.5 text-[11px] rounded-lg border border-gray-200 dark:border-gray-600 hover:bg-[#1C3D5A] hover:text-white transition-colors">↩ {a}°</button>
+                <button key={a} onClick={() => addNode('codo', a)} className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[11px] rounded-lg border border-gray-200 dark:border-gray-600 hover:bg-[#1C3D5A] hover:text-white transition-colors">{ICO.codo}{a}°</button>
               ))}
             </div>
             <div className="flex flex-wrap items-center gap-1.5">
               <span className="text-[10px] text-gray-400 w-20 shrink-0">Derivación:</span>
-              <button onClick={() => addNode('tee', undefined, undefined)} className="px-3 py-1.5 text-[11px] rounded-lg border border-gray-200 dark:border-gray-600 hover:bg-[#1C3D5A] hover:text-white transition-colors">⑂ Tee {pending.dn}</button>
-              <button onClick={() => setSubPick(x => x === 'tee-red' ? null : 'tee-red')} className={`px-3 py-1.5 text-[11px] rounded-lg border transition-colors ${subPick === 'tee-red' ? 'border-[#1C3D5A] bg-[#1C3D5A]/5 font-medium' : 'border-gray-200 dark:border-gray-600'}`}>⑂ Tee reducida…</button>
-              <button onClick={() => addNode('cruz', undefined, undefined)} className="px-3 py-1.5 text-[11px] rounded-lg border border-gray-200 dark:border-gray-600 hover:bg-[#1C3D5A] hover:text-white transition-colors">✚ Cruz {pending.dn}</button>
-              <button onClick={() => setSubPick(x => x === 'cruz-red' ? null : 'cruz-red')} className={`px-3 py-1.5 text-[11px] rounded-lg border transition-colors ${subPick === 'cruz-red' ? 'border-[#1C3D5A] bg-[#1C3D5A]/5 font-medium' : 'border-gray-200 dark:border-gray-600'}`}>✚ Cruz reducida…</button>
-              <button onClick={() => setSubPick(x => x === 'reduc' ? null : 'reduc')} className={`px-3 py-1.5 text-[11px] rounded-lg border transition-colors ${subPick === 'reduc' ? 'border-[#1C3D5A] bg-[#1C3D5A]/5 font-medium' : 'border-gray-200 dark:border-gray-600'}`}>▷ Reducción…</button>
+              <button onClick={() => addNode('tee', undefined, undefined)} className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[11px] rounded-lg border border-gray-200 dark:border-gray-600 hover:bg-[#1C3D5A] hover:text-white transition-colors">{ICO.tee}Tee {pending.dn}</button>
+              <button onClick={() => setSubPick(x => x === 'tee-red' ? null : 'tee-red')} className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-[11px] rounded-lg border transition-colors ${subPick === 'tee-red' ? 'border-[#1C3D5A] bg-[#1C3D5A]/5 font-medium' : 'border-gray-200 dark:border-gray-600'}`}>{ICO.tee}Tee reducida…</button>
+              <button onClick={() => addNode('cruz', undefined, undefined)} className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[11px] rounded-lg border border-gray-200 dark:border-gray-600 hover:bg-[#1C3D5A] hover:text-white transition-colors">{ICO.cruz}Cruz {pending.dn}</button>
+              <button onClick={() => setSubPick(x => x === 'cruz-red' ? null : 'cruz-red')} className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-[11px] rounded-lg border transition-colors ${subPick === 'cruz-red' ? 'border-[#1C3D5A] bg-[#1C3D5A]/5 font-medium' : 'border-gray-200 dark:border-gray-600'}`}>{ICO.cruz}Cruz reducida…</button>
+              <button onClick={() => setSubPick(x => x === 'reduc' ? null : 'reduc')} className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-[11px] rounded-lg border transition-colors ${subPick === 'reduc' ? 'border-[#1C3D5A] bg-[#1C3D5A]/5 font-medium' : 'border-gray-200 dark:border-gray-600'}`}>{ICO.reduccion}Reducción…</button>
             </div>
             <div className="flex flex-wrap items-center gap-1.5">
               <span className="text-[10px] text-gray-400 w-20 shrink-0">Carretes:</span>
-              <button onClick={() => addNode('carrete', 'corto')} className="px-3 py-1.5 text-[11px] rounded-lg border border-gray-200 dark:border-gray-600 hover:bg-[#1C3D5A] hover:text-white transition-colors">▯ Corto</button>
-              <button onClick={() => addNode('carrete', 'largo')} className="px-3 py-1.5 text-[11px] rounded-lg border border-gray-200 dark:border-gray-600 hover:bg-[#1C3D5A] hover:text-white transition-colors">▭ Largo</button>
-              <button onClick={() => addNode('carrete')} className="px-3 py-1.5 text-[11px] rounded-lg border border-gray-200 dark:border-gray-600 hover:bg-[#1C3D5A] hover:text-white transition-colors">⚙ De desmontaje</button>
+              <button onClick={() => addNode('carrete', 'corto')} className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[11px] rounded-lg border border-gray-200 dark:border-gray-600 hover:bg-[#1C3D5A] hover:text-white transition-colors">{ICO.carreteCorto}Corto</button>
+              <button onClick={() => addNode('carrete', 'largo')} className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[11px] rounded-lg border border-gray-200 dark:border-gray-600 hover:bg-[#1C3D5A] hover:text-white transition-colors">{ICO.carreteLargo}Largo</button>
+              <button onClick={() => addNode('carrete')} className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[11px] rounded-lg border border-gray-200 dark:border-gray-600 hover:bg-[#1C3D5A] hover:text-white transition-colors">{ICO.carreteDesm}De desmontaje</button>
             </div>
             <div className="flex flex-wrap items-center gap-1.5">
               <span className="text-[10px] text-gray-400 w-20 shrink-0">Equipo:</span>
-              <button onClick={() => addNode('medidor')} className="px-3 py-1.5 text-[11px] rounded-lg border border-gray-200 dark:border-gray-600 hover:bg-[#1C3D5A] hover:text-white transition-colors">Ⓜ Medidor de flujo</button>
-              <button onClick={() => addNode('bomba')} className="px-3 py-1.5 text-[11px] rounded-lg border border-gray-200 dark:border-gray-600 hover:bg-[#1C3D5A] hover:text-white transition-colors">◉▷ Bomba</button>
-              <button onClick={() => addNode('filtro')} className="px-3 py-1.5 text-[11px] rounded-lg border border-gray-200 dark:border-gray-600 hover:bg-[#1C3D5A] hover:text-white transition-colors">⋔ Filtro Y</button>
-              <button onClick={() => addNode('filtro', 'canasta')} className="px-3 py-1.5 text-[11px] rounded-lg border border-gray-200 dark:border-gray-600 hover:bg-[#1C3D5A] hover:text-white transition-colors">⊔ Filtro canasta</button>
+              <button onClick={() => addNode('medidor')} className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[11px] rounded-lg border border-gray-200 dark:border-gray-600 hover:bg-[#1C3D5A] hover:text-white transition-colors">{ICO.medidor}Medidor de flujo</button>
+              <button onClick={() => addNode('bomba')} className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[11px] rounded-lg border border-gray-200 dark:border-gray-600 hover:bg-[#1C3D5A] hover:text-white transition-colors">{ICO.bomba}Bomba</button>
+              <button onClick={() => addNode('filtro')} className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[11px] rounded-lg border border-gray-200 dark:border-gray-600 hover:bg-[#1C3D5A] hover:text-white transition-colors">{ICO.filtroY}Filtro Y</button>
+              <button onClick={() => addNode('filtro', 'canasta')} className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[11px] rounded-lg border border-gray-200 dark:border-gray-600 hover:bg-[#1C3D5A] hover:text-white transition-colors">{ICO.filtroCanasta}Filtro canasta</button>
             </div>
             <div className="flex flex-wrap items-center gap-1.5">
               <span className="text-[10px] text-gray-400 w-20 shrink-0">V. de aire:</span>
-              <button onClick={() => setSubPick(x => x === 'aire-vac' ? null : 'aire-vac')} className={`px-3 py-1.5 text-[11px] rounded-lg border transition-colors ${subPick === 'aire-vac' ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 font-medium text-blue-700 dark:text-blue-300' : 'border-blue-200 text-blue-700 dark:text-blue-300'}`}>◍ V. aire combinada…</button>
-              <button onClick={() => setSubPick(x => x === 'aire-vae' ? null : 'aire-vae')} className={`px-3 py-1.5 text-[11px] rounded-lg border transition-colors ${subPick === 'aire-vae' ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 font-medium text-blue-700 dark:text-blue-300' : 'border-blue-200 text-blue-700 dark:text-blue-300'}`}>◍ VAEA adm/exp…</button>
-              <button onClick={() => setSubPick(x => x === 'aire-vea' ? null : 'aire-vea')} className={`px-3 py-1.5 text-[11px] rounded-lg border transition-colors ${subPick === 'aire-vea' ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 font-medium text-blue-700 dark:text-blue-300' : 'border-blue-200 text-blue-700 dark:text-blue-300'}`}>◍ Eliminadora…</button>
+              <button onClick={() => setSubPick(x => x === 'aire-vac' ? null : 'aire-vac')} className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-[11px] rounded-lg border transition-colors ${subPick === 'aire-vac' ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 font-medium text-blue-700 dark:text-blue-300' : 'border-blue-200 text-blue-700 dark:text-blue-300'}`}>{ICO.aire}V. aire combinada…</button>
+              <button onClick={() => setSubPick(x => x === 'aire-vae' ? null : 'aire-vae')} className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-[11px] rounded-lg border transition-colors ${subPick === 'aire-vae' ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 font-medium text-blue-700 dark:text-blue-300' : 'border-blue-200 text-blue-700 dark:text-blue-300'}`}>{ICO.aire}VAEA adm/exp…</button>
+              <button onClick={() => setSubPick(x => x === 'aire-vea' ? null : 'aire-vea')} className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-[11px] rounded-lg border transition-colors ${subPick === 'aire-vea' ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 font-medium text-blue-700 dark:text-blue-300' : 'border-blue-200 text-blue-700 dark:text-blue-300'}`}>{ICO.aire}Eliminadora…</button>
             </div>
             <div className="flex flex-wrap items-center gap-1.5">
               <span className="text-[10px] text-gray-400 w-20 shrink-0">Fin de línea:</span>
-              <button onClick={() => addNode('tapa')} className="px-3 py-1.5 text-[11px] rounded-lg border border-gray-200 dark:border-gray-600 hover:bg-[#1C3D5A] hover:text-white transition-colors">◉ Tapa ciega</button>
-              <button onClick={() => addNode('desfogue')} className="px-3 py-1.5 text-[11px] rounded-lg border border-gray-200 dark:border-gray-600 hover:bg-[#1C3D5A] hover:text-white transition-colors">◤ Desfogue</button>
+              <button onClick={() => addNode('tapa')} className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[11px] rounded-lg border border-gray-200 dark:border-gray-600 hover:bg-[#1C3D5A] hover:text-white transition-colors">{ICO.tapa}Tapa ciega</button>
+              <button onClick={() => addNode('desfogue')} className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[11px] rounded-lg border border-gray-200 dark:border-gray-600 hover:bg-[#1C3D5A] hover:text-white transition-colors">{ICO.desfogue}Desfogue</button>
             </div>
           </div>
 
@@ -596,7 +622,7 @@ export default function CruceroVisual({ dn, nodes, onChange, onSnapshot }: Props
               </p>
               <div className="flex flex-wrap gap-1.5">
                 {AIRE_SIZES[subPick.replace('aire-', '')].map(sz => (
-                  <button key={sz} onClick={() => addNode('vaea', subPick.replace('aire-', ''), sz)} className="px-3 py-1.5 text-[11px] rounded-lg border border-blue-200 dark:border-blue-800 hover:bg-blue-600 hover:text-white transition-colors">{sz}</button>
+                  <button key={sz} onClick={() => addNode('vaea', subPick.replace('aire-', ''), sz)} className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[11px] rounded-lg border border-blue-200 dark:border-blue-800 hover:bg-blue-600 hover:text-white transition-colors">{sz}</button>
                 ))}
               </div>
             </div>
@@ -606,9 +632,9 @@ export default function CruceroVisual({ dn, nodes, onChange, onSnapshot }: Props
             <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-3">
               <p className="text-[10px] text-gray-500 dark:text-gray-300 mb-1.5">Tipo de válvula de control hidráulica (SKU a confirmar con distribuidor):</p>
               <div className="flex flex-wrap gap-1.5">
-                <button onClick={() => addNode('vcontrol', 'vrp')} className="px-3 py-1.5 text-[11px] rounded-lg border border-gray-200 dark:border-gray-500 hover:bg-[#1C3D5A] hover:text-white transition-colors">Reductora de presión (VRP)</button>
-                <button onClick={() => addNode('vcontrol', 'sost')} className="px-3 py-1.5 text-[11px] rounded-lg border border-gray-200 dark:border-gray-500 hover:bg-[#1C3D5A] hover:text-white transition-colors">Sostenedora / Alivio</button>
-                <button onClick={() => addNode('vcontrol', 'alt')} className="px-3 py-1.5 text-[11px] rounded-lg border border-gray-200 dark:border-gray-500 hover:bg-[#1C3D5A] hover:text-white transition-colors">De altitud (tanque)</button>
+                <button onClick={() => addNode('vcontrol', 'vrp')} className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[11px] rounded-lg border border-gray-200 dark:border-gray-500 hover:bg-[#1C3D5A] hover:text-white transition-colors">Reductora de presión (VRP)</button>
+                <button onClick={() => addNode('vcontrol', 'sost')} className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[11px] rounded-lg border border-gray-200 dark:border-gray-500 hover:bg-[#1C3D5A] hover:text-white transition-colors">Sostenedora / Alivio</button>
+                <button onClick={() => addNode('vcontrol', 'alt')} className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[11px] rounded-lg border border-gray-200 dark:border-gray-500 hover:bg-[#1C3D5A] hover:text-white transition-colors">De altitud (tanque)</button>
               </div>
             </div>
           )}
@@ -618,7 +644,7 @@ export default function CruceroVisual({ dn, nodes, onChange, onSnapshot }: Props
               <p className="text-[10px] text-gray-500 dark:text-gray-300 mb-1.5">{subPick === 'reduc' ? `Reducir de ${pending.dn} a:` : `Diámetro del ramal:`}</p>
               <div className="flex flex-wrap gap-1.5">
                 {dnsMenores(pending.dn).map(d2 => (
-                  <button key={d2} onClick={() => addNode(subPick === 'reduc' ? 'reduccion' : subPick === 'tee-red' ? 'tee' : 'cruz', undefined, d2)} className="px-3 py-1.5 text-[11px] rounded-lg border border-gray-200 dark:border-gray-500 hover:bg-[#1C3D5A] hover:text-white transition-colors">{d2}</button>
+                  <button key={d2} onClick={() => addNode(subPick === 'reduc' ? 'reduccion' : subPick === 'tee-red' ? 'tee' : 'cruz', undefined, d2)} className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[11px] rounded-lg border border-gray-200 dark:border-gray-500 hover:bg-[#1C3D5A] hover:text-white transition-colors">{d2}</button>
                 ))}
               </div>
             </div>

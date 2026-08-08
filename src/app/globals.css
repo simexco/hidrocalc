@@ -44,6 +44,14 @@ code, pre, .font-mono {
   outline-offset: 2px;
 }
 
+/* Micro-transiciones globales: los controles se sienten "vivos" */
+button {
+  transition: background-color .15s ease, color .15s ease, border-color .15s ease, box-shadow .15s ease, transform .15s ease, opacity .15s ease;
+}
+input, select, textarea {
+  transition: border-color .15s ease, box-shadow .15s ease;
+}
+
 @media print {
   /* Hide everything by default */
   body * {
