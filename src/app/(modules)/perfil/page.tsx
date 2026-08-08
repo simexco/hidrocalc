@@ -33,7 +33,8 @@ export default function PerfilPage() {
     { id: uuid(), distFrom: 0, distTo: 1000, DN_mm: 150, C: MATERIALS[0].c, materialName: MATERIALS[0].name, pipeClass: "RD 26", PN_bar: 11.0 },
   ]);
   const [results, setResults] = useState<ProfileResults | null>(null);
-  const [calcMode, setCalcMode] = useState<'verificar' | 'calcularP1'>('verificar');
+  // Default: calcular la P1 requerida (al diseñar no conoces P1; "verificar" es para líneas existentes)
+  const [calcMode, setCalcMode] = useState<'verificar' | 'calcularP1'>('calcularP1');
   const [tipoLinea, setTipoLinea] = useState<'conduccion' | 'distribucion'>('conduccion');
 
   // Cambiar el tipo de línea trae el caudal correcto del proyecto (Qmd o Qmh = Qmd × CVh)
@@ -217,6 +218,14 @@ export default function PerfilPage() {
   const lineLength = tramos.reduce((mx, t) => Math.max(mx, t.distTo ?? 0), 0);
   const perfilMax = vertices.reduce((mx, v) => Math.max(mx, v.dist ?? 0), 0);
 
+  // El perfil manda: con un solo tramo, su longitud sigue al último punto del terreno
+  useEffect(() => {
+    if (tramos.length === 1 && perfilMax > 0 && Math.abs((tramos[0].distTo ?? 0) - perfilMax) > 0.001) {
+      setTramos([{ ...tramos[0], distTo: perfilMax }]);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [perfilMax]);
+
   // CSV Import
   const handleCSVImport = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -399,10 +408,58 @@ export default function PerfilPage() {
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
         {/* Form */}
         <div className="lg:col-span-2 space-y-5">
+          {/* Paso 1: el terreno primero — de aquí salen la longitud y las presiones */}
+          <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 space-y-3">
+            <div className="flex items-center justify-between">
+              <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300"><span className="inline-flex w-5 h-5 rounded-full bg-[#1C3D5A] text-white text-[10px] font-bold items-center justify-center mr-1.5">1</span>Perfil del terreno</h2>
+              <div className="flex gap-2">
+                <button onClick={downloadTemplate} className="text-[10px] text-[#1C3D5A] border border-[#1C3D5A]/30 px-2 py-1 rounded hover:bg-[#1C3D5A]/10 transition-colors">
+                  Plantilla .xlsx
+                </button>
+                <button onClick={() => xlsxRef.current?.click()} className="text-[10px] text-[#1C3D5A] border border-[#1C3D5A]/30 px-2 py-1 rounded hover:bg-[#1C3D5A]/10 transition-colors">
+                  Importar Excel
+                </button>
+                <button onClick={() => fileRef.current?.click()} className="text-[10px] text-[#1C3D5A] border border-[#1C3D5A]/30 px-2 py-1 rounded hover:bg-[#1C3D5A]/10 transition-colors">
+                  Importar CSV
+                </button>
+                <button onClick={addVertex} className="text-xs bg-[#1C3D5A] text-white px-3 py-1.5 rounded-lg hover:bg-[#0F2438] transition-colors">
+                  + Punto
+                </button>
+              </div>
+              <input ref={fileRef} type="file" accept=".csv,.txt,.tsv" onChange={handleCSVImport} className="hidden" />
+              <input ref={xlsxRef} type="file" accept=".xlsx" onChange={handleXLSXImport} className="hidden" />
+            </div>
+            <p className="text-[10px] text-gray-400">Empieza aquí: captura el terreno (o impórtalo). El último punto define la longitud de la línea{lineLength > 0 ? ` (${formatNumber(lineLength, 0)} m)` : ""} y los tramos se ajustan solos. CSV: cadenamiento, cota, descripcion (opcional)</p>
+
+            {perfilMax > lineLength && lineLength > 0 && (
+              <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-300 dark:border-amber-700 rounded-lg px-3 py-2 text-[11px] text-amber-700 dark:text-amber-300">
+                {"⚠"} El perfil llega a {formatNumber(perfilMax, 0)} m pero la linea (tramos) mide {formatNumber(lineLength, 0)} m. Ajusta el cadenamiento o amplia los tramos para que coincidan.
+              </div>
+            )}
+
+            <div className="grid grid-cols-[1fr_1fr_1fr_24px] gap-2 text-[10px] text-gray-400 font-semibold uppercase px-1">
+              <span>Cadenam. (m)</span><span>Cota (m.s.n.m.)</span><span>Descripcion</span><span></span>
+            </div>
+            <div className="space-y-1 max-h-[350px] overflow-y-auto">
+              {vertices.map((v, i) => {
+                const excede = v.dist != null && lineLength > 0 && v.dist > lineLength;
+                return (
+                <div key={v.id} className={`grid grid-cols-[1fr_1fr_1fr_24px] gap-2 items-center px-1 ${excede ? 'bg-amber-50 dark:bg-amber-900/10 rounded' : results?.points[i]?.status === 'critical' ? 'bg-red-50 dark:bg-red-900/10 rounded' : results?.points[i]?.status === 'low' ? 'bg-yellow-50 dark:bg-yellow-900/10 rounded' : ''}`}>
+                  <NumInput value={v.dist} onChange={(n) => updateVertex(v.id, "dist", n)} />
+                  <NumInput value={v.cota} onChange={(n) => updateVertex(v.id, "cota", n)} />
+                  <input type="text" value={v.desc} onChange={(e) => updateVertex(v.id, "desc", e.target.value)} placeholder={i === 0 ? "Inicio" : ""} className="w-full px-2 py-1.5 text-xs border border-gray-200 dark:border-gray-600 rounded bg-white dark:bg-gray-800 dark:text-white" />
+                  {vertices.length > 2 ? <button onClick={() => removeVertex(v.id)} className="text-red-400 hover:text-red-600 text-xs text-center">{"✗"}</button> : <span />}
+                </div>
+                );
+              })}
+            </div>
+            <p className="text-[10px] text-gray-400">{vertices.length} puntos</p>
+          </div>
+
           {/* Global data */}
           <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 space-y-4">
             <div className="flex items-center justify-between border-b border-gray-100 dark:border-gray-700 pb-2">
-              <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300">Datos de la linea</h2>
+              <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300"><span className="inline-flex w-5 h-5 rounded-full bg-[#1C3D5A] text-white text-[10px] font-bold items-center justify-center mr-1.5">2</span>Datos de la linea</h2>
               <ResetButton moduleKey="perfil" onReset={handleReset} />
             </div>
             <InputField label="Nombre del proyecto" value={projectName} onChange={setProjectName} type="text" />
@@ -441,18 +498,19 @@ export default function PerfilPage() {
               <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Modo de calculo</label>
               <div className="flex rounded-lg border border-gray-200 dark:border-gray-600 overflow-hidden">
                 <button
-                  onClick={() => setCalcMode('verificar')}
-                  className={`flex-1 text-xs py-2 px-3 transition-colors ${calcMode === 'verificar' ? 'bg-[#1C3D5A] text-white font-semibold' : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'}`}
-                >
-                  Verificar presion
-                </button>
-                <button
                   onClick={() => setCalcMode('calcularP1')}
                   className={`flex-1 text-xs py-2 px-3 transition-colors ${calcMode === 'calcularP1' ? 'bg-[#1C3D5A] text-white font-semibold' : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'}`}
                 >
                   Calcular P1 requerida
                 </button>
+                <button
+                  onClick={() => setCalcMode('verificar')}
+                  className={`flex-1 text-xs py-2 px-3 transition-colors ${calcMode === 'verificar' ? 'bg-[#1C3D5A] text-white font-semibold' : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'}`}
+                >
+                  Verificar presion
+                </button>
               </div>
+              <p className="text-[10px] text-gray-400">Al diseñar, el sistema te dice qué P1 necesitas para cumplir la presión mínima. «Verificar» es para líneas existentes donde ya conoces la P1.</p>
             </div>
             {calcMode === 'verificar' ? (
               <InputField label="Presion de entrada P1" value={P1} onChange={(v) => setP1(v === "" ? null : parseFloat(v))} unit="kg/cm2" required tooltip="Presion disponible al inicio de la linea" />
@@ -475,7 +533,7 @@ export default function PerfilPage() {
           {/* Tramos de tubería */}
           <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 space-y-3">
             <div className="flex items-center justify-between">
-              <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300">Tramos de tuberia</h2>
+              <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300"><span className="inline-flex w-5 h-5 rounded-full bg-[#1C3D5A] text-white text-[10px] font-bold items-center justify-center mr-1.5">3</span>Tramos de tuberia</h2>
               <button onClick={addTramo} className="text-xs bg-[#1C3D5A] text-white px-3 py-1.5 rounded-lg hover:bg-[#0F2438] transition-colors">+ Tramo</button>
             </div>
             <div className="bg-[#1C3D5A]/[0.04] dark:bg-blue-900/15 border border-[#1C3D5A]/15 rounded-lg px-3 py-2">
@@ -611,53 +669,6 @@ export default function PerfilPage() {
             );})}
           </div>
 
-          {/* Perfil topografico (despues de definir los tramos / longitud de la linea) */}
-          <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 space-y-3">
-            <div className="flex items-center justify-between">
-              <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300">Perfil topografico</h2>
-              <div className="flex gap-2">
-                <button onClick={downloadTemplate} className="text-[10px] text-[#1C3D5A] border border-[#1C3D5A]/30 px-2 py-1 rounded hover:bg-[#1C3D5A]/10 transition-colors">
-                  Plantilla .xlsx
-                </button>
-                <button onClick={() => xlsxRef.current?.click()} className="text-[10px] text-[#1C3D5A] border border-[#1C3D5A]/30 px-2 py-1 rounded hover:bg-[#1C3D5A]/10 transition-colors">
-                  Importar Excel
-                </button>
-                <button onClick={() => fileRef.current?.click()} className="text-[10px] text-[#1C3D5A] border border-[#1C3D5A]/30 px-2 py-1 rounded hover:bg-[#1C3D5A]/10 transition-colors">
-                  Importar CSV
-                </button>
-                <button onClick={addVertex} className="text-xs bg-[#1C3D5A] text-white px-3 py-1.5 rounded-lg hover:bg-[#0F2438] transition-colors">
-                  + Punto
-                </button>
-              </div>
-              <input ref={fileRef} type="file" accept=".csv,.txt,.tsv" onChange={handleCSVImport} className="hidden" />
-              <input ref={xlsxRef} type="file" accept=".xlsx" onChange={handleXLSXImport} className="hidden" />
-            </div>
-            <p className="text-[10px] text-gray-400">La linea mide {formatNumber(lineLength, 0)} m segun los tramos. El cadenamiento del perfil no debe pasar de ahi. CSV: cadenamiento, cota, descripcion (opcional)</p>
-
-            {perfilMax > lineLength && lineLength > 0 && (
-              <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-300 dark:border-amber-700 rounded-lg px-3 py-2 text-[11px] text-amber-700 dark:text-amber-300">
-                {"⚠"} El perfil llega a {formatNumber(perfilMax, 0)} m pero la linea (tramos) mide {formatNumber(lineLength, 0)} m. Ajusta el cadenamiento o amplia los tramos para que coincidan.
-              </div>
-            )}
-
-            <div className="grid grid-cols-[1fr_1fr_1fr_24px] gap-2 text-[10px] text-gray-400 font-semibold uppercase px-1">
-              <span>Cadenam. (m)</span><span>Cota (m.s.n.m.)</span><span>Descripcion</span><span></span>
-            </div>
-            <div className="space-y-1 max-h-[350px] overflow-y-auto">
-              {vertices.map((v, i) => {
-                const excede = v.dist != null && lineLength > 0 && v.dist > lineLength;
-                return (
-                <div key={v.id} className={`grid grid-cols-[1fr_1fr_1fr_24px] gap-2 items-center px-1 ${excede ? 'bg-amber-50 dark:bg-amber-900/10 rounded' : results?.points[i]?.status === 'critical' ? 'bg-red-50 dark:bg-red-900/10 rounded' : results?.points[i]?.status === 'low' ? 'bg-yellow-50 dark:bg-yellow-900/10 rounded' : ''}`}>
-                  <NumInput value={v.dist} onChange={(n) => updateVertex(v.id, "dist", n)} />
-                  <NumInput value={v.cota} onChange={(n) => updateVertex(v.id, "cota", n)} />
-                  <input type="text" value={v.desc} onChange={(e) => updateVertex(v.id, "desc", e.target.value)} placeholder={i === 0 ? "Inicio" : ""} className="w-full px-2 py-1.5 text-xs border border-gray-200 dark:border-gray-600 rounded bg-white dark:bg-gray-800 dark:text-white" />
-                  {vertices.length > 2 ? <button onClick={() => removeVertex(v.id)} className="text-red-400 hover:text-red-600 text-xs text-center">{"✗"}</button> : <span />}
-                </div>
-                );
-              })}
-            </div>
-            <p className="text-[10px] text-gray-400">{vertices.length} puntos</p>
-          </div>
 
           {/* Scenario B toggle + tramos */}
           <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 space-y-3">
