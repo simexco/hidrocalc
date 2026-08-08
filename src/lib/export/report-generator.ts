@@ -308,7 +308,8 @@ export async function generateReportPDF(d: ReportData): Promise<jsPDF> {
   // Los diagramas de cruceros (2 por fila, ~67 mm por fila) pueden agregar hojas al despiece
   const nCrucImg = (d.cruceros ?? []).filter((c) => c.png).length;
   const crucerosExtra = hasDespiece ? Math.floor((Math.ceil(nCrucImg / 2) * 67) / 210) : 0;
-  const total = 2 + (d.incluyeBombeo ? 1 : 0) + (hasDespiece ? 1 : 0) + crucerosExtra + 1 + 1;
+  // Anexo: zanja/atraques (1 hoja) + cajas de válvulas tipo (2a hoja)
+  const total = 2 + (d.incluyeBombeo ? 1 : 0) + (hasDespiece ? 1 : 0) + crucerosExtra + 1 + 2;
   // Diámetro nominal del proyecto (para resaltar su fila en las tablas del anexo)
   const projInch = (d.dn || "").match(/(\d+(?:\.\d+)?)\s*"/)?.[1] ?? null;
   let pg = 1;
@@ -812,6 +813,50 @@ export async function generateReportPDF(d: ReportData): Promise<jsPDF> {
     "Estos atraques se usan exclusivamente para tuberia alojada en zanja. Concreto f'c = 150 kg/cm2.",
   ];
   for (const nt of notas) { doc.text(safe(nt), 14, ay, { maxWidth: doc.internal.pageSize.getWidth() - 28 }); ay += 4.5; }
+  doc.setTextColor(0, 0, 0);
+  ay += 4;
+
+  // ── Cajas de válvulas tipo (catálogo completo, resaltando las del proyecto) ──
+  if (ay > 195) { doc.addPage(); pg++; header(doc, d, pg, total); ay = 32; }
+  ay = subhead(doc, "Dimensiones de cajas de valvulas tipo", ay);
+  const cajasProyecto = new Set(
+    (d.cruceros ?? [])
+      .map((c) => { const m = /Caja tipo (\d+)/.exec(c.caja ?? ""); return m ? m[1] : null; })
+      .filter((v): v is string => v != null)
+  );
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const highlightCaja = (data: any) => {
+    const t = String(data.row.raw?.[0] ?? "");
+    if (cajasProyecto.has(t)) {
+      data.cell.styles.fillColor = [233, 239, 245];
+      data.cell.styles.fontStyle = "bold";
+    }
+  };
+  autoTable(doc, {
+    startY: ay, theme: "grid", styles: { fontSize: 7 }, headStyles: tableBlue,
+    head: [["Tipo", "Valvulas", "Interior a x b (m)", "Altura h (m)", "Contramarcos", "Perfil"]],
+    body: [
+      ["1", safe('1 valv. 4"-6"'), "1.90 x 1.60", "1.46", "2 sencillos de 1.95 m", '4"'],
+      ["2", safe('1 valv. 8"-14"'), "2.10 x 1.80", "1.79", "2 dobles de 2.15 m", '4"'],
+      ["3", safe('1 valv. 16"-20"'), "2.70 x 2.25", "2.27", "2 dobles de 2.60 m", '6"'],
+      ["4", safe('2 valv. 4"-6" en linea'), "2.15 x 1.60", "1.46", "2 sencillos de 1.95 m", '4"'],
+      ["5", safe('2 valv. 8"-10" en linea'), "2.40 x 1.75", "1.79", "1 doble de 2.75 m", '6"'],
+      ["6", safe('2 valv. 12"-14" en linea'), "2.65 x 1.90", "2.09", "2 sencillos de 2.25 m", '4"'],
+      ["7", safe('2 valv. 16"-20" en linea'), "3.10 x 2.20", "2.27", "2 sencillos de 2.55 m", '6"'],
+      ["8", safe('2 valv. 4"-6" en escuadra'), "1.85 x 1.85", "1.46", "2 sencillos de 2.25 m", '4"'],
+      ["9", safe('2 valv. 8"-10" en escuadra'), "2.10 x 2.10", "1.79", "2 sencillos de 2.45 m", '6"'],
+      ["10", safe('2 valv. 12"-14" en escuadra'), "2.25 x 2.25", "2.09", "2 sencillos de 2.65 m", '6"'],
+      ["11", safe('3 valv. 4"-6"'), "2.15 x 1.85", "1.46", "1 sencillo + 1 doble de 2.55 m", '6"'],
+      ["12", safe('3 valv. 8"-18"'), "2.70 x 2.30", "1.79", "3 sencillos de 2.65 m", '6"'],
+    ],
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    didParseCell: highlightCaja as any,
+    columnStyles: { 0: { cellWidth: 12, halign: "center" }, 5: { cellWidth: 14, halign: "center" } },
+    margin: { left: 14, right: 14 },
+  });
+  ay = finalY(doc) + 4;
+  doc.setFontSize(7); doc.setTextColor(90, 90, 90);
+  doc.text(safe("Muro de block solido 28 cm a tezon (mortero 1:5) · losa de techo 20 cm (var. 3/8 @ 10 cm A/S) · losa de piso 10 cm + plantilla 10 cm · dalas de desplante y coronacion 15x28 · marco y tapa de FoFo tipo pesado. Las cajas recomendadas para este proyecto van resaltadas."), 14, ay, { maxWidth: doc.internal.pageSize.getWidth() - 28 });
   doc.setTextColor(0, 0, 0);
 
   // Logo en portada (esquina sup. derecha hoja 1)
