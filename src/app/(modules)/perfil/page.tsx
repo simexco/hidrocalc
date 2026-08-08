@@ -186,28 +186,42 @@ export default function PerfilPage() {
   // Tramo management
   const addTramo = () => {
     const last = tramos[tramos.length - 1];
-    const from = last?.distTo ?? 0;
-    setTramos([...tramos, { id: uuid(), distFrom: from, distTo: from + 1000, DN_mm: last?.DN_mm ?? 150, C: last?.C ?? MATERIALS[0].c, materialName: last?.materialName ?? MATERIALS[0].name, pipeClass: last?.pipeClass ?? "RD 26", PN_bar: last?.PN_bar ?? 11.0 }]);
+    const from0 = last?.distFrom ?? 0;
+    const to0 = last?.distTo ?? 0;
+    if (last && to0 - from0 > 1) {
+      // Dividir el último tramo a la mitad: así el nuevo tramo (p. ej. la reducción)
+      // queda DENTRO de la línea y solo ajustas el punto de cambio
+      const mid = Math.round((from0 + to0) / 2);
+      setTramos([
+        ...tramos.slice(0, -1),
+        { ...last, distTo: mid },
+        { id: uuid(), distFrom: mid, distTo: to0, DN_mm: last.DN_mm, C: last.C, materialName: last.materialName, pipeClass: last.pipeClass, PN_bar: last.PN_bar },
+      ]);
+    } else {
+      setTramos([...tramos, { id: uuid(), distFrom: to0, distTo: to0 + 1000, DN_mm: last?.DN_mm ?? 150, C: last?.C ?? MATERIALS[0].c, materialName: last?.materialName ?? MATERIALS[0].name, pipeClass: last?.pipeClass ?? "RD 26", PN_bar: last?.PN_bar ?? 11.0 }]);
+    }
   };
   const removeTramo = (id: string) => {
     if (tramos.length <= 1) return;
     setTramos(tramos.filter(t => t.id !== id));
   };
   const updateTramo = (id: string, updates: Partial<ProfileTramo>) => {
-    const next = tramos.map(t => t.id === id ? { ...t, ...updates } : t);
-    // Sincronizar el perfil con la longitud total: si cambia el fin del tramo,
-    // el último vértice la sigue (y al encoger, ningún vértice queda fuera de rango).
-    if (updates.distTo != null) {
+    const idx = tramos.findIndex(t => t.id === id);
+    let next = tramos.map(t => t.id === id ? { ...t, ...updates } : t);
+    // Tramos contiguos: mover el fin de un tramo arrastra el inicio del siguiente
+    if (updates.distTo != null && idx >= 0 && idx < next.length - 1) {
+      next = next.map((t, i) => (i === idx + 1 ? { ...t, distFrom: updates.distTo! } : t));
+    }
+    // Si se ALARGA el último tramo y el perfil terminaba en la longitud anterior,
+    // el último punto del terreno se extiende (nunca se recorta el perfil)
+    if (updates.distTo != null && idx === tramos.length - 1) {
       const oldLen = tramos.reduce((mx, t) => Math.max(mx, t.distTo ?? 0), 0);
       const newLen = next.reduce((mx, t) => Math.max(mx, t.distTo ?? 0), 0);
-      if (newLen > 0 && newLen !== oldLen && vertices.length >= 1) {
+      if (newLen > oldLen && vertices.length >= 1) {
         const maxDist = vertices.reduce((mx, v) => Math.max(mx, v.dist ?? 0), 0);
-        setVertices(vertices.map(v => {
-          if (v.dist == null) return v;
-          if (v.dist === maxDist && (Math.abs(maxDist - oldLen) < 0.001 || maxDist > newLen)) return { ...v, dist: newLen };
-          if (v.dist > newLen) return { ...v, dist: newLen };
-          return v;
-        }));
+        if (Math.abs(maxDist - oldLen) < 0.001) {
+          setVertices(vertices.map(v => (v.dist === maxDist ? { ...v, dist: newLen } : v)));
+        }
       }
     }
     setTramos(next);
@@ -217,9 +231,12 @@ export default function PerfilPage() {
   const lineLength = tramos.reduce((mx, t) => Math.max(mx, t.distTo ?? 0), 0);
   const perfilMax = vertices.reduce((mx, v) => Math.max(mx, v.dist ?? 0), 0);
 
-  // El perfil manda: la longitud de la línea baja del último punto del terreno.
-  // El ÚLTIMO tramo se estira/encoge para terminar donde termina el perfil.
+  // El perfil manda: cuando CAMBIA el último punto del terreno, el último tramo lo sigue.
+  // (Solo reacciona a cambios del perfil — no pelea con ajustes manuales de tramos.)
+  const prevPerfilMaxRef = useRef(perfilMax);
   useEffect(() => {
+    if (prevPerfilMaxRef.current === perfilMax) return;
+    prevPerfilMaxRef.current = perfilMax;
     if (perfilMax <= 0 || tramos.length === 0) return;
     const ultimo = tramos[tramos.length - 1];
     if (Math.abs((ultimo.distTo ?? 0) - perfilMax) > 0.001 && perfilMax > (ultimo.distFrom ?? 0)) {
