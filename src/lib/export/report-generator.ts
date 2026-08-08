@@ -622,6 +622,87 @@ export async function generateReportPDF(d: ReportData): Promise<jsPDF> {
   doc.text(safe("Las dimensiones completas de zanja y atraques de concreto (por diametro) estan en el anexo al final de este reporte."), 14, y, { maxWidth: doc.internal.pageSize.getWidth() - 28 });
   doc.setTextColor(0, 0, 0); y += 6;
 
+  // ── Esquemas constructivos (dibujados en vector, estilo plano) ──
+  y = subhead(doc, "Detalles constructivos (esquemas ilustrativos)", y);
+  {
+    const W = 58, H = 44, GAP = 4, X0 = 14;
+    const titulos = ["CORTE DE ZANJA", "ATRAQUE EN CODO (PLANTA)", "VENTOSA EN PUNTO ALTO"];
+    for (let i = 0; i < 3; i++) {
+      const x = X0 + i * (W + GAP);
+      doc.setDrawColor(208, 215, 224); doc.setLineWidth(0.3);
+      doc.roundedRect(x, y, W, H + 6, 1.5, 1.5, "S");
+      doc.setFillColor(28, 61, 90); doc.rect(x, y, W, 5, "F");
+      doc.setTextColor(255, 255, 255); doc.setFontSize(6.2); doc.setFont("helvetica", "bold");
+      doc.text(titulos[i], x + W / 2, y + 3.6, { align: "center" });
+      doc.setTextColor(0, 0, 0); doc.setFont("helvetica", "normal");
+    }
+    const gy = y + 7;  // inicio del área de dibujo
+    const gris = () => { doc.setDrawColor(120, 130, 142); doc.setLineWidth(0.35); };
+    const marca = () => { doc.setDrawColor(28, 61, 90); doc.setLineWidth(1.1); };
+    const lbl = (tx: number, ty: number, t: string) => { doc.setFontSize(5.6); doc.setTextColor(95, 105, 118); doc.text(safe(t), tx, ty); doc.setTextColor(0, 0, 0); };
+
+    // ── Panel 1: corte de zanja ──
+    {
+      const x = X0 + 2;
+      gris();
+      doc.line(x, gy + 4, x + 16, gy + 4); doc.line(x + 38, gy + 4, x + 54, gy + 4);  // superficie
+      for (let hx = 0; hx < 14; hx += 4) { doc.line(x + hx, gy + 4, x + hx + 2, gy + 2); doc.line(x + 40 + hx, gy + 4, x + 42 + hx, gy + 2); }
+      doc.line(x + 16, gy + 4, x + 16, gy + 36); doc.line(x + 38, gy + 4, x + 38, gy + 36); doc.line(x + 16, gy + 36, x + 38, gy + 36);  // zanja
+      doc.setFillColor(228, 233, 240); doc.rect(x + 16.4, gy + 31, 21.2, 4.8, "F");  // plantilla de arena
+      doc.setLineDashPattern([1.2, 1], 0);
+      doc.line(x + 16, gy + 20, x + 38, gy + 20);  // nivel de acostillado
+      doc.setLineDashPattern([], 0);
+      marca();
+      doc.setFillColor(255, 255, 255); doc.circle(x + 27, gy + 26, 5.2, "FD");  // tubo
+      lbl(x + 41, gy + 12, "Relleno");
+      lbl(x + 41, gy + 21, "Acostillado");
+      lbl(x + 41, gy + 33, "Plantilla 10 cm");
+      lbl(x + 23, gy + 41, "Bd (ver anexo)");
+    }
+
+    // ── Panel 2: atraque en codo (planta) ──
+    {
+      const x = X0 + W + GAP + 2;
+      marca();
+      doc.line(x + 2, gy + 16, x + 32, gy + 16);  // línea que llega
+      doc.line(x + 32, gy + 16, x + 32, gy + 38); // línea que baja (codo 90)
+      gris();
+      doc.line(x + 6, gy + 13, x + 6, gy + 19); doc.line(x + 8.5, gy + 13, x + 8.5, gy + 19);  // brida
+      doc.line(x + 29, gy + 33, x + 35, gy + 33); doc.line(x + 29, gy + 35.5, x + 35, gy + 35.5);
+      // atraque: cuña de concreto en la espalda del codo (esquina exterior)
+      doc.setFillColor(226, 232, 238); doc.setDrawColor(120, 130, 142); doc.setLineWidth(0.4);
+      doc.triangle(x + 35, gy + 13, x + 46, gy + 6, x + 46, gy + 20, "FD");
+      doc.line(x + 38, gy + 12.2, x + 43, gy + 9); doc.line(x + 39, gy + 15.5, x + 44, gy + 12.3);  // achurado
+      // flecha de empuje
+      gris();
+      doc.line(x + 27, gy + 11, x + 34, gy + 8); doc.line(x + 34, gy + 8, x + 31.6, gy + 8.1); doc.line(x + 34, gy + 8, x + 33.2, gy + 10.2);
+      lbl(x + 12, gy + 8, "Empuje");
+      lbl(x + 24, gy + 26, "Atraque contra");
+      lbl(x + 24, gy + 29, "terreno firme");
+      lbl(x + 2, gy + 41, "Dimensiones por DN: ver anexo");
+    }
+
+    // ── Panel 3: ventosa en punto alto ──
+    {
+      const x = X0 + 2 * (W + GAP) + 2;
+      marca();
+      doc.line(x + 2, gy + 34, x + 24, gy + 14); doc.line(x + 24, gy + 14, x + 52, gy + 30);  // perfil con punto alto
+      gris();
+      doc.line(x + 24, gy + 14, x + 24, gy + 8);  // cuello
+      doc.rect(x + 22.6, gy + 5.6, 2.8, 2.6, "S");  // válvula de seccionamiento
+      doc.setFillColor(255, 255, 255); doc.circle(x + 24, gy + 3, 2.1, "FD");  // ventosa
+      doc.setLineDashPattern([1, 1], 0);
+      doc.rect(x + 18.5, gy + 0.5, 11, 11, "S");  // caja de válvulas
+      doc.setLineDashPattern([], 0);
+      lbl(x + 31, gy + 4, "VA en punto alto");
+      lbl(x + 31, gy + 9, "Caja de valvulas");
+      lbl(x + 4, gy + 40, "El aire se acumula en los puntos altos");
+    }
+
+    doc.setLineWidth(0.2); doc.setDrawColor(0, 0, 0);
+    y = y + H + 6 + 5;
+  }
+
   y = subhead(doc, "Glosario rapido", y);
   doc.setFontSize(7.5); doc.setFont("helvetica", "normal");
   const glos = [
