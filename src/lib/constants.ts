@@ -3,11 +3,12 @@
    ════════════════════════════════════════ */
 
 // ── Standard Nominal Diameters (mm) ──
-export const STANDARD_DNS = [50, 75, 100, 150, 200, 250, 300, 350, 400, 450, 500, 600, 750, 900];
+export const STANDARD_DNS = [50, 63, 75, 100, 150, 200, 250, 300, 350, 400, 450, 500, 600, 750, 900];
 
 // ── Standard diameters AWWA/NPS with inch labels ──
 export const STANDARD_DNS_LABELED = [
   { dn: 50, label: '2" (DN 50)' },
+  { dn: 63, label: '2½" (DN 63)' },
   { dn: 75, label: '3" (DN 75)' },
   { dn: 100, label: '4" (DN 100)' },
   { dn: 150, label: '6" (DN 150)' },

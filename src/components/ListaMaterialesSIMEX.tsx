@@ -395,7 +395,7 @@ const MAT_MAP: Record<string,string> = {
   'Asbesto cemento':'Asbesto A7'
 }
 const DN_MM: Record<number,string> = {
-  50:'2"',75:'3"',100:'4"',150:'6"',200:'8"',
+  50:'2"',63:'2½"',75:'3"',100:'4"',150:'6"',200:'8"',
   250:'10"',300:'12"',350:'14"',400:'16"',
   450:'18"',500:'20"',600:'24"',750:'30"',900:'36"'
 }
@@ -491,7 +491,7 @@ const DN_ORDER = ['2"','2½"','3"','4"','6"','8"','10"','12"','14"','16"','18"',
 // Catálogo compartido con el constructor visual de cruceros (CruceroVisual)
 export const SIMEX_CAT = { findConn, VALV, VALV_LABEL, VALV_NORMA, TAPA, CDM, DN_ORDER, DN_MM, LE_D }
 export function dnStrFromMM(mm:number):string {
-  return DN_MM[mm] ?? ({50:'2"',63:'2"',75:'3"',100:'4"',150:'6"',200:'8"',250:'10"',300:'12"',350:'14"',400:'16"',450:'18"',500:'20"',600:'24"',750:'30"',900:'36"'} as Record<number,string>)[mm] ?? ''
+  return DN_MM[mm] ?? ({50:'2"',63:'2½"',75:'3"',100:'4"',150:'6"',200:'8"',250:'10"',300:'12"',350:'14"',400:'16"',450:'18"',500:'20"',600:'24"',750:'30"',900:'36"'} as Record<number,string>)[mm] ?? ''
 }
 
 // ═══ TIPOS ══════════════════════════════════════════════════
@@ -540,7 +540,7 @@ export default function ListaMaterialesSIMEX({
     dn = DN_MM[dnMM] ?? ''
     if (!dn) {
       const fallbacks: Record<number,string> = {
-        50:'2"',63:'2"',75:'3"',100:'4"',150:'6"',200:'8"',
+        50:'2"',63:'2½"',75:'3"',100:'4"',150:'6"',200:'8"',
         250:'10"',300:'12"',350:'14"',400:'16"',450:'18"',
         500:'20"',600:'24"',750:'30"',900:'36"'
       }
