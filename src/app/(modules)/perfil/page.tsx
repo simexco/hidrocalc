@@ -64,6 +64,7 @@ export default function PerfilPage() {
       P1: number | null; Pmin: number;
       vertices: ProfileVertex[]; tramos: ProfileTramo[];
       calcMode?: 'verificar' | 'calcularP1';
+      calcModeV2?: 'verificar' | 'calcularP1';
       tipoLinea?: 'conduccion' | 'distribucion';
     }>("perfil");
     if (saved) {
@@ -74,14 +75,15 @@ export default function PerfilPage() {
       if (saved.Pmin != null) setPmin(saved.Pmin);
       if (saved.vertices?.length >= 2) setVertices(saved.vertices);
       if (saved.tramos?.length >= 1) setTramos(saved.tramos);
-      // El modo de cálculo también se conserva: navegar (p. ej. "Aplicar DN") no debe cambiarlo
-      if (saved.calcMode) setCalcMode(saved.calcMode);
+      // El modo se conserva al navegar, pero el default nuevo es "Calcular P1":
+      // solo se restaura la clave V2 (ignora la vieja) para migrar a todos al estándar
+      if (saved.calcModeV2) setCalcMode(saved.calcModeV2);
       if (saved.tipoLinea) setTipoLinea(saved.tipoLinea);
     }
   }, []);
 
   useEffect(() => {
-    const t = setTimeout(() => saveFormState("perfil", { projectName, rawQ, flowUnit, P1, Pmin, vertices, tramos, calcMode, tipoLinea }), 1000);
+    const t = setTimeout(() => saveFormState("perfil", { projectName, rawQ, flowUnit, P1, Pmin, vertices, tramos, calcModeV2: calcMode, tipoLinea }), 1000);
     return () => clearTimeout(t);
   }, [projectName, rawQ, flowUnit, P1, Pmin, vertices, tramos, calcMode, tipoLinea]);
 
@@ -218,10 +220,13 @@ export default function PerfilPage() {
   const lineLength = tramos.reduce((mx, t) => Math.max(mx, t.distTo ?? 0), 0);
   const perfilMax = vertices.reduce((mx, v) => Math.max(mx, v.dist ?? 0), 0);
 
-  // El perfil manda: con un solo tramo, su longitud sigue al último punto del terreno
+  // El perfil manda: la longitud de la línea baja del último punto del terreno.
+  // El ÚLTIMO tramo se estira/encoge para terminar donde termina el perfil.
   useEffect(() => {
-    if (tramos.length === 1 && perfilMax > 0 && Math.abs((tramos[0].distTo ?? 0) - perfilMax) > 0.001) {
-      setTramos([{ ...tramos[0], distTo: perfilMax }]);
+    if (perfilMax <= 0 || tramos.length === 0) return;
+    const ultimo = tramos[tramos.length - 1];
+    if (Math.abs((ultimo.distTo ?? 0) - perfilMax) > 0.001 && perfilMax > (ultimo.distFrom ?? 0)) {
+      setTramos(tramos.map((t, i) => (i === tramos.length - 1 ? { ...t, distTo: perfilMax } : t)));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [perfilMax]);
@@ -408,6 +413,14 @@ export default function PerfilPage() {
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
         {/* Form */}
         <div className="lg:col-span-2 space-y-5">
+          {/* Proyecto + nuevo cálculo — hasta arriba */}
+          <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 flex items-end gap-3">
+            <div className="flex-1">
+              <InputField label="Nombre del proyecto" value={projectName} onChange={setProjectName} type="text" />
+            </div>
+            <ResetButton moduleKey="perfil" onReset={handleReset} />
+          </div>
+
           {/* Paso 1: el terreno primero — de aquí salen la longitud y las presiones */}
           <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 space-y-3">
             <div className="flex items-center justify-between">
@@ -458,11 +471,9 @@ export default function PerfilPage() {
 
           {/* Global data */}
           <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 space-y-4">
-            <div className="flex items-center justify-between border-b border-gray-100 dark:border-gray-700 pb-2">
+            <div className="border-b border-gray-100 dark:border-gray-700 pb-2">
               <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300"><span className="inline-flex w-5 h-5 rounded-full bg-[#1C3D5A] text-white text-[10px] font-bold items-center justify-center mr-1.5">2</span>Datos de la linea</h2>
-              <ResetButton moduleKey="perfil" onReset={handleReset} />
             </div>
-            <InputField label="Nombre del proyecto" value={projectName} onChange={setProjectName} type="text" />
             {/* ¿Qué se diseña? — define qué caudal usar (Qmd conducción / Qmh distribución) */}
             <div className="space-y-1">
               <label className="text-sm font-medium text-gray-700 dark:text-gray-300">¿Qué se diseña?</label>
