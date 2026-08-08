@@ -77,8 +77,8 @@ const moduleHelp: Record<string, { title: string; sections: { title: string; con
     title: "Linea de Conduccion — Guia de uso",
     sections: [
       { title: "Cuando usar?", content: "Para diseñar o verificar una línea de conducción completa. Cargas el perfil topografico, defines los tramos de tuberia (DN y material) y el modulo calcula la presion en cada punto. Tambien puedes comparar escenarios y calcular la P1 requerida." },
-      { title: "Datos que necesitas", content: "- Caudal Q de diseño\n- Diametro DN y material de la tuberia\n- Presion disponible P1 al inicio\n- Perfil topografico: pares de (distancia acumulada, cota del terreno)" },
-      { title: "Paso a paso", content: "1. Ingresa Q, DN, material y P1\n2. Agrega los vertices del perfil manualmente o importa un CSV\n3. El formato CSV es: distancia, cota, descripcion (opcional)\n4. Los resultados aparecen automaticamente\n5. Revisa puntos en rojo (presion critica) o amarillo (presion baja)" },
+      { title: "Datos que necesitas", content: "- Perfil topografico: pares de (cadenamiento, cota del terreno)\n- Caudal Q de diseño (Qmd conduccion / Qmh distribucion)\n- Diametro DN, material y clase de la tuberia" },
+      { title: "Paso a paso", content: "1. Captura o importa el perfil del terreno (el ultimo punto define la longitud)\n2. Elige que diseñas (conduccion o red) y verifica el caudal\n3. Define los tramos de tuberia (material, DN, clase)\n4. El sistema calcula la P1 REQUERIDA para cumplir la presion minima\n5. Revisa puntos en rojo (presion critica) o amarillo (presion baja)" },
       { title: "Interpretacion", content: "Verde (OK): presion cumple el minimo\nAmarillo (Baja): presion menor al minimo pero positiva\nRojo (Critica): presion negativa — la linea no funciona ahi\nLa linea piezometrica nunca debe cruzar el perfil del terreno" },
     ],
   },
