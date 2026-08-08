@@ -38,7 +38,11 @@ interface BombeoState {
   nbombas: 1 | 2 | 3; tipoEquipo: string;
   pctLocal: number; efic: number;
   horasBombeo: number; tarifaCFE: number;
+  // Campos que el usuario editó a mano AQUÍ: la herencia del proyecto ya no los pisa
+  edited?: Partial<Record<"Q" | "D" | "material" | "L" | "cotaPozo" | "cotaTanque" | "cotaTanqueOrigen" | "cotaEntrega", boolean>>;
 }
+
+const CAMPOS_HEREDABLES = ["Q", "D", "material", "L", "cotaPozo", "cotaTanque", "cotaTanqueOrigen", "cotaEntrega"] as const;
 
 const DEFAULTS: BombeoState = {
   caso: "pozo",
@@ -62,7 +66,13 @@ export default function EquipoBombeoPage() {
 
   const set = <K extends keyof BombeoState>(key: K, value: BombeoState[K]) => {
     dirtyRef.current = true;
-    setSt((prev) => ({ ...prev, [key]: value }));
+    const esHeredable = (CAMPOS_HEREDABLES as readonly string[]).includes(key as string);
+    setSt((prev) => ({
+      ...prev,
+      [key]: value,
+      // Marcar el campo como editado a mano: la herencia del proyecto ya no lo pisará
+      ...(esHeredable ? { edited: { ...prev.edited, [key]: true } } : {}),
+    }));
     // Si el usuario edita un campo heredado, deja de marcarse como "del proyecto"
     if (key === "Q") setHeredado((h) => ({ ...h, q: false }));
     if (key === "D") setHeredado((h) => ({ ...h, d: false }));
@@ -71,22 +81,29 @@ export default function EquipoBombeoPage() {
   };
   const num = (v: string) => parseFloat(v) || 0;
 
-  // Cargar guardado / heredar la línea del proyecto activo (Línea de conducción)
+  // Herencia VIVA del proyecto (Línea de conducción): en cada visita se refrescan
+  // Q, DN, material, longitud y cotas del perfil — salvo los campos editados a mano aquí.
   useEffect(() => {
     const saved = loadFormState<Partial<BombeoState>>("equipo-bombeo");
     const proj = useProjectStore.getState().project;
+    const verts = proj.vertices ?? [];
+    const cotaIni = verts.length ? verts[0].cota : null;
+    const cotaFin = verts.length ? verts[verts.length - 1].cota : null;
     setSt((prev) => {
       const base = { ...prev, ...(saved ?? {}) };
-      if (!saved) {
-        const her = { q: false, d: false, m: false, l: false };
-        if (proj.q_ls != null && proj.q_ls > 0) { base.Q = proj.q_ls; her.q = true; }
-        if (proj.diametroInterior != null && proj.diametroInterior > 0) { base.D = proj.diametroInterior; her.d = true; }
-        if (proj.material) { base.material = proj.material; her.m = true; }
-        if (proj.longitud != null && proj.longitud > 0) { base.L = proj.longitud; her.l = true; }
-        setHeredado(her);
-      } else {
-        dirtyRef.current = true;
-      }
+      const ed = base.edited ?? {};
+      const her = { q: false, d: false, m: false, l: false };
+      if (!ed.Q && proj.q_ls != null && proj.q_ls > 0) { base.Q = proj.q_ls; her.q = true; }
+      if (!ed.D && proj.diametroInterior != null && proj.diametroInterior > 0) { base.D = proj.diametroInterior; her.d = true; }
+      if (!ed.material && proj.material) { base.material = proj.material; her.m = true; }
+      if (!ed.L && proj.longitud != null && proj.longitud > 0) { base.L = proj.longitud; her.l = true; }
+      // Cotas desde el perfil del terreno: inicio = succión/pozo, fin = entrega/tanque
+      if (!ed.cotaTanqueOrigen && cotaIni != null) base.cotaTanqueOrigen = cotaIni;
+      if (!ed.cotaPozo && cotaIni != null) base.cotaPozo = cotaIni;
+      if (!ed.cotaEntrega && cotaFin != null) base.cotaEntrega = cotaFin;
+      if (!ed.cotaTanque && cotaFin != null) base.cotaTanque = cotaFin;
+      setHeredado(her);
+      if (saved) dirtyRef.current = true;
       return base;
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
