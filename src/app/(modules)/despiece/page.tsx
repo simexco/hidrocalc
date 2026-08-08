@@ -8,7 +8,7 @@ import { saveFormState, loadFormState } from "@/lib/storage/form-persistence";
 import { STANDARD_DNS_LABELED, MATERIALS } from "@/lib/constants";
 import { useProjectStore } from "@/store/projectStore";
 import ListaMaterialesSIMEX, { type SIMEXAcc, type SIMEXConex, dnStrFromMM, SIMEX_CAT } from "@/components/ListaMaterialesSIMEX";
-import CruceroVisual, { vizToAccsConex, cajaRecomendada, ICO, type VizNode } from "@/components/CruceroVisual";
+import CruceroVisual, { vizToAccsConex, cajaRecomendada, MARCOS_TAPA, ICO, type VizNode } from "@/components/CruceroVisual";
 
 interface DespieceTramo {
   id: string;
@@ -18,6 +18,7 @@ interface DespieceTramo {
   modo?: "visual" | "lista";
   cantidad?: number;    // veces que se repite este crucero en el proyecto
   colapsado?: boolean;  // tarjeta encogida a una línea de resumen
+  marcoTapa?: string;   // marco con tapa elegido para la caja (D = hierro dúctil default, 67/80/110/130 kg)
 }
 
 export default function DespiecePage() {
@@ -71,7 +72,7 @@ export default function DespiecePage() {
   useEffect(() => {
     tramos.forEach((t) => {
       if ((t.modo ?? "visual") !== "visual") return;
-      const { accs, conex } = vizToAccsConex(vizPorTramo[t.id] ?? []);
+      const { accs, conex } = vizToAccsConex(vizPorTramo[t.id] ?? [], t.marcoTapa);
       setAccsPorTramo((prev) => JSON.stringify(prev[t.id] ?? []) === JSON.stringify(accs) ? prev : { ...prev, [t.id]: accs });
       setConexPorTramo((prev) => JSON.stringify(prev[t.id] ?? []) === JSON.stringify(conex) ? prev : { ...prev, [t.id]: conex });
     });
@@ -334,13 +335,26 @@ export default function DespiecePage() {
                   {(() => {
                     const cj = cajaRecomendada(vizPorTramo[t.id] ?? []);
                     return cj ? (
-                      <div className="flex items-start gap-2.5 bg-[#1C3D5A]/[0.05] dark:bg-blue-900/15 border border-[#1C3D5A]/15 rounded-lg px-3 py-2.5">
-                        <svg viewBox="0 0 24 24" className="w-4 h-4 mt-0.5 shrink-0 text-[#1C3D5A] dark:text-blue-300" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round"><path d="M4 9h16v11H4zM4 9l2-4h12l2 4M12 5v4M9 13h6" /></svg>
-                        <p className="text-[11px] text-[#1C3D5A] dark:text-blue-300 leading-relaxed">
-                          <strong>{cj.detalle}</strong> recomendada para este crucero — {cj.criterio}.
-                          {cj.medidas && <> Medidas: <strong>{cj.medidas}</strong>.</>}
-                          {" "}Sus contramarcos y marco con tapa ya se sumaron a la lista de obra (armado según el catálogo de cajas tipo; las válvulas de aire llevan registro propio).
-                        </p>
+                      <div className="bg-[#1C3D5A]/[0.05] dark:bg-blue-900/15 border border-[#1C3D5A]/15 rounded-lg px-3 py-2.5 space-y-2">
+                        <div className="flex items-start gap-2.5">
+                          <svg viewBox="0 0 24 24" className="w-4 h-4 mt-0.5 shrink-0 text-[#1C3D5A] dark:text-blue-300" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round"><path d="M4 9h16v11H4zM4 9l2-4h12l2 4M12 5v4M9 13h6" /></svg>
+                          <p className="text-[11px] text-[#1C3D5A] dark:text-blue-300 leading-relaxed">
+                            <strong>{cj.detalle}</strong> recomendada para este crucero — {cj.criterio}.
+                            {cj.medidas && <> Medidas: <strong>{cj.medidas}</strong>.</>}
+                            {" "}Sus contramarcos y marco con tapa ya se sumaron a la lista de obra (armado según el catálogo de cajas tipo; las válvulas de aire llevan registro propio).
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-2 flex-wrap pl-6">
+                          <label className="text-[11px] font-medium text-[#1C3D5A] dark:text-blue-300">Marco con tapa:</label>
+                          <select
+                            value={t.marcoTapa ?? "D"}
+                            onChange={(e) => updateTramo(t.id, { marcoTapa: e.target.value })}
+                            className="text-[11px] px-2 py-1 border border-[#1C3D5A]/25 dark:border-blue-300/25 rounded-lg bg-white dark:bg-gray-800 dark:text-white"
+                          >
+                            {MARCOS_TAPA.map((m) => <option key={m.key} value={m.key}>{m.label} — {m.sku}</option>)}
+                          </select>
+                          <span className="text-[10px] text-gray-400">El peso identifica la clase de tráfico; elige la que maneja el organismo.</span>
+                        </div>
                       </div>
                     ) : null;
                   })()}

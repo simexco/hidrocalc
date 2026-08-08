@@ -58,8 +58,18 @@ export function puertos(n: VizNode): { dn: string }[] {
   }
 }
 
+// Marcos con tapa disponibles: hierro dúctil como default + variantes por peso
+// (el peso identifica la clase de tráfico; el cliente elige la que maneja su organismo)
+export const MARCOS_TAPA: { key: string; sku: string; label: string }[] = [
+  { key: 'D', sku: 'AI-MCT-D', label: 'Hierro dúctil (estándar)' },
+  { key: '67', sku: 'AI-MCT-67', label: 'FoFo 67 kg' },
+  { key: '80', sku: 'AI-MCT-80', label: 'FoFo 80 kg' },
+  { key: '110', sku: 'AI-MCT-110', label: 'FoFo 110 kg' },
+  { key: '130', sku: 'AI-MCT-130', label: 'FoFo 130 kg' },
+]
+
 // ─── Derivación: grafo → piezas + uniones (motor existente) ────
-export function vizToAccsConex(nodes: VizNode[]): { accs: SIMEXAcc[]; conex: SIMEXConex[] } {
+export function vizToAccsConex(nodes: VizNode[], marcoTapa?: string): { accs: SIMEXAcc[]; conex: SIMEXConex[] } {
   const byId = new Map(nodes.map(n => [n.id, n]))
   // El desfogue NO es producto: es la salida del agua. No genera renglón ni unión;
   // solo consume la brida donde se monta (esa salida queda libre, sin adaptador).
@@ -121,7 +131,8 @@ export function vizToAccsConex(nodes: VizNode[]): { accs: SIMEXAcc[]; conex: SIM
       // contramarco (hay desde 0.90 m) está por definirse con el ingeniero
       if (cd.sen != null) accs.push({ id: -9001, label: `Contramarco sencillo ${cd.sen.toFixed(2)} m — perfil ${cd.perfil}" (caja tipo ${cj.tipo}; medida preliminar, confirmar)`, sku: '← CONF', dn: dnRef, bridas: 0, leKey: 'tapa-ciega', norma: 'Obra civil', isObra: true, qty: cd.dob != null ? 1 : cd.cant })
       if (cd.dob != null) accs.push({ id: -9002, label: `Contramarco doble ${cd.dob.toFixed(2)} m — perfil ${cd.perfil}" (caja tipo ${cj.tipo}; medida preliminar, confirmar)`, sku: '← CONF', dn: dnRef, bridas: 0, leKey: 'tapa-ciega', norma: 'Obra civil', isObra: true, qty: cd.sen != null ? 1 : cd.cant })
-      accs.push({ id: -9003, label: `Marco con Tapa de FoFo tipo pesado (caja tipo ${cj.tipo})`, sku: 'AI-MCT-D', dn: dnRef, bridas: 0, leKey: 'tapa-ciega', norma: 'EN-124 D400', isObra: true, qty: cd.cant })
+      const marcoSel = MARCOS_TAPA.find(m => m.key === (marcoTapa ?? 'D')) ?? MARCOS_TAPA[0]
+      accs.push({ id: -9003, label: `Marco con Tapa tipo pesado — ${marcoSel.label} (caja tipo ${cj.tipo})`, sku: marcoSel.sku, dn: dnRef, bridas: 0, leKey: 'tapa-ciega', norma: 'EN-124 D400', isObra: true, qty: cd.cant })
     }
   }
   // Descontar la brida del puerto donde se monta cada desfogue (salida de agua: ni adaptador ni unión)
