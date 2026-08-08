@@ -114,7 +114,7 @@ export default function DespiecePage() {
             material: t2.material,
             cantidad: Math.max(1, t2.cantidad ?? 1),
             png: pngPorTramo[t2.id] ?? previos.find((c) => c.tramoId === t2.id)?.png ?? "",
-            caja: cj ? `${cj.detalle} (${cj.criterio})` : "",
+            caja: cj ? `${cj.detalle} (${cj.criterio}${cj.medidas ? " · " + cj.medidas : ""})` : "",
           };
         });
       patchProject({ cruceros });
@@ -337,7 +337,9 @@ export default function DespiecePage() {
                       <div className="flex items-start gap-2.5 bg-[#1C3D5A]/[0.05] dark:bg-blue-900/15 border border-[#1C3D5A]/15 rounded-lg px-3 py-2.5">
                         <svg viewBox="0 0 24 24" className="w-4 h-4 mt-0.5 shrink-0 text-[#1C3D5A] dark:text-blue-300" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round"><path d="M4 9h16v11H4zM4 9l2-4h12l2 4M12 5v4M9 13h6" /></svg>
                         <p className="text-[11px] text-[#1C3D5A] dark:text-blue-300 leading-relaxed">
-                          <strong>{cj.detalle}</strong> recomendada para este crucero — {cj.criterio}. Dimensiones y armado según el catálogo de cajas tipo (las válvulas de aire llevan registro propio).
+                          <strong>{cj.detalle}</strong> recomendada para este crucero — {cj.criterio}.
+                          {cj.medidas && <> Medidas: <strong>{cj.medidas}</strong>.</>}
+                          {" "}Sus contramarcos y marco con tapa ya se sumaron a la lista de obra (armado según el catálogo de cajas tipo; las válvulas de aire llevan registro propio).
                         </p>
                       </div>
                     ) : null;

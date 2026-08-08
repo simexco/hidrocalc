@@ -111,6 +111,17 @@ export function vizToAccsConex(nodes: VizNode[]): { accs: SIMEXAcc[]; conex: SIM
   nodes.filter(n => n.atraque && n.tipo !== 'desfogue').forEach(n => {
     accs.push({ id: -n.id, label: `Atraque de concreto — ${NOMBRE[n.tipo](n)} (dims. según anexo)`, sku: '—', dn: n.dn, bridas: 0, leKey: 'tapa-ciega', norma: 'CONAGUA', isObra: true, qty: 1 })
   })
+  // Caja de válvulas recomendada → contramarcos y marco con tapa a la lista (obra)
+  const cj = cajaRecomendada(nodes)
+  if (cj?.tipo != null) {
+    const cd = CAJAS_TIPO[cj.tipo]
+    if (cd) {
+      const dnRef = nodes[0]?.dn ?? ''
+      if (cd.sen != null) accs.push({ id: -9001, label: `Contramarco sencillo ${cd.sen.toFixed(2)} m — perfil ${cd.perfil}" (caja tipo ${cj.tipo})`, sku: '—', dn: dnRef, bridas: 0, leKey: 'tapa-ciega', norma: 'Obra civil', isObra: true, qty: cd.dob != null ? 1 : cd.cant })
+      if (cd.dob != null) accs.push({ id: -9002, label: `Contramarco doble ${cd.dob.toFixed(2)} m — perfil ${cd.perfil}" (caja tipo ${cj.tipo})`, sku: '—', dn: dnRef, bridas: 0, leKey: 'tapa-ciega', norma: 'Obra civil', isObra: true, qty: cd.sen != null ? 1 : cd.cant })
+      accs.push({ id: -9003, label: `Marco con Tapa de FoFo tipo pesado (caja tipo ${cj.tipo})`, sku: 'AI-MCT-D', dn: dnRef, bridas: 0, leKey: 'tapa-ciega', norma: 'EN-124 D400', isObra: true, qty: cd.cant })
+    }
+  }
   // Descontar la brida del puerto donde se monta cada desfogue (salida de agua: ni adaptador ni unión)
   nodes.filter(n => n.tipo === 'desfogue' && n.parentId != null).forEach(n => {
     const p = byId.get(n.parentId!); if (!p) return
@@ -333,7 +344,25 @@ const MM_DE_DN: Record<string, number> = (() => {
   return m
 })()
 
-export function cajaRecomendada(nodes: VizNode[]): { tipo: number | null; detalle: string; criterio: string } | null {
+// Datos por caja tipo (del catálogo): dimensiones interiores y contramarcos
+// a×b = planta interior (m), h = altura libre (m), sen/dob = longitud del contramarco
+// sencillo/doble (m), cant = piezas, perfil = perfil estructural en pulgadas
+export const CAJAS_TIPO: Record<number, { a: number; b: number; h: number; sen: number | null; dob: number | null; cant: number; perfil: number }> = {
+  1:  { a: 1.90, b: 1.60, h: 1.46, sen: 1.95, dob: null, cant: 2, perfil: 4 },
+  2:  { a: 2.10, b: 1.80, h: 1.79, sen: null, dob: 2.15, cant: 2, perfil: 4 },
+  3:  { a: 2.70, b: 2.25, h: 2.27, sen: null, dob: 2.60, cant: 2, perfil: 6 },
+  4:  { a: 2.15, b: 1.60, h: 1.46, sen: 1.95, dob: null, cant: 2, perfil: 4 },
+  5:  { a: 2.40, b: 1.75, h: 1.79, sen: null, dob: 2.75, cant: 1, perfil: 6 },
+  6:  { a: 2.65, b: 1.90, h: 2.09, sen: 2.25, dob: null, cant: 2, perfil: 4 },
+  7:  { a: 3.10, b: 2.20, h: 2.27, sen: 2.55, dob: null, cant: 2, perfil: 6 },
+  8:  { a: 1.85, b: 1.85, h: 1.46, sen: 2.25, dob: null, cant: 2, perfil: 4 },
+  9:  { a: 2.10, b: 2.10, h: 1.79, sen: 2.45, dob: null, cant: 2, perfil: 6 },
+  10: { a: 2.25, b: 2.25, h: 2.09, sen: 2.65, dob: null, cant: 2, perfil: 6 },
+  11: { a: 2.15, b: 1.85, h: 1.46, sen: 2.55, dob: 2.55, cant: 2, perfil: 6 },
+  12: { a: 2.70, b: 2.30, h: 1.79, sen: 2.65, dob: null, cant: 3, perfil: 6 },
+}
+
+export function cajaRecomendada(nodes: VizNode[]): { tipo: number | null; detalle: string; criterio: string; medidas: string } | null {
   const valvulas = nodes.filter(n => n.tipo === 'valv' || n.tipo === 'vcontrol' || n.tipo === 'check')
   if (valvulas.length === 0) return null
   const cant = valvulas.length
@@ -345,7 +374,7 @@ export function cajaRecomendada(nodes: VizNode[]): { tipo: number | null; detall
   const ejes = valvulas.map(v => eje(pos.get(v.id)?.ang ?? 0))
   const enLinea = ejes.every(a => { const dif = Math.abs(a - ejes[0]); return dif < 22.5 || dif > 157.5 })
 
-  const especial = (por: string) => ({ tipo: null, detalle: 'Caja de diseño especial', criterio: `${por} — consultar proyecto estructural` })
+  const especial = (por: string) => ({ tipo: null, detalle: 'Caja de diseño especial', criterio: `${por} — consultar proyecto estructural`, medidas: '' })
   let tipo: number | null = null
   if (cant === 1) {
     if (maxMM <= 150) tipo = 1
@@ -366,7 +395,9 @@ export function cajaRecomendada(nodes: VizNode[]): { tipo: number | null; detall
     return especial(`${cant} válvulas`)
   }
   const criterio = `${cant} válvula${cant > 1 ? 's' : ''} hasta ${dnStr}${cant > 1 ? (enLinea ? ' · en línea' : ' · en escuadra') : ''}${maxMM < 100 ? ' (DN chico: aplica la caja mínima)' : ''}`
-  return { tipo, detalle: `Caja tipo ${tipo}`, criterio }
+  const cd = tipo != null ? CAJAS_TIPO[tipo] : undefined
+  const medidas = cd ? `interior ${cd.a.toFixed(2)} × ${cd.b.toFixed(2)} m · altura libre ${cd.h.toFixed(2)} m · muro 28 cm · losa techo 20 cm` : ''
+  return { tipo, detalle: `Caja tipo ${tipo}`, criterio, medidas }
 }
 
 // ─── Iconos de paleta: mini-símbolos de plano en SVG (sin emojis) ──
