@@ -324,6 +324,51 @@ async function svgAPng(svg: SVGSVGElement): Promise<string> {
   return cv.toDataURL('image/png')
 }
 
+// ─── Caja de válvulas recomendada (catálogo de cajas tipo del organismo) ──
+// Criterio: cantidad de válvulas en el crucero + diámetro mayor + disposición
+// (en línea = ejes paralelos → tipos 4-7; en escuadra = perpendiculares → tipos 8-10)
+const MM_DE_DN: Record<string, number> = (() => {
+  const m: Record<string, number> = {}
+  Object.entries(SIMEX_CAT.DN_MM).forEach(([mm, s]) => { m[s as string] = Number(mm) })
+  return m
+})()
+
+export function cajaRecomendada(nodes: VizNode[]): { tipo: number | null; detalle: string; criterio: string } | null {
+  const valvulas = nodes.filter(n => n.tipo === 'valv' || n.tipo === 'vcontrol' || n.tipo === 'check')
+  if (valvulas.length === 0) return null
+  const cant = valvulas.length
+  const maxMM = Math.max(...valvulas.map(v => MM_DE_DN[v.dn] ?? 0))
+  const dnStr = valvulas.reduce((mx, v) => ((MM_DE_DN[v.dn] ?? 0) > (MM_DE_DN[mx] ?? 0) ? v.dn : mx), valvulas[0].dn)
+  // Disposición según el trazo: ejes paralelos = en línea; si no, en escuadra
+  const { pos } = computeLayout(nodes)
+  const eje = (a: number) => ((a % 180) + 180) % 180
+  const ejes = valvulas.map(v => eje(pos.get(v.id)?.ang ?? 0))
+  const enLinea = ejes.every(a => { const dif = Math.abs(a - ejes[0]); return dif < 22.5 || dif > 157.5 })
+
+  const especial = (por: string) => ({ tipo: null, detalle: 'Caja de diseño especial', criterio: `${por} — consultar proyecto estructural` })
+  let tipo: number | null = null
+  if (cant === 1) {
+    if (maxMM <= 150) tipo = 1
+    else if (maxMM <= 350) tipo = 2
+    else if (maxMM <= 500) tipo = 3
+    else return especial(`válvula de ${dnStr}`)
+  } else if (cant === 2) {
+    if (maxMM <= 150) tipo = enLinea ? 4 : 8
+    else if (maxMM <= 250) tipo = enLinea ? 5 : 9
+    else if (maxMM <= 350) tipo = enLinea ? 6 : 10
+    else if (maxMM <= 500 && enLinea) tipo = 7
+    else return especial(`2 válvulas de ${dnStr} en escuadra`)
+  } else if (cant === 3) {
+    if (maxMM <= 150) tipo = 11
+    else if (maxMM <= 450) tipo = 12
+    else return especial(`3 válvulas de ${dnStr}`)
+  } else {
+    return especial(`${cant} válvulas`)
+  }
+  const criterio = `${cant} válvula${cant > 1 ? 's' : ''} hasta ${dnStr}${cant > 1 ? (enLinea ? ' · en línea' : ' · en escuadra') : ''}${maxMM < 100 ? ' (DN chico: aplica la caja mínima)' : ''}`
+  return { tipo, detalle: `Caja tipo ${tipo}`, criterio }
+}
+
 // ─── Iconos de paleta: mini-símbolos de plano en SVG (sin emojis) ──
 const I = ({ children }: { children: React.ReactNode }) => (
   <svg viewBox="0 0 24 24" className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round">{children}</svg>

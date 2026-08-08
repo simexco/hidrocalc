@@ -51,7 +51,7 @@ export interface ReportData {
   // Despiece (lista consolidada de piezas seleccionadas)
   despiece: { desc: string; sku: string; qty: number }[];
   // Cruceros armados en el generador: imagen del diagrama + datos (para el reporte)
-  cruceros?: { tramoId?: string; nombre: string; dn: string; material: string; cantidad: number; png: string }[];
+  cruceros?: { tramoId?: string; nombre: string; dn: string; material: string; cantidad: number; png: string; caja?: string }[];
   // Válvulas de control determinadas por el proyecto
   vrpDN: string | null;          // DN de la válvula reductora recomendada
   golpeValvulaDN: string | null; // DN de la válvula de protección contra golpe (si se requiere)
@@ -545,7 +545,8 @@ export async function generateReportPDF(d: ReportData): Promise<jsPDF> {
             return { w, h };
           } catch { return { w: colW, h: 0 }; }
         });
-        const rowH = Math.max(...dims.map((dm) => dm.h), 20) + 9;
+        const hayCaja = fila.some((c) => c.caja);
+        const rowH = Math.max(...dims.map((dm) => dm.h), 20) + (hayCaja ? 13 : 9);
         if (y + rowH > 268) { doc.addPage(); pg++; header(doc, d, pg, total); y = 32; }
         fila.forEach((c, j) => {
           if (dims[j].h <= 0) return;
@@ -555,12 +556,38 @@ export async function generateReportPDF(d: ReportData): Promise<jsPDF> {
           doc.addImage(c.png, "PNG", x + (colW - dims[j].w) / 2, y + 0.75, dims[j].w, dims[j].h);
           doc.setFontSize(7.5); doc.setTextColor(60, 60, 60);
           doc.text(safe(`${c.nombre} — ${c.dn} ${c.material}${c.cantidad > 1 ? ` · se repite x${c.cantidad}` : ""}`), x + colW / 2, y + dims[j].h + 6, { align: "center", maxWidth: colW });
+          if (c.caja) {
+            doc.setFont("helvetica", "bold"); doc.setTextColor(28, 61, 90);
+            doc.text(safe(c.caja.split(" (")[0]), x + colW / 2, y + dims[j].h + 10.2, { align: "center", maxWidth: colW });
+            doc.setFont("helvetica", "normal");
+          }
           doc.setTextColor(0, 0, 0);
         });
         y += rowH + 4;
         idx += 2;
       }
       y += 2;
+
+      // Tabla resumen: caja de válvulas recomendada por crucero
+      const conCaja = (d.cruceros ?? []).filter((c) => c.caja);
+      if (conCaja.length > 0) {
+        if (y > 235) { doc.addPage(); pg++; header(doc, d, pg, total); y = 32; }
+        y = subhead(doc, "Cajas de valvulas recomendadas", y);
+        autoTable(doc, {
+          startY: y, theme: "grid", styles: { fontSize: 7.5 }, headStyles: tableBlue,
+          head: [["Crucero", "Caja recomendada", "Criterio"]],
+          body: conCaja.map((c) => {
+            const [det, crit] = c.caja!.includes(" (") ? [c.caja!.split(" (")[0], c.caja!.split(" (")[1].replace(/\)$/, "")] : [c.caja!, "-"];
+            return [safe(`${c.nombre}${c.cantidad > 1 ? ` (x${c.cantidad})` : ""}`), safe(det), safe(crit)];
+          }),
+          columnStyles: { 1: { cellWidth: 42, fontStyle: "bold" } },
+          margin: { left: 14, right: 14 },
+        });
+        y = finalY(doc) + 3;
+        doc.setFontSize(7); doc.setTextColor(90, 90, 90);
+        doc.text(safe("Criterio: cantidad de valvulas del crucero + diametro mayor + disposicion (en linea / en escuadra), segun el catalogo de cajas tipo. Las valvulas de aire llevan registro propio."), 14, y, { maxWidth: doc.internal.pageSize.getWidth() - 28 });
+        doc.setTextColor(0, 0, 0); y += 7;
+      }
     }
 
     // Válvulas de control determinadas por el proyecto (automáticas)

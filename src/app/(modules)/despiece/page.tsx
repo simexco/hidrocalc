@@ -8,7 +8,7 @@ import { saveFormState, loadFormState } from "@/lib/storage/form-persistence";
 import { STANDARD_DNS_LABELED, MATERIALS } from "@/lib/constants";
 import { useProjectStore } from "@/store/projectStore";
 import ListaMaterialesSIMEX, { type SIMEXAcc, type SIMEXConex, dnStrFromMM, SIMEX_CAT } from "@/components/ListaMaterialesSIMEX";
-import CruceroVisual, { vizToAccsConex, ICO, type VizNode } from "@/components/CruceroVisual";
+import CruceroVisual, { vizToAccsConex, cajaRecomendada, ICO, type VizNode } from "@/components/CruceroVisual";
 
 interface DespieceTramo {
   id: string;
@@ -105,18 +105,22 @@ export default function DespiecePage() {
       const previos = useProjectStore.getState().project.cruceros ?? [];
       const cruceros = tramos
         .filter((t2) => (accsPorTramo[t2.id]?.length ?? 0) > 0)
-        .map((t2) => ({
-          tramoId: t2.id,
-          nombre: t2.name,
-          dn: dnStrFromMM(t2.DN),
-          material: t2.material,
-          cantidad: Math.max(1, t2.cantidad ?? 1),
-          png: pngPorTramo[t2.id] ?? previos.find((c) => c.tramoId === t2.id)?.png ?? "",
-        }));
+        .map((t2) => {
+          const cj = (t2.modo ?? "visual") === "visual" ? cajaRecomendada(vizPorTramo[t2.id] ?? []) : null;
+          return {
+            tramoId: t2.id,
+            nombre: t2.name,
+            dn: dnStrFromMM(t2.DN),
+            material: t2.material,
+            cantidad: Math.max(1, t2.cantidad ?? 1),
+            png: pngPorTramo[t2.id] ?? previos.find((c) => c.tramoId === t2.id)?.png ?? "",
+            caja: cj ? `${cj.detalle} (${cj.criterio})` : "",
+          };
+        });
       patchProject({ cruceros });
     }, 900);
     return () => clearTimeout(t);
-  }, [pngPorTramo, tramos, accsPorTramo, patchProject]);
+  }, [pngPorTramo, tramos, accsPorTramo, vizPorTramo, patchProject]);
 
   const addTramo = () => {
     // Al crear uno nuevo, los cruceros anteriores se colapsan para que la página no se haga interminable
@@ -327,6 +331,17 @@ export default function DespiecePage() {
                       const n = { ...prev }; delete n[t.id]; return n;
                     })}
                   />
+                  {(() => {
+                    const cj = cajaRecomendada(vizPorTramo[t.id] ?? []);
+                    return cj ? (
+                      <div className="flex items-start gap-2.5 bg-[#1C3D5A]/[0.05] dark:bg-blue-900/15 border border-[#1C3D5A]/15 rounded-lg px-3 py-2.5">
+                        <svg viewBox="0 0 24 24" className="w-4 h-4 mt-0.5 shrink-0 text-[#1C3D5A] dark:text-blue-300" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round"><path d="M4 9h16v11H4zM4 9l2-4h12l2 4M12 5v4M9 13h6" /></svg>
+                        <p className="text-[11px] text-[#1C3D5A] dark:text-blue-300 leading-relaxed">
+                          <strong>{cj.detalle}</strong> recomendada para este crucero — {cj.criterio}. Dimensiones y armado según el catálogo de cajas tipo (las válvulas de aire llevan registro propio).
+                        </p>
+                      </div>
+                    ) : null;
+                  })()}
                   {(accsPorTramo[t.id]?.length ?? 0) > 0 && (
                     <ListaMaterialesSIMEX
                       mode="table"
