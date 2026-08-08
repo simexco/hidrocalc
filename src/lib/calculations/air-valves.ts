@@ -131,10 +131,15 @@ export function calculateAirValves(input: AirValveInputs): AirValveOutputs | nul
   type Candidate = { dist: number; cota: number; pressure: number | null; type: "VA-C" | "VA-A" | "VA-E"; reason: string; alert: "critical" | "low" | null };
   const candidates: Candidate[] = [];
 
-  // Rule 1: Start and end — ALWAYS VA-C
+  // Rule 1: Inicio — VA-C siempre (llenado/vaciado y arranque)
   candidates.push({ dist: sorted[0].dist, cota: sorted[0].cota, pressure: pressures[0], type: "VA-C", reason: "Inicio de linea", alert: null });
+  // Fin — SOLO si la llegada NO es descendente: en un punto bajo el aire no se acumula
+  // (una linea que baja uniformemente no necesita valvula al final)
   const last = sorted.length - 1;
-  candidates.push({ dist: sorted[last].dist, cota: sorted[last].cota, pressure: pressures[last], type: "VA-C", reason: "Fin de linea", alert: null });
+  const llegadaDescendente = sorted[last].cota < sorted[last - 1].cota;
+  if (!llegadaDescendente) {
+    candidates.push({ dist: sorted[last].dist, cota: sorted[last].cota, pressure: pressures[last], type: "VA-C", reason: "Fin de linea (llegada plana/ascendente)", alert: null });
+  }
 
   for (let i = 1; i < sorted.length - 1; i++) {
     const isHighPoint = sorted[i].cota > sorted[i - 1].cota && sorted[i].cota >= sorted[i + 1].cota;

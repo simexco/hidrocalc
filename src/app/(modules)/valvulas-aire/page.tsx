@@ -30,7 +30,7 @@ export default function ValvulasAirePage() {
   const [PNBar, setPNBar] = useState<number | null>(null);
   const [P0, setP0] = useState<number | null>(3);
   const [pressureMin, setPressureMin] = useState(5);
-  const [maxSpacing, setMaxSpacing] = useState(600);
+  const [maxSpacing, setMaxSpacing] = useState(500);  // AWWA M51 / práctica: VAEA por lo menos cada 500 m
   const [vertices, setVertices] = useState<AirValveVertex[]>([
     { id: uuid(), dist: 0, cota: 100, desc: "Inicio" },
     { id: uuid(), dist: 1000, cota: 110, desc: "Fin" },
@@ -272,7 +272,7 @@ export default function ValvulasAirePage() {
               <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-3 space-y-3">
                 <InputField label="Presión de operación P₀" value={P0} onChange={(v) => setP0(v === "" ? null : parseFloat(v))} unit="kg/cm²" tooltip="Presión al inicio de la línea. Si no la conoces, se calculará solo geometría." />
                 <InputField label="Presión mínima normativa" value={pressureMin} onChange={(v) => setPressureMin(parseFloat(v) || 5)} unit="m.c.a." tooltip="NOM-001-CONAGUA: mínimo absoluto 5 m.c.a. (0.5 kg/cm²), recomendado 10 m.c.a." />
-                <InputField label="Espaciado máximo VA-E" value={maxSpacing} onChange={(v) => setMaxSpacing(parseFloat(v) || 600)} unit="m" tooltip="Distancia máxima entre válvulas eliminadoras en tramos rectos. AWWA M51: 500-800 m." />
+                <InputField label="Espaciado máximo VA-E" value={maxSpacing} onChange={(v) => setMaxSpacing(parseFloat(v) || 500)} unit="m" tooltip="Distancia máxima entre válvulas eliminadoras en tramos rectos. Práctica usual: cada 500 m (AWWA M51: 500-800 m)." />
               </div>
             )}
           </div>

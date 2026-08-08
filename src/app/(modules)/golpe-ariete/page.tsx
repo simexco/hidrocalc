@@ -220,7 +220,9 @@ export default function GolpeArietePage() {
   }
   const resiste: boolean | null = (userPN != null && results?.Pmax_bar != null) ? results.Pmax_bar <= userPN : null;
 
-  // Válvula de protección recomendada (alivio/anticipadora) — opción B cuando no resiste
+  // Válvula de protección recomendada (alivio/anticipadora) — opción B cuando no resiste.
+  // Dimensionamiento: la anticipadora alivia ~25% del caudal de línea y descarga a la
+  // atmósfera (ΔP ≈ presión de ajuste) — así el tamaño queda ~1/3 del DN de línea, no gigante.
   const protecValvula = (() => {
     if (!results || results.deltaP_bar == null || results.deltaP_bar <= 0 || inputs.D == null || inputs.V0 == null) return null;
     const CV_TABLE = [
@@ -232,8 +234,9 @@ export default function GolpeArietePage() {
     const p0 = inputs.P0 ?? 0;
     const pMax_kgcm2 = results.Pmax != null ? mcaToKgcm2(results.Pmax) : 0;
     const pSet = p0 > 0 ? p0 * 1.10 : pMax_kgcm2 * 0.85;
-    const deltaP_valv_bar = (pMax_kgcm2 - pSet) * 0.9807;
-    const Cv = deltaP_valv_bar > 0 ? Q_linea_m3h / Math.sqrt(deltaP_valv_bar) : 0;
+    const Q_alivio_m3h = Q_linea_m3h * 0.25;
+    const deltaP_valv_bar = Math.max(0.3, pSet * 0.9807);
+    const Cv = Q_alivio_m3h / Math.sqrt(deltaP_valv_bar);
     if (Cv <= 0) return null;
     const v = CV_TABLE.find((x) => x.cv_max * 0.75 >= Cv);
     return { dn: v?.dn ?? null, cv: Cv, pSet };
@@ -418,9 +421,9 @@ export default function GolpeArietePage() {
                 tooltip="Tiempo en que la válvula pasa de totalmente abierta a cerrada. A mayor tiempo de cierre, menor golpe de ariete"
               />
               <div className="flex items-center gap-1.5">
-                <span className="text-[10px] text-gray-400">Si no lo conoces:</span>
-                <button type="button" onClick={() => setInput("Tc", 1)} className="text-[10px] px-2 py-0.5 rounded border border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
-                  Cierre instantáneo (peor caso)
+                <span className="text-[10px] text-gray-400">Inicia en 0 s (peor caso — así te cubres). Si conoces el cierre real:</span>
+                <button type="button" onClick={() => setInput("Tc", 0)} className="text-[10px] px-2 py-0.5 rounded border border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+                  Instantáneo (0 s)
                 </button>
                 <button type="button" onClick={() => setInput("Tc", 5)} className="text-[10px] px-2 py-0.5 rounded border border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
                   Cierre manual (~5 s)
@@ -751,8 +754,8 @@ export default function GolpeArietePage() {
                 <AlertBanner key={i} level={a.level} message={a.message} />
               ))}
 
-              {/* Relief valve recommendation */}
-              {results.deltaP_bar != null && results.deltaP_bar > 0 && inputs.D != null && inputs.V0 != null && (() => {
+              {/* Relief valve recommendation — SOLO cuando la tubería no resiste (semáforo rojo) */}
+              {resiste === false && results.deltaP_bar != null && results.deltaP_bar > 0 && inputs.D != null && inputs.V0 != null && (() => {
                 // Calculate relief valve sizing
                 const CV_TABLE = [
                   { dn: '2"',  dn_mm: 50,  cv_max: 15  },
@@ -773,10 +776,10 @@ export default function GolpeArietePage() {
                 const pMax_kgcm2 = results.Pmax != null ? mcaToKgcm2(results.Pmax) : 0;
                 const pSet = p0 > 0 ? p0 * 1.10 : pMax_kgcm2 * 0.85;
 
-                const deltaP_valv_bar = (pMax_kgcm2 - pSet) * 0.9807;
-                const Cv_requerido = deltaP_valv_bar > 0
-                  ? Q_linea_m3h / Math.sqrt(deltaP_valv_bar)
-                  : 0;
+                // La anticipadora alivia ~25% del caudal de línea y descarga a la atmósfera (ΔP ≈ Pset)
+                const Q_alivio_m3h = Q_linea_m3h * 0.25;
+                const deltaP_valv_bar = Math.max(0.3, pSet * 0.9807);
+                const Cv_requerido = Q_alivio_m3h / Math.sqrt(deltaP_valv_bar);
 
                 const valv_recomendada = CV_TABLE.find(v => v.cv_max * 0.75 >= Cv_requerido);
                 const pct_apertura = valv_recomendada

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { InputField } from "@/components/ui/InputField";
 import { ResetButton } from "@/components/ui/ResetButton";
 import { MATERIALS, STANDARD_DNS_LABELED } from "@/lib/constants";
@@ -15,6 +15,17 @@ export default function EntregablePage() {
 
   const set = <K extends keyof ReportData>(key: K, value: ReportData[K]) => patch({ [key]: value } as Partial<ReportData>);
   const r = computeReport(d);
+
+  // Folio automático: el usuario no lo inventa; solo lo edita si ya trae un folio de seguimiento
+  useEffect(() => {
+    const p = useProjectStore.getState().project;
+    if (!p.folio) {
+      const f = new Date();
+      const folio = `HC-${String(f.getFullYear()).slice(2)}${String(f.getMonth() + 1).padStart(2, "0")}${String(f.getDate()).padStart(2, "0")}-${Math.floor(Math.random() * 900) + 100}`;
+      patch({ folio });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Vertices
   const addVertex = () => set("vertices", [...d.vertices, { cad: 0, cota: 0, desc: "" }]);
@@ -66,7 +77,7 @@ export default function EntregablePage() {
           <InputField label="Nombre del proyecto" value={d.proyecto} onChange={(v) => set("proyecto", v)} type="text" />
           <InputField label="Localidad / Estado" value={d.localidad} onChange={(v) => set("localidad", v)} type="text" />
           <InputField label="Fecha" value={d.fecha} onChange={(v) => set("fecha", v)} type="text" placeholder="Junio 2026" />
-          <InputField label="Folio" value={d.folio} onChange={(v) => set("folio", v)} type="text" placeholder="HCX-2026-001" />
+          <InputField label="Folio" value={d.folio} onChange={(v) => set("folio", v)} type="text" placeholder="Se genera automático" tooltip="El sistema lo genera solo. Edítalo únicamente si el proyecto ya tiene un folio de seguimiento propio." />
           <InputField label="Elaboró" value={d.elaboro} onChange={(v) => set("elaboro", v)} type="text" placeholder="Ing. ..." />
         </div>
       </Card>

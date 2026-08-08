@@ -28,6 +28,7 @@ const defaults: PumpLineInputs = {
   eficienciaBomba: 0.70,
   eficienciaMotor: 0.90,
   tarifaCFE: 4.50,
+  presionEntrega_kgcm2: 0,
 };
 
 export default function ImpulsionPage() {
@@ -115,8 +116,9 @@ export default function ImpulsionPage() {
     const t = setTimeout(() => {
       const proj = useProjectStore.getState().project;
       patchProject({
-        incluyeBombeo: true,
-        ...(proj.he == null ? { he: results.Hg != null ? Math.round(results.Hg * 10) / 10 : null, eficiencia: ef } : {}),
+        // Solo marcar bombeo si de verdad se requiere (la gravedad puede alcanzar)
+        incluyeBombeo: results.requiereBombeo,
+        ...(results.requiereBombeo && proj.he == null ? { he: results.Hg != null ? Math.round(results.Hg * 10) / 10 : null, eficiencia: ef } : {}),
       });
     }, 600);
     return () => clearTimeout(t);
@@ -160,6 +162,7 @@ export default function ImpulsionPage() {
             <div className="grid grid-cols-2 gap-3">
               <InputField label="Cota bomba" value={inputs.cotaBomba} onChange={(v) => set("cotaBomba", parseFloat(v) || 0)} unit="m.s.n.m." tooltip="Elevacion del eje de la bomba" />
               <InputField label="Cota tanque" value={inputs.cotaTanque} onChange={(v) => set("cotaTanque", parseFloat(v) || 0)} unit="m.s.n.m." tooltip="Nivel del agua en el tanque elevado" />
+              <InputField label="Presión requerida en la entrega" value={inputs.presionEntrega_kgcm2 ?? 0} onChange={(v) => set("presionEntrega_kgcm2", parseFloat(v) || 0)} unit="kg/cm²" tooltip="0 si solo llena un tanque; 0.5 kg/cm² recomendado si entrega a la red. Se suma a la carga que debe vencer la bomba." />
             </div>
 
             <div className="bg-[#E9EFF5] dark:bg-[#1C3D5A]/20 rounded-lg px-3 py-2 text-xs text-[#1C3D5A]">
@@ -180,8 +183,13 @@ export default function ImpulsionPage() {
             <div className="space-y-2">
               <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
                 <input type="checkbox" checked={useEconomic} onChange={(e) => setUseEconomic(e.target.checked)} className="rounded border-gray-300" />
-                Usar diametro economico (Bresse)
+                Calcular el diámetro recomendado automáticamente
               </label>
+              <p className="text-[10px] text-gray-400 pl-6 -mt-1">
+                {useEconomic
+                  ? "El sistema propone el diámetro más económico (balance entre costo del tubo y costo de energía, fórmula de Bresse). Desmarca para elegirlo tú."
+                  : "Elige el diámetro manualmente; el sistema lo compara contra el recomendado."}
+              </p>
               {!useEconomic && (
                 <div className="space-y-1">
                   <label className="text-sm font-medium text-gray-700 dark:text-gray-300">DN manual</label>
@@ -312,14 +320,26 @@ export default function ImpulsionPage() {
                 <p><strong>J (gradiente):</strong> cuánta presión se pierde por cada kilómetro de tubo (hf entre la longitud). Sirve para comparar diámetros.</p>
               </div>
 
+              {/* Sin bombeo: la gravedad alcanza — nunca mostrar potencias negativas */}
+              {!results.requiereBombeo && (
+                <div className="bg-emerald-50 dark:bg-emerald-900/15 border-2 border-emerald-300 dark:border-emerald-700 rounded-xl p-4">
+                  <p className="text-sm font-bold text-emerald-700 dark:text-emerald-300">✓ No se requiere bombeo</p>
+                  <p className="text-xs text-emerald-700/90 dark:text-emerald-300/80 mt-1.5 leading-relaxed">
+                    La gravedad entrega el caudal con un margen de <strong>{formatNumber(results.margenGravedad_m, 1)} m ({formatNumber(results.margenGravedad_m / 10, 2)} kg/cm²)</strong> sobre la presión requerida{(inputs.presionEntrega_kgcm2 ?? 0) > 0 ? ` (${inputs.presionEntrega_kgcm2} kg/cm² en la entrega)` : ""}. No tiene caso instalar una bomba: verifique la línea por gravedad en «Línea de conducción». Si aun así necesita más presión en la entrega, capture la presión requerida arriba.
+                  </p>
+                </div>
+              )}
+
+              {results.requiereBombeo && (<>
               {/* CDT */}
               <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
                 <p className="text-xs text-gray-500 mb-2">Carga Dinamica Total (CDT)</p>
                 <p className="text-3xl font-bold text-[#1C3D5A] dark:text-blue-200">{formatNumber(results.CDT, 2)} <span className="text-sm font-normal">m</span> <span className="text-sm text-gray-400 ml-2">({formatNumber(results.CDT_kgcm2, 2)} kg/cm2)</span></p>
-                <div className="flex gap-4 mt-2 text-xs text-gray-500">
+                <div className="flex gap-4 mt-2 text-xs text-gray-500 flex-wrap">
                   <span>Hg = {formatNumber(results.Hg, 1)} m</span>
                   <span>+ hf = {formatNumber(results.hf, 2)} m</span>
                   <span>+ hm = {formatNumber(results.hm, 2)} m</span>
+                  {results.pServicio_m > 0 && <span>+ presión entrega = {formatNumber(results.pServicio_m, 1)} m</span>}
                 </div>
                 <p className="mt-2 text-[11px] text-gray-500 dark:text-gray-400 leading-relaxed">
                   La <strong>CDT (carga dinámica total)</strong> es la &quot;altura&quot; total que la bomba debe vencer: <strong>Hg</strong> = desnivel entre la bomba y el tanque (carga estática) <strong>+ hf</strong> (fricción) <strong>+ hm</strong> (accesorios). Es uno de los dos datos para pedir la bomba (el otro es el caudal Q).
@@ -407,6 +427,7 @@ export default function ImpulsionPage() {
                 <p className="text-[10px] text-gray-400 mt-2">Tarifa CFE: ${inputs.tarifaCFE}/kWh × {formatNumber(results.Pm_kW, 1)} kW × {inputs.horasBombeo} h/dia × 30 dias</p>
                 <p className="text-[10px] text-gray-400 mt-1">Sirve para ver cuánta energía ahorra cada diámetro. El costo fino de operación (cotas reales y arreglo de equipos) se calcula en <Link href="/equipo-bombeo" className="text-[#1C3D5A] dark:text-blue-300 underline">Equipo de bombeo</Link>.</p>
               </div>
+              </>)}
 
               {/* Alerts */}
               {results.alerts.map((a, i) => (

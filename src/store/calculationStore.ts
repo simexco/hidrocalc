@@ -139,7 +139,7 @@ export const useWaterHammerStore = create<WaterHammerState>((set) => ({
     materialName: "Hierro dúctil",
     E: 169e9,
     P0: null,
-    Tc: null,
+    Tc: 0,
     L: null,
   },
   results: null,
@@ -148,7 +148,7 @@ export const useWaterHammerStore = create<WaterHammerState>((set) => ({
   })),
   setResults: (results) => set({ results }),
   reset: () => set({
-    inputs: { projectName: "Golpe de ariete", V0: null, D: null, e: null, materialName: "Hierro dúctil", E: 169e9, P0: null, Tc: null, L: null },
+    inputs: { projectName: "Golpe de ariete", V0: null, D: null, e: null, materialName: "Hierro dúctil", E: 169e9, P0: null, Tc: 0, L: null },
     results: null,
   }),
 }));

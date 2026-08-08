@@ -34,6 +34,18 @@ export default function PerfilPage() {
   ]);
   const [results, setResults] = useState<ProfileResults | null>(null);
   const [calcMode, setCalcMode] = useState<'verificar' | 'calcularP1'>('verificar');
+  const [tipoLinea, setTipoLinea] = useState<'conduccion' | 'distribucion'>('conduccion');
+
+  // Cambiar el tipo de línea trae el caudal correcto del proyecto (Qmd o Qmh = Qmd × CVh)
+  const cambiarTipoLinea = (t: 'conduccion' | 'distribucion') => {
+    setTipoLinea(t);
+    const p = useProjectStore.getState().project;
+    if (p.q_ls != null && p.q_ls > 0) {
+      const q = t === 'distribucion' ? Math.round(p.q_ls * (p.cmh ?? 1.55) * 100) / 100 : p.q_ls;
+      setRawQ(q);
+      setFlowUnit('L/s');
+    }
+  };
   const [computedP1, setComputedP1] = useState<number | null>(null);
   const [showScenarioB, setShowScenarioB] = useState(false);
   const [tramosB, setTramosB] = useState<ProfileTramo[]>([
@@ -50,6 +62,8 @@ export default function PerfilPage() {
       projectName: string; rawQ: number | null; flowUnit: FlowUnit;
       P1: number | null; Pmin: number;
       vertices: ProfileVertex[]; tramos: ProfileTramo[];
+      calcMode?: 'verificar' | 'calcularP1';
+      tipoLinea?: 'conduccion' | 'distribucion';
     }>("perfil");
     if (saved) {
       if (saved.projectName) setProjectName(saved.projectName);
@@ -59,13 +73,16 @@ export default function PerfilPage() {
       if (saved.Pmin != null) setPmin(saved.Pmin);
       if (saved.vertices?.length >= 2) setVertices(saved.vertices);
       if (saved.tramos?.length >= 1) setTramos(saved.tramos);
+      // El modo de cálculo también se conserva: navegar (p. ej. "Aplicar DN") no debe cambiarlo
+      if (saved.calcMode) setCalcMode(saved.calcMode);
+      if (saved.tipoLinea) setTipoLinea(saved.tipoLinea);
     }
   }, []);
 
   useEffect(() => {
-    const t = setTimeout(() => saveFormState("perfil", { projectName, rawQ, flowUnit, P1, Pmin, vertices, tramos }), 1000);
+    const t = setTimeout(() => saveFormState("perfil", { projectName, rawQ, flowUnit, P1, Pmin, vertices, tramos, calcMode, tipoLinea }), 1000);
     return () => clearTimeout(t);
-  }, [projectName, rawQ, flowUnit, P1, Pmin, vertices, tramos]);
+  }, [projectName, rawQ, flowUnit, P1, Pmin, vertices, tramos, calcMode, tipoLinea]);
 
   // Flujo de proyecto: prefill del Q desde el proyecto si no hay dato guardado
   useEffect(() => {
@@ -177,7 +194,23 @@ export default function PerfilPage() {
     setTramos(tramos.filter(t => t.id !== id));
   };
   const updateTramo = (id: string, updates: Partial<ProfileTramo>) => {
-    setTramos(tramos.map(t => t.id === id ? { ...t, ...updates } : t));
+    const next = tramos.map(t => t.id === id ? { ...t, ...updates } : t);
+    // Sincronizar el perfil con la longitud total: si cambia el fin del tramo,
+    // el último vértice la sigue (y al encoger, ningún vértice queda fuera de rango).
+    if (updates.distTo != null) {
+      const oldLen = tramos.reduce((mx, t) => Math.max(mx, t.distTo ?? 0), 0);
+      const newLen = next.reduce((mx, t) => Math.max(mx, t.distTo ?? 0), 0);
+      if (newLen > 0 && newLen !== oldLen && vertices.length >= 1) {
+        const maxDist = vertices.reduce((mx, v) => Math.max(mx, v.dist ?? 0), 0);
+        setVertices(vertices.map(v => {
+          if (v.dist == null) return v;
+          if (v.dist === maxDist && (Math.abs(maxDist - oldLen) < 0.001 || maxDist > newLen)) return { ...v, dist: newLen };
+          if (v.dist > newLen) return { ...v, dist: newLen };
+          return v;
+        }));
+      }
+    }
+    setTramos(next);
   };
 
   // Longitud de la linea (segun los tramos) y maximo cadenamiento del perfil — para validar
@@ -373,9 +406,30 @@ export default function PerfilPage() {
               <ResetButton moduleKey="perfil" onReset={handleReset} />
             </div>
             <InputField label="Nombre del proyecto" value={projectName} onChange={setProjectName} type="text" />
+            {/* ¿Qué se diseña? — define qué caudal usar (Qmd conducción / Qmh distribución) */}
+            <div className="space-y-1">
+              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">¿Qué se diseña?</label>
+              <div className="flex rounded-lg border border-gray-200 dark:border-gray-600 overflow-hidden">
+                <button
+                  onClick={() => cambiarTipoLinea('conduccion')}
+                  className={`flex-1 text-xs py-2 px-2 transition-colors ${tipoLinea === 'conduccion' ? 'bg-[#1C3D5A] text-white font-semibold' : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'}`}
+                >
+                  Línea de conducción / impulsión
+                </button>
+                <button
+                  onClick={() => cambiarTipoLinea('distribucion')}
+                  className={`flex-1 text-xs py-2 px-2 transition-colors ${tipoLinea === 'distribucion' ? 'bg-[#1C3D5A] text-white font-semibold' : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'}`}
+                >
+                  Red de distribución
+                </button>
+              </div>
+              <p className="text-[10px] text-gray-400">
+                {tipoLinea === 'conduccion' ? 'Se diseña con el gasto máximo diario (Qmd).' : 'Se diseña con el gasto máximo horario (Qmh = Qmd × CVh).'} Al cambiar, el caudal se actualiza desde el Cálculo de gasto.
+              </p>
+            </div>
             <div className="flex items-end gap-2">
               <div className="flex-1">
-                <InputField label="Caudal Q" value={rawQ} onChange={(v) => setRawQ(v === "" ? null : parseFloat(v))} required tooltip="Caudal de diseño — se usa en todos los tramos" />
+                <InputField label={`Caudal Q (${tipoLinea === 'conduccion' ? 'Qmd' : 'Qmh'})`} value={rawQ} onChange={(v) => setRawQ(v === "" ? null : parseFloat(v))} required tooltip="Caudal de diseño — se usa en todos los tramos" />
               </div>
               <select value={flowUnit} onChange={(e) => setFlowUnit(e.target.value as FlowUnit)} className="px-2 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 dark:text-white">
                 <option value="L/s">L/s</option>

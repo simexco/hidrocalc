@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import Link from "next/link";
 import { InputField } from "@/components/ui/InputField";
 import { useProjectStore } from "@/store/projectStore";
@@ -18,6 +19,16 @@ interface Step {
 export default function AsistentePage() {
   const { project: p, patch, reset } = useProjectStore();
   const r = computeReport(p);
+
+  // Folio automático al iniciar el proyecto (el usuario solo lo edita si ya trae seguimiento)
+  useEffect(() => {
+    const proj = useProjectStore.getState().project;
+    if (!proj.folio) {
+      const f = new Date();
+      patch({ folio: `HC-${String(f.getFullYear()).slice(2)}${String(f.getMonth() + 1).padStart(2, "0")}${String(f.getDate()).padStart(2, "0")}-${Math.floor(Math.random() * 900) + 100}` });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleNuevoProyecto = () => {
     if (!confirm("¿Empezar un proyecto nuevo? Se borrarán TODOS los datos de todos los pasos (gasto, conducción, válvulas, despiece y reporte).")) return;

@@ -32,6 +32,8 @@ export interface PumpLineInputs {
   eficienciaMotor: number;      // 0-1 (default 0.90)
   // Energy
   tarifaCFE: number;            // $/kWh (default ~1.5)
+  // Delivery
+  presionEntrega_kgcm2?: number; // presión de servicio requerida en la entrega (0 si llena tanque; ~0.5 a red)
 }
 
 export interface PumpLineResults {
@@ -51,8 +53,11 @@ export interface PumpLineResults {
   J_km: number;                 // m/km
   // Head
   Hg: number;                   // geometric head m
-  CDT: number;                  // total dynamic head m
+  pServicio_m: number;          // presión de servicio en la entrega (m)
+  CDT: number;                  // total dynamic head m (>= 0)
   CDT_kgcm2: number;
+  requiereBombeo: boolean;      // false si la gravedad alcanza (CDT <= 0)
+  margenGravedad_m: number;     // m de sobra cuando NO se requiere bombeo
   // Power
   Ph_kW: number;                // hydraulic power
   Pb_kW: number;                // brake power
@@ -117,23 +122,29 @@ export function calculatePumpLine(input: PumpLineInputs): PumpLineResults | null
   const hm = hf * (hmPercent / 100);
   const J_km = L > 0 ? (hf / L) * 1000 : 0;
 
-  // 5. Head
+  // 5. Head — incluye la presión de servicio requerida en la entrega
   const Hg = cotaTanque - cotaBomba;
-  const CDT = Hg + hf + hm;
+  const pServicio_m = (input.presionEntrega_kgcm2 ?? 0) * 10;
+  const CDT_raw = Hg + hf + hm + pServicio_m;
+  // Si la gravedad alcanza (CDT <= 0) NO se requiere bomba: nunca reportar potencias negativas
+  const requiereBombeo = CDT_raw > 0.01;
+  const CDT = Math.max(0, CDT_raw);
+  const margenGravedad_m = requiereBombeo ? 0 : -CDT_raw;
   const CDT_kgcm2 = CDT / 10;
 
-  // 6. Power
+  // 6. Power (0 cuando no se requiere bombeo)
   const gamma = 9810; // N/m³
-  const Ph_kW = (gamma * Qbombeo_m3s * CDT) / 1000;
-  const Pb_kW = Ph_kW / eficienciaBomba;
-  const Pm_kW = Pb_kW / eficienciaMotor;
+  const Ph_kW = requiereBombeo ? (gamma * Qbombeo_m3s * CDT) / 1000 : 0;
+  const Pb_kW = requiereBombeo ? Ph_kW / eficienciaBomba : 0;
+  const Pm_kW = requiereBombeo ? Pb_kW / eficienciaMotor : 0;
   const Pm_HP = Pm_kW * 1.341;
 
-  // Nearest commercial HP (round up)
+  // Nearest commercial HP (round up); 0 si no se requiere bombeo
   let HP_com = HP_COMERCIAL[HP_COMERCIAL.length - 1];
   for (const hp of HP_COMERCIAL) {
     if (hp >= Pm_HP) { HP_com = hp; break; }
   }
+  if (!requiereBombeo) HP_com = 0;
 
   // 7. Energy cost
   const kWh_dia = Pm_kW * horasBombeo;
@@ -145,7 +156,7 @@ export function calculatePumpLine(input: PumpLineInputs): PumpLineResults | null
   if (V > 2.0) alerts.push({ level: 'WARN', message: `Velocidad ${V.toFixed(2)} m/s (max recomendado en impulsion: 2.0 m/s)` });
   if (V < 0.5) alerts.push({ level: 'WARN', message: `Velocidad ${V.toFixed(2)} m/s (min recomendado: 0.5 m/s — sedimentacion)` });
   if (J_km > 10) alerts.push({ level: 'WARN', message: `Gradiente ${J_km.toFixed(1)} m/km (max 10)` });
-  if (Hg < 0) alerts.push({ level: 'WARN', message: `Desnivel negativo (${Hg.toFixed(1)}m) — el tanque esta mas bajo que la bomba, no requiere impulsion` });
+  if (Hg < 0 && requiereBombeo) alerts.push({ level: 'WARN', message: `Desnivel a favor (${Hg.toFixed(1)}m) pero la presion requerida obliga a bombear — verificar si conviene solo gravedad` });
   if (CDT > 150) alerts.push({ level: 'WARN', message: `CDT muy alta (${CDT.toFixed(1)}m) — verificar datos o considerar estacion de rebombeo` });
   if (DN_used_mm !== DN_econ_mm) {
     const diff = ((DN_used_mm - DN_econ_mm) / DN_econ_mm * 100).toFixed(0);
@@ -157,7 +168,7 @@ export function calculatePumpLine(input: PumpLineInputs): PumpLineResults | null
     Qbombeo_ls, Qbombeo_m3h, volDiario_m3,
     D_econ_m, DN_econ_mm, K_bresse: K,
     DN_used_mm, V, hf, hm, J_km,
-    Hg, CDT, CDT_kgcm2,
+    Hg, pServicio_m, CDT, CDT_kgcm2, requiereBombeo, margenGravedad_m,
     Ph_kW, Pb_kW, Pm_kW, Pm_HP, HP_comercial: HP_com,
     kWh_dia, kWh_mes, costo_mes, costo_anual,
     alerts,

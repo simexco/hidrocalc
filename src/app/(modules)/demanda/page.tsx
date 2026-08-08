@@ -44,8 +44,8 @@ export default function DemandaPage() {
   // Persist
   useEffect(() => {
     const saved = loadFormState<WaterDemandInputs>("demanda");
-    // habPorVivienda siempre arranca en 4 y coefRegulacion en 11.0 (ignora valores viejos guardados)
-    if (saved) setInputs({ ...defaults, ...saved, habPorVivienda: 4, coefRegulacion: 11.0 });
+    // habPorVivienda siempre arranca en 4; el coef. de regulación SÍ respeta lo guardado (editable por el usuario)
+    if (saved) setInputs({ ...defaults, ...saved, habPorVivienda: 4, coefRegulacion: saved.coefRegulacion ?? 11.0 });
   }, []);
 
   useEffect(() => {
@@ -189,6 +189,8 @@ export default function DemandaPage() {
             <InputField label="Dotacion" value={inputs.dotacionBase} onChange={(v) => set("dotacionBase", parseFloat(v) || 150)} unit="L/hab/dia" tooltip="Sugerida segun tipo de desarrollo. Puedes modificarla si tienes un dato especifico." />
 
             {/* Advanced */}
+            {/* Coef. de regulación siempre a la vista: editable sin entrar a crecimiento/avanzados */}
+            <InputField label="Coef. regulacion del tanque" value={inputs.coefRegulacion} onChange={(v) => set("coefRegulacion", parseFloat(v) || 11)} tooltip="Coeficiente de regulacion CONAGUA segun horas de suministro al tanque. 24h=11.0, 20h=9.0, 16h=19.0 (CDMX: 24h=14.3). Se aplica sobre el gasto maximo diario." />
             <button onClick={() => setShowAdvanced(!showAdvanced)} className="text-[10px] text-[#1C3D5A] underline decoration-dotted">
               {showAdvanced ? 'Ocultar' : 'Mostrar'} parametros avanzados
             </button>
@@ -214,8 +216,6 @@ export default function DemandaPage() {
                   <InputField label="CVD (variacion diaria)" value={inputs.CVD} onChange={(v) => set("CVD", parseFloat(v) || 1.4)} tooltip="Coeficiente de variacion diaria. CONAGUA: 1.2-1.5, default 1.4" />
                   <InputField label="CVH (variacion horaria)" value={inputs.CVH} onChange={(v) => set("CVH", parseFloat(v) || 1.55)} tooltip="Coeficiente de variacion horaria. CONAGUA: 1.5-2.0, default 1.55" />
                 </div>
-                {/* Coeficiente del tanque de regulacion */}
-                <InputField label="Coef. regulacion del tanque" value={inputs.coefRegulacion} onChange={(v) => set("coefRegulacion", parseFloat(v) || 11)} unit="%" tooltip="Coeficiente de regulacion CONAGUA segun horas de suministro al tanque. 24h=11.0, 20h=9.0, 16h=19.0 (CDMX: 24h=14.3). Se aplica sobre el gasto maximo diario." />
               </div>
             )}
           </div>

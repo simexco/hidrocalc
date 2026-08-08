@@ -118,9 +118,12 @@ export default function EquipoBombeoPage() {
 
     const Qb = st.caso === "tanque" ? st.Q / nOper : st.Q;
 
-    // Fricción Hazen-Williams (SI): Q en m³/s, D en m — el caudal TOTAL pasa por la línea
+    // Fricción Hazen-Williams (SI): Q en m³/s, D en m — el caudal TOTAL pasa por la línea.
+    // En pozo se suma la COLUMNA (tubería vertical desde la bomba hasta la superficie).
     const Qm = st.Q / 1000, Dm = st.D / 1000;
-    const hf = st.D > 0 ? 10.674 * Math.pow(Qm / C, 1.852) * st.L / Math.pow(Dm, 4.871) : 0;
+    const Lcolumna = st.caso === "pozo" ? Math.max(0, st.profBomba) : 0;
+    const Lfric = st.L + Lcolumna;
+    const hf = st.D > 0 ? 10.674 * Math.pow(Qm / C, 1.852) * Lfric / Math.pow(Dm, 4.871) : 0;
     const hl = hf * (st.pctLocal / 100);
     let CDT = Hest + hf + hl + presionMca;
     if (CDT < 0) CDT = 0;
@@ -142,7 +145,7 @@ export default function EquipoBombeoPage() {
     const costo_mes = kWh_dia * 30 * st.tarifaCFE;
     const costo_anual = kWh_dia * 365 * st.tarifaCFE;
 
-    return { C, presionMca, cotaSucc, cotaDesc, Hest, Qb, hf, hl, CDT, vel, hpHid, hpCom, tipo, etiquetaArreglo, varios, nOper, kWbomba, kWtotal, kWh_dia, costo_mes, costo_anual };
+    return { C, presionMca, cotaSucc, cotaDesc, Hest, Qb, hf, hl, CDT, vel, hpHid, hpCom, tipo, etiquetaArreglo, varios, nOper, kWbomba, kWtotal, kWh_dia, costo_mes, costo_anual, Lcolumna };
   }, [st]);
 
   // Flujo de proyecto: carga estática y eficiencia alimentan la hoja de bombeo del reporte
@@ -162,7 +165,7 @@ export default function EquipoBombeoPage() {
   // Barra de desglose de la CDT
   const partes = [
     { color: "#5499C7", label: "Carga estática", v: Math.max(0, r.Hest) },
-    { color: "#48C9B0", label: "Fricción", v: r.hf },
+    { color: "#48C9B0", label: r.Lcolumna > 0 ? `Fricción (línea + columna ${r.Lcolumna} m)` : "Fricción", v: r.hf },
     { color: "#F5B041", label: "Pérdidas locales", v: r.hl },
     { color: "#EC7063", label: "Presión servicio", v: r.presionMca },
   ];
@@ -403,9 +406,10 @@ export default function EquipoBombeoPage() {
             </p>
           </div>
 
-          {/* Costo de operación (energía) — con la potencia fina de este módulo */}
-          <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 space-y-3">
-            <p className="text-xs text-gray-500 font-semibold">Costo de operación (energía)</p>
+          {/* Costo de operación (energía) — plegado: información opcional/comercial */}
+          <details className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+            <summary className="text-xs text-[#1C3D5A] dark:text-blue-300 font-semibold cursor-pointer select-none">Ver costo estimado de operación (energía) — opcional</summary>
+            <div className="space-y-3 mt-3">
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1">
                 <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Horas de bombeo al día</label>
@@ -436,7 +440,8 @@ export default function EquipoBombeoPage() {
             <p className="text-[10px] text-gray-400">
               Con la potencia real al freno: {r.kWbomba.toLocaleString("es-MX", { maximumFractionDigits: 1 })} kW por bomba{st.caso === "tanque" && r.nOper > 1 ? ` × ${r.nOper} en operación` : ""} × {st.horasBombeo} h/día × ${st.tarifaCFE}/kWh. Este es el costo fino de operación; el del Diámetro económico es solo comparativo.
             </p>
-          </div>
+            </div>
+          </details>
         </div>
       </div>
 
