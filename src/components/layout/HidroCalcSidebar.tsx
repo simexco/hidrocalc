@@ -72,6 +72,13 @@ const sections = [
       { href: "/entregable", label: "Reporte de proyecto", icon: icons.entregable },
     ],
   },
+  {
+    title: "Cuenta",
+    items: [
+      { href: "/proyectos", label: "Mis proyectos", icon: icons.proyectos },
+      { href: "/cuenta", label: "Mi cuenta", icon: icons.gasto },
+    ],
+  },
 ];
 
 export function HidroCalcSidebar() {

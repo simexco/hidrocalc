@@ -18,6 +18,8 @@ const moduleNames: Record<string, string> = {
   "/valvulas-aire": "Válvulas de aire",
   "/vrp": "Valvula reductora",
   "/entregable": "Reporte de proyecto",
+  "/proyectos": "Mis proyectos",
+  "/cuenta": "Mi cuenta",
 };
 
 const moduleHelp: Record<string, { title: string; sections: { title: string; content: string }[] }> = {
