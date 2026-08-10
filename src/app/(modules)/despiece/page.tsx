@@ -150,7 +150,21 @@ export default function DespiecePage() {
   };
   // Borrar una pieza del armado visual desde la lista (quita también las conectadas después de ella)
   const borrarPiezaVisual = (tramoId: string, accId: number) => {
-    // Ids negativos = atraques (obra): quitar solo el atraque de esa pieza
+    // Marco con tapa (obra): quitarlo del tramo; se regresa con el selector del recuadro de caja
+    if (accId === -9003) {
+      updateTramo(tramoId, { marcoTapa: "none" });
+      return;
+    }
+    // Contramarcos capturados (obra): borrar el renglón de captura que originó la fila
+    if (accId <= -9101) {
+      const idx = -accId - 9101;
+      const lista = tramos.find((t) => t.id === tramoId)?.contramarcos ?? [];
+      const validos = lista.filter((c) => (parseFloat(c.medida) || 0) > 0 && c.cant > 0);
+      const objetivo = validos[idx];
+      if (objetivo) updateTramo(tramoId, { contramarcos: lista.filter((c) => c.id !== objetivo.id) });
+      return;
+    }
+    // Ids negativos restantes = atraques (obra): quitar solo el atraque de esa pieza
     if (accId < 0) {
       setVizPorTramo((prev) => ({ ...prev, [tramoId]: (prev[tramoId] ?? []).map((n) => n.id === -accId ? { ...n, atraque: false } : n) }));
       return;
@@ -364,6 +378,7 @@ export default function DespiecePage() {
                             className="text-[11px] px-2 py-1 border border-[#1C3D5A]/25 dark:border-blue-300/25 rounded-lg bg-white dark:bg-gray-800 dark:text-white"
                           >
                             {MARCOS_TAPA.map((m) => <option key={m.key} value={m.key}>{m.label} — {m.sku}</option>)}
+                            <option value="none">Sin marco con tapa (no incluir)</option>
                           </select>
                           <span className="text-[10px] text-gray-400">El peso identifica la clase de tráfico; elige la que maneja el organismo.</span>
                         </div>

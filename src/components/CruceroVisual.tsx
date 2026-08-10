@@ -135,8 +135,11 @@ export function vizToAccsConex(nodes: VizNode[], opts?: { marcoTapa?: string; co
       listaCm.forEach((c, i) => {
         accs.push({ id: -9101 - i, label: `Contramarco ${c.tipo} ${c.medida.toFixed(2)} m — perfil (canal) ${c.perfil}" (caja tipo ${cj.tipo})`, sku: '—', dn: dnRef, bridas: 0, leKey: 'tapa-ciega', norma: 'Obra civil', isObra: true, qty: c.cant })
       })
-      const marcoSel = MARCOS_TAPA.find(m => m.key === (marcoTapa ?? 'D')) ?? MARCOS_TAPA[0]
-      accs.push({ id: -9003, label: `Marco con Tapa tipo pesado — ${marcoSel.label} (caja tipo ${cj.tipo})`, sku: marcoSel.sku, dn: dnRef, bridas: 0, leKey: 'tapa-ciega', norma: 'EN-124 D400', isObra: true, qty: cd.cant })
+      // 'none' = el usuario lo quitó de la lista (se regresa con el selector del recuadro de caja)
+      if ((marcoTapa ?? 'D') !== 'none') {
+        const marcoSel = MARCOS_TAPA.find(m => m.key === (marcoTapa ?? 'D')) ?? MARCOS_TAPA[0]
+        accs.push({ id: -9003, label: `Marco con Tapa tipo pesado — ${marcoSel.label} (caja tipo ${cj.tipo})`, sku: marcoSel.sku, dn: dnRef, bridas: 0, leKey: 'tapa-ciega', norma: 'EN-124 D400', isObra: true, qty: cd.cant })
+      }
     }
   }
   // Descontar la brida del puerto donde se monta cada desfogue (salida de agua: ni adaptador ni unión)
