@@ -128,127 +128,100 @@ export function calculateAirValves(input: AirValveInputs): AirValveOutputs | nul
   }
 
   // Step 3: Apply rules — collect candidate valves
-  type Candidate = { dist: number; cota: number; pressure: number | null; type: "VA-C" | "VA-A" | "VA-E"; reason: string; alert: "critical" | "low" | null };
+  // Criterio (CONAGUA MAPAS / AWWA M51):
+  //   VA-C en inicio, fin (si no llega bajando) y puntos altos.
+  //   VA-E donde el aire se acumula en operacion (la subida se aplana, arranca un ascenso)
+  //        y cada maxSpacing en corridas largas ascendentes o planas.
+  //   VA-A donde hay riesgo de vacio (la bajada se hace mas pronunciada)
+  //        y cada maxSpacing en corridas largas descendentes.
+  //   Los puntos bajos NO llevan valvula de aire: llevan desague (se avisa).
+  //   La presion baja o negativa NO se corrige con valvulas de aire: se avisa como problema de diseno.
+  type Candidate = { dist: number; cota: number; pressure: number | null; type: "VA-C" | "VA-A" | "VA-E"; reason: string };
   const candidates: Candidate[] = [];
 
-  // Rule 1: Inicio — VA-C siempre (llenado/vaciado y arranque)
-  candidates.push({ dist: sorted[0].dist, cota: sorted[0].cota, pressure: pressures[0], type: "VA-C", reason: "Inicio de linea", alert: null });
+  // Inicio — VA-C siempre (llenado/vaciado y arranque)
+  candidates.push({ dist: sorted[0].dist, cota: sorted[0].cota, pressure: pressures[0], type: "VA-C", reason: "Inicio de linea" });
   // Fin — SOLO si la llegada NO es descendente: en un punto bajo el aire no se acumula
   // (una linea que baja uniformemente no necesita valvula al final)
   const last = sorted.length - 1;
   const llegadaDescendente = sorted[last].cota < sorted[last - 1].cota;
   if (!llegadaDescendente) {
-    candidates.push({ dist: sorted[last].dist, cota: sorted[last].cota, pressure: pressures[last], type: "VA-C", reason: "Fin de linea (llegada plana/ascendente)", alert: null });
+    candidates.push({ dist: sorted[last].dist, cota: sorted[last].cota, pressure: pressures[last], type: "VA-C", reason: "Fin de linea (llegada plana/ascendente)" });
   }
 
+  const puntosBajos: number[] = [];
   for (let i = 1; i < sorted.length - 1; i++) {
     const isHighPoint = sorted[i].cota > sorted[i - 1].cota && sorted[i].cota >= sorted[i + 1].cota;
     const isLowPoint = sorted[i].cota < sorted[i - 1].cota && sorted[i].cota <= sorted[i + 1].cota;
     const p = pressures[i];
-    const alert: "critical" | "low" | null = p != null && p < 0 ? "critical" : p != null && p < pressureMin ? "low" : null;
 
-    // Rule 2: High point → VA-C (air accumulates here)
+    // Punto alto → VA-C (el aire se acumula y hay riesgo de vacio al vaciar la linea)
     if (isHighPoint) {
-      candidates.push({ dist: sorted[i].dist, cota: sorted[i].cota, pressure: p, type: "VA-C", reason: "Punto alto — acumulacion de aire", alert });
+      candidates.push({ dist: sorted[i].dist, cota: sorted[i].cota, pressure: p, type: "VA-C", reason: "Punto alto — acumulacion de aire" });
     }
 
-    // Rule 3: Transition from uphill to downhill (not a sharp peak) → VA-E
-    if (i < slopes.length && slopes[i - 1] > 1 && slopes[i] < -1 && !isHighPoint) {
-      candidates.push({ dist: sorted[i].dist, cota: sorted[i].cota, pressure: p, type: "VA-E", reason: "Cambio pendiente ascendente a descendente", alert: null });
+    // Punto bajo → desague recomendado, NO valvula de aire (se agrega a los avisos)
+    if (isLowPoint) puntosBajos.push(sorted[i].dist);
+
+    // La subida se aplana (sin ser pico): el aire arrastrado se junta ahi → VA-E
+    if (i < slopes.length && slopes[i - 1] > 3 && slopes[i] >= -1 && slopes[i] < slopes[i - 1] - 2 && !isHighPoint) {
+      candidates.push({ dist: sorted[i].dist, cota: sorted[i].cota, pressure: p, type: "VA-E", reason: "Reduccion de pendiente ascendente — acumulacion de aire" });
     }
 
-    // Rule 4: Transition from downhill to flat or uphill → VA-A at the low point
-    if (i < slopes.length && slopes[i - 1] < -3) {
-      // Descent followed by flat (slope >= -1) or uphill
-      if (slopes[i] >= -1) {
-        candidates.push({ dist: sorted[i].dist, cota: sorted[i].cota, pressure: p, type: "VA-A", reason: "Cambio de descenso a plano/ascenso — riesgo de vacio", alert: null });
-      }
+    // Arranca un ascenso fuerte desde plano: el aire migra hacia arriba → VA-E
+    if (i < slopes.length && slopes[i - 1] <= 1 && slopes[i] > 3 && !isHighPoint && !isLowPoint) {
+      candidates.push({ dist: sorted[i].dist, cota: sorted[i].cota, pressure: p, type: "VA-E", reason: "Inicio de ascenso — aire migra hacia arriba" });
     }
 
-    // Rule 4b: Transition from flat/descent to significant ascent → VA-E (air will migrate up)
-    if (i < slopes.length && slopes[i - 1] <= 1 && slopes[i] > 3 && !isHighPoint) {
-      candidates.push({ dist: sorted[i].dist, cota: sorted[i].cota, pressure: p, type: "VA-E", reason: "Inicio de ascenso — aire migra hacia arriba", alert: null });
-    }
-
-    // Rule 5: Low pressure point → VA-C
-    if (p != null && p < pressureMin && !isHighPoint) {
-      candidates.push({ dist: sorted[i].dist, cota: sorted[i].cota, pressure: p, type: "VA-C", reason: "Presion insuficiente", alert });
+    // La bajada se hace mas pronunciada → VA-A (riesgo de vacio / separacion de columna)
+    if (i < slopes.length && slopes[i - 1] < -1 && slopes[i] < slopes[i - 1] - 3) {
+      candidates.push({ dist: sorted[i].dist, cota: sorted[i].cota, pressure: p, type: "VA-A", reason: "La bajada se hace mas pronunciada — riesgo de vacio" });
     }
   }
 
-  // Rule 6: Steep descents (>5%) — VA-A for vacuum protection
-  for (let i = 0; i < slopes.length; i++) {
-    if (slopes[i] < -5) {
-      const L = sorted[i + 1].dist - sorted[i].dist;
-      // For moderate descents (5-15%), place VA-A at start of descent
-      if (L > 100) {
-        const insertDist = sorted[i].dist + 50; // near the top of the descent
-        const frac = 50 / L;
-        const insertCota = sorted[i].cota + frac * (sorted[i + 1].cota - sorted[i].cota);
-        const insertP = pressures[i] != null && pressures[i + 1] != null
-          ? pressures[i]! + frac * (pressures[i + 1]! - pressures[i]!)
-          : null;
-        candidates.push({ dist: insertDist, cota: insertCota, pressure: insertP, type: "VA-A", reason: `Descenso ${Math.abs(slopes[i]).toFixed(1)}% — proteccion contra vacio`, alert: null });
-      }
-      // For very steep (>15%) or long descents, add another VA-A
-      if (slopes[i] < -15 && L > 500) {
-        const insertDist = sorted[i].dist + L / 2;
-        const frac = 0.5;
-        const insertCota = sorted[i].cota + frac * (sorted[i + 1].cota - sorted[i].cota);
-        const insertP = pressures[i] != null && pressures[i + 1] != null
-          ? pressures[i]! + frac * (pressures[i + 1]! - pressures[i]!)
-          : null;
-        candidates.push({ dist: insertDist, cota: insertCota, pressure: insertP, type: "VA-A", reason: `Descenso pronunciado ${Math.abs(slopes[i]).toFixed(1)}%`, alert: null });
+  // Corridas largas — el caracter del tramo se mide agrupando segmentos consecutivos
+  // del mismo tipo, aunque el perfil se haya capturado con varios vertices intermedios:
+  //   ascendente o plana → VA-E de purga cada maxSpacing
+  //   descendente → VA-A de proteccion de vacio cada maxSpacing
+  const clase = (s: number): "up" | "down" | "flat" => (s > 1 ? "up" : s < -1 ? "down" : "flat");
+  const interpola = (d: number) => {
+    let k = 0;
+    while (k < sorted.length - 2 && sorted[k + 1].dist <= d) k++;
+    const L = sorted[k + 1].dist - sorted[k].dist;
+    const frac = L > 0 ? (d - sorted[k].dist) / L : 0;
+    const cota = sorted[k].cota + frac * (sorted[k + 1].cota - sorted[k].cota);
+    const pr = pressures[k] != null && pressures[k + 1] != null ? pressures[k]! + frac * (pressures[k + 1]! - pressures[k]!) : null;
+    return { cota, pr };
+  };
+  let i0 = 0;
+  while (i0 < slopes.length) {
+    let i1 = i0;
+    while (i1 + 1 < slopes.length && clase(slopes[i1 + 1]) === clase(slopes[i0])) i1++;
+    const cl = clase(slopes[i0]);
+    const runStart = sorted[i0].dist;
+    const runEnd = sorted[i1 + 1].dist;
+    if (runEnd - runStart > maxSpacing) {
+      const tipo: "VA-A" | "VA-E" = cl === "down" ? "VA-A" : "VA-E";
+      const reason = cl === "up" ? "Tramo ascendente largo — purga de aire" : cl === "flat" ? "Tramo plano largo — purga de aire" : "Tramo descendente largo — proteccion contra vacio";
+      for (let d = runStart + maxSpacing; d < runEnd - 1; d += maxSpacing) {
+        const { cota, pr } = interpola(d);
+        candidates.push({ dist: d, cota, pressure: pr, type: tipo, reason });
       }
     }
+    i0 = i1 + 1;
   }
 
-  // Rule 7: Long uphill segments — VA-E every maxSpacing
-  for (let i = 0; i < slopes.length; i++) {
-    const L = sorted[i + 1].dist - sorted[i].dist;
-    if (L > maxSpacing && slopes[i] > 0) {
-      // Uphill: air migrates to the top, need VA-E to purge
-      const numVAE = Math.floor(L / maxSpacing);
-      for (let j = 1; j <= numVAE; j++) {
-        const insertDist = sorted[i].dist + j * maxSpacing;
-        if (insertDist >= sorted[i + 1].dist) break;
-        const frac = (insertDist - sorted[i].dist) / L;
-        const insertCota = sorted[i].cota + frac * (sorted[i + 1].cota - sorted[i].cota);
-        const insertP = pressures[i] != null && pressures[i + 1] != null
-          ? pressures[i]! + frac * (pressures[i + 1]! - pressures[i]!)
-          : null;
-        candidates.push({ dist: insertDist, cota: insertCota, pressure: insertP, type: "VA-E", reason: "Tramo ascendente largo — purga de aire", alert: null });
-      }
-    }
-    // Flat or gentle slopes: VA-E for maintenance
-    if (L > maxSpacing && Math.abs(slopes[i]) <= 2) {
-      const numVAE = Math.floor(L / maxSpacing);
-      for (let j = 1; j <= numVAE; j++) {
-        const insertDist = sorted[i].dist + j * maxSpacing;
-        if (insertDist >= sorted[i + 1].dist) break;
-        const frac = (insertDist - sorted[i].dist) / L;
-        const insertCota = sorted[i].cota + frac * (sorted[i + 1].cota - sorted[i].cota);
-        const insertP = pressures[i] != null && pressures[i + 1] != null
-          ? pressures[i]! + frac * (pressures[i + 1]! - pressures[i]!)
-          : null;
-        candidates.push({ dist: insertDist, cota: insertCota, pressure: insertP, type: "VA-E", reason: "Espaciado maximo — mantenimiento", alert: null });
-      }
-    }
-    // Long downhill: VA-A every maxSpacing for vacuum protection during drainage
-    if (L > maxSpacing && slopes[i] < -2) {
-      const numVAA = Math.floor(L / maxSpacing);
-      for (let j = 1; j <= numVAA; j++) {
-        const insertDist = sorted[i].dist + j * maxSpacing;
-        if (insertDist >= sorted[i + 1].dist) break;
-        const frac = (insertDist - sorted[i].dist) / L;
-        const insertCota = sorted[i].cota + frac * (sorted[i + 1].cota - sorted[i].cota);
-        const insertP = pressures[i] != null && pressures[i + 1] != null
-          ? pressures[i]! + frac * (pressures[i + 1]! - pressures[i]!)
-          : null;
-        candidates.push({ dist: insertDist, cota: insertCota, pressure: insertP, type: "VA-A", reason: "Tramo descendente largo — proteccion vacio", alert: null });
-      }
+  // Avisos de diseno (no son valvulas)
+  if (hasHydraulics) {
+    const negativos = sorted.map((v, i) => ({ v, p: pressures[i] })).filter((x) => x.p != null && x.p < 0);
+    if (negativos.length > 0) {
+      alerts.push(`Presion NEGATIVA en operacion en ${negativos.length} punto(s) del perfil (desde cad ${negativos[0].v.dist.toFixed(0)} m). Las valvulas de aire NO corrigen esto: revisa el diametro, el trazo o si la linea requiere bombeo.`);
+    } else {
+      const bajos = sorted.filter((v, i) => pressures[i] != null && pressures[i]! < pressureMin);
+      if (bajos.length > 0) alerts.push(`Presion por debajo de ${pressureMin} m.c.a. en ${bajos.length} punto(s): verifica con el fabricante que la valvula de aire selle a baja presion.`);
     }
   }
+  puntosBajos.forEach((d) => alerts.push(`Punto bajo en cad ${d.toFixed(0)} m: no lleva valvula de aire — se recomienda un desague (desfogue) para drenado y limpieza. Puedes armar ese crucero en el Generador de cruceros.`));
 
   // Step 4: Deduplicate — within 30m, keep each type's highest priority
   // But DON'T merge different types — a location can have both VA-C and VA-E
@@ -293,6 +266,9 @@ export function calculateAirValves(input: AirValveInputs): AirValveOutputs | nul
       orificeSize = bodySize;
     }
 
+    // Alerta por presion: critica si es negativa, baja si esta bajo el minimo de sello
+    const alert: "critical" | "low" | null = c.pressure != null && c.pressure < 0 ? "critical" : c.pressure != null && c.pressure < pressureMin ? "low" : null;
+
     return {
       dist: c.dist,
       cota: c.cota,
@@ -302,7 +278,7 @@ export function calculateAirValves(input: AirValveInputs): AirValveOutputs | nul
       orificeSize,
       pn,
       reason: c.reason,
-      alert: c.alert,
+      alert,
       note: getNote(c.type, DN_mm),
     };
   }).sort((a, b) => a.dist - b.dist);
