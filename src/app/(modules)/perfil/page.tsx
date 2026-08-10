@@ -330,7 +330,7 @@ export default function PerfilPage() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'Plantilla_Perfil_HidroCalc.xlsx';
+    a.download = 'Plantilla_Perfil_SigmaFlow.xlsx';
     a.click();
     URL.revokeObjectURL(url);
   };

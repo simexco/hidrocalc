@@ -116,13 +116,13 @@ export default function Home() {
 
         {/* Title */}
         <h1 className="font-heading text-3xl md:text-4xl font-light text-white tracking-[0.15em] uppercase mb-3 text-center">
-          HidroCalc
+          Sigma Flow
         </h1>
 
         <div className="w-16 h-[1px] bg-white/25 mb-4" />
 
         <p className="text-white/60 text-center max-w-lg mb-2 text-sm leading-relaxed font-light">
-          Calculadora hidráulica profesional para ingenieros en infraestructura de agua potable y alcantarillado
+          Plataforma de Ingeniería Hidráulica para organismos operadores, proyectistas y constructores de agua potable
         </p>
 
         <p className="text-white/25 text-[11px] tracking-[0.2em] uppercase mb-14">
@@ -187,7 +187,7 @@ export default function Home() {
       {/* Footer */}
       <div className="w-full border-t border-white/10 px-6 py-4">
         <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-white/30">
-          <span>HidroCalc by Sigma Flow &middot; Soluciones en Infraestructura Hidráulica</span>
+          <span>Sigma Flow &middot; Plataforma de Ingeniería Hidráulica &middot; Soluciones en Infraestructura Hidráulica</span>
           <span>Solo para uso técnico profesional</span>
         </div>
       </div>

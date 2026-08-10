@@ -114,7 +114,7 @@ function addHeader(doc: jsPDF, pageWidth: number, logoB64: string | null) {
   doc.setFontSize(11);
   doc.setFont("helvetica", "bold");
   doc.setTextColor(...BRAND);
-  doc.text("HidroCalc v1.3", pageWidth - 14, 16, { align: "right" });
+  doc.text("Sigma Flow v2.0", pageWidth - 14, 16, { align: "right" });
 
   doc.setFontSize(7);
   doc.setFont("helvetica", "normal");
@@ -141,7 +141,7 @@ function addFooter(doc: jsPDF, pageWidth: number, pageNum: number, totalPages: n
   doc.setFontSize(6.5);
   doc.setFont("helvetica", "normal");
   doc.setTextColor(160, 160, 160);
-  doc.text("HidroCalc by Sigma Flow - Solo para uso tecnico profesional", 14, y);
+  doc.text("Sigma Flow - Plataforma de Ingenieria Hidraulica - Solo para uso tecnico profesional", 14, y);
   doc.text("Pagina " + pageNum + " de " + totalPages, pageWidth - 14, y, { align: "right" });
 }
 

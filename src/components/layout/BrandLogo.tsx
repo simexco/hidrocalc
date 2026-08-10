@@ -19,7 +19,7 @@ export function BrandLogo({ size = "md", showFallback = !LOGO_EXISTS }: BrandLog
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src="/simex-logo.svg" alt="SIMEX" height={h} style={{ height: `${h}px`, width: "auto" }} />
         <div>
-          <div className={`font-bold ${textSizes[size]} text-white leading-none`}>HidroCalc</div>
+          <div className={`font-bold ${textSizes[size]} text-white leading-none`}>Sigma Flow</div>
           <div className={`${subSizes[size]} text-gray-300 tracking-[.08em]`}>by SIMEX</div>
         </div>
       </div>
@@ -32,7 +32,7 @@ export function BrandLogo({ size = "md", showFallback = !LOGO_EXISTS }: BrandLog
         S
       </div>
       <div>
-        <div className={`font-bold ${textSizes[size]} text-white leading-none`}>HidroCalc</div>
+        <div className={`font-bold ${textSizes[size]} text-white leading-none`}>Sigma Flow</div>
         <div className={`${subSizes[size]} text-gray-300 tracking-[.08em]`}>by SIMEX</div>
       </div>
     </div>

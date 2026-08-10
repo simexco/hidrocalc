@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "HidroCalc — Sigma Flow · Calculadora Hidráulica Profesional",
-  description: "Herramienta técnica para ingenieros en infraestructura hidráulica — Sigma Flow",
+  title: "Sigma Flow · Plataforma de Ingeniería Hidráulica",
+  description: "Plataforma de Ingeniería Hidráulica de Sigma Flow: diseño de líneas de conducción, bombeo, cruceros y reportes para agua potable.",
 };
 
 export default function RootLayout({

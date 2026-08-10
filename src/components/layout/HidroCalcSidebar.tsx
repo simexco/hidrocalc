@@ -93,7 +93,7 @@ export function HidroCalcSidebar() {
           <img src="/sigmaflow-full.jpg" alt="Sigma Flow" className="h-14 w-auto bg-white rounded-lg px-3 py-2 shadow-lg shadow-black/20" />
         </Link>
         <div className="mt-3 px-1 flex items-center gap-2">
-          <span className="text-sm font-bold text-white tracking-wide">HidroCalc</span>
+          <span className="text-[11px] font-semibold text-white/85 tracking-wide leading-tight">Plataforma de Ingeniería Hidráulica</span>
           <span className="text-[9px] font-semibold text-[#7FC4E8] bg-[#7FC4E8]/10 border border-[#7FC4E8]/25 rounded-full px-1.5 py-px">v2.0</span>
         </div>
       </div>

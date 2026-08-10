@@ -105,7 +105,7 @@ export function HidroCalcHeader() {
       <div className="h-full px-6 flex items-center justify-between">
         <div className="flex items-center gap-2.5">
           <Link href="/" className="text-[11px] font-bold text-[#1C3D5A]/45 hover:text-[#1C3D5A] transition-colors tracking-[0.14em] uppercase">
-            HidroCalc
+            Sigma Flow
           </Link>
           {moduleName && (
             <>

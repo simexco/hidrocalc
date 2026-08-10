@@ -21,7 +21,7 @@ export function ExportPDFButton({ getData, filename, disabled = false }: ExportP
       // Dynamic import to avoid SSR issues
       const { generateHidroCalcPDF, downloadPDF } = await import("@/lib/export/pdf-generator");
       const doc = await generateHidroCalcPDF(data);
-      const name = filename || `HidroCalc_${data.projectName.replace(/\s+/g, "_")}_${new Date().toISOString().slice(0, 10)}.pdf`;
+      const name = filename || `SigmaFlow_${data.projectName.replace(/\s+/g, "_")}_${new Date().toISOString().slice(0, 10)}.pdf`;
       downloadPDF(doc, name);
     } catch (err) {
       console.error("Error generando PDF:", err);

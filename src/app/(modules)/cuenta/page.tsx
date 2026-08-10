@@ -74,7 +74,7 @@ export default function CuentaPage() {
         <div className="bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-800 rounded-xl p-5">
           <p className="text-sm font-semibold text-amber-700 dark:text-amber-300 mb-1">El guardado en la nube aún no está configurado</p>
           <p className="text-xs text-amber-700/90 dark:text-amber-300/80 leading-relaxed">
-            Puedes seguir usando HidroCalc como invitado sin ningún problema: tus datos se guardan en este navegador. Cuando el administrador conecte el servicio de cuentas, aquí podrás crear la tuya.
+            Puedes seguir usando la plataforma como invitado sin ningún problema: tus datos se guardan en este navegador. Cuando el administrador conecte el servicio de cuentas, aquí podrás crear la tuya.
           </p>
           <Link href="/" className="inline-block mt-3 text-xs bg-[#1C3D5A] text-white px-4 py-2 rounded-lg hover:bg-[#0F2438] transition-colors">Continuar como invitado →</Link>
         </div>
