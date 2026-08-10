@@ -129,20 +129,12 @@ export function vizToAccsConex(nodes: VizNode[], opts?: { marcoTapa?: string; co
     const cd = CAJAS_TIPO[cj.tipo]
     if (cd) {
       const dnRef = nodes[0]?.dn ?? ''
-      // Contramarcos: si el usuario capturó su lista (canal 4"/6" + medida + cantidad),
-      // esa manda y entra sin CONF. Si no, se sugiere la del catálogo por confirmar.
+      // Contramarcos: SOLO entran los que el usuario capture (canal 4"/6" + medida + cantidad).
+      // Sin captura no se asume ninguna medida — la decisión es del proyectista.
       const listaCm = (opts?.contramarcos ?? []).filter(c => c.medida > 0 && c.cant > 0)
-      if (listaCm.length > 0) {
-        listaCm.forEach((c, i) => {
-          accs.push({ id: -9101 - i, label: `Contramarco ${c.tipo} ${c.medida.toFixed(2)} m — perfil (canal) ${c.perfil}" (caja tipo ${cj.tipo})`, sku: '—', dn: dnRef, bridas: 0, leKey: 'tapa-ciega', norma: 'Obra civil', isObra: true, qty: c.cant })
-        })
-      } else {
-        const filaContramarco = (tipoCm: 'sencillo' | 'doble', medCatalogo: number, id: number, qty: number) => {
-          accs.push({ id, label: `Contramarco ${tipoCm} ${medCatalogo.toFixed(2)} m — perfil (canal) ${cd.perfil}" (caja tipo ${cj.tipo}; medida preliminar, confirmar)`, sku: '← CONF', dn: dnRef, bridas: 0, leKey: 'tapa-ciega', norma: 'Obra civil', isObra: true, qty })
-        }
-        if (cd.sen != null) filaContramarco('sencillo', cd.sen, -9001, cd.dob != null ? 1 : cd.cant)
-        if (cd.dob != null) filaContramarco('doble', cd.dob, -9002, cd.sen != null ? 1 : cd.cant)
-      }
+      listaCm.forEach((c, i) => {
+        accs.push({ id: -9101 - i, label: `Contramarco ${c.tipo} ${c.medida.toFixed(2)} m — perfil (canal) ${c.perfil}" (caja tipo ${cj.tipo})`, sku: '—', dn: dnRef, bridas: 0, leKey: 'tapa-ciega', norma: 'Obra civil', isObra: true, qty: c.cant })
+      })
       const marcoSel = MARCOS_TAPA.find(m => m.key === (marcoTapa ?? 'D')) ?? MARCOS_TAPA[0]
       accs.push({ id: -9003, label: `Marco con Tapa tipo pesado — ${marcoSel.label} (caja tipo ${cj.tipo})`, sku: marcoSel.sku, dn: dnRef, bridas: 0, leKey: 'tapa-ciega', norma: 'EN-124 D400', isObra: true, qty: cd.cant })
     }

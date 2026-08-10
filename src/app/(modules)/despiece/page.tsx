@@ -353,7 +353,7 @@ export default function DespiecePage() {
                           <p className="text-[11px] text-[#1C3D5A] dark:text-blue-300 leading-relaxed">
                             <strong>{cj.detalle}</strong> recomendada para este crucero — {cj.criterio}.
                             {cj.medidas && <> Medidas: <strong>{cj.medidas}</strong>.</>}
-                            {" "}Sus contramarcos y marco con tapa ya se sumaron a la lista de obra (armado según el catálogo de cajas tipo; las válvulas de aire llevan registro propio).
+                            {" "}El marco con tapa ya se sumó a la lista de obra. Los contramarcos los capturas tú abajo: solo entran a la lista los que agregues con su medida (las válvulas de aire llevan registro propio).
                           </p>
                         </div>
                         <div className="flex items-center gap-2 flex-wrap pl-6">
@@ -369,7 +369,6 @@ export default function DespiecePage() {
                         </div>
                         {(() => {
                           const cd = cj.tipo != null ? CAJAS_TIPO[cj.tipo] : undefined;
-                          const sugerida = cd ? (cd.sen ?? cd.dob) : null;
                           const lista = t.contramarcos ?? [];
                           const updRow = (rid: string, patch: Partial<ContramarcoRow>) =>
                             updateTramo(t.id, { contramarcos: lista.map((r) => (r.id === rid ? { ...r, ...patch } : r)) });
@@ -380,11 +379,11 @@ export default function DespiecePage() {
                                 <label className="text-[11px] font-medium text-[#1C3D5A] dark:text-blue-300">Contramarcos:</label>
                                 {lista.length === 0 && (
                                   <span className="text-[10px] text-gray-400">
-                                    Usando la sugerencia del catálogo{sugerida != null ? ` (${cd?.sen != null ? "sencillo" : "doble"} ${sugerida.toFixed(2)} m, canal ${cd?.perfil}")` : ""} — por confirmar. Captura los tuyos:
+                                    Sin capturar — no se agrega ninguno a la lista. Agrégalos con la medida que decida el proyectista:
                                   </span>
                                 )}
                                 <button
-                                  onClick={() => updateTramo(t.id, { contramarcos: [...lista, { id: uuid(), tipo: cd?.dob != null && cd?.sen == null ? "doble" : "sencillo", perfil: (cd?.perfil === 6 ? 6 : 4) as 4 | 6, medida: sugerida != null ? sugerida.toFixed(2) : "", cant: 1 }] })}
+                                  onClick={() => updateTramo(t.id, { contramarcos: [...lista, { id: uuid(), tipo: cd?.dob != null && cd?.sen == null ? "doble" : "sencillo", perfil: (cd?.perfil === 6 ? 6 : 4) as 4 | 6, medida: "", cant: 1 }] })}
                                   className="text-[10px] bg-[#1C3D5A] text-white px-2.5 py-1 rounded-lg hover:bg-[#0F2438] transition-colors font-medium"
                                 >+ Agregar contramarco</button>
                               </div>
@@ -405,7 +404,7 @@ export default function DespiecePage() {
                                   <button onClick={() => updateTramo(t.id, { contramarcos: lista.filter((x) => x.id !== r.id) })} className="text-red-400 hover:text-red-600 text-xs px-1">✕</button>
                                 </div>
                               ))}
-                              {lista.length > 0 && <p className="text-[10px] text-gray-400">Puedes agregar varios de diferentes medidas; todos entran a la lista de obra sin &quot;CONF&quot;.</p>}
+                              {lista.length > 0 && <p className="text-[10px] text-gray-400">Puedes agregar varios de diferentes medidas; todos entran a la lista de obra tal como los captures.</p>}
                             </div>
                           );
                         })()}

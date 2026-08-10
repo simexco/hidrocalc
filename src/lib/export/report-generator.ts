@@ -872,7 +872,7 @@ export async function generateReportPDF(d: ReportData): Promise<jsPDF> {
   });
   ay = finalY(doc) + 4;
   doc.setFontSize(7); doc.setTextColor(90, 90, 90);
-  doc.text(safe("Muro de block solido 28 cm a tezon (mortero 1:5) · losa de techo 20 cm (var. 3/8 @ 10 cm A/S) · losa de piso 10 cm + plantilla 10 cm · dalas de desplante y coronacion 15x28 · marco y tapa de FoFo tipo pesado. Las cajas recomendadas para este proyecto van resaltadas."), 14, ay, { maxWidth: doc.internal.pageSize.getWidth() - 28 });
+  doc.text(safe("Muro de block solido 28 cm a tezon (mortero 1:5) · losa de techo 20 cm (var. 3/8 @ 10 cm A/S) · losa de piso 10 cm + plantilla 10 cm · dalas de desplante y coronacion 15x28 · marco y tapa de FoFo tipo pesado. Las cajas recomendadas para este proyecto van resaltadas. Los contramarcos de esta tabla son referencia de catalogo; en la lista de materiales entran unicamente los capturados por el proyectista."), 14, ay, { maxWidth: doc.internal.pageSize.getWidth() - 28 });
   doc.setTextColor(0, 0, 0);
 
   // Logo en portada (esquina sup. derecha hoja 1)
