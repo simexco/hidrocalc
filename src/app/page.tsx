@@ -96,7 +96,7 @@ export default function Home() {
         <div className="max-w-6xl mx-auto flex items-center justify-between gap-3">
           <span className="flex items-center gap-3">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/sigmaflow-full.jpg" alt="Sigma Flow" className="h-8 w-auto bg-white rounded-md px-2 py-1" />
+            <img src="/sigmaflow-full.jpg" alt="Sigma Flow" className="h-10 w-auto bg-white rounded-md px-2 py-1" />
             <span className="text-white/40 text-[10px] tracking-widest uppercase font-semibold hidden sm:inline">Plataforma de Ingeniería Hidráulica</span>
           </span>
           <span className="flex items-center gap-3">
@@ -109,7 +109,12 @@ export default function Home() {
       {/* ── HERO ── */}
       <div className="max-w-6xl mx-auto w-full px-6 pt-14 pb-10 grid grid-cols-1 lg:grid-cols-2 gap-10 items-center">
         <div>
-          <p className="text-[11px] tracking-[0.25em] uppercase text-[#7FC4E8] font-bold mb-4">Sigma Flow · Ingeniería Hidráulica</p>
+          {/* Logo grande — la marca primero */}
+          <div className="inline-block bg-white rounded-2xl px-8 py-5 shadow-2xl shadow-black/30 mb-7">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/sigmaflow-full.jpg" alt="Sigma Flow" className="h-16 md:h-24 w-auto" />
+          </div>
+          <p className="text-[11px] tracking-[0.25em] uppercase text-[#7FC4E8] font-bold mb-4">Plataforma de Ingeniería Hidráulica</p>
           <h1 className="font-heading text-4xl md:text-[44px] leading-[1.08] font-extrabold text-white mb-5">
             Del cálculo de gasto<br />al despiece del crucero,<br />
             <span className="text-[#7FC4E8]">en una sola plataforma.</span>
