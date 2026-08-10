@@ -61,7 +61,7 @@ export function puertos(n: VizNode): { dn: string }[] {
 // Marcos con tapa disponibles: hierro dúctil como default + variantes por peso
 // (el peso identifica la clase de tráfico; el cliente elige la que maneja su organismo)
 export const MARCOS_TAPA: { key: string; sku: string; label: string }[] = [
-  { key: 'D', sku: 'AI-MCT-D', label: 'Hierro dúctil (estándar)' },
+  { key: 'D', sku: 'AI-MCT-D', label: 'Hierro dúctil' },
   { key: '67', sku: 'AI-MCT-67', label: 'FoFo 67 kg' },
   { key: '80', sku: 'AI-MCT-80', label: 'FoFo 80 kg' },
   { key: '110', sku: 'AI-MCT-110', label: 'FoFo 110 kg' },
