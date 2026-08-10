@@ -69,7 +69,8 @@ export const MARCOS_TAPA: { key: string; sku: string; label: string }[] = [
 ]
 
 // ─── Derivación: grafo → piezas + uniones (motor existente) ────
-export function vizToAccsConex(nodes: VizNode[], marcoTapa?: string): { accs: SIMEXAcc[]; conex: SIMEXConex[] } {
+export function vizToAccsConex(nodes: VizNode[], opts?: { marcoTapa?: string; contramarcoMedida?: number }): { accs: SIMEXAcc[]; conex: SIMEXConex[] } {
+  const marcoTapa = opts?.marcoTapa
   const byId = new Map(nodes.map(n => [n.id, n]))
   // El desfogue NO es producto: es la salida del agua. No genera renglón ni unión;
   // solo consume la brida donde se monta (esa salida queda libre, sin adaptador).
@@ -127,10 +128,16 @@ export function vizToAccsConex(nodes: VizNode[], marcoTapa?: string): { accs: SI
     const cd = CAJAS_TIPO[cj.tipo]
     if (cd) {
       const dnRef = nodes[0]?.dn ?? ''
-      // Medidas del catálogo de cajas tipo — PRELIMINARES: la regla fina de medidas de
-      // contramarco (hay desde 0.90 m) está por definirse con el ingeniero
-      if (cd.sen != null) accs.push({ id: -9001, label: `Contramarco sencillo ${cd.sen.toFixed(2)} m — perfil ${cd.perfil}" (caja tipo ${cj.tipo}; medida preliminar, confirmar)`, sku: '← CONF', dn: dnRef, bridas: 0, leKey: 'tapa-ciega', norma: 'Obra civil', isObra: true, qty: cd.dob != null ? 1 : cd.cant })
-      if (cd.dob != null) accs.push({ id: -9002, label: `Contramarco doble ${cd.dob.toFixed(2)} m — perfil ${cd.perfil}" (caja tipo ${cj.tipo}; medida preliminar, confirmar)`, sku: '← CONF', dn: dnRef, bridas: 0, leKey: 'tapa-ciega', norma: 'Obra civil', isObra: true, qty: cd.sen != null ? 1 : cd.cant })
+      // Medida del contramarco: si el usuario la escribió, esa manda (sin CONF);
+      // si no, se sugiere la del catálogo marcada como preliminar por confirmar
+      const medUsuario = opts?.contramarcoMedida != null && opts.contramarcoMedida > 0 ? opts.contramarcoMedida : null
+      const filaContramarco = (tipoCm: 'sencillo' | 'doble', medCatalogo: number, id: number, qty: number) => {
+        const m = medUsuario ?? medCatalogo
+        const conf = medUsuario == null
+        accs.push({ id, label: `Contramarco ${tipoCm} ${m.toFixed(2)} m — perfil ${cd.perfil}" (caja tipo ${cj.tipo}${conf ? '; medida preliminar, confirmar' : ''})`, sku: conf ? '← CONF' : '—', dn: dnRef, bridas: 0, leKey: 'tapa-ciega', norma: 'Obra civil', isObra: true, qty })
+      }
+      if (cd.sen != null) filaContramarco('sencillo', cd.sen, -9001, cd.dob != null ? 1 : cd.cant)
+      if (cd.dob != null) filaContramarco('doble', cd.dob, -9002, cd.sen != null ? 1 : cd.cant)
       const marcoSel = MARCOS_TAPA.find(m => m.key === (marcoTapa ?? 'D')) ?? MARCOS_TAPA[0]
       accs.push({ id: -9003, label: `Marco con Tapa tipo pesado — ${marcoSel.label} (caja tipo ${cj.tipo})`, sku: marcoSel.sku, dn: dnRef, bridas: 0, leKey: 'tapa-ciega', norma: 'EN-124 D400', isObra: true, qty: cd.cant })
     }

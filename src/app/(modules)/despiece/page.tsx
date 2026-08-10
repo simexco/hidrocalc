@@ -8,7 +8,7 @@ import { saveFormState, loadFormState } from "@/lib/storage/form-persistence";
 import { STANDARD_DNS_LABELED, MATERIALS } from "@/lib/constants";
 import { useProjectStore } from "@/store/projectStore";
 import ListaMaterialesSIMEX, { type SIMEXAcc, type SIMEXConex, dnStrFromMM, SIMEX_CAT } from "@/components/ListaMaterialesSIMEX";
-import CruceroVisual, { vizToAccsConex, cajaRecomendada, MARCOS_TAPA, ICO, type VizNode } from "@/components/CruceroVisual";
+import CruceroVisual, { vizToAccsConex, cajaRecomendada, CAJAS_TIPO, MARCOS_TAPA, ICO, type VizNode } from "@/components/CruceroVisual";
 
 interface DespieceTramo {
   id: string;
@@ -19,6 +19,7 @@ interface DespieceTramo {
   cantidad?: number;    // veces que se repite este crucero en el proyecto
   colapsado?: boolean;  // tarjeta encogida a una línea de resumen
   marcoTapa?: string;   // marco con tapa elegido para la caja (D = hierro dúctil default, 67/80/110/130 kg)
+  contramarcoMedida?: string;  // medida del contramarco escrita por el usuario (m); vacío = sugerida del catálogo
 }
 
 export default function DespiecePage() {
@@ -72,7 +73,7 @@ export default function DespiecePage() {
   useEffect(() => {
     tramos.forEach((t) => {
       if ((t.modo ?? "visual") !== "visual") return;
-      const { accs, conex } = vizToAccsConex(vizPorTramo[t.id] ?? [], t.marcoTapa);
+      const { accs, conex } = vizToAccsConex(vizPorTramo[t.id] ?? [], { marcoTapa: t.marcoTapa, contramarcoMedida: parseFloat(t.contramarcoMedida ?? "") || undefined });
       setAccsPorTramo((prev) => JSON.stringify(prev[t.id] ?? []) === JSON.stringify(accs) ? prev : { ...prev, [t.id]: accs });
       setConexPorTramo((prev) => JSON.stringify(prev[t.id] ?? []) === JSON.stringify(conex) ? prev : { ...prev, [t.id]: conex });
     });
@@ -355,6 +356,28 @@ export default function DespiecePage() {
                           </select>
                           <span className="text-[10px] text-gray-400">El peso identifica la clase de tráfico; elige la que maneja el organismo.</span>
                         </div>
+                        {(() => {
+                          const cd = cj.tipo != null ? CAJAS_TIPO[cj.tipo] : undefined;
+                          const sugerida = cd ? (cd.sen ?? cd.dob) : null;
+                          return (
+                            <div className="flex items-center gap-2 flex-wrap pl-6">
+                              <label className="text-[11px] font-medium text-[#1C3D5A] dark:text-blue-300">Medida del contramarco:</label>
+                              <input
+                                type="number"
+                                step="0.05"
+                                min="0"
+                                value={t.contramarcoMedida ?? ""}
+                                onChange={(e) => updateTramo(t.id, { contramarcoMedida: e.target.value })}
+                                placeholder={sugerida != null ? sugerida.toFixed(2) : "—"}
+                                className="w-20 text-[11px] px-2 py-1 border border-[#1C3D5A]/25 dark:border-blue-300/25 rounded-lg bg-white dark:bg-gray-800 dark:text-white"
+                              />
+                              <span className="text-[11px] text-gray-500 dark:text-gray-400">m</span>
+                              <span className="text-[10px] text-gray-400">
+                                Escribe la que maneja el organismo (hay desde 0.90 m). Vacío = sugerida del catálogo{sugerida != null ? ` (${sugerida.toFixed(2)} m)` : ""}, marcada "por confirmar".
+                              </span>
+                            </div>
+                          );
+                        })()}
                       </div>
                     ) : null;
                   })()}
