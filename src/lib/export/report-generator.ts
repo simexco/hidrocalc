@@ -210,7 +210,7 @@ async function loadLogo(): Promise<string | null> {
 }
 
 // ── Encabezado y pie por hoja ──────────────────────────
-function header(doc: jsPDF, d: ReportData, hoja: number, total: number) {
+function header(doc: jsPDF, d: ReportData) {
   const pw = doc.internal.pageSize.getWidth();
   doc.setFillColor(...BRAND);
   doc.rect(0, 0, pw, 22, "F");
@@ -227,8 +227,7 @@ function header(doc: jsPDF, d: ReportData, hoja: number, total: number) {
   doc.setFontSize(7); doc.setTextColor(120, 120, 120);
   doc.text("Elaborado con criterios de los MAPAS (CONAGUA). Documento sin caracter oficial: no sustituye al proyecto ejecutivo.", 14, ph - 11);
   doc.text("cotizaciones@sigmaflow.mx - www.sigmaflow.mx", 14, ph - 7);
-  doc.text(safe(`${d.folio || ""} - Hoja ${hoja} de ${total}`), pw - 14, ph - 7, { align: "right" });
-  doc.setTextColor(0, 0, 0);
+    doc.setTextColor(0, 0, 0);
 }
 
 function sectionTitle(doc: jsPDF, num: string, title: string, y: number): number {
@@ -304,27 +303,28 @@ export async function generateReportPDF(d: ReportData): Promise<jsPDF> {
 
   const piezasManual = (d.despiece ?? []).filter((p) => p.qty > 0);
   const hasDespiece = piezasManual.length > 0 || valvulasControl.length > 0;
-  // Hojas: Demanda + Conducción + [Bombeo] + [Despiece] + Guía + Anexo (zanja/atraques)
-  // Los diagramas de cruceros (2 por fila, ~67 mm por fila) pueden agregar hojas al despiece
-  const nCrucImg = (d.cruceros ?? []).filter((c) => c.png).length;
-  const crucerosExtra = hasDespiece ? Math.floor((Math.ceil(nCrucImg / 2) * 67) / 210) : 0;
-  // Anexo: zanja/atraques (1 hoja) + cajas de válvulas tipo (2a hoja)
-  const total = 2 + (d.incluyeBombeo ? 1 : 0) + (hasDespiece ? 1 : 0) + crucerosExtra + 1 + 2;
+  // La numeración de hojas se estampa al final (segunda pasada): siempre exacta.
   // Diámetro nominal del proyecto (para resaltar su fila en las tablas del anexo)
   const projInch = (d.dn || "").match(/(\d+(?:\.\d+)?)\s*"/)?.[1] ?? null;
-  let pg = 1;
   const logo = await loadLogo();
 
   const tableBlue = { fillColor: BRAND as [number, number, number], textColor: 255 as number, fontStyle: "bold" as const };
 
   // ─────────── HOJA 1 — DEMANDA ───────────
-  header(doc, d, pg, total);
+  header(doc, d);
   doc.setFontSize(13); doc.setFont("helvetica", "bold");
   doc.text("REPORTE DE PREDIMENSIONAMIENTO HIDRAULICO", 14, 32);
   let y = sectionTitle(doc, "MODULO 1", "ANALISIS DE DEMANDA DE AGUA", 38);
+  // ── Guardias de paginación: nunca cortar un bloque feo ──
+  const nuevaHoja = () => { doc.addPage(); header(doc, d); y = 30; };
+  const asegura = (necesario: number) => { if (y + necesario > 262) nuevaHoja(); };
+  const dibujaHeader = () => header(doc, d);
+  void asegura;
   doc.setFontSize(8); doc.setTextColor(90, 90, 90);
   doc.text(safe("Qué responde: cuánta agua requiere la población, cuánto debe entregar la fuente y de qué tamaño el tanque."), 14, y);
   doc.setTextColor(0, 0, 0); y += 6;
+
+  asegura(30);
 
   y = subhead(doc, "1  Entradas capturadas", y);
   autoTable(doc, {
@@ -337,9 +337,11 @@ export async function generateReportPDF(d: ReportData): Promise<jsPDF> {
       ["Coef. máximo diario (CMD)", n(d.cmd, 2), "MAPAS CONAGUA"],
       ["Coef. máximo horario (CMH)", n(d.cmh, 2), "MAPAS CONAGUA"],
     ],
-    margin: { left: 14, right: 14 },
+    margin: { left: 14, right: 14, top: 30 }, didDrawPage: dibujaHeader,
   });
   y = finalY(doc) + 6;
+
+  asegura(30);
 
   y = subhead(doc, "2  Resultados para obra", y);
   autoTable(doc, {
@@ -351,7 +353,7 @@ export async function generateReportPDF(d: ReportData): Promise<jsPDF> {
       ["Gasto máximo horario (Qmh)", `${n(r.qmh)} L/s`, "Diseña RED DE DISTRIBUCIÓN"],
       ["Tanque de regulación (V)", `${n(r.vtanque, 1)} m3`, "Qmd x horas equiv. x 3.6"],
     ],
-    margin: { left: 14, right: 14 },
+    margin: { left: 14, right: 14, top: 30 }, didDrawPage: dibujaHeader,
   });
   y = finalY(doc) + 6;
   doc.setFillColor(233, 239, 245); doc.rect(14, y, doc.internal.pageSize.getWidth() - 28, 16, "F");
@@ -364,14 +366,15 @@ export async function generateReportPDF(d: ReportData): Promise<jsPDF> {
 
   // ─────────── HOJA 2 — CONDUCCION ───────────
   doc.addPage();
-  pg++;
-  header(doc, d, pg, total);
+  header(doc, d);
   doc.setFontSize(13); doc.setFont("helvetica", "bold");
   doc.text("REPORTE DE PREDIMENSIONAMIENTO HIDRAULICO", 14, 32);
   y = sectionTitle(doc, "MODULO 2", "DIMENSIONAMIENTO DE TUBERIA", 38);
   doc.setFontSize(8); doc.setTextColor(90, 90, 90);
   doc.text(safe("Que responde: que tubo se requiere (material, diametro y clase), longitud y ubicacion de valvulas."), 14, y);
   doc.setTextColor(0, 0, 0); y += 6;
+
+  asegura(30);
 
   y = subhead(doc, "1  Entradas capturadas", y);
   autoTable(doc, {
@@ -385,9 +388,11 @@ export async function generateReportPDF(d: ReportData): Promise<jsPDF> {
       ["Material elegido", `${d.material || "-"}`],
       ["Coef. Hazen-Williams (C)", n(d.c, 0)],
     ],
-    margin: { left: 14, right: 14 },
+    margin: { left: 14, right: 14, top: 30 }, didDrawPage: dibujaHeader,
   });
   y = finalY(doc) + 6;
+
+  asegura(30);
 
   y = subhead(doc, "2  Resultados para obra", y);
   autoTable(doc, {
@@ -403,27 +408,30 @@ export async function generateReportPDF(d: ReportData): Promise<jsPDF> {
         ? "Requiere P1 (presion de entrada) en la conduccion"
         : `${n(r.presionFinal, 1)} m.c.a. ${d.presionRequerida != null && r.presionFinal >= d.presionRequerida ? "CUMPLE" : "REVISAR"}`],
     ],
-    margin: { left: 14, right: 14 },
+    margin: { left: 14, right: 14, top: 30 }, didDrawPage: dibujaHeader,
   });
   y = finalY(doc) + 6;
 
   if (d.vertices.filter((v) => v.cad != null && v.cota != null).length >= 2) {
+    asegura(30);
     y = subhead(doc, "Perfil de la linea", y);
     y = drawProfile(doc, d.vertices, y);
   }
   const valvList = d.valvulas.filter((v) => v.cad || v.tipo);
   if (valvList.length > 0) {
+    asegura(30);
     y = subhead(doc, "Valvulas de aire y control sugeridas", y);
     autoTable(doc, {
       startY: y, theme: "grid", styles: { fontSize: 8 }, headStyles: tableBlue,
       head: [["Cadenamiento", "Valvula / accesorio sugerido"]],
       body: valvList.map((v) => [v.cad || "-", safe(v.tipo || "-")]),
-      margin: { left: 14, right: 14 },
+      margin: { left: 14, right: 14, top: 30 }, didDrawPage: dibujaHeader,
     });
     y = finalY(doc) + 6;
   }
 
   // ── Recomendaciones de proteccion (VRP y golpe de ariete) ──
+  asegura(30);
   y = subhead(doc, "Recomendaciones de proteccion", y);
   const claseTxt = d.clase ? `${d.material} ${d.clase}` : (d.material || "la clase elegida");
   const pnTxt = d.pnLinea != null ? `${n(d.pnLinea, 1)} kg/cm2` : "PN de la clase";
@@ -457,7 +465,7 @@ export async function generateReportPDF(d: ReportData): Promise<jsPDF> {
       ["Golpe de ariete", golpeRec, golpePor],
     ],
     columnStyles: { 0: { cellWidth: 42 }, 1: { cellWidth: 32 } },
-    margin: { left: 14, right: 14 },
+    margin: { left: 14, right: 14, top: 30 }, didDrawPage: dibujaHeader,
   });
   y = finalY(doc) + 3;
   doc.setFontSize(7); doc.setTextColor(120, 120, 120);
@@ -467,14 +475,15 @@ export async function generateReportPDF(d: ReportData): Promise<jsPDF> {
   // ─────────── HOJA 3 — BOMBEO ───────────
   if (d.incluyeBombeo) {
     doc.addPage();
-    pg++;
-    header(doc, d, pg, total);
+    header(doc, d);
     doc.setFontSize(13); doc.setFont("helvetica", "bold");
     doc.text("REPORTE DE PREDIMENSIONAMIENTO HIDRAULICO", 14, 32);
     y = sectionTitle(doc, "MODULO 3", "EQUIPO DE BOMBEO", 38);
     doc.setFontSize(8); doc.setTextColor(90, 90, 90);
     doc.text(safe("Que responde: datos para solicitar la bomba (Q y CDT); el proveedor define modelo y HP."), 14, y);
     doc.setTextColor(0, 0, 0); y += 6;
+
+    asegura(30);
 
     y = subhead(doc, "1  Entradas y proceso", y);
     autoTable(doc, {
@@ -488,7 +497,7 @@ export async function generateReportPDF(d: ReportData): Promise<jsPDF> {
         ["Eficiencia del equipo", `${n(d.eficiencia, 0)} %`],
         ["CDT = He + Hf + Hac + Hv", `${n(r.cdt, 1)} m`],
       ],
-      margin: { left: 14, right: 14 },
+      margin: { left: 14, right: 14, top: 30 }, didDrawPage: dibujaHeader,
     });
     y = finalY(doc) + 6;
 
@@ -498,6 +507,8 @@ export async function generateReportPDF(d: ReportData): Promise<jsPDF> {
     doc.setFontSize(12);
     doc.text(`Q = ${n(d.q_ls)} L/s    +    CDT = ${n(r.cdt, 1)} m`, 17, y + 13);
     doc.setTextColor(0, 0, 0); y += 22;
+
+    asegura(30);
 
     y = subhead(doc, "Datos para cotizar", y);
     autoTable(doc, {
@@ -510,7 +521,7 @@ export async function generateReportPDF(d: ReportData): Promise<jsPDF> {
         ["Potencia estimada (referencia)", `~${n(r.hp, 1)} HP`],
         ["Tipo de bomba", "Centrifuga horizontal o sumergible"],
       ],
-      margin: { left: 14, right: 14 },
+      margin: { left: 14, right: 14, top: 30 }, didDrawPage: dibujaHeader,
     });
     y = finalY(doc) + 4;
     doc.setFontSize(7.5); doc.setTextColor(90, 90, 90);
@@ -521,8 +532,7 @@ export async function generateReportPDF(d: ReportData): Promise<jsPDF> {
   // ─────────── HOJA DESPIECE (si hay piezas) ───────────
   if (hasDespiece) {
     doc.addPage();
-    pg++;
-    header(doc, d, pg, total);
+    header(doc, d);
     doc.setFontSize(13); doc.setFont("helvetica", "bold");
     doc.text("REPORTE DE PREDIMENSIONAMIENTO HIDRAULICO", 14, 32);
     y = sectionTitle(doc, "DESPIECE", "CRUCEROS Y LISTA DE MATERIALES", 38);
@@ -533,6 +543,7 @@ export async function generateReportPDF(d: ReportData): Promise<jsPDF> {
     // Diagramas de los cruceros (imagen chica cada uno, 2 por fila) antes de la lista
     const crucerosImg = (d.cruceros ?? []).filter((c) => c.png);
     if (crucerosImg.length > 0) {
+      asegura(30);
       y = subhead(doc, "Cruceros del proyecto", y);
       const colW = 88, gap = 6;
       let idx = 0;
@@ -548,7 +559,7 @@ export async function generateReportPDF(d: ReportData): Promise<jsPDF> {
         });
         const hayCaja = fila.some((c) => c.caja);
         const rowH = Math.max(...dims.map((dm) => dm.h), 20) + (hayCaja ? 13 : 9);
-        if (y + rowH > 268) { doc.addPage(); pg++; header(doc, d, pg, total); y = 32; }
+        if (y + rowH > 262) nuevaHoja();
         fila.forEach((c, j) => {
           if (dims[j].h <= 0) return;
           const x = 14 + j * (colW + gap);
@@ -572,7 +583,8 @@ export async function generateReportPDF(d: ReportData): Promise<jsPDF> {
       // Tabla resumen: caja de válvulas recomendada por crucero
       const conCaja = (d.cruceros ?? []).filter((c) => c.caja);
       if (conCaja.length > 0) {
-        if (y > 235) { doc.addPage(); pg++; header(doc, d, pg, total); y = 32; }
+        asegura(40);
+        asegura(30);
         y = subhead(doc, "Cajas de valvulas recomendadas", y);
         autoTable(doc, {
           startY: y, theme: "grid", styles: { fontSize: 7.5 }, headStyles: tableBlue,
@@ -582,7 +594,7 @@ export async function generateReportPDF(d: ReportData): Promise<jsPDF> {
             return [safe(`${c.nombre}${c.cantidad > 1 ? ` (x${c.cantidad})` : ""}`), safe(det), safe(crit)];
           }),
           columnStyles: { 1: { cellWidth: 42, fontStyle: "bold" } },
-          margin: { left: 14, right: 14 },
+          margin: { left: 14, right: 14, top: 30 }, didDrawPage: dibujaHeader,
         });
         y = finalY(doc) + 3;
         doc.setFontSize(7); doc.setTextColor(90, 90, 90);
@@ -593,26 +605,28 @@ export async function generateReportPDF(d: ReportData): Promise<jsPDF> {
 
     // Válvulas de control determinadas por el proyecto (automáticas)
     if (valvulasControl.length > 0) {
+      asegura(30);
       y = subhead(doc, "Válvulas y piezas de control (determinadas por el proyecto)", y);
       autoTable(doc, {
         startY: y, theme: "grid", styles: { fontSize: 8 }, headStyles: tableBlue,
         head: [["Cant.", "Descripcion", "Origen"]],
         body: valvulasControl.map((p) => [`${p.qty}`, safe(p.desc), p.desc.includes("VRP") ? "Valvula reductora" : p.desc.includes("golpe") ? "Golpe de ariete" : "Valvulas de aire"]),
         columnStyles: { 0: { cellWidth: 16, halign: "center" }, 2: { cellWidth: 38 } },
-        margin: { left: 14, right: 14 },
+        margin: { left: 14, right: 14, top: 30 }, didDrawPage: dibujaHeader,
       });
       y = finalY(doc) + 6;
     }
 
     // Accesorios capturados manualmente en el módulo Despiece
     if (piezasManual.length > 0) {
+      asegura(30);
       y = subhead(doc, "Accesorios y acoplamiento (piezas + forma de conexión)", y);
       autoTable(doc, {
         startY: y, theme: "grid", styles: { fontSize: 8 }, headStyles: tableBlue,
         head: [["Cant.", "Descripcion", "SKU Sigma Flow"]],
         body: piezasManual.map((p) => [`${p.qty}`, safe(p.desc), p.sku]),
         columnStyles: { 0: { cellWidth: 16, halign: "center" }, 2: { cellWidth: 40 } },
-        margin: { left: 14, right: 14 },
+        margin: { left: 14, right: 14, top: 30 }, didDrawPage: dibujaHeader,
       });
       y = finalY(doc) + 4;
     }
@@ -623,8 +637,7 @@ export async function generateReportPDF(d: ReportData): Promise<jsPDF> {
 
   // ─────────── HOJA FINAL — GUIA DE INSTALACION ───────────
   doc.addPage();
-  pg++;
-  header(doc, d, pg, total);
+  header(doc, d);
   doc.setFontSize(13); doc.setFont("helvetica", "bold");
   doc.text("GUIA DE INSTALACION SUGERIDA", 14, 32);
   doc.setFontSize(8); doc.setFont("helvetica", "normal"); doc.setTextColor(90, 90, 90);
@@ -651,6 +664,7 @@ export async function generateReportPDF(d: ReportData): Promise<jsPDF> {
   doc.setTextColor(0, 0, 0); y += 6;
 
   // ── Esquemas constructivos (dibujados en vector, estilo plano) ──
+  asegura(64);  // el bloque de esquemas mide ~57 mm: nunca cortarlo entre hojas
   y = subhead(doc, "Detalles constructivos (esquemas ilustrativos)", y);
   {
     const W = 58, H = 44, GAP = 4, X0 = 14;
@@ -731,6 +745,8 @@ export async function generateReportPDF(d: ReportData): Promise<jsPDF> {
     y = y + H + 6 + 5;
   }
 
+  asegura(30);
+
   y = subhead(doc, "Glosario rapido", y);
   doc.setFontSize(7.5); doc.setFont("helvetica", "normal");
   const glos = [
@@ -746,6 +762,7 @@ export async function generateReportPDF(d: ReportData): Promise<jsPDF> {
   for (const g of glos) { doc.text(safe(g), 16, y); y += 4.5; }
   y += 4;
 
+  asegura(26);  // el banner de cotización nunca se corta ni se encima al pie
   doc.setFillColor(...BRAND); doc.rect(14, y, doc.internal.pageSize.getWidth() - 28, 22, "F");
   doc.setTextColor(255, 255, 255); doc.setFontSize(10); doc.setFont("helvetica", "bold");
   doc.text("COTIZA CON SIGMA FLOW LAS VALVULAS Y PIEZAS ESPECIALES DE ESTE PROYECTO", 17, y + 7, { maxWidth: doc.internal.pageSize.getWidth() - 34 });
@@ -756,8 +773,7 @@ export async function generateReportPDF(d: ReportData): Promise<jsPDF> {
 
   // ─────────── ANEXO — DIMENSIONES DE ZANJA Y ATRAQUES ───────────
   doc.addPage();
-  pg++;
-  header(doc, d, pg, total);
+  header(doc, d);
   doc.setFontSize(13); doc.setFont("helvetica", "bold");
   doc.text("ANEXO - DIMENSIONES DE ZANJA Y ATRAQUES", 14, 32);
   doc.setFontSize(8); doc.setFont("helvetica", "normal"); doc.setTextColor(90, 90, 90);
@@ -786,7 +802,7 @@ export async function generateReportPDF(d: ReportData): Promise<jsPDF> {
     ],
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     didParseCell: highlightRow as any,
-    margin: { left: 14, right: 14 },
+    margin: { left: 14, right: 14, top: 30 }, didDrawPage: dibujaHeader,
   });
   ay = finalY(doc) + 6;
 
@@ -803,7 +819,7 @@ export async function generateReportPDF(d: ReportData): Promise<jsPDF> {
     ],
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     didParseCell: highlightRow as any,
-    margin: { left: 14, right: 14 },
+    margin: { left: 14, right: 14, top: 30 }, didDrawPage: dibujaHeader,
   });
   ay = finalY(doc) + 5;
   doc.setFontSize(7.5); doc.setTextColor(90, 90, 90);
@@ -817,7 +833,7 @@ export async function generateReportPDF(d: ReportData): Promise<jsPDF> {
   ay += 4;
 
   // ── Cajas de válvulas tipo (catálogo completo, resaltando las del proyecto) ──
-  if (ay > 195) { doc.addPage(); pg++; header(doc, d, pg, total); ay = 32; }
+  if (ay > 190) { doc.addPage(); header(doc, d); ay = 30; }
   ay = subhead(doc, "Dimensiones de cajas de valvulas tipo", ay);
   const cajasProyecto = new Set(
     (d.cruceros ?? [])
@@ -852,7 +868,7 @@ export async function generateReportPDF(d: ReportData): Promise<jsPDF> {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     didParseCell: highlightCaja as any,
     columnStyles: { 0: { cellWidth: 12, halign: "center" }, 5: { cellWidth: 14, halign: "center" } },
-    margin: { left: 14, right: 14 },
+    margin: { left: 14, right: 14, top: 30 }, didDrawPage: dibujaHeader,
   });
   ay = finalY(doc) + 4;
   doc.setFontSize(7); doc.setTextColor(90, 90, 90);
@@ -862,6 +878,17 @@ export async function generateReportPDF(d: ReportData): Promise<jsPDF> {
   // Logo en portada (esquina sup. derecha hoja 1)
   if (logo) {
     try { doc.setPage(1); doc.addImage(logo, "JPEG", doc.internal.pageSize.getWidth() - 52, 26, 38, 0); } catch { /* ignore */ }
+  }
+
+  // ── Numeración exacta en segunda pasada: "Hoja X de N" real ──
+  const totalHojas = doc.getNumberOfPages();
+  for (let i = 1; i <= totalHojas; i++) {
+    doc.setPage(i);
+    const pw2 = doc.internal.pageSize.getWidth();
+    const ph2 = doc.internal.pageSize.getHeight();
+    doc.setFontSize(7); doc.setTextColor(120, 120, 120);
+    doc.text(safe(`${d.folio || ""} - Hoja ${i} de ${totalHojas}`), pw2 - 14, ph2 - 7, { align: "right" });
+    doc.setTextColor(0, 0, 0);
   }
 
   return doc;
