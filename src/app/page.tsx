@@ -95,7 +95,10 @@ export default function Home() {
       <div className="w-full border-b border-white/10 px-6 py-3">
         <div className="max-w-6xl mx-auto flex items-center justify-between">
           <span className="text-white/40 text-xs tracking-widest uppercase font-medium">Herramienta de Ingeniería</span>
-          <span className="text-white/30 text-xs">v2.0</span>
+          <span className="flex items-center gap-3">
+            <span className="text-white/30 text-xs">v2.0</span>
+            <Link href="/cuenta" className="text-xs font-semibold text-white bg-white/10 border border-white/20 rounded-lg px-3 py-1.5 hover:bg-white/20 transition-colors">Iniciar sesión / Crear cuenta</Link>
+          </span>
         </div>
       </div>
 

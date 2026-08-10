@@ -116,6 +116,10 @@ export function HidroCalcHeader() {
         </div>
         <div className="flex items-center gap-3">
           {help && <HelpButton moduleTitle={help.title} sections={help.sections} />}
+          <Link href="/cuenta" className="flex items-center gap-1.5 text-[11px] font-semibold text-[#1C3D5A] border border-[#1C3D5A]/25 rounded-full px-3 py-1 hover:bg-[#1C3D5A] hover:text-white transition-colors">
+            <svg viewBox="0 0 24 24" className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z" /></svg>
+            Cuenta
+          </Link>
           <span className="text-[9px] text-gray-400 tracking-[0.12em] uppercase font-semibold hidden sm:inline-block border border-gray-200 rounded-full px-2.5 py-1 bg-gray-50/60">Uso técnico</span>
         </div>
       </div>
