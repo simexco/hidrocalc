@@ -19,7 +19,15 @@ interface DespieceTramo {
   cantidad?: number;    // veces que se repite este crucero en el proyecto
   colapsado?: boolean;  // tarjeta encogida a una línea de resumen
   marcoTapa?: string;   // marco con tapa elegido para la caja (D = hierro dúctil default, 67/80/110/130 kg)
-  contramarcoMedida?: string;  // medida del contramarco escrita por el usuario (m); vacío = sugerida del catálogo
+  contramarcos?: ContramarcoRow[];  // lista capturada por el usuario (canal 4"/6", medida, cantidad)
+}
+
+interface ContramarcoRow {
+  id: string;
+  tipo: "sencillo" | "doble";
+  perfil: 4 | 6;      // canal del perfil estructural
+  medida: string;     // metros (texto editable)
+  cant: number;
 }
 
 export default function DespiecePage() {
@@ -73,7 +81,10 @@ export default function DespiecePage() {
   useEffect(() => {
     tramos.forEach((t) => {
       if ((t.modo ?? "visual") !== "visual") return;
-      const { accs, conex } = vizToAccsConex(vizPorTramo[t.id] ?? [], { marcoTapa: t.marcoTapa, contramarcoMedida: parseFloat(t.contramarcoMedida ?? "") || undefined });
+      const { accs, conex } = vizToAccsConex(vizPorTramo[t.id] ?? [], {
+        marcoTapa: t.marcoTapa,
+        contramarcos: (t.contramarcos ?? []).map((c) => ({ tipo: c.tipo, perfil: c.perfil, medida: parseFloat(c.medida) || 0, cant: c.cant })),
+      });
       setAccsPorTramo((prev) => JSON.stringify(prev[t.id] ?? []) === JSON.stringify(accs) ? prev : { ...prev, [t.id]: accs });
       setConexPorTramo((prev) => JSON.stringify(prev[t.id] ?? []) === JSON.stringify(conex) ? prev : { ...prev, [t.id]: conex });
     });
@@ -359,22 +370,42 @@ export default function DespiecePage() {
                         {(() => {
                           const cd = cj.tipo != null ? CAJAS_TIPO[cj.tipo] : undefined;
                           const sugerida = cd ? (cd.sen ?? cd.dob) : null;
+                          const lista = t.contramarcos ?? [];
+                          const updRow = (rid: string, patch: Partial<ContramarcoRow>) =>
+                            updateTramo(t.id, { contramarcos: lista.map((r) => (r.id === rid ? { ...r, ...patch } : r)) });
+                          const miniSel = "text-[11px] px-1.5 py-1 border border-[#1C3D5A]/25 dark:border-blue-300/25 rounded-lg bg-white dark:bg-gray-800 dark:text-white";
                           return (
-                            <div className="flex items-center gap-2 flex-wrap pl-6">
-                              <label className="text-[11px] font-medium text-[#1C3D5A] dark:text-blue-300">Medida del contramarco:</label>
-                              <input
-                                type="number"
-                                step="0.05"
-                                min="0"
-                                value={t.contramarcoMedida ?? ""}
-                                onChange={(e) => updateTramo(t.id, { contramarcoMedida: e.target.value })}
-                                placeholder={sugerida != null ? sugerida.toFixed(2) : "—"}
-                                className="w-20 text-[11px] px-2 py-1 border border-[#1C3D5A]/25 dark:border-blue-300/25 rounded-lg bg-white dark:bg-gray-800 dark:text-white"
-                              />
-                              <span className="text-[11px] text-gray-500 dark:text-gray-400">m</span>
-                              <span className="text-[10px] text-gray-400">
-                                Escribe la que maneja el organismo (hay desde 0.90 m). Vacío = sugerida del catálogo{sugerida != null ? ` (${sugerida.toFixed(2)} m)` : ""}, marcada "por confirmar".
-                              </span>
+                            <div className="pl-6 space-y-1.5">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <label className="text-[11px] font-medium text-[#1C3D5A] dark:text-blue-300">Contramarcos:</label>
+                                {lista.length === 0 && (
+                                  <span className="text-[10px] text-gray-400">
+                                    Usando la sugerencia del catálogo{sugerida != null ? ` (${cd?.sen != null ? "sencillo" : "doble"} ${sugerida.toFixed(2)} m, canal ${cd?.perfil}")` : ""} — por confirmar. Captura los tuyos:
+                                  </span>
+                                )}
+                                <button
+                                  onClick={() => updateTramo(t.id, { contramarcos: [...lista, { id: uuid(), tipo: cd?.dob != null && cd?.sen == null ? "doble" : "sencillo", perfil: (cd?.perfil === 6 ? 6 : 4) as 4 | 6, medida: sugerida != null ? sugerida.toFixed(2) : "", cant: 1 }] })}
+                                  className="text-[10px] bg-[#1C3D5A] text-white px-2.5 py-1 rounded-lg hover:bg-[#0F2438] transition-colors font-medium"
+                                >+ Agregar contramarco</button>
+                              </div>
+                              {lista.map((r) => (
+                                <div key={r.id} className="flex items-center gap-1.5 flex-wrap">
+                                  <select value={r.tipo} onChange={(e) => updRow(r.id, { tipo: e.target.value as "sencillo" | "doble" })} className={miniSel}>
+                                    <option value="sencillo">Sencillo</option>
+                                    <option value="doble">Doble</option>
+                                  </select>
+                                  <select value={r.perfil} onChange={(e) => updRow(r.id, { perfil: parseInt(e.target.value) as 4 | 6 })} className={miniSel}>
+                                    <option value={4}>Canal 4&quot;</option>
+                                    <option value={6}>Canal 6&quot;</option>
+                                  </select>
+                                  <input type="number" step="0.05" min="0" value={r.medida} onChange={(e) => updRow(r.id, { medida: e.target.value })} placeholder="medida" className={`${miniSel} w-20`} />
+                                  <span className="text-[11px] text-gray-500 dark:text-gray-400">m</span>
+                                  <span className="text-[11px] text-gray-400">×</span>
+                                  <input type="number" min="1" value={r.cant} onChange={(e) => updRow(r.id, { cant: Math.max(1, parseInt(e.target.value) || 1) })} className={`${miniSel} w-14`} />
+                                  <button onClick={() => updateTramo(t.id, { contramarcos: lista.filter((x) => x.id !== r.id) })} className="text-red-400 hover:text-red-600 text-xs px-1">✕</button>
+                                </div>
+                              ))}
+                              {lista.length > 0 && <p className="text-[10px] text-gray-400">Puedes agregar varios de diferentes medidas; todos entran a la lista de obra sin &quot;CONF&quot;.</p>}
                             </div>
                           );
                         })()}
