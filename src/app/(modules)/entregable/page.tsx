@@ -6,6 +6,7 @@ import { ResetButton } from "@/components/ui/ResetButton";
 import { MATERIALS, STANDARD_DNS_LABELED } from "@/lib/constants";
 import { useProjectStore } from "@/store/projectStore";
 import { computeReport, generateReportPDF, downloadReport, type ReportData, type ReportVertex, type ReportValve } from "@/lib/export/report-generator";
+import { obtenerFolio } from "@/lib/folio";
 
 const num = (v: string) => (v === "" ? null : parseFloat(v));
 
@@ -16,14 +17,11 @@ export default function EntregablePage() {
   const set = <K extends keyof ReportData>(key: K, value: ReportData[K]) => patch({ [key]: value } as Partial<ReportData>);
   const r = computeReport(d);
 
-  // Folio automático: el usuario no lo inventa; solo lo edita si ya trae un folio de seguimiento
+  // Folio automático: consecutivo REAL global (arranca en 1000). El usuario no lo inventa;
+  // solo lo edita si el proyecto ya trae un folio de seguimiento propio.
   useEffect(() => {
     const p = useProjectStore.getState().project;
-    if (!p.folio) {
-      const f = new Date();
-      const folio = `HC-${String(f.getFullYear()).slice(2)}${String(f.getMonth() + 1).padStart(2, "0")}${String(f.getDate()).padStart(2, "0")}-${Math.floor(Math.random() * 900) + 100}`;
-      patch({ folio });
-    }
+    if (!p.folio) obtenerFolio().then((f) => patch({ folio: f }));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

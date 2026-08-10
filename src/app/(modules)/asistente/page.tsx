@@ -6,6 +6,7 @@ import { InputField } from "@/components/ui/InputField";
 import { useProjectStore } from "@/store/projectStore";
 import { clearAllFormState } from "@/lib/storage/form-persistence";
 import { computeReport } from "@/lib/export/report-generator";
+import { obtenerFolio } from "@/lib/folio";
 
 interface Step {
   n: number;
@@ -20,13 +21,11 @@ export default function AsistentePage() {
   const { project: p, patch, reset } = useProjectStore();
   const r = computeReport(p);
 
-  // Folio automático al iniciar el proyecto (el usuario solo lo edita si ya trae seguimiento)
+  // Folio automático al iniciar el proyecto: consecutivo REAL global (arranca en 1000).
+  // El usuario solo lo edita si el proyecto ya trae folio de seguimiento propio.
   useEffect(() => {
     const proj = useProjectStore.getState().project;
-    if (!proj.folio) {
-      const f = new Date();
-      patch({ folio: `HC-${String(f.getFullYear()).slice(2)}${String(f.getMonth() + 1).padStart(2, "0")}${String(f.getDate()).padStart(2, "0")}-${Math.floor(Math.random() * 900) + 100}` });
-    }
+    if (!proj.folio) obtenerFolio().then((f) => patch({ folio: f }));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -76,7 +75,7 @@ export default function AsistentePage() {
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <InputField label="Nombre del proyecto" value={p.proyecto} onChange={(v) => patch({ proyecto: v })} type="text" />
           <InputField label="Localidad / Estado" value={p.localidad} onChange={(v) => patch({ localidad: v })} type="text" />
-          <InputField label="Folio" value={p.folio} onChange={(v) => patch({ folio: v })} type="text" placeholder="HCX-2026-001" />
+          <InputField label="Folio" value={p.folio} onChange={(v) => patch({ folio: v })} type="text" placeholder="SF-2026-1000" />
         </div>
       </div>
 
