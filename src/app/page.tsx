@@ -90,11 +90,15 @@ const modules = [
 
 export default function Home() {
   return (
-    <div className="min-h-screen bg-gradient-to-b from-[#0F2438] via-[#1C3D5A] to-[#1C3D5A] flex flex-col">
+    <div className="min-h-screen bg-gradient-to-b from-[#0B1D2E] via-[#12293F] to-[#1C3D5A] flex flex-col">
       {/* Header bar */}
       <div className="w-full border-b border-white/10 px-6 py-3">
-        <div className="max-w-6xl mx-auto flex items-center justify-between">
-          <span className="text-white/40 text-xs tracking-widest uppercase font-medium">Herramienta de Ingeniería</span>
+        <div className="max-w-6xl mx-auto flex items-center justify-between gap-3">
+          <span className="flex items-center gap-3">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/sigmaflow-full.jpg" alt="Sigma Flow" className="h-8 w-auto bg-white rounded-md px-2 py-1" />
+            <span className="text-white/40 text-[10px] tracking-widest uppercase font-semibold hidden sm:inline">Plataforma de Ingeniería Hidráulica</span>
+          </span>
           <span className="flex items-center gap-3">
             <span className="text-white/30 text-xs">v2.0</span>
             <Link href="/cuenta" className="text-xs font-semibold text-white bg-white/10 border border-white/20 rounded-lg px-3 py-1.5 hover:bg-white/20 transition-colors">Iniciar sesión / Crear cuenta</Link>
@@ -102,32 +106,119 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Main content */}
-      <div className="flex-1 flex flex-col items-center justify-center px-6 py-12">
-        {/* Logo — grande con presencia */}
-        <div className="bg-white rounded-2xl px-10 py-6 shadow-2xl shadow-black/20 mb-8">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src="/sigmaflow-full.jpg"
-            alt="Sigma Flow"
-            className="h-20 md:h-28 w-auto"
-          />
+      {/* ── HERO ── */}
+      <div className="max-w-6xl mx-auto w-full px-6 pt-14 pb-10 grid grid-cols-1 lg:grid-cols-2 gap-10 items-center">
+        <div>
+          <p className="text-[11px] tracking-[0.25em] uppercase text-[#7FC4E8] font-bold mb-4">Sigma Flow · Ingeniería Hidráulica</p>
+          <h1 className="font-heading text-4xl md:text-[44px] leading-[1.08] font-extrabold text-white mb-5">
+            Del cálculo de gasto<br />al despiece del crucero,<br />
+            <span className="text-[#7FC4E8]">en una sola plataforma.</span>
+          </h1>
+          <p className="text-white/60 text-[15px] leading-relaxed mb-7 max-w-md">
+            Diseña líneas de conducción, dimensiona bombas y válvulas, arma cruceros con símbolos de plano y entrega un reporte PDF listo para cotizar — con criterios CONAGUA y el catálogo Sigma Flow integrado.
+          </p>
+          <div className="flex items-center gap-3 flex-wrap mb-6">
+            <Link href="/asistente" className="bg-white text-[#1C3D5A] px-7 py-3 rounded-xl font-bold hover:bg-white/90 transition-colors shadow-xl shadow-black/20 text-sm">
+              Empezar un proyecto →
+            </Link>
+            <Link href="/cuenta" className="border border-white/25 text-white px-6 py-3 rounded-xl font-semibold hover:bg-white/10 transition-colors text-sm">
+              Crear cuenta gratis
+            </Link>
+          </div>
+          <p className="text-[11px] text-white/35">
+            Criterios MAPAS (CONAGUA) · Reportes con tu folio · Proyectos guardados en la nube · Sin costo
+          </p>
         </div>
 
-        {/* Title */}
-        <h1 className="font-heading text-3xl md:text-4xl font-light text-white tracking-[0.15em] uppercase mb-3 text-center">
-          Sigma Flow
-        </h1>
+        {/* Visual del producto (dibujado, nítido a cualquier tamaño) */}
+        <div className="rounded-2xl border border-white/[0.12] bg-[#0B1D2E] shadow-2xl shadow-black/40 overflow-hidden">
+          <svg viewBox="0 0 560 388" className="w-full block">
+            <defs>
+              <linearGradient id="hTer" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#8FA977" /><stop offset="22%" stopColor="#8A7654" /><stop offset="100%" stopColor="#3A3227" />
+              </linearGradient>
+              <linearGradient id="hAgua" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#38BDF8" stopOpacity="0.45" /><stop offset="100%" stopColor="#0C4A6E" stopOpacity="0.08" />
+              </linearGradient>
+              <filter id="hGlow" x="-20%" y="-20%" width="140%" height="140%">
+                <feGaussianBlur stdDeviation="2.6" result="b" /><feMerge><feMergeNode in="b" /><feMergeNode in="SourceGraphic" /></feMerge>
+              </filter>
+            </defs>
+            {/* barra de ventana */}
+            <rect x="0" y="0" width="560" height="30" fill="#0F2438" />
+            <circle cx="18" cy="15" r="4.5" fill="#E2655A" /><circle cx="34" cy="15" r="4.5" fill="#E0A63F" /><circle cx="50" cy="15" r="4.5" fill="#5FB86A" />
+            <text x="72" y="19" fontSize="11" fill="#7F98AC" fontWeight="600">Línea de conducción — El Roble · 6&quot; PVC Inglés RD 26</text>
+            {/* gráfica: columna de agua + terreno + piezométrica */}
+            <polygon points="16,84 544,152 544,238 16,238" fill="url(#hAgua)" />
+            <polygon points="16,196 120,128 210,158 306,98 408,146 544,176 544,238 16,238" fill="url(#hTer)" stroke="#4E4234" strokeWidth="2" />
+            <path d="M16 84 L544 152" stroke="#38BDF8" strokeWidth="3.2" strokeLinecap="round" filter="url(#hGlow)" />
+            <circle cx="16" cy="84" r="4" fill="#0EA5E9" /><circle cx="544" cy="152" r="4" fill="#0EA5E9" />
+            {/* ventosa en el punto alto */}
+            <line x1="306" y1="98" x2="306" y2="76" stroke="#7FC4E8" strokeWidth="2" />
+            <circle cx="306" cy="70" r="6" fill="#0B1D2E" stroke="#7FC4E8" strokeWidth="2" />
+            <text x="318" y="74" fontSize="10.5" fill="#7FC4E8" fontWeight="700">VA-C 2&quot;</text>
+            {/* chip de resultado */}
+            <rect x="398" y="52" width="140" height="40" rx="8" fill="#1C3D5A" stroke="#ffffff22" />
+            <text x="468" y="69" textAnchor="middle" fontSize="11.5" fill="#fff" fontWeight="700">P1 requerida: 3.2 kg/cm²</text>
+            <text x="468" y="84" textAnchor="middle" fontSize="10" fill="#9FC3DD">v = 1.42 m/s · hf = 8.6 m</text>
+            {/* franja: generador de cruceros */}
+            <rect x="16" y="256" width="528" height="116" rx="12" fill="#0F2438" stroke="#ffffff14" />
+            <text x="32" y="280" fontSize="11" fill="#7F98AC" fontWeight="700">GENERADOR DE CRUCEROS</text>
+            <g stroke="#7FC4E8" strokeWidth="2.4" strokeLinecap="round" fill="none">
+              <line x1="40" y1="322" x2="96" y2="322" />
+              <line x1="60" y1="312" x2="60" y2="332" /><line x1="66" y1="312" x2="66" y2="332" />
+              <path d="M100 310 L100 334 L118 322 Z" /><path d="M136 310 L136 334 L118 322 Z" />
+              <line x1="140" y1="322" x2="196" y2="322" />
+              <line x1="166" y1="312" x2="166" y2="332" /><line x1="172" y1="312" x2="172" y2="332" />
+              <line x1="196" y1="322" x2="252" y2="322" /><line x1="224" y1="322" x2="224" y2="348" />
+              <line x1="214" y1="348" x2="234" y2="348" />
+            </g>
+            <g fontSize="10" fontWeight="600">
+              <rect x="292" y="298" width="112" height="22" rx="6" fill="#16324B" /><text x="348" y="313" textAnchor="middle" fill="#9FC3DD">VI-VFF-6 · ×2</text>
+              <rect x="292" y="326" width="112" height="22" rx="6" fill="#16324B" /><text x="348" y="341" textAnchor="middle" fill="#9FC3DD">CI-ABU-6159184</text>
+              <rect x="414" y="298" width="112" height="22" rx="6" fill="#16324B" /><text x="470" y="313" textAnchor="middle" fill="#9FC3DD">Caja tipo 8</text>
+              <rect x="414" y="326" width="112" height="22" rx="6" fill="#1C4D36" /><text x="470" y="341" textAnchor="middle" fill="#7FE8A8">Lista → Reporte PDF</text>
+            </g>
+          </svg>
+        </div>
+      </div>
 
-        <div className="w-16 h-[1px] bg-white/25 mb-4" />
+      {/* ── Números ── */}
+      <div className="w-full border-y border-white/10 bg-white/[0.04]">
+        <div className="max-w-6xl mx-auto px-6 py-6 grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+          {[
+            { n: "13", t: "módulos de cálculo" },
+            { n: "8", t: "pasos guiados de proyecto" },
+            { n: "SKU", t: "catálogo Sigma Flow integrado" },
+            { n: "PDF", t: "reporte listo para cotizar" },
+          ].map((s) => (
+            <div key={s.t}>
+              <p className="text-2xl font-extrabold text-[#7FC4E8]">{s.n}</p>
+              <p className="text-[11px] text-white/45 mt-0.5">{s.t}</p>
+            </div>
+          ))}
+        </div>
+      </div>
 
-        <p className="text-white/60 text-center max-w-lg mb-2 text-sm leading-relaxed font-light">
-          Plataforma de Ingeniería Hidráulica para organismos operadores, proyectistas y constructores de agua potable
-        </p>
+      {/* ── Flujo como historia ── */}
+      <div className="max-w-6xl mx-auto w-full px-6 pt-12 pb-4 text-center">
+        <h2 className="text-xl font-bold text-white mb-2">Un flujo que piensa como tú proyectas</h2>
+        <p className="text-xs text-white/40 mb-6">Los datos avanzan solos de un paso al siguiente — sin recapturar nada</p>
+        <div className="flex items-center justify-center gap-2 flex-wrap mb-4">
+          {["Gasto", "Línea de conducción", "Equipo de bombeo", "Golpe de ariete", "VRP", "Válvulas de aire", "Cruceros", "Reporte PDF"].map((p, i, arr) => (
+            <span key={p} className="flex items-center gap-2">
+              <span className="text-[11px] font-semibold text-white/80 bg-white/[0.07] border border-white/10 rounded-full px-3 py-1.5">{p}</span>
+              {i < arr.length - 1 && <span className="text-[#7FC4E8]/50 text-xs">→</span>}
+            </span>
+          ))}
+        </div>
+        <Link href="/asistente" className="text-xs text-[#7FC4E8] hover:text-white transition-colors underline decoration-dotted">Ver el asistente de proyecto →</Link>
+      </div>
 
-        <p className="text-white/25 text-[11px] tracking-[0.2em] uppercase mb-14">
-          Soluciones en Infraestructura Hidráulica
-        </p>
+      {/* Main content */}
+      <div className="flex-1 flex flex-col items-center px-6 py-12">
+        <h2 className="text-xl font-bold text-white mb-1">Todos los módulos</h2>
+        <p className="text-xs text-white/40 mb-8">Úsalos en el flujo guiado o de forma independiente</p>
 
         {/* Module cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 max-w-4xl w-full mb-12">
@@ -135,9 +226,9 @@ export default function Home() {
             <Link
               key={mod.title}
               href={mod.href}
-              className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-5 hover:bg-white/10 hover:border-white/25 transition-all group"
+              className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-5 hover:bg-white/10 hover:border-white/25 hover:-translate-y-0.5 transition-all group"
             >
-              <div className="w-11 h-11 bg-white/10 text-white/70 rounded-lg flex items-center justify-center mb-3 group-hover:bg-white/20 group-hover:text-white transition-colors">
+              <div className="w-11 h-11 bg-white/10 text-white/70 rounded-lg flex items-center justify-center mb-3 group-hover:bg-[#7FC4E8]/20 group-hover:text-[#7FC4E8] transition-colors">
                 {mod.icon}
               </div>
               <h3 className="font-heading font-semibold text-white text-sm mb-1.5">{mod.title}</h3>
@@ -145,14 +236,6 @@ export default function Home() {
             </Link>
           ))}
         </div>
-
-        {/* CTA */}
-        <Link
-          href="/tramo-simple"
-          className="bg-white text-[#1C3D5A] px-10 py-3.5 rounded-lg font-semibold hover:bg-white/90 transition-colors shadow-lg text-sm tracking-wide mb-16"
-        >
-          Iniciar cálculo
-        </Link>
 
         {/* Decision guide */}
         <div className="max-w-4xl w-full bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-6 md:p-8 mb-8">
