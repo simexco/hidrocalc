@@ -48,9 +48,14 @@ export interface AirValveOutputs {
 }
 
 // ── Sizing tables (ANSI inches) ──
+// Eliminadora (orificio chico): usa TODO el rango del catalogo (1/2" a 2").
+// Progresion por tamaño de linea; la seleccion definitiva es con la curva del
+// fabricante (presion de operacion vs capacidad de purga). Criterio preliminar.
 const VAE_SIZE: Record<number, string> = {
-  50: '1/2"', 75: '1/2"', 100: '1/2"', 150: '1/2"', 200: '1/2"', 250: '1/2"', 300: '1/2"',
-  350: '3/4"', 400: '3/4"', 450: '1"', 500: '1"', 600: '1"', 750: '1"', 900: '1"',
+  50: '1/2"', 75: '1/2"', 100: '1/2"', 150: '1/2"', 200: '1/2"',
+  250: '3/4"', 300: '3/4"', 350: '3/4"',
+  400: '1"', 450: '1"', 500: '1"',
+  600: '2"', 750: '2"', 900: '2"',
 };
 
 const VAA_SIZE: Record<number, string> = {
@@ -63,9 +68,12 @@ const VAC_BODY: Record<number, string> = {
   350: '3"', 400: '3"', 450: '4"', 500: '4"', 600: '6"', 750: '6"', 900: '8"',
 };
 
+// Orificio chico de la combinada: misma progresion que la eliminadora
 const VAC_ORIFICE: Record<number, string> = {
-  50: '1/2"', 75: '1/2"', 100: '1/2"', 150: '1/2"', 200: '1/2"', 250: '1/2"', 300: '1/2"',
-  350: '3/4"', 400: '3/4"', 450: '1"', 500: '1"', 600: '1"', 750: '1"', 900: '1"',
+  50: '1/2"', 75: '1/2"', 100: '1/2"', 150: '1/2"', 200: '1/2"',
+  250: '3/4"', 300: '3/4"', 350: '3/4"',
+  400: '1"', 450: '1"', 500: '1"',
+  600: '2"', 750: '2"', 900: '2"',
 };
 
 function getSize(table: Record<number, string>, dn: number): string {
@@ -81,8 +89,9 @@ function getPN(P0_kgcm2: number | null): string {
 }
 
 function getNote(type: string, dn: number): string {
-  if (dn >= 750 && type === "VA-E") return "Instalar dos VA-E de 1\" en paralelo";
-  if (dn >= 750 && type === "VA-C") return "Agregar VA-E de 1\" adicional";
+  // Con 2" disponible ya no se requieren pares de 1" en paralelo; en lineas muy
+  // grandes la capacidad de purga se confirma con la curva del fabricante.
+  if (dn >= 750 && (type === "VA-E" || type === "VA-C")) return "Linea ≥ 30\": confirmar capacidad de purga con la curva del fabricante";
   return "";
 }
 
