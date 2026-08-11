@@ -4,24 +4,25 @@
    CONAGUA MAPAS — Datos básicos
    ════════════════════════════════════════ */
 
-// Coeficiente de regulación según horas de aportación al tanque.
-// Sale de la máxima diferencia acumulada entre la curva de suministro
-// (constante durante las horas de aportación) y la curva de demanda
-// horaria típica nacional.
+// Coeficiente de regulación C (CONAGUA MAPAS) en m³ por cada L/s del gasto
+// MÁXIMO diario (QMd): Vr = C × QMd. Para aportación 24 h el valor MAPAS es 11.0.
+// Los horarios reducidos derivan de la curva de demanda horaria típica nacional
+// (máxima diferencia acumulada suministro-demanda) — validar contra la tabla
+// MAPAS del horario real de aportación.
 export const REGULATION_COEFFICIENTS = [
-  { hours: 24, R: 0.11, label: "24 horas (aportacion continua)" },
-  { hours: 20, R: 0.15, label: "20 horas" },
-  { hours: 16, R: 0.18, label: "16 horas" },
-  { hours: 12, R: 0.25, label: "12 horas" },
-  { hours: 10, R: 0.29, label: "10 horas" },
-  { hours: 8,  R: 0.32, label: "8 horas" },
+  { hours: 24, R: 11.0, label: "24 horas (aportacion continua)" },
+  { hours: 20, R: 13.0, label: "20 horas" },
+  { hours: 16, R: 15.6, label: "16 horas" },
+  { hours: 12, R: 21.6, label: "12 horas" },
+  { hours: 10, R: 25.1, label: "10 horas" },
+  { hours: 8,  R: 27.6, label: "8 horas" },
 ];
 
 export type TankShape = "rectangular" | "circular";
 
 export interface TankStorageInputs {
   projectName: string;
-  Qmd_ls: number | null;       // gasto medio diario L/s
+  Qmd_ls: number | null;       // gasto MAXIMO diario (QMd) L/s — base del volumen de regulacion MAPAS
   horasAportacion: number;     // horas de bombeo/llenado al tanque
   // Reserva
   incluirReserva: boolean;
@@ -65,12 +66,12 @@ export function calculateTankStorage(input: TankStorageInputs): TankStorageResul
   // Daily volume (m³)
   const volDiario_m3 = Qmd_ls * 86.4; // L/s × 86400 / 1000
 
-  // Regulation coefficient
+  // Regulation coefficient C (m³ por L/s de QMd)
   const coef = REGULATION_COEFFICIENTS.find(c => c.hours === horasAportacion) ?? REGULATION_COEFFICIENTS[0];
   const R = coef.R;
 
-  // Regulation volume
-  const volRegulacion_m3 = R * volDiario_m3;
+  // Regulation volume: Vr = C × QMd (CONAGUA MAPAS)
+  const volRegulacion_m3 = R * Qmd_ls;
 
   // Reserve volume (optional): hours of Qmd
   const volReserva_m3 = incluirReserva ? (Qmd_ls * horasReserva * 3600) / 1000 : 0;
@@ -78,11 +79,8 @@ export function calculateTankStorage(input: TankStorageInputs): TankStorageResul
   // Total
   const volTotal_m3 = volRegulacion_m3 + volReserva_m3;
 
-  // Round up to commercial size
-  let volComercial_m3 = COMMERCIAL_SIZES[COMMERCIAL_SIZES.length - 1];
-  for (const s of COMMERCIAL_SIZES) {
-    if (s >= volTotal_m3) { volComercial_m3 = s; break; }
-  }
+  // Round up to commercial size (por encima del catalogo: redondear al siguiente multiplo de 500)
+  const volComercial_m3 = COMMERCIAL_SIZES.find((s) => s >= volTotal_m3) ?? Math.ceil(volTotal_m3 / 500) * 500;
 
   // Dimensions (use commercial volume)
   const h = altura > 0 ? altura : 3;

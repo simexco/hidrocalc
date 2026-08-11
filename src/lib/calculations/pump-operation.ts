@@ -154,8 +154,14 @@ export function calculatePumpOperation(input: PumpOperationInputs): PumpOperatio
   const D = DN / 1000;
   const alerts: Alert[] = [];
 
-  // Generate system curve
-  const Qmax_Ls = 200;
+  // Generate system curve — el barrido se adapta a la bomba capturada (antes el tope
+  // fijo de 200 L/s hacia "no intersecta" a bombas grandes que si cruzan mas alla)
+  let Qmax_Ls = 200;
+  if (pumpMethod === "equation" && H0 != null && Kbomba != null && Kbomba > 0) {
+    Qmax_Ls = Math.min(2000, Math.max(50, Math.ceil(Math.sqrt(H0 / Kbomba))));
+  } else if (pumpMethod === "points" && pumpPoints.length >= 2) {
+    Qmax_Ls = Math.min(2000, Math.max(50, Math.ceil(Math.max(...pumpPoints.map((p) => p.Q)))));
+  }
   const step = 0.5;
   const systemCurve: { Q: number; H: number }[] = [];
   const pumpCurve: { Q: number; H: number }[] = [];
@@ -213,6 +219,14 @@ export function calculatePumpOperation(input: PumpOperationInputs): PumpOperatio
   if (Qop != null && Qop > 0 && Hop != null && Hop > 0) {
     recommendation = generateRecommendation(Qop, Hop, Hg);
     alerts.push({ level: "OK", field: "Qop", message: `Punto de operación: ${Qop.toFixed(1)} L/s @ ${Hop.toFixed(1)} m` });
+
+    // Punto de operacion fuera de los datos del fabricante → la curva es extrapolada
+    if (pumpMethod === "points" && pumpPoints.length >= 2) {
+      const qMin = Math.min(...pumpPoints.map((p) => p.Q));
+      if (Qop < qMin) {
+        alerts.push({ level: "WARN", field: "Qop", message: `El punto de operacion (${Qop.toFixed(1)} L/s) queda FUERA del rango de puntos capturados de la bomba (${qMin.toFixed(0)} L/s en adelante) — la curva ahi es extrapolada; verificar con la curva real del fabricante` });
+      }
+    }
 
     // Velocity and gradient at the operating point
     const Qop_m3s = Qop / 1000;

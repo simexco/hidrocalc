@@ -376,7 +376,7 @@ export default function TramoSimplePage() {
                 value={inputs.P2min}
                 onChange={(v) => setInput("P2min", parseFloat(v) || DEFAULTS.P2min)}
                 unit="kg/cm²"
-                tooltip="Presión mínima requerida al final del tramo (CONAGUA: 10 kg/cm²)"
+                tooltip="Presión mínima requerida al final del tramo (CONAGUA: 1.0 kg/cm² = 10 m.c.a.)"
               />
             )}
 
@@ -522,7 +522,7 @@ export default function TramoSimplePage() {
                       <div className={`rounded-lg p-3 text-center border ${qmaxLimits.factor.includes('presion') ? 'border-green-300 bg-green-50 dark:bg-green-900/10' : 'border-gray-200 bg-white dark:bg-gray-800'}`}>
                         <p className="text-[10px] text-gray-500">Por presion</p>
                         <p className="text-sm font-bold text-gray-700 dark:text-gray-300">{(qmaxLimits.pressure * 1000).toFixed(1)} L/s</p>
-                        <p className="text-[9px] text-gray-400">P2 {"≥"} {inputs.P2min != null ? (inputs.P2min / 10).toFixed(1) : '1'} kg/cm2</p>
+                        <p className="text-[9px] text-gray-400">P2 {"≥"} {inputs.P2min != null ? inputs.P2min.toFixed(1) : '1.0'} kg/cm2</p>
                       </div>
                       <div className={`rounded-lg p-3 text-center border ${qmaxLimits.factor.includes('gradiente') ? 'border-green-300 bg-green-50 dark:bg-green-900/10' : 'border-gray-200 bg-white dark:bg-gray-800'}`}>
                         <p className="text-[10px] text-gray-500">Por gradiente</p>

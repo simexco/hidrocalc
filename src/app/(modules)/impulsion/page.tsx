@@ -71,7 +71,7 @@ export default function ImpulsionPage() {
       const { useEconomic: ue, ...rest } = saved;
       setInputs({
         ...defaults, ...rest,
-        tarifaCFE: rest.tarifaCFE && rest.tarifaCFE >= 3 ? rest.tarifaCFE : 4.50,
+        tarifaCFE: Number.isFinite(rest.tarifaCFE) && rest.tarifaCFE! > 0 ? rest.tarifaCFE! : 4.50,
         Qmd_ls: rest.Qmd_ls ?? proj.q_ls,
         L: rest.L ?? proj.longitud,
       });
@@ -342,13 +342,13 @@ export default function ImpulsionPage() {
                   {results.pServicio_m > 0 && <span>+ presión entrega = {formatNumber(results.pServicio_m, 1)} m</span>}
                 </div>
                 <p className="mt-2 text-[11px] text-gray-500 dark:text-gray-400 leading-relaxed">
-                  La <strong>CDT (carga dinámica total)</strong> es la &quot;altura&quot; total que la bomba debe vencer: <strong>Hg</strong> = desnivel entre la bomba y el tanque (carga estática) <strong>+ hf</strong> (fricción) <strong>+ hm</strong> (accesorios). Es uno de los dos datos para pedir la bomba (el otro es el caudal Q).
+                  La <strong>CDT (carga dinámica total)</strong> es la &quot;altura&quot; total que la bomba debe vencer: <strong>Hg</strong> = desnivel entre la bomba y el tanque (carga estática) <strong>+ hf</strong> (fricción) <strong>+ hm</strong> (accesorios){""} y, si entregas a una red, <strong>+ la presión de servicio</strong>. Es uno de los dos datos para pedir la bomba (el otro es el caudal Q).
                 </p>
                 <FormulaDetail
                   title="CDT" value={formatNumber(results.CDT, 2)} unit="m"
-                  formula="CDT = Hg + hf + hm"
+                  formula={results.pServicio_m > 0 ? "CDT = Hg + hf + hm + P_servicio" : "CDT = Hg + hf + hm"}
                   steps={[
-                    { substitution: `CDT = ${formatNumber(results.Hg, 1)} + ${formatNumber(results.hf, 2)} + ${formatNumber(results.hm, 2)}` },
+                    { substitution: `CDT = ${formatNumber(results.Hg, 1)} + ${formatNumber(results.hf, 2)} + ${formatNumber(results.hm, 2)}${results.pServicio_m > 0 ? ` + ${formatNumber(results.pServicio_m, 1)}` : ""}` },
                     { result: `CDT = ${formatNumber(results.CDT, 2)} m = ${formatNumber(results.CDT_kgcm2, 2)} kg/cm2` },
                   ]}
                   reference="Carga Dinamica Total"

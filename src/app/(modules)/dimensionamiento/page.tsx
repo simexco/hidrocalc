@@ -176,7 +176,7 @@ export default function DimensionamientoPage() {
             </button>
             {showAdvanced && (
               <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-3 space-y-3">
-                <InputField label="P₂ mínima requerida" value={inputs.P2min} onChange={(v) => setInput("P2min", parseFloat(v) || DEFAULTS.P2min)} unit="kg/cm²" tooltip="Presión mínima que necesitas al final de la tubería. CONAGUA establece 10 kg/cm² como mínimo para agua potable" />
+                <InputField label="P₂ mínima requerida" value={inputs.P2min} onChange={(v) => setInput("P2min", parseFloat(v) || DEFAULTS.P2min)} unit="kg/cm²" tooltip="Presión mínima que necesitas al final de la tubería. CONAGUA establece 1.0 kg/cm² (10 m.c.a.) como mínimo para agua potable" />
                 <InputField label="Velocidad máxima" value={inputs.maxVelocity} onChange={(v) => setInput("maxVelocity", parseFloat(v) || DEFAULTS.maxVelocity)} unit="m/s" tooltip="Velocidad máxima permitida. La norma recomienda no exceder 2.5 m/s en agua potable para evitar desgaste y golpe de ariete" />
 
                 <div className="grid grid-cols-2 gap-3">

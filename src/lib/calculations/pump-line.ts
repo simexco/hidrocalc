@@ -4,14 +4,16 @@
    económico y costo de energía
    ════════════════════════════════════════ */
 
-// Bresse K factors by pumping hours
+// Bresse para bombeo intermitente (Dacach): D = 1.3·λ^(1/4)·√(Qb), λ = horas/24.
+// K DISMINUYE al reducir horas porque Qb ya crecio con el factor 24/h — la tabla
+// anterior (K de 1.0 a 1.5 creciente) invertia la tendencia y sobredimensionaba.
 export const PUMPING_REGIMES = [
-  { hours: 24, K: 1.0, label: '24 horas (continuo)' },
-  { hours: 20, K: 1.1, label: '20 horas' },
-  { hours: 16, K: 1.2, label: '16 horas' },
-  { hours: 12, K: 1.3, label: '12 horas' },
-  { hours: 10, K: 1.4, label: '10 horas' },
-  { hours: 8,  K: 1.5, label: '8 horas' },
+  { hours: 24, K: 1.30, label: '24 horas (continuo)' },
+  { hours: 20, K: 1.24, label: '20 horas' },
+  { hours: 16, K: 1.18, label: '16 horas' },
+  { hours: 12, K: 1.09, label: '12 horas' },
+  { hours: 10, K: 1.04, label: '10 horas' },
+  { hours: 8,  K: 0.99, label: '8 horas' },
 ];
 
 export interface PumpLineInputs {

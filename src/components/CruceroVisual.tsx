@@ -78,7 +78,7 @@ export function vizToAccsConex(nodes: VizNode[], opts?: { marcoTapa?: string; co
   const accs: SIMEXAcc[] = nodes.filter(n => n.tipo !== 'desfogue').map(n => {
     const d = n.dn, d2 = n.dn2
     switch (n.tipo) {
-      case 'codo': return { id: n.id, label: `Codo ${d}×${n.sub}° Sigma`, sku: findConn('Codo', d, `${n.sub}°`)?.sk ?? `CI-CFB-${num(d)}${n.sub}`, dn: d, bridas: 2, leKey: `codo-${n.sub}`, norma: 'AWWA C110', qty: 1 }
+      case 'codo': return { id: n.id, label: `Codo ${d}×${n.sub}° Sigma`, sku: findConn('Codo', d, `${n.sub}°`)?.sk ?? '← CONF', dn: d, bridas: 2, leKey: `codo-${n.sub}`, norma: 'AWWA C110', qty: 1 }
       case 'tee': {
         const igual = !d2 || d2 === d
         return { id: n.id, label: `Tee ${d}${igual ? '' : '×' + d2} Sigma`, sku: findConn('Tee', d, igual ? d : d2!)?.sk ?? '← CONF', dn: d, dn2: igual ? undefined : d2, bridas: igual ? 3 : 2, bridas2: igual ? undefined : 1, leKey: 'tee-lateral', norma: 'AWWA C110', qty: 1 }
@@ -100,8 +100,8 @@ export function vizToAccsConex(nodes: VizNode[], opts?: { marcoTapa?: string; co
         return { id: n.id, label: `${nom} ${d} — control hidráulico`, sku: '← CONF', dn: d, bridas: 2, leKey: 'check', norma: '—', qty: 1 }
       }
       case 'filtro': return n.sub === 'canasta'
-        ? { id: n.id, label: `Filtro tipo Canasta ${d} Sigma`, sku: `DI-FTC-${num(d)}`, dn: d, bridas: 2, leKey: 'cople', norma: '—', qty: 1 }
-        : { id: n.id, label: `Filtro tipo Y ${d} Sigma`, sku: `DI-FYD-${num(d)}`, dn: d, bridas: 2, leKey: 'cople', norma: '—', qty: 1 }
+        ? { id: n.id, label: `Filtro tipo Canasta ${d} Sigma`, sku: `DI-FTC-${num(d)}`, dn: d, bridas: 2, leKey: 'filtro-canasta', norma: '—', qty: 1 }
+        : { id: n.id, label: `Filtro tipo Y ${d} Sigma`, sku: `DI-FYD-${num(d)}`, dn: d, bridas: 2, leKey: 'filtro-y', norma: '—', qty: 1 }
       case 'desfogue': return { id: n.id, label: `Desfogue (descarga) ${d}`, sku: '—', dn: d, bridas: 1, leKey: 'tapa-ciega', norma: '—', qty: 1 }
       case 'bomba': return { id: n.id, label: `Equipo de bombeo (bomba) ${d} — especificar modelo`, sku: '← CONF', dn: d, bridas: 2, leKey: 'cople', norma: '—', qty: 1 }
       case 'check': {
@@ -624,11 +624,16 @@ export default function CruceroVisual({ dn, nodes, onChange, onSnapshot }: Props
             const esRamal = selNode.conPor === 'ramal'
             const puertoDestino = esRamal ? 0 : 2
             const ocupado = nodes.some(k => k.parentId === selNode.id && k.parentPort === puertoDestino)
+            // Tee reducida: el ramal (dn2) debe coincidir con el DN del puerto del padre,
+            // si no, la unión quedaría registrada con DN equivocado
+            const padre = nodes.find(k => k.id === selNode.parentId)
+            const dnPuertoPadre = padre ? puertos(padre)[selNode.parentPort ?? 0]?.dn : undefined
+            const ramalIncompatible = !esRamal && selNode.dn2 != null && selNode.dn2 !== selNode.dn && dnPuertoPadre != null && selNode.dn2 !== dnPuertoPadre
             return (
               <button
-                disabled={ocupado}
+                disabled={ocupado || ramalIncompatible}
                 onClick={() => onChange(nodes.map(n => n.id === sel ? { ...n, conPor: esRamal ? 'paso' : 'ramal' } : n))}
-                title={ocupado ? 'Ese puerto ya tiene una pieza conectada — bórrala primero' : 'Elegir si la tee recibe la conexión por el paso (línea recta) o por el ramal (perpendicular)'}
+                title={ocupado ? 'Ese puerto ya tiene una pieza conectada — bórrala primero' : ramalIncompatible ? `La tee es reducida: su ramal es ${selNode.dn2} y la conexión del padre es ${dnPuertoPadre} — usa una tee del DN correcto o intercala una reducción` : 'Elegir si la tee recibe la conexión por el paso (línea recta) o por el ramal (perpendicular)'}
                 className={`text-xs font-semibold rounded-lg px-3.5 py-2 shadow-sm transition-colors disabled:opacity-40 ${esRamal ? 'bg-violet-600 text-white hover:bg-violet-700' : 'bg-violet-100 text-violet-700 hover:bg-violet-200 dark:bg-violet-900/40 dark:text-violet-300'}`}
               >{esRamal ? '✓ Por el ramal — volver al paso' : '⤴ Conectar por el ramal'}</button>
             )

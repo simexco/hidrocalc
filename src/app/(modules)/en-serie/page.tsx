@@ -10,7 +10,7 @@ import { DataStatusBanner } from "@/components/ui/DataStatusBanner";
 import { HydraulicProfileChart } from "@/components/hydraulic/HydraulicProfileChart";
 import { ExportPDFButton } from "@/components/ui/ExportPDFButton";
 import { calculateSeriesPipes } from "@/lib/calculations/series-pipes";
-import { flowToM3s, formatNumber, mcaToKgcm2 } from "@/lib/calculations/conversions";
+import { flowToM3s, m3sToFlow, formatNumber, mcaToKgcm2 } from "@/lib/calculations/conversions";
 import { STANDARD_DNS, STANDARD_DNS_LABELED, MATERIALS } from "@/lib/constants";
 import { saveFormState, loadFormState } from "@/lib/storage/form-persistence";
 import { ResetButton } from "@/components/ui/ResetButton";
@@ -229,7 +229,7 @@ export default function EnSeriePage() {
                   </div>
                   <InputField label="Cota final" value={t.zEnd} onChange={(v) => updateTramo(t.id, { zEnd: parseFloat(v) || 0 })} unit="m" tooltip="Elevacion al final de este tramo (m.s.n.m.)" />
                   {inputs.variableFlow && (
-                    <InputField label="Q (L/s)" value={t.Q} onChange={(v) => updateTramo(t.id, { Q: v === "" ? null : flowToM3s(parseFloat(v), inputs.flowUnit) })} />
+                    <InputField label={`Q (${inputs.flowUnit})`} value={t.Q != null ? Math.round(m3sToFlow(t.Q, inputs.flowUnit) * 10000) / 10000 : null} onChange={(v) => updateTramo(t.id, { Q: v === "" ? null : flowToM3s(parseFloat(v), inputs.flowUnit) })} tooltip="Caudal de este tramo, en la misma unidad seleccionada arriba" />
                   )}
                 </div>
 

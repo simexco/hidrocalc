@@ -56,6 +56,7 @@ export interface ReportData {
   vrpDN: string | null;          // DN de la válvula reductora recomendada
   golpeValvulaDN: string | null; // DN de la válvula de protección contra golpe (si se requiere)
   // Resultados del módulo Golpe de ariete (el reporte los imprime tal cual; sin ellos usa una estimación preliminar)
+  golpePN?: number | null;       // kg/cm² — PN de la clase contra la que comparó el módulo
   golpeA?: number | null;        // m/s — celeridad calculada por el módulo
   golpeDeltaH?: number | null;   // m.c.a. — sobrepresión calculada por el módulo (Joukowsky/Michaud según Tc)
   golpePmax?: number | null;     // kg/cm² — presión máxima con golpe según el módulo
@@ -137,9 +138,10 @@ export function computeReport(d: ReportData): ReportResults {
     }
   }
 
-  // Módulo 3 — Bombeo
-  if (d.incluyeBombeo && Q != null && Q > 0 && d.he != null) {
-    const hf = r.hf ?? 0;
+  // Módulo 3 — Bombeo. Sin las pérdidas de la conducción (hf) NO se fabrica un CDT
+  // "definitivo" con pérdidas cero: queda null y el PDF lo marca como incompleto.
+  if (d.incluyeBombeo && Q != null && Q > 0 && d.he != null && r.hf != null) {
+    const hf = r.hf;
     const hac = r.hac ?? 0;
     const hv = r.hv ?? 0;
     r.cdt = d.he + hf + hac + hv;
@@ -465,7 +467,12 @@ export async function generateReportPDF(d: ReportData): Promise<jsPDF> {
   const pnTxt = d.pnLinea != null ? `${n(d.pnLinea, 1)} kg/cm2` : "PN de la clase";
   // Reduccion de presion
   let vrpRec: string; let vrpPor: string;
-  if (d.presionMaxLinea != null && d.pnLinea != null) {
+  if (d.vrpRequerida != null) {
+    // Veredicto por tramo del perfil: NO imprimir el cruce global max(P) vs min(PN),
+    // que con clases mixtas contradice al propio perfil
+    if (r.vrpRecomendada) { vrpRec = "SE REQUIERE"; vrpPor = `Al menos un tramo del perfil opera por ENCIMA de la clase de su propia tuberia (veredicto por tramo; P. max de la linea ${n(d.presionMaxLinea, 1)} kg/cm2). Opciones: VRP, caja rompedora de presion, o subir la clase del tramo que excede.`; }
+    else { vrpRec = "No requerida"; vrpPor = `Cada tramo opera dentro de la clase de su propia tuberia (veredicto por tramo del perfil; P. max de la linea ${n(d.presionMaxLinea, 1)} kg/cm2).`; }
+  } else if (d.presionMaxLinea != null && d.pnLinea != null) {
     if (r.vrpRecomendada) { vrpRec = "SE REQUIERE"; vrpPor = `P. operacion ${n(d.presionMaxLinea, 1)} kg/cm2 EXCEDE la clase (${pnTxt}). Opciones: VRP, caja rompedora de presion, o subir la clase del tubo.`; }
     else { vrpRec = "No requerida"; vrpPor = `P. operacion ${n(d.presionMaxLinea, 1)} kg/cm2 dentro de la clase (${pnTxt}).`; }
   } else {
@@ -480,8 +487,10 @@ export async function generateReportPDF(d: ReportData): Promise<jsPDF> {
     const fuente = d.golpePmax != null
       ? `modulo Golpe de ariete${d.golpeA != null ? ` (a=${n(d.golpeA, 0)} m/s)` : ""}`
       : "estimacion preliminar (cierre brusco)";
+    // Con veredicto del modulo, comparar contra el PN que USO el modulo (no el min global del perfil)
+    const pnGolpeTxt = d.golpePmax != null && d.golpePN != null ? `${n(d.golpePN, 1)} kg/cm2` : pnTxt;
     golpeRec = r.golpeExcedeClase ? "SE REQUIERE PROTECCION" : "Clase resiste el golpe";
-    golpePor = `P. maxima con golpe ~${n(r.pmaxConGolpe, 1)} kg/cm2 vs clase ${pnTxt} — ${fuente}. ${r.golpeExcedeClase ? "Subir clase o instalar valvula de alivio/anticipadora." : "Margen suficiente."}${d.incluyeBombeo ? " Linea por bombeo: analizar el paro de bomba." : ""}`;
+    golpePor = `P. maxima con golpe ~${n(r.pmaxConGolpe, 1)} kg/cm2 vs clase ${pnGolpeTxt} — ${fuente}. ${r.golpeExcedeClase ? "Subir clase o instalar valvula de alivio/anticipadora." : "Margen suficiente."}${d.incluyeBombeo ? " Linea por bombeo: analizar el paro de bomba." : ""}`;
   } else {
     golpeRec = r.golpeRiesgo === "alto" ? "ANALIZAR / PROTEGER" : r.golpeRiesgo === "medio" ? "Revisar" : "Riesgo bajo";
     golpePor = d.incluyeBombeo
@@ -526,7 +535,7 @@ export async function generateReportPDF(d: ReportData): Promise<jsPDF> {
         ["Perdidas (Hf + Hac)", `${n(r.perdidaTotal, 1)} m`],
         ["Carga de velocidad (Hv)", `${n(r.hv, 2)} m`],
         ["Eficiencia del equipo", `${n(d.eficiencia, 0)} %`],
-        ["CDT = He + Hf + Hac + Hv", `${n(r.cdt, 1)} m`],
+        ["CDT = He + Hf + Hac + Hv", r.cdt != null ? `${n(r.cdt, 1)} m` : "INCOMPLETO — capturar longitud, C y diametro en la conduccion"],
       ],
       margin: { left: 14, right: 14, top: 30 }, didDrawPage: dibujaHeader,
     });
@@ -534,9 +543,9 @@ export async function generateReportPDF(d: ReportData): Promise<jsPDF> {
 
     doc.setFillColor(233, 239, 245); doc.rect(14, y, doc.internal.pageSize.getWidth() - 28, 16, "F");
     doc.setFontSize(8); doc.setFont("helvetica", "bold"); doc.setTextColor(...BRAND);
-    doc.text("SOLICITAR LA BOMBA CON ESTOS 2 DATOS:", 17, y + 6);
+    doc.text(r.cdt != null ? "SOLICITAR LA BOMBA CON ESTOS 2 DATOS:" : "CDT INCOMPLETO — falta la conduccion (longitud, C y diametro):", 17, y + 6);
     doc.setFontSize(12);
-    doc.text(`Q = ${n(d.q_ls)} L/s    +    CDT = ${n(r.cdt, 1)} m`, 17, y + 13);
+    doc.text(r.cdt != null ? `Q = ${n(d.q_ls)} L/s    +    CDT = ${n(r.cdt, 1)} m` : `Q = ${n(d.q_ls)} L/s    +    CDT = pendiente`, 17, y + 13);
     doc.setTextColor(0, 0, 0); y += 22;
 
     asegura(30);
@@ -828,8 +837,8 @@ export async function generateReportPDF(d: ReportData): Promise<jsPDF> {
       ['1"', "25.4", "50", "70", "0.35 m3"], ['2"', "50.8", "55", "70", "0.39 m3"], ['2.5"', "63.5", "60", "100", "0.60 m3"],
       ['3"', "76.2", "60", "100", "0.60 m3"], ['4"', "101.6", "60", "100", "0.60 m3"], ['6"', "152.4", "70", "110", "0.77 m3"],
       ['8"', "203.2", "75", "115", "0.86 m3"], ['10"', "254.0", "85", "125", "1.06 m3"], ['12"', "304.8", "90", "130", "1.17 m3"],
-      ['14"', "355.6", "100", "140", "1.40 m3"], ['16"', "406.4", "100", "145", "1.67 m3"], ['18"', "457.2", "115", "150", "1.80 m3"],
-      ['20"', "508.0", "120", "165", "2.15 m3"], ['24"', "609.6", "130", "185", "2.78 m3"], ['30"', "762.0", "150", "220", "3.74 m3"],
+      ['14"', "355.6", "100", "140", "1.40 m3"], ['16"', "406.4", "115", "145", "1.67 m3"], ['18"', "457.2", "120", "150", "1.80 m3"],
+      ['20"', "508.0", "130", "165", "2.15 m3"], ['24"', "609.6", "150", "185", "2.78 m3"], ['30"', "762.0", "170", "220", "3.74 m3"],
     ],
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     didParseCell: highlightRow as any,

@@ -151,7 +151,7 @@ export default function PerfilPage() {
 
     let effectiveP1 = P1;
     if (calcMode === 'calcularP1' && Q != null && Q > 0) {
-      const reqP1 = calculateRequiredP1({ Q, Pmin_kgcm2: Pmin, vertices, tramos });
+      const reqP1 = calculateRequiredP1({ Q, Pmin_kgcm2: Pmin, vertices, tramos, coefAccesorios: coefAccesorios / 100 });
       setComputedP1(reqP1);
       effectiveP1 = reqP1;
     } else {
@@ -609,7 +609,7 @@ export default function PerfilPage() {
                   </div>
                   <div className="space-y-1">
                     <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Material</label>
-                    <select value={t.materialName} onChange={(e) => { const m = MATERIALS.find(m => m.name === e.target.value); if (m) updateTramo(t.id, { materialName: m.name, C: m.c }); }} className="w-full px-2 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 dark:text-white">
+                    <select value={t.materialName} onChange={(e) => { const m = MATERIALS.find(m => m.name === e.target.value); if (m) updateTramo(t.id, { materialName: m.name, C: m.c, pipeClass: undefined, PN_bar: undefined }); }} className="w-full px-2 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 dark:text-white">
                       {MATERIALS.map(m => <option key={m.name} value={m.name}>{m.name}</option>)}
                     </select>
                   </div>
@@ -733,7 +733,7 @@ export default function PerfilPage() {
                       </div>
                       <div className="space-y-1">
                         <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Material</label>
-                        <select value={t.materialName} onChange={(e) => { const m = MATERIALS.find(mt => mt.name === e.target.value); if (m) updateTramoB(t.id, { materialName: m.name, C: m.c }); }} className="w-full px-2 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 dark:text-white">
+                        <select value={t.materialName} onChange={(e) => { const m = MATERIALS.find(mt => mt.name === e.target.value); if (m) updateTramoB(t.id, { materialName: m.name, C: m.c, pipeClass: undefined, PN_bar: undefined }); }} className="w-full px-2 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 dark:text-white">
                           {MATERIALS.map(m => <option key={m.name} value={m.name}>{m.name}</option>)}
                         </select>
                       </div>

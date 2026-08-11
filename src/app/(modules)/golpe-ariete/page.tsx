@@ -215,10 +215,13 @@ export default function GolpeArietePage() {
     ? getPVCClasses(pvcSystem, pvcSystem === "c905")
     : PIPE_CLASSES_BY_MATERIAL[inputs.materialName];
   let userPN: number | null = null;
-  if (inputs.materialName === "Hierro dúctil") {
-    // La clase K no tiene PN fijo: se usa la PFA mínima de K9 (38 bar, EN 545/ISO 2531)
-    // como comparación conservadora — así el hierro dúctil también recibe veredicto.
-    userPN = PIPE_CLASSES_BY_MATERIAL["Hierro dúctil"]?.classes[0]?.pn ?? null;
+  if (inputs.materialName === "Hierro dúctil" || inputs.materialName === "Acero") {
+    // Materiales con una sola clase en tabla (K9 PFA 38 bar / Cédula): el numero del
+    // nombre NO es un DR — usar directamente el PN de esa clase.
+    userPN = PIPE_CLASSES_BY_MATERIAL[inputs.materialName]?.classes[0]?.pn ?? null;
+  } else if (inputs.materialName === "PVC" && pvcSystem === "métrico" && entryMode === "simple" && classEntry) {
+    // PVC Métrico: los nombres 'Clase 5/7/10/14' son PN en kg/cm², no DR — emparejar por NOMBRE
+    userPN = matClassesSel?.classes.find((c) => c.clase === classEntry.name)?.pn ?? null;
   } else if (matClassesSel && computedDR != null) {
     const row = matClassesSel.classes.find((c) => {
       const dParsed = parseFloat(c.clase.replace(/[^0-9.]/g, ""));
@@ -258,10 +261,11 @@ export default function GolpeArietePage() {
       golpeA: results?.a ?? null,
       golpeDeltaH: results?.deltaH ?? null,
       golpePmax: results?.Pmax != null ? mcaToKgcm2(results.Pmax) : null,
+      golpePN: userPN != null ? userPN / 0.9807 : null, // bar → kg/cm²: el PN contra el que comparó el módulo
       golpeResiste: resiste,
     }), 600);
     return () => clearTimeout(t);
-  }, [resiste, protecValvula, results, patchProjectGolpe]);
+  }, [resiste, protecValvula, results, userPN, patchProjectGolpe]);
 
   return (
     <div className="max-w-6xl mx-auto space-y-6">
@@ -499,7 +503,7 @@ export default function GolpeArietePage() {
                     { label: "Sobrepresión ΔH", value: formatNumber(mcaToKgcm2(results.deltaH ?? 0), 3), unit: "kg/cm²" },
                     { label: "ΔP", value: formatNumber(results.deltaP_kPa, 1), unit: "kPa" },
                     { label: "P máxima", value: formatNumber(mcaToKgcm2(results.Pmax ?? 0), 3), unit: "kg/cm²" },
-                    { label: "P mínima", value: formatNumber(mcaToKgcm2(results.Pmin ?? 0), 3), unit: "kg/cm²" },
+                    { label: "P mínima", value: formatNumber(mcaToKgcm2(Math.max(results.Pmin ?? 0, -10.33)), 3), unit: `kg/cm²${results.Pmin != null && results.Pmin < -10.33 ? " (limite de vacio)" : ""}` },
                     { label: "P máx (bar)", value: formatNumber(results.Pmax_bar, 1), unit: "bar" },
                     { label: "Clase recomendada", value: results.pipeClass ?? "—", unit: "" },
                   ],
@@ -585,12 +589,18 @@ export default function GolpeArietePage() {
                       </p>
                     )}
 
-                    {/* Amarillo: sugerir subir de clase (sin obligar válvula) */}
-                    {semaforo === "amarillo" && claseExiste && (
-                      <p className="text-xs text-gray-700 dark:text-gray-300 mt-2 bg-white/60 dark:bg-gray-800/40 rounded-lg px-3 py-2">
-                        Como margen, podrías subir a <strong>clase {results.pipeClass}</strong> (ver tabla). No requiere válvula.
-                      </p>
-                    )}
+                    {/* Amarillo: sugerir la clase SIGUIENTE a la actual (no la misma) */}
+                    {semaforo === "amarillo" && (() => {
+                      const idxActual = matClassesSel?.classes.findIndex((c) => c.pn === userPN) ?? -1;
+                      const claseSup = idxActual >= 0 ? matClassesSel?.classes[idxActual + 1] : undefined;
+                      return (
+                        <p className="text-xs text-gray-700 dark:text-gray-300 mt-2 bg-white/60 dark:bg-gray-800/40 rounded-lg px-3 py-2">
+                          {claseSup
+                            ? <>Como margen, podrías subir a <strong>clase {claseSup.clase}</strong> (PN {claseSup.pn} bar, ver tabla). No requiere válvula.</>
+                            : <>Estás en la clase más alta de este material; como margen, revisa un cierre más lento o considera otro material. No requiere válvula.</>}
+                        </p>
+                      );
+                    })()}
 
                     {/* Rojo: dos opciones (subir clase / válvula concreta) */}
                     {semaforo === "rojo" && (

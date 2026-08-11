@@ -26,7 +26,7 @@ export const emptyProject: ActiveProject = {
   despiece: [],
   cruceros: [],
   vrpDN: null, golpeValvulaDN: null,
-  golpeA: null, golpeDeltaH: null, golpePmax: null, golpeResiste: null,
+  golpeA: null, golpeDeltaH: null, golpePmax: null, golpePN: null, golpeResiste: null,
   vrpRequerida: null, coefAccesorios: null,
 };
 

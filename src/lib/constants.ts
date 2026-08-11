@@ -342,8 +342,8 @@ export const KV_VALVULAS_GLOBO: Array<{ dn: string; dn_mm: number; kv_max: numbe
 export const KV_FACTOR_SELECCION = 0.70;
 
 /**
- * Get PVC pressure classes based on D_interno to auto-select C900 vs C905.
- * D > 290mm (~12") → C905 classes, otherwise C900.
+ * Get PVC pressure classes; el llamador decide C900 vs C905 con isC905
+ * (en golpe-ariete: OD > 350 mm, es decir 14" CIOD en adelante).
  */
 export function getPVCClasses(pvcSys: PVCSystem, isC905: boolean): { title: string; note?: string; classes: PipeClassRow[] } {
   // Clases que realmente se usan en México

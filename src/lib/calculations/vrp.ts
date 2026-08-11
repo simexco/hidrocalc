@@ -69,8 +69,9 @@ export function calculateVRP(inputs: VRPInputs): VRPResults | null {
   const sigma = (P2_bar + P_ATM_BAR - P_VAPOR_BAR) / deltaP_bar;
   const riesgoCavitacion = sigma < 1.5;
 
-  // 5. Relación de reducción (manométrica, regla de campo 3:1)
-  const relacionPresion = parseFloat((P1 / P2).toFixed(2));
+  // 5. Relación de reducción (manométrica, regla de campo 3:1). P2=0 (descarga libre)
+  // daría Infinity — se acota y se trata como reducción extrema.
+  const relacionPresion = P2 > 0 ? parseFloat((P1 / P2).toFixed(2)) : 99;
   const dobleEtapa = relacionPresion > 3.0;
 
   // 6. Velocidad aguas abajo (en la línea)
@@ -91,7 +92,7 @@ export function calculateVRP(inputs: VRPInputs): VRPResults | null {
 
     let status: VRPSelectionRow["status"];
     if (insuf) status = "insuficiente";
-    else if (pct_max > 75) status = "limite";
+    else if (pct_max > 70) status = "limite"; // mismo umbral que el algoritmo de seleccion (KV_FACTOR_SELECCION)
     else if (pct_max >= 35 && pct_max <= 65) status = "optimo";
     else if (pct_max < 20) status = "sobredimensionada";
     else status = "funcional";

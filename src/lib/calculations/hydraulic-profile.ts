@@ -106,9 +106,8 @@ export function calculateProfile(input: ProfileInputs): ProfileResults | null {
   for (const t of tramos) tramoHf[t.id] = 0;
 
   for (let i = 0; i < sorted.length; i++) {
-    // Find which tramo this segment belongs to
-    const midDist = i > 0 ? (sorted[i - 1].dist + sorted[i].dist) / 2 : sorted[0].dist;
-    const tramo = findTramo(midDist, tramos);
+    // Tramo al que pertenece el PUNTO (para PN, DN y velocidad en ese punto)
+    const tramo = findTramo(sorted[i].dist, tramos);
     const DN_mm = tramo?.DN_mm ?? tramos[0].DN_mm;
     const C = tramo?.C ?? tramos[0].C;
     const D_m = DN_mm / 1000;
@@ -116,10 +115,22 @@ export function calculateProfile(input: ProfileInputs): ProfileResults | null {
     const V_point = Q != null && Q > 0 ? Q / A : null;
 
     if (i > 0 && hasHydraulics) {
-      const segL = sorted[i].dist - sorted[i - 1].dist;
-      const segHf = hfSegment(Q!, D_m, C, segL);
-      hfAccum += segHf;
-      if (tramo) tramoHf[tramo.id] = (tramoHf[tramo.id] ?? 0) + segHf;
+      // La perdida del segmento se parte en las fronteras de tramo que caigan DENTRO:
+      // cada sub-segmento usa el DN/C de SU tramo. (Antes se usaba un solo tramo —el del
+      // punto medio— para todo el segmento, ignorando cambios de diametro sin vertice.)
+      const d0 = sorted[i - 1].dist;
+      const d1 = sorted[i].dist;
+      const cortes = [d0, ...tramos.flatMap((t) => [t.distFrom, t.distTo]).filter((x) => x > d0 && x < d1).sort((a, b) => a - b), d1];
+      for (let k = 0; k < cortes.length - 1; k++) {
+        const subL = cortes[k + 1] - cortes[k];
+        if (subL <= 0) continue;
+        const subTramo = findTramo((cortes[k] + cortes[k + 1]) / 2, tramos);
+        const subDN = subTramo?.DN_mm ?? tramos[0].DN_mm;
+        const subC = subTramo?.C ?? tramos[0].C;
+        const segHf = hfSegment(Q!, subDN / 1000, subC, subL);
+        hfAccum += segHf;
+        if (subTramo) tramoHf[subTramo.id] = (tramoHf[subTramo.id] ?? 0) + segHf;
+      }
     }
 
     let pressure_mca: number | null = null;
@@ -146,7 +157,7 @@ export function calculateProfile(input: ProfileInputs): ProfileResults | null {
     let status: ProfilePointResult["status"] = "ok";
     if (pressure_kgcm2 != null) {
       if (pressure_kgcm2 < 0) { status = "critical"; pointsCritical++; }
-      else if (exceedsPN) { status = "critical"; }   // over-pressure is also critical
+      else if (exceedsPN) { status = "critical"; pointsCritical++; }   // sobrepresion sobre PN tambien cuenta como critico
       else if (pressure_kgcm2 < Pmin_kgcm2) { status = "low"; pointsBelowMin++; }
     }
 

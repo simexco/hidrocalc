@@ -45,7 +45,7 @@ export default function AsistentePage() {
 
   const vrpRecomendada = p.vrpRequerida ?? (p.presionMaxLinea != null && p.pnLinea != null && p.presionMaxLinea > p.pnLinea);
   const steps: Step[] = [
-    { n: 1, title: "Cálculo de gasto", desc: "Demanda de agua: población, dotación → Qmd.", href: "/demanda", done: gastoDone, summary: r.qmd != null ? `Qmd ${r.qmd.toFixed(2)} L/s` : "Pendiente" },
+    { n: 1, title: "Cálculo de gasto", desc: "Demanda de agua: población, dotación → QMD.", href: "/demanda", done: gastoDone, summary: r.qmd != null ? `QMD ${r.qmd.toFixed(2)} L/s (máx. diario)` : "Pendiente" },
     { n: 2, title: "Línea de conducción", desc: "Caudal, material, diámetro del tubo, longitud, perfil y presiones.", href: "/perfil", done: condDone, summary: condDone ? `${p.material} ${p.dn} · ${p.longitud} m` : "Pendiente" },
     { n: 3, title: "Equipo de bombeo", desc: "Solo si es bombeo: CDT con cotas reales y potencia comercial (HP) para cotizar la bomba. ¿No sabes qué diámetro poner? Usa la herramienta «Diámetro económico».", href: "/equipo-bombeo", done: bombeoDone, summary: p.incluyeBombeo ? (p.he != null ? `He ${p.he} m · Q + CDT para el proveedor` : "Pendiente") : "Opcional (solo bombeo)" },
     { n: 4, title: "Golpe de ariete", desc: "¿La tubería resiste el golpe? Si no, válvula de protección.", href: "/golpe-ariete", done: null, summary: "Protección contra sobrepresión / vacío" },

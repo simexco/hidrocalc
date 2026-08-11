@@ -405,7 +405,9 @@ const LE_D: Record<string,number> = {
   'codo-90':30,'codo-45':16,'codo-22':8,'codo-11':4,
   'tee-directo':20,'tee-lateral':60,'reduccion':10,
   'vcg-r':13,'vcg-b':13,'vmb-c':45,'vmb-dex':35,'vmb-w':45,
-  'check':150,'duo-check':100,'tapa-ciega':0,'cople':5
+  'check':150,'duo-check':100,'tapa-ciega':0,'cople':5,
+  // Filtros: K≈2 limpio (Hydraulic Institute) → Le/D≈100; canasta algo mayor
+  'filtro-y':100,'filtro-canasta':130
 }
 
 // ═══ VÁLVULAS ═══════════════════════════════════════════════
@@ -439,6 +441,8 @@ const TOR_DESC: Record<string,string> = {
   'DN-TOR-141/2':'Tornillo 1" x 4-1/2"',
   'DN-TOR-11/85':'Tornillo 1-1/8" x 5"',
   'DN-TOR-11/451/2':'Tornillo 1-1/4" x 5-1/2"',
+  'DN-TOR-11/46':'Tornillo 1-1/4" x 6"',
+  'DN-TOR-11/27':'Tornillo 1-1/2" x 7"',
 }
 // ABU SKU → rango OD en mm
 const ABU_DESC: Record<string,string> = {
@@ -664,7 +668,8 @@ export default function ListaMaterialesSIMEX({
   // ── handlers ─────────────────────────────────────────────────
   function addCodo(ang:string) {
     const c = findConn('Codo',dn,ang+'°')
-    add({ label:`Codo ${dn}×${ang}° Sigma`, sku:c?.sk??`CI-CFB-${dn.replace('"','').replace('½','.5')}${ang}`,
+    // Sin SKU en catalogo: '← CONF' (no fabricar claves que no existen)
+    add({ label:`Codo ${dn}×${ang}° Sigma`, sku:c?.sk??'← CONF',
       dn, bridas:2, leKey:`codo-${ang}`, norma:'AWWA C110', qty:1 })
   }
   function addBif(tipo:'tee'|'cruz', igual:boolean, dn2?:string) {
@@ -687,8 +692,9 @@ export default function ListaMaterialesSIMEX({
   function addReduc(tipo:string, dn2:string) {
     if(tipo==='linea') {
       const c=findConn('Redu',dn,dn2)
+      // Una brida en cada DN (igual que CruceroVisual) — antes contaba las 2 en el DN mayor
       add({ label:`Reducción ${dn}×${dn2} Sigma`, sku:c?.sk??'← CONF',
-        dn, dn2, bridas:2, leKey:'reduccion', norma:'AWWA C110', qty:1 })
+        dn, dn2, bridas:1, bridas2:1, leKey:'reduccion', norma:'AWWA C110', qty:1 })
     } else if(tipo==='deriv') {
       addBif('tee',false,dn2)
     }
@@ -708,7 +714,8 @@ export default function ListaMaterialesSIMEX({
       checkLabel = `Check Resilente C508 ${dn} Sigma Flow`
       checkSku = `VI-CHK-R${dnNum}`
     }
-    add({ label:checkLabel, sku:checkSku, dn, bridas:isWafer?0:2, leKey:tipo, norma:'AWWA C508', isWafer, qty:1 })
+    // C508 = check de columpio; la duo-check de doble disco wafer es AWWA C518
+    add({ label:checkLabel, sku:checkSku, dn, bridas:isWafer?0:2, leKey:tipo, norma:isWafer?'AWWA C518':'AWWA C508', isWafer, qty:1 })
   }
   function addFin() {
     add({ label:`Tapa Ciega HD ${dn} Sigma`, sku:TAPA[dn]??'← CONF',
