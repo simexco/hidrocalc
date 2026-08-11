@@ -44,6 +44,10 @@ export default function GolpeArietePage() {
   const [velMode, setVelMode] = useState<"velocidad" | "caudal">("caudal");
   const [caudalQ, setCaudalQ] = useState<number | null>(null);
   const proyectoBombeo = useProjectStore((s) => s.project.incluyeBombeo);
+  // Línea por bombeo: el transitorio crítico es el PARO de la bomba, no el cierre de válvula.
+  // Default: lo que diga el proyecto activo; el usuario puede cambiarlo aquí.
+  const [esBombeoManual, setEsBombeoManual] = useState<boolean | null>(null);
+  const esBombeo = esBombeoManual ?? proyectoBombeo;
 
   // Velocidad calculada a partir del caudal (L/s) y el diametro interno D (mm)
   const velFromQ = caudalQ != null && caudalQ > 0 && inputs.D != null && inputs.D > 0
@@ -211,7 +215,11 @@ export default function GolpeArietePage() {
     ? getPVCClasses(pvcSystem, pvcSystem === "c905")
     : PIPE_CLASSES_BY_MATERIAL[inputs.materialName];
   let userPN: number | null = null;
-  if (matClassesSel && computedDR != null && inputs.materialName !== "Hierro dúctil") {
+  if (inputs.materialName === "Hierro dúctil") {
+    // La clase K no tiene PN fijo: se usa la PFA mínima de K9 (38 bar, EN 545/ISO 2531)
+    // como comparación conservadora — así el hierro dúctil también recibe veredicto.
+    userPN = PIPE_CLASSES_BY_MATERIAL["Hierro dúctil"]?.classes[0]?.pn ?? null;
+  } else if (matClassesSel && computedDR != null) {
     const row = matClassesSel.classes.find((c) => {
       const dParsed = parseFloat(c.clase.replace(/[^0-9.]/g, ""));
       return !isNaN(dParsed) && Math.abs(dParsed - computedDR) < 1.5;
@@ -434,6 +442,23 @@ export default function GolpeArietePage() {
                 </button>
               </div>
             </div>
+
+            {/* Línea por bombeo: el peor caso es el paro de bomba, no el cierre de válvula */}
+            <label className="flex items-start gap-2 text-xs text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-800/60 border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 cursor-pointer">
+              <input type="checkbox" checked={esBombeo} onChange={(e) => setEsBombeoManual(e.target.checked)} className="mt-0.5" />
+              <span><strong>Línea por bombeo</strong> — el golpe lo dispara el paro de la bomba, no el cierre de una válvula.</span>
+            </label>
+            {esBombeo && (
+              <div className="rounded-lg border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/20 px-3 py-2 text-[11px] text-amber-800 dark:text-amber-300 leading-relaxed space-y-1">
+                <p>
+                  <strong>Peor caso: paro súbito por corte de energía.</strong> El flujo se frena en 1-2 s — usa ese tiempo como Tc, no el cierre manual de una válvula.
+                  {" "}<button type="button" onClick={() => setInput("Tc", 1)} className="underline font-semibold">Usar paro súbito (1 s)</button>
+                </p>
+                <p>
+                  <strong>Válvula check:</strong> usa una de cierre controlado/amortiguado — una check convencional que azota (slam) genera un golpe adicional al del paro.
+                </p>
+              </div>
+            )}
             <InputField label="Longitud L" value={inputs.L} onChange={(v) => handleNum("L", v)} unit="m" required tooltip="Longitud total de la tubería desde la válvula hasta el punto donde se refleja la onda de presión (tanque, reservorio, etc.)" />
           </div>
         </div>
@@ -465,6 +490,7 @@ export default function GolpeArietePage() {
                     { label: "Presión estática P₀", value: inputs.P0 != null ? `${inputs.P0} kg/cm²` : "No ingresada" },
                     { label: "Tiempo cierre Tc", value: inputs.Tc != null ? `${inputs.Tc} s` : "—" },
                     { label: "Longitud L", value: inputs.L != null ? `${inputs.L} m` : "—" },
+                    { label: "Línea por bombeo", value: esBombeo ? "Sí — transitorio por paro de bomba" : "No — cierre de válvula" },
                   ],
                   results: [
                     { label: "Velocidad de onda a", value: formatNumber(results.a, 1), unit: "m/s" },
@@ -521,13 +547,25 @@ export default function GolpeArietePage() {
                   rojo: { card: "bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800", dot: "bg-red-500", text: "text-red-600 dark:text-red-400", titulo: "Rojo — se requiere protección", sub: "El golpe supera lo que aguanta tu tubería. Elige una de las dos opciones de abajo." },
                 };
                 if (semaforo == null) {
+                  // Veredicto SIEMPRE visible: si no se puede dar, se explica exactamente qué falta
                   return (
-                    <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/60 p-5">
-                      <p className="text-[11px] uppercase tracking-wide text-gray-500 mb-1">Resultado</p>
-                      <p className="text-sm text-gray-600 dark:text-gray-300">
-                        Selecciona la <strong>clase de tubería</strong>{inputs.P0 == null ? <> y captura la <strong>presión de operación P0</strong></> : null} para saber, con semáforo, si necesitas protección contra golpe de ariete.
+                    <div className="rounded-xl border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800/60 p-5">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="inline-block w-3 h-3 rounded-full bg-gray-400" />
+                        <p className="text-[11px] uppercase tracking-wide text-gray-500">Semáforo de protección — sin veredicto todavía</p>
+                      </div>
+                      <p className="text-sm text-gray-700 dark:text-gray-300">
+                        {userPN == null
+                          ? <>No identifico el <strong>PN de la clase</strong> de tu tubería ({inputs.materialName || "material"}{computedDR != null ? `, DR ≈ ${formatNumber(computedDR, 0)}` : ""}) — selecciónala del catálogo en &quot;Seleccionar tubería&quot; o revisa la tabla de clases de abajo.</>
+                          : <>Captura los datos faltantes para dar el veredicto.</>}
+                        {inputs.P0 == null && <> Falta además la <strong>presión de operación P0</strong> para evaluar la presión máxima real.</>}
                       </p>
-                      {pmaxK != null && <p className="text-xs text-gray-500 mt-2">El cierre eleva la presión a <strong>{formatNumber(pmaxK, 1)} kg/cm²</strong>.</p>}
+                      {pmaxK != null && (
+                        <p className="text-xs text-gray-500 mt-2">
+                          Con lo capturado, el cierre eleva la presión a <strong>{formatNumber(pmaxK, 1)} kg/cm²</strong>
+                          {results.pipeClass != null && !results.pipeClass.startsWith("Excede") && <> — clase mínima que lo resiste: <strong>{results.pipeClass}</strong> (ver tabla)</>}.
+                        </p>
+                      )}
                     </div>
                   );
                 }
@@ -565,8 +603,9 @@ export default function GolpeArietePage() {
                         <div className="bg-white/70 dark:bg-gray-800/50 rounded-lg p-3 border border-amber-200 dark:border-amber-800">
                           <p className="text-[10px] uppercase tracking-wide text-gray-500">Opción B — válvula de protección</p>
                           <p className="text-base font-bold text-amber-800 dark:text-amber-300">{protecValvula?.dn ? `Válvula DN ${protecValvula.dn}` : "Consultar fabricante"}</p>
-                          <p className="text-[10px] text-gray-500">Alivio/anticipadora de golpe — deja tu tubería actual.</p>
-                          <p className="text-[10px] text-gray-500 mt-1"><strong>Dónde:</strong> {proyectoBombeo ? "en la descarga de la bomba, después de la válvula check." : "aguas arriba de la válvula de cierre rápido, o en el punto bajo de la línea."}</p>
+                          <p className="text-[10px] text-gray-500">{esBombeo ? "Anticipadora de onda (paro de bomba)" : "Alivio/anticipadora de golpe"} — deja tu tubería actual.</p>
+                          <p className="text-[10px] text-gray-500 mt-1"><strong>Dónde:</strong> {esBombeo ? "en la descarga de la bomba, después de la válvula check." : "aguas arriba de la válvula de cierre rápido, o en el punto bajo de la línea."}</p>
+                          <p className="text-[10px] font-mono text-amber-700 dark:text-amber-400 mt-1">SKU: ← CONF — confírmalo con tu asesor SIMEX</p>
                         </div>
                       </div>
                     )}
@@ -575,12 +614,16 @@ export default function GolpeArietePage() {
                       <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${results.closureType === "brusco" ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-300" : "bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300"}`}>
                         {results.closureType === "brusco" ? "⚠ Cierre brusco" : "✓ Cierre lento"}
                       </span>
-                      {negPres && (
-                        <span className="text-xs px-2.5 py-1 rounded-full font-medium bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300">
-                          Riesgo de presión negativa {"—"} ver ventosa abajo
-                        </span>
-                      )}
                     </div>
+
+                    {/* Ventosas: la protección contra el vacío es independiente del semáforo de sobrepresión */}
+                    {negPres && (
+                      <div className="mt-3 bg-white/70 dark:bg-gray-800/50 rounded-lg p-3 border border-red-200 dark:border-red-800">
+                        <p className="text-[10px] uppercase tracking-wide text-gray-500">Además — presión negativa (vacío)</p>
+                        <p className="text-sm font-bold text-red-700 dark:text-red-300">Ventosas de admisión de aire en los puntos altos</p>
+                        <p className="text-[10px] text-gray-500">La válvula de alivio NO protege contra vacío. El tamaño y la ubicación exacta los da el módulo Válvulas de aire (detalle abajo).</p>
+                      </div>
+                    )}
                   </div>
                 );
               })()}
