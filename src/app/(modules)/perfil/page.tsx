@@ -134,6 +134,10 @@ export default function PerfilPage() {
         vertices: sorted.map((v) => ({ cad: v.dist, cota: v.cota, desc: v.desc || "" })),
         presionMaxLinea: presiones.length ? Math.max(...presiones) : null,
         pnLinea: pns.length ? Math.min(...pns) : null,
+        // Veredicto de VRP POR TRAMO: cada tramo contra su propia clase (evita el falso
+        // "excede" al cruzar la presion de un tramo con el PN de otro)
+        vrpRequerida: sums.length ? sums.some((s) => s.exceedsPN === true) : null,
+        coefAccesorios: coefAccesorios / 100,
         p1: calcMode === "calcularP1" ? computedP1 : P1,
         presionFinalLinea: results?.finalPressure_kgcm2 ?? null,
       });

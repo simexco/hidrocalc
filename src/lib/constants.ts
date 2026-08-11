@@ -94,17 +94,18 @@ export interface PipeCatalogGroup {
 export const PIPE_CATALOG: PipeCatalogGroup[] = [
   {
     material: "PVC", E: 3e9, label: "PVC C900",
+    // OD CIOD (equivalente a hierro fundido) segun AWWA C900/C905; e = OD/DR
     sizes: [
-      { label: '4"', od: 118.1, classes: [{ name: "RD 25", e: 4.7 }, { name: "RD 18", e: 6.6 }] },
-      { label: '6"', od: 168.3, classes: [{ name: "RD 25", e: 6.7 }, { name: "RD 18", e: 9.4 }] },
-      { label: '8"', od: 219.1, classes: [{ name: "RD 25", e: 8.8 }, { name: "RD 18", e: 12.2 }] },
-      { label: '10"', od: 273.0, classes: [{ name: "RD 25", e: 10.9 }, { name: "RD 18", e: 15.2 }] },
-      { label: '12"', od: 323.9, classes: [{ name: "RD 25", e: 13.0 }, { name: "RD 18", e: 18.0 }] },
-      { label: '14"', od: 368.3, classes: [{ name: "RD 41", e: 9.0 }, { name: "RD 26", e: 14.2 }] },
-      { label: '16"', od: 422.4, classes: [{ name: "RD 41", e: 10.3 }, { name: "RD 26", e: 16.2 }] },
-      { label: '18"', od: 473.1, classes: [{ name: "RD 41", e: 11.5 }, { name: "RD 26", e: 18.2 }] },
-      { label: '20"', od: 527.8, classes: [{ name: "RD 41", e: 12.9 }, { name: "RD 26", e: 20.3 }] },
-      { label: '24"', od: 635.0, classes: [{ name: "RD 41", e: 15.5 }, { name: "RD 26", e: 24.4 }] },
+      { label: '4"', od: 121.9, classes: [{ name: "RD 25", e: 4.9 }, { name: "RD 18", e: 6.8 }] },
+      { label: '6"', od: 175.3, classes: [{ name: "RD 25", e: 7.0 }, { name: "RD 18", e: 9.7 }] },
+      { label: '8"', od: 229.9, classes: [{ name: "RD 25", e: 9.2 }, { name: "RD 18", e: 12.8 }] },
+      { label: '10"', od: 281.9, classes: [{ name: "RD 25", e: 11.3 }, { name: "RD 18", e: 15.7 }] },
+      { label: '12"', od: 335.3, classes: [{ name: "RD 25", e: 13.4 }, { name: "RD 18", e: 18.6 }] },
+      { label: '14"', od: 388.6, classes: [{ name: "RD 41", e: 9.5 }, { name: "RD 26", e: 14.9 }] },
+      { label: '16"', od: 442.0, classes: [{ name: "RD 41", e: 10.8 }, { name: "RD 26", e: 17.0 }] },
+      { label: '18"', od: 495.3, classes: [{ name: "RD 41", e: 12.1 }, { name: "RD 26", e: 19.0 }] },
+      { label: '20"', od: 548.6, classes: [{ name: "RD 41", e: 13.4 }, { name: "RD 26", e: 21.1 }] },
+      { label: '24"', od: 655.3, classes: [{ name: "RD 41", e: 16.0 }, { name: "RD 26", e: 25.2 }] },
     ],
   },
   {
@@ -300,29 +301,45 @@ export const PVC_THICKNESS: Record<PVCSystem, ThicknessRef> = {
   },
   c900: {
     title: "AWWA C900 — PVC Municipal (4in-12in)",
-    note: "DR=OD/e. D_interno=OD-2e. PN a 23 C.",
+    note: "OD CIOD (equiv. hierro fundido). DR=OD/e. D_interno=OD-2e. PN a 23 C.",
     columns: ["Nom.", "OD (mm)", "DR 25", "DR 18", "DR 14"],
     rows: [
-      { label: '4"', values: [118.1, 4.7, 6.6, 8.4] },
-      { label: '6"', values: [168.3, 6.7, 9.4, 12.0] },
-      { label: '8"', values: [219.1, 8.8, 12.2, 15.7] },
-      { label: '10"', values: [273.0, 10.9, 15.2, 19.5] },
-      { label: '12"', values: [323.9, 13.0, 18.0, 23.1] },
+      { label: '4"', values: [121.9, 4.9, 6.8, 8.7] },
+      { label: '6"', values: [175.3, 7.0, 9.7, 12.5] },
+      { label: '8"', values: [229.9, 9.2, 12.8, 16.4] },
+      { label: '10"', values: [281.9, 11.3, 15.7, 20.1] },
+      { label: '12"', values: [335.3, 13.4, 18.6, 24.0] },
     ],
   },
   c905: {
     title: "AWWA C905 — PVC Municipal (14in-24in)",
-    note: "DR=OD/e. D_interno=OD-2e. PN a 23 C.",
+    note: "OD CIOD (equiv. hierro fundido). DR=OD/e. D_interno=OD-2e. PN a 23 C.",
     columns: ["Nom.", "OD (mm)", "DR 51", "DR 41", "DR 32.5", "DR 26"],
     rows: [
-      { label: '14"', values: [368.3, 7.2, 9.0, 11.3, 14.2] },
-      { label: '16"', values: [422.4, 8.3, 10.3, 13.0, 16.2] },
-      { label: '18"', values: [473.1, 9.3, 11.5, 14.6, 18.2] },
-      { label: '20"', values: [527.8, 10.3, 12.9, 16.2, 20.3] },
-      { label: '24"', values: [635.0, 12.5, 15.5, 19.5, 24.4] },
+      { label: '14"', values: [388.6, 7.6, 9.5, 12.0, 14.9] },
+      { label: '16"', values: [442.0, 8.7, 10.8, 13.6, 17.0] },
+      { label: '18"', values: [495.3, 9.7, 12.1, 15.2, 19.0] },
+      { label: '20"', values: [548.6, 10.8, 13.4, 16.9, 21.1] },
+      { label: '24"', values: [655.3, 12.8, 16.0, 20.2, 25.2] },
     ],
   },
 };
+
+// ── Válvulas de globo piloto-operadas (VRP / alivio): coeficiente de flujo Kv ──
+// Kv métrico: Q(m³/h) = Kv·√(ΔP bar), IEC 60534. Cv (US) = 1.156·Kv.
+// Base: válvula globo piloto-operada tipo Cla-Val 100-01 / Bermad 700 (Kv = Cv/1.156).
+// Selección preliminar — verificar el modelo específico con el fabricante.
+export const KV_VALVULAS_GLOBO: Array<{ dn: string; dn_mm: number; kv_max: number }> = [
+  { dn: '2"', dn_mm: 50, kv_max: 47 },
+  { dn: '3"', dn_mm: 75, kv_max: 99 },
+  { dn: '4"', dn_mm: 100, kv_max: 173 },
+  { dn: '6"', dn_mm: 150, kv_max: 381 },
+  { dn: '8"', dn_mm: 200, kv_max: 666 },
+  { dn: '10"', dn_mm: 250, kv_max: 1077 },
+  { dn: '12"', dn_mm: 300, kv_max: 1492 },
+];
+// Se recomienda la válvula más chica que opere a ≤70% de su capacidad Kv a Q máximo
+export const KV_FACTOR_SELECCION = 0.70;
 
 /**
  * Get PVC pressure classes based on D_interno to auto-select C900 vs C905.
@@ -348,10 +365,11 @@ export function getPVCClasses(pvcSys: PVCSystem, isC905: boolean): { title: stri
     };
   }
   if (isC905) {
+    // PR = 2·HDS/(RD−1), HDS 2000 psi (PVC 12454): RD41=100 psi=6.9 bar, RD32.5=125=8.6, RD26=160=11.0
     return {
-      title: "PVC C900",
+      title: "PVC C905 (14\"+)",
       classes: [
-        { clase: "RD 41", pn: 6.0 }, { clase: "RD 26", pn: 9.5 },
+        { clase: "RD 41", pn: 6.9 }, { clase: "RD 32.5", pn: 8.6 }, { clase: "RD 26", pn: 11.0 },
       ],
     };
   }
@@ -376,7 +394,7 @@ export const PVC_CLASSES: Record<PVCSystem, { title: string; note?: string; clas
     { clase: "RD 25", pn: 6.9 }, { clase: "RD 18", pn: 10.3 },
   ]},
   c905: { title: "PVC C905 (14\"+)", classes: [
-    { clase: "RD 41", pn: 6.0 }, { clase: "RD 26", pn: 9.5 },
+    { clase: "RD 41", pn: 6.9 }, { clase: "RD 32.5", pn: 8.6 }, { clase: "RD 26", pn: 11.0 },
   ]},
 };
 
@@ -390,9 +408,12 @@ export const PIPE_CLASSES_BY_MATERIAL: Record<string, {
 } | null> = {
   "Hierro dúctil": {
     title: "Hierro dúctil",
+    // La clase K NO equivale a un PN fijo: la presion admisible (PFA, EN 545/ISO 2531)
+    // depende del DN. Para K9 la PFA va de 38 bar (DN600) a 64 bar (DN100); se usa el
+    // minimo como comparacion conservadora.
+    note: "La clase K no tiene PN fijo: la presion admisible (PFA) depende del DN — K9: 38-64 bar segun EN 545/ISO 2531. Se compara contra la PFA minima (38 bar); verificar con el fabricante.",
     classes: [
-      { clase: "K7", pn: 10 }, { clase: "K9", pn: 16 },
-      { clase: "K12", pn: 25 }, { clase: "K14", pn: 25 }, { clase: "K16", pn: 40 },
+      { clase: "K9 (PFA ≥ 38 bar)", pn: 38 },
     ],
   },
   PVC: null, // handled by PVC_CLASSES subsystem

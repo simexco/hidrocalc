@@ -75,27 +75,33 @@ export function calculateWaterHammer(input: WaterHammerInputs, pvcSystem?: PVCSy
     alerts.push({ level: "WARN", field: "pipeClass", message: "Recomendacion de clase no disponible para este material. Consultar norma del proyecto." });
   }
 
-  // Closure type alert
+  // Closure type alert — OJO: en Tc = Tfase el golpe sigue siendo el maximo (Michaud = Joukowsky).
+  // Solo se considera "reducido" cuando Tc es claramente mayor que Tfase.
   if (closureType === "brusco") {
-    alerts.push({ level: "WARN", field: "closure", message: `Cierre brusco (Tc=${Tc}s < Tfase=${Tphase.toFixed(2)}s)` });
+    alerts.push({ level: "WARN", field: "closure", message: `Cierre brusco (Tc=${Tc}s < Tfase=${Tphase.toFixed(2)}s) — sobrepresion maxima (Joukowsky)` });
+  } else if (Tc < 2 * Tphase) {
+    alerts.push({ level: "WARN", field: "closure", message: `Cierre lento (Tc=${Tc}s ≥ Tfase=${Tphase.toFixed(2)}s), pero el golpe aun es ${Math.round(100 * Tphase / Tc)}% del maximo — aumentar Tc lo reduce en proporcion` });
   } else {
-    alerts.push({ level: "OK", field: "closure", message: `Cierre lento (Tc=${Tc}s ≥ Tfase=${Tphase.toFixed(2)}s)` });
+    alerts.push({ level: "OK", field: "closure", message: `Cierre lento (Tc=${Tc}s): el golpe se reduce a ${Math.round(100 * Tphase / Tc)}% del maximo` });
   }
 
   // Negative pressure alerts — SOLO si se conoce P0.
   // Sin P0 el motor asume P0=0 y Pmin siempre saldria negativa (falso positivo).
   if (P0 != null) {
+    // Contra vacio protege la valvula de ADMISION DE AIRE (ventosa) en puntos altos;
+    // la valvula de alivio solo actua contra sobrepresion (no puede abrir en depresion).
     if (Pmin < -10) {
-      alerts.push({ level: "CRITICAL", field: "Pmin", message: "Cavitación probable — instalar válvula de alivio" });
+      alerts.push({ level: "CRITICAL", field: "Pmin", message: "Vacío casi total — separación de columna probable. Instalar válvula de admisión de aire (ventosa) en los puntos altos; la válvula de alivio NO protege contra vacío." });
     } else if (Pmin < 0) {
-      alerts.push({ level: "ERROR", field: "Pmin", message: "Riesgo de colapso de tubería (presión negativa transitoria)" });
+      alerts.push({ level: "ERROR", field: "Pmin", message: "Presión negativa transitoria — riesgo de colapso del tubo. Instalar válvula de admisión de aire (ventosa) en los puntos altos." });
     }
   } else {
     alerts.push({ level: "WARN", field: "Pmin", message: "Ingresa la presión de operación P0 para evaluar la presión mínima y el riesgo de cavitación." });
   }
 
-  // Safe closure time recommendation
-  const safeTc = Tphase;  // minimum for "slow" closure
+  // Frontera brusco/lento (2L/a). NO es un tiempo "seguro": cerrando exactamente en
+  // Tc = 2L/a el golpe sigue siendo el maximo; se reduce en proporcion Tfase/Tc.
+  const safeTc = Tphase;
 
   return {
     a,

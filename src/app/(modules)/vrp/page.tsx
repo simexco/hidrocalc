@@ -7,7 +7,7 @@ import { MetricCard } from "@/components/ui/MetricCard";
 import { AlertBanner } from "@/components/ui/AlertBanner";
 import { DataStatusBanner } from "@/components/ui/DataStatusBanner";
 import { ExportPDFButton } from "@/components/ui/ExportPDFButton";
-import { FormulaDetail, cvFormula } from "@/components/ui/FormulaDetail";
+import { FormulaDetail, kvFormula } from "@/components/ui/FormulaDetail";
 import { calculateVRP } from "@/lib/calculations/vrp";
 import { validateHydraulicInputs, InputWarnings } from "@/components/ui/InputWarning";
 import { formatNumber } from "@/lib/calculations/conversions";
@@ -156,9 +156,9 @@ export default function VRPPage() {
           <div className="bg-[#E9EFF5] dark:bg-[#1C3D5A]/20 rounded-xl p-4 text-xs text-[#1C3D5A] dark:text-blue-300 space-y-2">
             <p className="font-semibold">Como funciona</p>
             <p className="text-[11px] leading-relaxed opacity-80">
-              Se calcula el coeficiente de flujo Cv necesario para reducir la presión de P1 a P2 al caudal de diseño,
-              usando la fórmula IEC 60534. Luego se selecciona el tamaño de válvula donde la apertura se mantenga
-              entre 30% y 70% para operación estable.
+              Se calcula el coeficiente de flujo métrico Kv necesario para reducir la presión de P1 a P2 al caudal
+              de diseño (Kv = Q/√ΔP, IEC 60534; el Cv americano = 1.156×Kv). Luego se recomienda la válvula más
+              pequeña que opere usando como máximo el 70% de su capacidad a Q máximo.
             </p>
           </div>
         </div>
@@ -191,23 +191,23 @@ export default function VRPPage() {
                   ],
                   results: [
                     { label: "DN recomendado", value: results.recommendedDN ?? "Excede catalogo", unit: "" },
-                    { label: "Cv requerido", value: formatNumber(results.Cv_max_req, 1), unit: "" },
-                    { label: "Apertura Q max", value: results.pct_apertura_max != null ? `${results.pct_apertura_max}` : "--", unit: "%" },
-                    { label: "Apertura Q min", value: results.pct_apertura_min != null ? `${results.pct_apertura_min}` : "--", unit: "%" },
-                    { label: "Indice cavitacion", value: formatNumber(results.sigma, 2), unit: "" },
+                    { label: "Kv requerido (Cv = 1.156 Kv)", value: formatNumber(results.Kv_max_req, 1), unit: "" },
+                    { label: "Capacidad usada Q max", value: results.pct_capacidad_max != null ? `${results.pct_capacidad_max}` : "--", unit: "%" },
+                    { label: "Capacidad usada Q min", value: results.pct_capacidad_min != null ? `${results.pct_capacidad_min}` : "--", unit: "%" },
+                    { label: "Indice cavitacion (abs.)", value: formatNumber(results.sigma, 2), unit: "" },
                     { label: "Relacion P1/P2", value: `${results.relacionPresion}:1`, unit: "" },
                     { label: "DeltaP", value: formatNumber(results.deltaP_bar, 2), unit: "bar" },
                     { label: "V aguas abajo", value: formatNumber(results.v_aguas_abajo, 2), unit: "m/s" },
                   ],
                   alerts: results.alerts.map((a) => ({ level: a.level, message: a.message })),
                   tableData: {
-                    head: ["DN", "Cv max", "% Q max", "% Q min", "Estado"],
+                    head: ["DN", "Kv max", "% cap. Q max", "% cap. Q min", "Estado"],
                     body: results.selectionTable.map(r => [
                       r.dn,
-                      `${r.cv_max}`,
+                      `${r.kv_max}`,
                       r.status === "insuficiente" ? "--" : `${r.pct_max}%`,
                       r.status === "insuficiente" ? "--" : `${r.pct_min}%`,
-                      r.status === "optimo" ? "Optimo" : r.status === "funcional" ? "Funcional" : r.status === "limite" ? "Limite" : "Insuficiente",
+                      r.status === "optimo" ? "Optimo" : r.status === "funcional" ? "Funcional" : r.status === "sobredimensionada" ? "Sobredimensionada" : r.status === "limite" ? "Limite" : "Insuficiente",
                     ]),
                   },
                 };
@@ -231,26 +231,26 @@ export default function VRPPage() {
                       <div className="text-2xl font-semibold text-green-900 dark:text-green-200">{results.recommendedDN}</div>
                     </div>
                     <div>
-                      <div className="text-[11px] text-green-600 dark:text-green-400">Cv requerido</div>
-                      <div className="text-2xl font-semibold text-green-900 dark:text-green-200">{formatNumber(results.Cv_max_req, 1)}</div>
+                      <div className="text-[11px] text-green-600 dark:text-green-400">Kv requerido</div>
+                      <div className="text-2xl font-semibold text-green-900 dark:text-green-200">{formatNumber(results.Kv_max_req, 1)}</div>
                     </div>
                     <div>
-                      <div className="text-[11px] text-green-600 dark:text-green-400">Apertura Q max</div>
-                      <div className="text-2xl font-semibold text-green-900 dark:text-green-200">{results.pct_apertura_max}%</div>
+                      <div className="text-[11px] text-green-600 dark:text-green-400">Capacidad usada Q max</div>
+                      <div className="text-2xl font-semibold text-green-900 dark:text-green-200">{results.pct_capacidad_max}%</div>
                     </div>
                     <div>
-                      <div className="text-[11px] text-green-600 dark:text-green-400">Apertura Q min</div>
-                      <div className="text-2xl font-semibold text-green-900 dark:text-green-200">{results.pct_apertura_min}%</div>
+                      <div className="text-[11px] text-green-600 dark:text-green-400">Capacidad usada Q min</div>
+                      <div className="text-2xl font-semibold text-green-900 dark:text-green-200">{results.pct_capacidad_min}%</div>
                     </div>
                   </div>
                 </div>
               ) : (
-                <AlertBanner level="ERROR" message="El Cv requerido excede los tamaños estándar de catálogo. Consultar directamente con el fabricante." />
+                <AlertBanner level="ERROR" message="El Kv requerido excede los tamaños estándar de catálogo. Consultar directamente con el fabricante." />
               )}
 
-              {/* Cv formula detail */}
+              {/* Kv formula detail */}
               {results.Q_max_m3h > 0 && results.deltaP_bar > 0 && (
-                <FormulaDetail {...cvFormula(results.Q_max_m3h, results.deltaP_bar, results.Cv_max_req)} />
+                <FormulaDetail {...kvFormula(results.Q_max_m3h, results.deltaP_bar, results.Kv_max_req)} />
               )}
 
               {/* System parameters */}
@@ -271,7 +271,7 @@ export default function VRPPage() {
                   dataStatus={results.dataStatus}
                 />
                 <MetricCard label="V aguas abajo" value={formatNumber(results.v_aguas_abajo, 2)} unit="m/s" alertLevel={results.v_aguas_abajo > 3 ? "WARN" : "OK"} dataStatus={results.dataStatus} />
-                <MetricCard label="Cv min req" value={formatNumber(results.Cv_min_req, 1)} dataStatus={results.dataStatus} />
+                <MetricCard label="Kv min req" value={formatNumber(results.Kv_min_req, 1)} dataStatus={results.dataStatus} />
               </div>
 
               {/* Selection table */}
@@ -280,17 +280,19 @@ export default function VRPPage() {
                   <h3 className="text-xs font-semibold text-white">Tabla de selección — todos los tamaños</h3>
                 </div>
                 <div className="px-4 py-2 text-[10px] text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700">
-                  <strong>Optimo:</strong> apertura 35-65%.
-                  <strong className="ml-2">Funcional:</strong> apertura 20-35% o 65-75%.
-                  <strong className="ml-2">Limite:</strong> apertura {">"}75%.
+                  % = capacidad Kv utilizada (no es carrera de la valvula).
+                  <strong className="ml-2">Optimo:</strong> 35-65%.
+                  <strong className="ml-2">Funcional:</strong> 20-35% o 65-75%.
+                  <strong className="ml-2">Sobredimensionada:</strong> {"<"}20%.
+                  <strong className="ml-2">Limite:</strong> {">"}75%.
                 </div>
                 <table className="w-full text-xs">
                   <thead>
                     <tr className="bg-gray-50 dark:bg-gray-700 text-gray-500 dark:text-gray-400">
                       <th className="px-3 py-2 text-left">DN</th>
-                      <th className="px-3 py-2 text-right">Cv max</th>
-                      <th className="px-3 py-2 text-right">Apertura Q max</th>
-                      <th className="px-3 py-2 text-right">Apertura Q min</th>
+                      <th className="px-3 py-2 text-right">Kv max</th>
+                      <th className="px-3 py-2 text-right">% cap. Q max</th>
+                      <th className="px-3 py-2 text-right">% cap. Q min</th>
                       <th className="px-3 py-2 text-center">Estado</th>
                     </tr>
                   </thead>
@@ -307,7 +309,7 @@ export default function VRPPage() {
                             {row.dn}
                             {row.isRecommended && <span className="ml-1.5 text-[10px] bg-green-100 dark:bg-green-800 text-green-700 dark:text-green-300 px-1.5 py-0.5 rounded">REC</span>}
                           </td>
-                          <td className="px-3 py-2 text-right font-mono">{row.cv_max}</td>
+                          <td className="px-3 py-2 text-right font-mono">{row.kv_max}</td>
                           <td className="px-3 py-2 text-right font-mono">
                             {row.status === "insuficiente" ? "--" : `${row.pct_max}%`}
                           </td>
@@ -317,6 +319,7 @@ export default function VRPPage() {
                           <td className="px-3 py-2 text-center">
                             {row.status === "optimo" && <span className="text-green-600 font-medium">{"✅"} Optimo</span>}
                             {row.status === "funcional" && <span className="text-blue-600">{"✓"} Funcional</span>}
+                            {row.status === "sobredimensionada" && <span className="text-amber-600">{"⚠"} Sobredimensionada</span>}
                             {row.status === "limite" && <span className="text-yellow-600">{"⚠"} Limite sup.</span>}
                             {row.status === "insuficiente" && <span className="text-red-500">{"✗"} Insuficiente</span>}
                           </td>
@@ -326,8 +329,9 @@ export default function VRPPage() {
                   </tbody>
                 </table>
                 <div className="px-3 py-2 text-[10px] text-gray-400 border-t border-gray-100 dark:border-gray-700">
-                  Cv = Q(m3/h) / raiz(DeltaP en bar). IEC 60534 / Crane TP-410 para agua a 20 grados C.
-                  Factor de seleccion: operacion entre 30-70% de apertura.
+                  Kv = Q(m3/h) / raiz(DeltaP en bar) — IEC 60534, agua a 20 grados C (Cv americano = 1.156 x Kv).
+                  Seleccion: la valvula mas chica que use como maximo 70% de su capacidad a Q max.
+                  Tabla Kv base: valvula globo piloto-operada tipo Cla-Val 100-01 / Bermad 700.
                 </div>
               </div>
 
@@ -338,9 +342,9 @@ export default function VRPPage() {
 
               {/* Note */}
               <div className="bg-gray-50 dark:bg-gray-800 rounded-xl px-4 py-3 text-[11px] text-gray-500 dark:text-gray-400 leading-relaxed">
-                Calculo basado en IEC 60534 / Crane TP-410 para valvulas de control con agua a 20 grados C.
+                Calculo basado en IEC 60534 (coeficiente metrico Kv) para valvulas de control con agua a 20 grados C.
                 Seleccion preliminar — para instalacion final, verificar con el fabricante
-                la curva Cv vs. apertura del modelo especifico y las condiciones de cavitacion.
+                la curva Kv vs. apertura del modelo especifico y las condiciones de cavitacion.
               </div>
             </>
           )}

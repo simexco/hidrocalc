@@ -55,6 +55,15 @@ export interface ReportData {
   // Válvulas de control determinadas por el proyecto
   vrpDN: string | null;          // DN de la válvula reductora recomendada
   golpeValvulaDN: string | null; // DN de la válvula de protección contra golpe (si se requiere)
+  // Resultados del módulo Golpe de ariete (el reporte los imprime tal cual; sin ellos usa una estimación preliminar)
+  golpeA?: number | null;        // m/s — celeridad calculada por el módulo
+  golpeDeltaH?: number | null;   // m.c.a. — sobrepresión calculada por el módulo (Joukowsky/Michaud según Tc)
+  golpePmax?: number | null;     // kg/cm² — presión máxima con golpe según el módulo
+  golpeResiste?: boolean | null; // veredicto del módulo: la clase elegida resiste el golpe
+  // Veredicto de VRP por tramo (del perfil: cada tramo comparado contra SU propia clase)
+  vrpRequerida?: boolean | null;
+  // Coeficiente de pérdida por accesorios usado en el perfil (fracción de hf, p.ej. 0.05)
+  coefAccesorios?: number | null;
 }
 
 export interface ReportResults {
@@ -95,8 +104,10 @@ export function computeReport(d: ReportData): ReportResults {
   if (d.poblacion != null && d.dotacion != null && d.poblacion > 0 && d.dotacion > 0) {
     r.qm = (d.dotacion * d.poblacion) / 86400;
     if (d.cmd != null) r.qmd = r.qm * d.cmd;
-    if (d.cmh != null) r.qmh = r.qm * d.cmh;
-    if (r.qmd != null && d.horasTanque != null) r.vtanque = r.qmd * d.horasTanque * 3.6; // L/s × h × 3.6 = m³
+    // Qmh se calcula sobre el máximo DIARIO, no sobre el medio (CONAGUA MAPAS): Qmh = CVh·Qmd
+    if (d.cmh != null && r.qmd != null) r.qmh = r.qmd * d.cmh;
+    // V = Qmd × R, con R = coeficiente de regulación CONAGUA en m³ por (L/s) (24 h: 11.0; CDMX: 14.3)
+    if (r.qmd != null && d.horasTanque != null) r.vtanque = r.qmd * d.horasTanque;
   }
 
   // Módulo 2 — gasto de conducción (usa Q capturado, suele ser Qmd)
@@ -109,7 +120,8 @@ export function computeReport(d: ReportData): ReportResults {
     r.hv = (r.velocidad * r.velocidad) / (2 * 9.81);
     if (d.longitud != null && d.longitud > 0 && d.c != null && d.c > 0) {
       r.hf = (10.67 * d.longitud * Math.pow(Q_m3s, 1.852)) / (Math.pow(d.c, 1.852) * Math.pow(D_m, 4.87));
-      r.hac = 0.1 * r.hf;
+      // Mismo coeficiente de accesorios que usó el perfil (default 5%), no un 10% fijo
+      r.hac = (d.coefAccesorios ?? 0.05) * r.hf;
       r.perdidaTotal = r.hf + r.hac;
       // Presión final:
       //  1) si la conducción ya la calculó (con P1), usar ese valor exacto
@@ -147,18 +159,28 @@ export function computeReport(d: ReportData): ReportResults {
   if (cotas.length >= 2) r.presionEstaticaMax = Math.max(...cotas) - Math.min(...cotas);
   else if (d.desnivel != null) r.presionEstaticaMax = Math.abs(d.desnivel);
 
-  // VRP / reducción de presión: criterio = la presión de operación supera la clase del tubo.
-  if (d.presionMaxLinea != null && d.pnLinea != null) {
+  // VRP / reducción de presión: preferir el veredicto POR TRAMO del perfil (cada tramo
+  // contra su propia clase). El cruce max(presiones) > min(PNs) da falsos positivos
+  // cuando la línea combina clases distintas.
+  if (d.vrpRequerida != null) {
+    r.vrpRecomendada = d.vrpRequerida;
+  } else if (d.presionMaxLinea != null && d.pnLinea != null) {
     r.vrpRecomendada = d.presionMaxLinea > d.pnLinea;
   } else {
     // Sin clase/P1 capturados: referencia de red de distribución (~50 m.c.a. = 5 kg/cm²)
     r.vrpRecomendada = r.presionEstaticaMax != null && r.presionEstaticaMax / 10 > 5;
   }
 
-  // Golpe de ariete (Joukowsky, cierre brusco): ΔH = a·V/g. a según material.
-  if (r.velocidad != null && r.velocidad > 0) {
+  // Golpe de ariete: si el módulo ya lo calculó (celeridad real, Michaud según Tc),
+  // el reporte imprime ESOS resultados. Sin módulo: estimación preliminar (cierre brusco)
+  // con celeridad derivada del RD para PVC (a = 1449/√(1+0.7·(RD−2))) o valor típico.
+  if (d.golpeDeltaH != null) {
+    r.sobrepresionGolpe = d.golpeDeltaH;
+  } else if (r.velocidad != null && r.velocidad > 0) {
     const m = (d.material || "").toLowerCase();
-    const a = m.includes("pvc") ? 350
+    const rd = parseFloat((d.clase || "").replace(/[^0-9.]/g, ""));
+    const aPVC = !isNaN(rd) && rd > 2 ? 1449 / Math.sqrt(1 + 0.7 * (rd - 2)) : 350;
+    const a = m.includes("pvc") ? aPVC
       : (m.includes("pead") || m.includes("hdpe") || m.includes("polietileno")) ? 250
       : (m.includes("hierro") || m.includes("ductil") || m.includes("dúctil")) ? 1200
       : m.includes("acero") ? 1000
@@ -167,8 +189,12 @@ export function computeReport(d: ReportData): ReportResults {
       : 900;
     r.sobrepresionGolpe = (a * r.velocidad) / 9.81; // m.c.a.
   }
-  // Presión máxima esperada con golpe (operación + sobrepresión), comparada con la clase
-  if (d.presionMaxLinea != null && r.sobrepresionGolpe != null) {
+  // Presión máxima esperada con golpe (operación + sobrepresión), comparada con la clase.
+  // Con módulo: su Pmax y su veredicto mandan (mismos números en pantalla y en PDF).
+  if (d.golpePmax != null) {
+    r.pmaxConGolpe = d.golpePmax;
+    r.golpeExcedeClase = d.golpeResiste != null ? !d.golpeResiste : (d.pnLinea != null ? r.pmaxConGolpe > d.pnLinea : null);
+  } else if (d.presionMaxLinea != null && r.sobrepresionGolpe != null) {
     r.pmaxConGolpe = d.presionMaxLinea + r.sobrepresionGolpe / 10; // kg/cm²
     if (d.pnLinea != null) r.golpeExcedeClase = r.pmaxConGolpe > d.pnLinea;
   }
@@ -299,7 +325,9 @@ export async function generateReportPDF(d: ReportData): Promise<jsPDF> {
   }
   for (const [desc, qty] of Object.entries(airGroups)) valvulasControl.push({ desc, sku: "—", qty });
   if (r.vrpRecomendada && d.vrpDN) valvulasControl.push({ desc: `Válvula reductora de presión (VRP) ${d.vrpDN}`, sku: "—", qty: 1 });
-  if (d.golpeValvulaDN) valvulasControl.push({ desc: `Válvula de protección golpe de ariete (alivio/anticipadora) ${d.golpeValvulaDN}`, sku: "—", qty: 1 });
+  // La válvula de golpe entra SOLO si el veredicto vigente dice que la clase no resiste
+  // (evita el PDF contradictorio: "la clase resiste" + válvula de protección en la lista)
+  if (d.golpeValvulaDN && d.golpeResiste !== true && r.golpeExcedeClase !== false) valvulasControl.push({ desc: `Válvula de protección golpe de ariete (alivio/anticipadora) ${d.golpeValvulaDN}`, sku: "—", qty: 1 });
 
   const piezasManual = (d.despiece ?? []).filter((p) => p.qty > 0);
   const hasDespiece = piezasManual.length > 0 || valvulasControl.length > 0;
@@ -351,7 +379,7 @@ export async function generateReportPDF(d: ReportData): Promise<jsPDF> {
       ["Gasto medio (Qm)", `${n(r.qm)} L/s`, "Consumo promedio diario"],
       ["Gasto máximo diario (Qmd)", `${n(r.qmd)} L/s`, "Diseña FUENTE y CONDUCCIÓN"],
       ["Gasto máximo horario (Qmh)", `${n(r.qmh)} L/s`, "Diseña RED DE DISTRIBUCIÓN"],
-      ["Tanque de regulación (V)", `${n(r.vtanque, 1)} m3`, "Qmd x horas equiv. x 3.6"],
+      ["Tanque de regulación (V)", `${n(r.vtanque, 1)} m3`, "Qmd x R (coef. regulacion CONAGUA)"],
     ],
     margin: { left: 14, right: 14, top: 30 }, didDrawPage: dibujaHeader,
   });
@@ -402,7 +430,7 @@ export async function generateReportPDF(d: ReportData): Promise<jsPDF> {
       ["Tuberia sugerida", `${d.material || "-"} ${d.clase || ""} ${d.dn || ""}`.trim()],
       ["Velocidad en la linea", `${n(r.velocidad)} m/s ${r.velocidad != null && r.velocidad >= 0.3 && r.velocidad <= 2.5 ? "(0.3-2.5 OK)" : "(revisar)"}`],
       ["Perdida por friccion (Hf)", `${n(r.hf, 2)} m`],
-      ["Perdida por accesorios (10%)", `${n(r.hac, 2)} m`],
+      [`Perdida por accesorios (${Math.round((d.coefAccesorios ?? 0.05) * 100)}%)`, `${n(r.hac, 2)} m`],
       ["Perdida total", `${n(r.perdidaTotal, 2)} m`],
       ["Presion estimada al final", r.presionFinal == null
         ? "Requiere P1 (presion de entrada) en la conduccion"
@@ -449,8 +477,11 @@ export async function generateReportPDF(d: ReportData): Promise<jsPDF> {
   // Golpe de ariete
   let golpeRec: string; let golpePor: string;
   if (r.golpeExcedeClase != null) {
+    const fuente = d.golpePmax != null
+      ? `modulo Golpe de ariete${d.golpeA != null ? ` (a=${n(d.golpeA, 0)} m/s)` : ""}`
+      : "estimacion preliminar (cierre brusco)";
     golpeRec = r.golpeExcedeClase ? "SE REQUIERE PROTECCION" : "Clase resiste el golpe";
-    golpePor = `P. maxima con golpe ~${n(r.pmaxConGolpe, 1)} kg/cm2 vs clase ${pnTxt}. ${r.golpeExcedeClase ? "Subir clase o instalar valvula de alivio/anticipadora." : "Margen suficiente."}${d.incluyeBombeo ? " Linea por bombeo: analizar el paro de bomba." : ""}`;
+    golpePor = `P. maxima con golpe ~${n(r.pmaxConGolpe, 1)} kg/cm2 vs clase ${pnTxt} — ${fuente}. ${r.golpeExcedeClase ? "Subir clase o instalar valvula de alivio/anticipadora." : "Margen suficiente."}${d.incluyeBombeo ? " Linea por bombeo: analizar el paro de bomba." : ""}`;
   } else {
     golpeRec = r.golpeRiesgo === "alto" ? "ANALIZAR / PROTEGER" : r.golpeRiesgo === "medio" ? "Revisar" : "Riesgo bajo";
     golpePor = d.incluyeBombeo

@@ -11,7 +11,7 @@ import { ExportPDFButton } from "@/components/ui/ExportPDFButton";
 import { FormulaDetail, waterHammerFormula, waveSpeedFormula } from "@/components/ui/FormulaDetail";
 import { calculateWaterHammer } from "@/lib/calculations/water-hammer";
 import { formatNumber, mcaToKgcm2 } from "@/lib/calculations/conversions";
-import { PIPE_ELASTICITY, THICKNESS_BY_MATERIAL, PIPE_CLASSES_BY_MATERIAL, PVC_THICKNESS, getPVCClasses, PVC_SYSTEM_LABELS, type PVCSystem, PIPE_CATALOG, type PipeCatalogGroup, STANDARD_DNS_LABELED } from "@/lib/constants";
+import { PIPE_ELASTICITY, THICKNESS_BY_MATERIAL, PIPE_CLASSES_BY_MATERIAL, PVC_THICKNESS, getPVCClasses, PVC_SYSTEM_LABELS, type PVCSystem, PIPE_CATALOG, type PipeCatalogGroup, STANDARD_DNS_LABELED, KV_VALVULAS_GLOBO, KV_FACTOR_SELECCION } from "@/lib/constants";
 import { saveFormState, loadFormState } from "@/lib/storage/form-persistence";
 import { useProjectStore } from "@/store/projectStore";
 
@@ -225,10 +225,6 @@ export default function GolpeArietePage() {
   // atmósfera (ΔP ≈ presión de ajuste) — así el tamaño queda ~1/3 del DN de línea, no gigante.
   const protecValvula = (() => {
     if (!results || results.deltaP_bar == null || results.deltaP_bar <= 0 || inputs.D == null || inputs.V0 == null) return null;
-    const CV_TABLE = [
-      { dn: '2"', dn_mm: 50, cv_max: 15 }, { dn: '3"', dn_mm: 75, cv_max: 38 }, { dn: '4"', dn_mm: 100, cv_max: 72 },
-      { dn: '6"', dn_mm: 150, cv_max: 165 }, { dn: '8"', dn_mm: 200, cv_max: 295 }, { dn: '10"', dn_mm: 250, cv_max: 460 }, { dn: '12"', dn_mm: 300, cv_max: 665 },
-    ];
     const dInt_m = inputs.D / 1000;
     const Q_linea_m3h = inputs.V0 * Math.PI * Math.pow(dInt_m / 2, 2) * 3600;
     const p0 = inputs.P0 ?? 0;
@@ -236,20 +232,28 @@ export default function GolpeArietePage() {
     const pSet = p0 > 0 ? p0 * 1.10 : pMax_kgcm2 * 0.85;
     const Q_alivio_m3h = Q_linea_m3h * 0.25;
     const deltaP_valv_bar = Math.max(0.3, pSet * 0.9807);
-    const Cv = Q_alivio_m3h / Math.sqrt(deltaP_valv_bar);
-    if (Cv <= 0) return null;
-    const v = CV_TABLE.find((x) => x.cv_max * 0.75 >= Cv);
-    return { dn: v?.dn ?? null, cv: Cv, pSet };
+    // Kv metrico (IEC 60534): Q(m³/h)/√(ΔP bar). Tabla compartida con el modulo VRP.
+    const Kv = Q_alivio_m3h / Math.sqrt(deltaP_valv_bar);
+    if (Kv <= 0) return null;
+    const v = KV_VALVULAS_GLOBO.find((x) => x.kv_max * KV_FACTOR_SELECCION >= Kv);
+    return { dn: v?.dn ?? null, kv: Kv, pSet };
   })();
 
-  // Flujo de proyecto: si la tubería NO resiste, la válvula de protección entra al despiece/reporte
+  // Flujo de proyecto: los resultados REALES del módulo viajan al reporte (el PDF ya no
+  // recalcula el golpe con otra fórmula) y la válvula de protección entra solo si no resiste.
   const patchProjectGolpe = useProjectStore((s) => s.patch);
   useEffect(() => {
     const necesita = resiste === false;
     const dn = necesita ? (protecValvula?.dn ?? null) : null;
-    const t = setTimeout(() => patchProjectGolpe({ golpeValvulaDN: dn }), 600);
+    const t = setTimeout(() => patchProjectGolpe({
+      golpeValvulaDN: dn,
+      golpeA: results?.a ?? null,
+      golpeDeltaH: results?.deltaH ?? null,
+      golpePmax: results?.Pmax != null ? mcaToKgcm2(results.Pmax) : null,
+      golpeResiste: resiste,
+    }), 600);
     return () => clearTimeout(t);
-  }, [resiste, protecValvula, patchProjectGolpe]);
+  }, [resiste, protecValvula, results, patchProjectGolpe]);
 
   return (
     <div className="max-w-6xl mx-auto space-y-6">
@@ -399,7 +403,7 @@ export default function GolpeArietePage() {
             </button>
 
             {/* Aviso de velocidad alta junto al selector de diametro */}
-            {inputs.V0 != null && inputs.V0 > 2.5 && (() => {
+            {inputs.V0 != null && inputs.V0 > 2.0 && (() => {
               const Q = inputs.D != null ? inputs.V0 * Math.PI * Math.pow(inputs.D / 1000 / 2, 2) : null;
               const dSug = Q != null ? Math.ceil(Math.sqrt((4 * Q) / (Math.PI * 2.0)) * 1000) : null;
               return (
@@ -482,7 +486,7 @@ export default function GolpeArietePage() {
           {results && (
             <>
               {/* ── AVISO DE VELOCIDAD ALTA — causa raiz de un golpe excesivo ── */}
-              {inputs.V0 != null && inputs.V0 > 2.5 && (() => {
+              {inputs.V0 != null && inputs.V0 > 2.0 && (() => {
                 const Q = inputs.D != null ? inputs.V0 * Math.PI * Math.pow(inputs.D / 1000 / 2, 2) : null;
                 const dSug = Q != null ? Math.ceil(Math.sqrt((4 * Q) / (Math.PI * 2.0)) * 1000) : null;
                 return (
@@ -586,9 +590,9 @@ export default function GolpeArietePage() {
                 <div className="rounded-xl border border-red-300 dark:border-red-700 bg-red-50 dark:bg-red-900/20 p-4 space-y-2">
                   <p className="text-sm font-semibold text-red-700 dark:text-red-300">Protección contra presión negativa (vacío)</p>
                   <p className="text-xs text-red-700/90 dark:text-red-300/80 leading-relaxed">
-                    La presión mínima cae a <strong>{formatNumber(mcaToKgcm2(results.Pmin), 1)} kg/cm²</strong> (negativa).
+                    La presión mínima cae a <strong>{formatNumber(mcaToKgcm2(Math.max(results.Pmin, -10.33)), 1)} kg/cm²</strong> (negativa{results.Pmin < -10.33 ? ", limitada por el vacío físico: la columna se separa" : ""}).
                     {results.Pmin < -10
-                      ? " Es prácticamente vacío total → cavitación probable y riesgo de colapso del tubo (crítico)."
+                      ? " Es prácticamente vacío total → separación de columna probable y riesgo de colapso del tubo (crítico)."
                       : " Hay riesgo de vacío parcial → un tubo de pared delgada puede colapsar (implosión)."}
                   </p>
                   <p className="text-xs text-gray-700 dark:text-gray-300 leading-relaxed">
@@ -630,7 +634,7 @@ export default function GolpeArietePage() {
                 <div>
                   <MetricCard label="Sobrepresión ΔH" value={formatNumber(mcaToKgcm2(results.deltaH ?? 0), 3)} unit="kg/cm²" dataStatus={results.dataStatus} />
                   {inputs.V0 != null && results.a != null && results.deltaH != null && (
-                    <FormulaDetail {...waterHammerFormula(inputs.V0, results.a, results.deltaH)} />
+                    <FormulaDetail {...waterHammerFormula(inputs.V0, results.a, results.deltaH, inputs.Tc, results.Tphase)} />
                   )}
                 </div>
                 <MetricCard label="ΔP" value={formatNumber(results.deltaP_kPa, 1)} unit="kPa" dataStatus={results.dataStatus} />
@@ -643,8 +647,8 @@ export default function GolpeArietePage() {
                   dataStatus={results.dataStatus}
                 />
                 <MetricCard
-                  label="P mínima"
-                  value={formatNumber(mcaToKgcm2(results.Pmin ?? 0), 3)}
+                  label={results.Pmin != null && results.Pmin < -10.33 ? "P mínima (límite de vacío)" : "P mínima"}
+                  value={formatNumber(mcaToKgcm2(Math.max(results.Pmin ?? 0, -10.33)), 3)}
                   unit="kg/cm²"
                   alertLevel={results.Pmin != null && results.Pmin < -10 ? "CRITICAL" : results.Pmin != null && results.Pmin < 0 ? "ERROR" : "OK"}
                   dataStatus={results.dataStatus}
@@ -663,7 +667,7 @@ export default function GolpeArietePage() {
                 <p className="font-semibold text-gray-700 dark:text-gray-300">¿Qué significa cada dato?</p>
                 <p><strong>Velocidad de onda (a):</strong> qué tan rápido viaja la onda de presión por el tubo cuando se cierra la válvula. Depende del material y el espesor (un tubo rígido como el acero la transmite más rápido que el PVC). Fórmula: a = √(K/ρ) ÷ √(1 + K·D / (E·e)).</p>
                 <p><strong>Período de fase (T):</strong> el tiempo que tarda la onda en ir hasta el extremo y regresar = 2·L / a. Es la referencia para saber si el cierre es brusco o lento.</p>
-                <p><strong>Cierre brusco / lento:</strong> si cierras la válvula <em>más rápido</em> que T → cierre <strong>brusco</strong> (golpe máximo). Si tardas <em>más</em> que T → cierre <strong>lento</strong> (el golpe se reduce).</p>
+                <p><strong>Cierre brusco / lento:</strong> si cierras la válvula <em>más rápido</em> que T → cierre <strong>brusco</strong> (golpe máximo). Si tardas más que T, el golpe se reduce <em>en proporción T/Tc</em>: cerrando justo en T el golpe <strong>aún es el máximo</strong>; en Tc = 2T baja a la mitad, en Tc = 5T a ~20%.</p>
                 <p><strong>Sobrepresión (ΔH):</strong> cuánto sube la presión por el golpe = a·V / g (fórmula de Joukowsky). Es el corazón del cálculo.</p>
                 <p><strong>ΔP:</strong> la misma sobrepresión, expresada en kPa o bar (solo cambia la unidad).</p>
                 <p><strong>P máxima:</strong> presión de operación + sobrepresión. Es la que tu tubería debe aguantar (se compara con la clase del tubo).</p>
@@ -671,10 +675,18 @@ export default function GolpeArietePage() {
                 <p><strong>Clase recomendada:</strong> la clase de tubería más económica cuyo PN (presión que resiste) es mayor o igual a la P máxima.</p>
               </div>
 
-              {/* Safe Tc recommendation */}
-              {results.closureType === "brusco" && results.safeTc != null && (
-                <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg px-4 py-3 text-sm text-blue-700 dark:text-blue-300">
-                  Tc minimo recomendado para cierre lento: <strong>{formatNumber(results.safeTc, 2)} s</strong>
+              {/* Recomendacion de tiempo de cierre — en Tc = 2L/a el golpe sigue completo */}
+              {results.Tphase != null && inputs.Tc != null && inputs.Tc < 2 * results.Tphase && (
+                <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg px-4 py-3 text-xs text-blue-700 dark:text-blue-300 leading-relaxed space-y-1">
+                  <p className="text-sm font-semibold">¿Cuánto debe tardar el cierre?</p>
+                  <p>
+                    T = 2L/a = <strong>{formatNumber(results.Tphase, 2)} s</strong> es solo la frontera brusco/lento — cerrando justo en T el golpe <strong>sigue siendo el máximo</strong>.
+                    El golpe se reduce en proporción T/Tc:
+                  </p>
+                  <p>
+                    · Tc ≥ <strong>{formatNumber(2 * results.Tphase, 1)} s</strong> (2T) → golpe a la mitad (~{formatNumber(mcaToKgcm2((results.deltaH ?? 0) * (results.closureType === "brusco" ? 0.5 : (inputs.Tc / results.Tphase) * 0.5)), 2)} kg/cm²)
+                    {" "}· Tc ≥ <strong>{formatNumber(5 * results.Tphase, 1)} s</strong> (5T) → golpe a ~20%.
+                  </p>
                 </div>
               )}
               </div>
@@ -756,17 +768,7 @@ export default function GolpeArietePage() {
 
               {/* Relief valve recommendation — SOLO cuando la tubería no resiste (semáforo rojo) */}
               {resiste === false && results.deltaP_bar != null && results.deltaP_bar > 0 && inputs.D != null && inputs.V0 != null && (() => {
-                // Calculate relief valve sizing
-                const CV_TABLE = [
-                  { dn: '2"',  dn_mm: 50,  cv_max: 15  },
-                  { dn: '3"',  dn_mm: 75,  cv_max: 38  },
-                  { dn: '4"',  dn_mm: 100, cv_max: 72  },
-                  { dn: '6"',  dn_mm: 150, cv_max: 165 },
-                  { dn: '8"',  dn_mm: 200, cv_max: 295 },
-                  { dn: '10"', dn_mm: 250, cv_max: 460 },
-                  { dn: '12"', dn_mm: 300, cv_max: 665 },
-                ];
-
+                // Dimensionamiento con Kv metrico (IEC 60534) y la tabla compartida con el modulo VRP
                 const dInt_m = (inputs.D) / 1000;
                 const A_linea = Math.PI * Math.pow(dInt_m / 2, 2);
                 const Q_linea_m3h = inputs.V0 * A_linea * 3600;
@@ -779,17 +781,17 @@ export default function GolpeArietePage() {
                 // La anticipadora alivia ~25% del caudal de línea y descarga a la atmósfera (ΔP ≈ Pset)
                 const Q_alivio_m3h = Q_linea_m3h * 0.25;
                 const deltaP_valv_bar = Math.max(0.3, pSet * 0.9807);
-                const Cv_requerido = Q_alivio_m3h / Math.sqrt(deltaP_valv_bar);
+                const Kv_requerido = Q_alivio_m3h / Math.sqrt(deltaP_valv_bar);
 
-                const valv_recomendada = CV_TABLE.find(v => v.cv_max * 0.75 >= Cv_requerido);
-                const pct_apertura = valv_recomendada
-                  ? Math.round((Cv_requerido / valv_recomendada.cv_max) * 100)
+                const valv_recomendada = KV_VALVULAS_GLOBO.find(v => v.kv_max * KV_FACTOR_SELECCION >= Kv_requerido);
+                const pct_capacidad = valv_recomendada
+                  ? Math.round((Kv_requerido / valv_recomendada.kv_max) * 100)
                   : null;
                 const pct_dn = valv_recomendada
                   ? Math.round((valv_recomendada.dn_mm / (dInt_m * 1000)) * 100)
                   : null;
 
-                if (Cv_requerido <= 0) return null;
+                if (Kv_requerido <= 0) return null;
 
                 return (
                   <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl p-5 space-y-3">
@@ -805,12 +807,12 @@ export default function GolpeArietePage() {
                             <div className="text-xl font-semibold text-amber-900 dark:text-amber-200">{valv_recomendada.dn}</div>
                           </div>
                           <div>
-                            <div className="text-[11px] text-amber-600 dark:text-amber-400">Cv requerido</div>
-                            <div className="text-xl font-semibold text-amber-900 dark:text-amber-200">{formatNumber(Cv_requerido, 1)}</div>
+                            <div className="text-[11px] text-amber-600 dark:text-amber-400">Kv requerido</div>
+                            <div className="text-xl font-semibold text-amber-900 dark:text-amber-200">{formatNumber(Kv_requerido, 1)}</div>
                           </div>
                           <div>
-                            <div className="text-[11px] text-amber-600 dark:text-amber-400">Apertura estimada</div>
-                            <div className="text-xl font-semibold text-amber-900 dark:text-amber-200">{pct_apertura}%</div>
+                            <div className="text-[11px] text-amber-600 dark:text-amber-400">Capacidad utilizada</div>
+                            <div className="text-xl font-semibold text-amber-900 dark:text-amber-200">{pct_capacidad}%</div>
                           </div>
                           <div>
                             <div className="text-[11px] text-amber-600 dark:text-amber-400">Relacion DN</div>
@@ -825,13 +827,13 @@ export default function GolpeArietePage() {
                       </>
                     ) : (
                       <p className="text-xs text-red-600 dark:text-red-400">
-                        El caudal de alivio requerido (Cv={formatNumber(Cv_requerido, 1)}) excede los tamaños estándar de catálogo.
+                        El caudal de alivio requerido (Kv={formatNumber(Kv_requerido, 1)}) excede los tamaños estándar de catálogo.
                         Consultar directamente con el fabricante.
                       </p>
                     )}
 
                     <p className="text-[10px] text-amber-600/70 dark:text-amber-400/60">
-                      Recomendacion preliminar basada en Joukowsky/Crane TP-410.
+                      Recomendacion preliminar basada en Joukowsky y coeficiente Kv (IEC 60534, tabla base de valvula globo piloto-operada).
                       Verificar con el fabricante para instalacion final.
                       Valvula piloto-operada tipo alivio/anticipacion (surge relief).
                     </p>

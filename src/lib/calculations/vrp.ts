@@ -1,21 +1,15 @@
 /* ════════════════════════════════════════
    VRP — Válvula Reductora de Presión
-   Cálculo de Cv y selección de tamaño
-   IEC 60534 / Crane TP-410
+   Cálculo de Kv (coeficiente métrico, IEC 60534) y selección de tamaño.
+   Kv: Q(m³/h) = Kv·√(ΔP bar). Cv (US) = 1.156·Kv.
+   Tabla Kv base: válvula globo piloto-operada (Cla-Val 100-01 / Bermad 700).
    ════════════════════════════════════════ */
 
+import { KV_VALVULAS_GLOBO, KV_FACTOR_SELECCION } from "@/lib/constants";
 import type { VRPInputs, VRPResults, VRPSelectionRow, Alert } from "@/types/hydraulic";
 
-// Tabla de Cv máximo por DN (válvulas globo/diafragma piloto-operadas)
-const VRP_TABLE: Array<{ dn: string; dn_mm: number; cv_max: number }> = [
-  { dn: '2"',  dn_mm: 50,  cv_max: 18  },
-  { dn: '3"',  dn_mm: 75,  cv_max: 45  },
-  { dn: '4"',  dn_mm: 100, cv_max: 82  },
-  { dn: '6"',  dn_mm: 150, cv_max: 185 },
-  { dn: '8"',  dn_mm: 200, cv_max: 330 },
-  { dn: '10"', dn_mm: 250, cv_max: 515 },
-  { dn: '12"', dn_mm: 300, cv_max: 740 },
-];
+const P_ATM_BAR = 1.013;   // presión atmosférica a nivel del mar
+const P_VAPOR_BAR = 0.023; // presión de vapor del agua a 20 °C
 
 export function calculateVRP(inputs: VRPInputs): VRPResults | null {
   const { rawQMax, rawQMin, P1, P2, DN, flowUnit } = inputs;
@@ -28,10 +22,10 @@ export function calculateVRP(inputs: VRPInputs): VRPResults | null {
   if (P2 >= P1) {
     alerts.push({ level: "ERROR", field: "P2", message: "P2 debe ser menor que P1" });
     return {
-      Cv_max_req: 0, Cv_min_req: 0, deltaP_bar: 0, Q_max_m3h: 0, Q_min_m3h: 0,
+      Kv_max_req: 0, Kv_min_req: 0, deltaP_bar: 0, Q_max_m3h: 0, Q_min_m3h: 0,
       sigma: 0, riesgoCavitacion: false, relacionPresion: 0, dobleEtapa: false,
       v_aguas_abajo: 0, recommendedDN: null, recommendedDN_mm: null,
-      pct_apertura_max: null, pct_apertura_min: null, selectionTable: [],
+      pct_capacidad_max: null, pct_capacidad_min: null, selectionTable: [],
       alerts, dataStatus: "calculated",
     };
   }
@@ -54,50 +48,58 @@ export function calculateVRP(inputs: VRPInputs): VRPResults | null {
   const P2_bar = P2 * 0.9807;
   const deltaP_bar = P1_bar - P2_bar;
 
-  // 1. Cv requerido (IEC 60534: Q(m³/h) = Cv × √(ΔP/SG), SG=1)
-  const Cv_max_req = Q_max_m3h / Math.sqrt(deltaP_bar);
-  const Cv_min_req = Q_min_m3h / Math.sqrt(deltaP_bar);
+  // 1. Kv requerido (IEC 60534: Q(m³/h) = Kv × √(ΔP/SG), SG=1). Cv = 1.156·Kv.
+  const Kv_max_req = Q_max_m3h / Math.sqrt(deltaP_bar);
+  const Kv_min_req = Q_min_m3h / Math.sqrt(deltaP_bar);
 
-  // 2. Selección: válvula donde Cv_max_req ≤ 70% de Cv_max
-  const vrp_seleccionada = VRP_TABLE.find(v => v.cv_max * 0.70 >= Cv_max_req);
+  // 2. Selección: válvula más chica donde Kv_req ≤ 70% de su Kv máximo
+  const vrp_seleccionada = KV_VALVULAS_GLOBO.find(v => v.kv_max * KV_FACTOR_SELECCION >= Kv_max_req);
 
-  // 3. Apertura
-  const pct_apertura_max = vrp_seleccionada
-    ? Math.round((Cv_max_req / vrp_seleccionada.cv_max) * 100)
+  // 3. % de la capacidad Kv utilizada (NO es % de carrera/apertura: la curva Kv-apertura
+  //    de una válvula globo no es lineal — verificar con la curva del fabricante)
+  const pct_capacidad_max = vrp_seleccionada
+    ? Math.round((Kv_max_req / vrp_seleccionada.kv_max) * 100)
     : null;
-  const pct_apertura_min = vrp_seleccionada
-    ? Math.round((Cv_min_req / vrp_seleccionada.cv_max) * 100)
+  const pct_capacidad_min = vrp_seleccionada
+    ? Math.round((Kv_min_req / vrp_seleccionada.kv_max) * 100)
     : null;
 
-  // 4. Índice de cavitación (σ de Thoma simplificado)
-  const sigma = P2_bar / (P1_bar - P2_bar);
-  const riesgoCavitacion = sigma < 0.5;
+  // 4. Índice de cavitación — forma aguas abajo con presiones ABSOLUTAS
+  //    (la que usan las cartas de fabricante): σ = (P2 + Patm − Pv) / (P1 − P2)
+  const sigma = (P2_bar + P_ATM_BAR - P_VAPOR_BAR) / deltaP_bar;
+  const riesgoCavitacion = sigma < 1.5;
 
-  // 5. Relación de reducción
+  // 5. Relación de reducción (manométrica, regla de campo 3:1)
   const relacionPresion = parseFloat((P1 / P2).toFixed(2));
   const dobleEtapa = relacionPresion > 3.0;
 
-  // 6. Velocidad aguas abajo
+  // 6. Velocidad aguas abajo (en la línea)
   const dn_m = DN / 1000;
   const A_linea = Math.PI * Math.pow(dn_m / 2, 2);
   const v_aguas_abajo = (Q_max_m3h / 3600) / A_linea;
 
+  // 6b. Velocidad a través de la válvula seleccionada (límite continuo ~6 m/s)
+  const v_valvula = vrp_seleccionada
+    ? (Q_max_m3h / 3600) / (Math.PI * Math.pow(vrp_seleccionada.dn_mm / 2000, 2))
+    : null;
+
   // 7. Tabla de selección completa
-  const selectionTable: VRPSelectionRow[] = VRP_TABLE.map(v => {
-    const pct_max = Math.round((Cv_max_req / v.cv_max) * 100);
-    const pct_min = Math.round((Cv_min_req / v.cv_max) * 100);
-    const insuf = Cv_max_req > v.cv_max;
+  const selectionTable: VRPSelectionRow[] = KV_VALVULAS_GLOBO.map(v => {
+    const pct_max = Math.round((Kv_max_req / v.kv_max) * 100);
+    const pct_min = Math.round((Kv_min_req / v.kv_max) * 100);
+    const insuf = Kv_max_req > v.kv_max;
 
     let status: VRPSelectionRow["status"];
     if (insuf) status = "insuficiente";
     else if (pct_max > 75) status = "limite";
     else if (pct_max >= 35 && pct_max <= 65) status = "optimo";
+    else if (pct_max < 20) status = "sobredimensionada";
     else status = "funcional";
 
     return {
       dn: v.dn,
       dn_mm: v.dn_mm,
-      cv_max: v.cv_max,
+      kv_max: v.kv_max,
       pct_max,
       pct_min,
       status,
@@ -109,7 +111,7 @@ export function calculateVRP(inputs: VRPInputs): VRPResults | null {
   if (riesgoCavitacion) {
     alerts.push({
       level: "WARN", field: "sigma",
-      message: `Indice de cavitacion bajo (σ=${sigma.toFixed(2)}) — Verificar con fabricante, considerar valvula anticavitacion`,
+      message: `Indice de cavitacion σ=${sigma.toFixed(2)} < 1.5 (aguas abajo, presiones absolutas) — zona de cavitacion probable: verificar carta anticavitacion del fabricante o considerar valvula anticavitacion`,
     });
   }
   if (dobleEtapa) {
@@ -118,10 +120,16 @@ export function calculateVRP(inputs: VRPInputs): VRPResults | null {
       message: `Relacion de presion > 3:1 (${relacionPresion}:1) — Considerar dos VRP en serie`,
     });
   }
-  if (pct_apertura_min != null && pct_apertura_min < 10) {
+  if (pct_capacidad_min != null && pct_capacidad_min < 10) {
     alerts.push({
       level: "WARN", field: "apertura",
-      message: `Apertura minima < 10% (${pct_apertura_min}%) — Posible inestabilidad a caudal minimo`,
+      message: `A caudal minimo la valvula usaria ${pct_capacidad_min}% de su capacidad (<10%) — verificar el caudal minimo controlable con el fabricante (posible inestabilidad)`,
+    });
+  }
+  if (pct_capacidad_max != null && pct_capacidad_max < 30) {
+    alerts.push({
+      level: "WARN", field: "apertura",
+      message: `A caudal maximo la valvula usaria solo ${pct_capacidad_max}% de su capacidad — posible sobredimension; verificar con el fabricante o considerar un DN menor`,
     });
   }
   if (v_aguas_abajo > 3.0) {
@@ -130,16 +138,28 @@ export function calculateVRP(inputs: VRPInputs): VRPResults | null {
       message: `Velocidad aguas abajo elevada (${v_aguas_abajo.toFixed(1)} m/s) — Considerar DN mayor`,
     });
   }
+  if (v_valvula != null && v_valvula > 6.0) {
+    alerts.push({
+      level: "WARN", field: "velocidad",
+      message: `Velocidad a traves de la valvula ${v_valvula.toFixed(1)} m/s > 6 m/s (limite continuo tipico) — considerar un DN de valvula mayor`,
+    });
+  }
+  if (vrp_seleccionada != null && vrp_seleccionada.dn_mm > DN) {
+    alerts.push({
+      level: "WARN", field: "seleccion",
+      message: `La VRP recomendada (${vrp_seleccionada.dn}) es mayor que la linea (${DN} mm) — poco usual (la VRP suele ser 1-2 DN menor que la linea); revisar Q y presiones capturados`,
+    });
+  }
   if (!vrp_seleccionada) {
     alerts.push({
       level: "ERROR", field: "seleccion",
-      message: "El Cv requerido excede los tamaños estándar de catálogo. Consultar directamente con el fabricante.",
+      message: "El Kv requerido excede los tamaños estándar de catálogo. Consultar directamente con el fabricante.",
     });
   }
 
   return {
-    Cv_max_req,
-    Cv_min_req,
+    Kv_max_req,
+    Kv_min_req,
     deltaP_bar,
     Q_max_m3h,
     Q_min_m3h,
@@ -150,8 +170,8 @@ export function calculateVRP(inputs: VRPInputs): VRPResults | null {
     v_aguas_abajo,
     recommendedDN: vrp_seleccionada?.dn ?? null,
     recommendedDN_mm: vrp_seleccionada?.dn_mm ?? null,
-    pct_apertura_max,
-    pct_apertura_min,
+    pct_capacidad_max,
+    pct_capacidad_min,
     selectionTable,
     alerts,
     dataStatus: "calculated",

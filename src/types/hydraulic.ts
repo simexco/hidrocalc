@@ -261,28 +261,28 @@ export interface VRPInputs {
 export interface VRPSelectionRow {
   dn: string;
   dn_mm: number;
-  cv_max: number;
-  pct_max: number;            // % aperture at Q_max
-  pct_min: number;            // % aperture at Q_min
-  status: "optimo" | "funcional" | "limite" | "insuficiente";
+  kv_max: number;             // Kv metrico: Q(m³/h) = Kv·√(ΔP bar), IEC 60534
+  pct_max: number;            // % de la capacidad Kv utilizada a Q_max
+  pct_min: number;            // % de la capacidad Kv utilizada a Q_min
+  status: "optimo" | "funcional" | "sobredimensionada" | "limite" | "insuficiente";
   isRecommended: boolean;
 }
 
 export interface VRPResults {
-  Cv_max_req: number;
-  Cv_min_req: number;
+  Kv_max_req: number;         // Kv requerido a Q max (Cv = 1.156·Kv)
+  Kv_min_req: number;
   deltaP_bar: number;
   Q_max_m3h: number;
   Q_min_m3h: number;
-  sigma: number;              // cavitation index
+  sigma: number;              // indice de cavitacion (aguas abajo, presiones absolutas)
   riesgoCavitacion: boolean;
   relacionPresion: number;    // P1/P2
   dobleEtapa: boolean;        // P1/P2 > 3
   v_aguas_abajo: number;      // m/s
   recommendedDN: string | null;
   recommendedDN_mm: number | null;
-  pct_apertura_max: number | null;
-  pct_apertura_min: number | null;
+  pct_capacidad_max: number | null;  // % de capacidad Kv utilizada a Q max
+  pct_capacidad_min: number | null;
   selectionTable: VRPSelectionRow[];
   alerts: Alert[];
   dataStatus: DataStatus;

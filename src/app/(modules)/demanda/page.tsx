@@ -75,6 +75,7 @@ export default function DemandaPage() {
       dotacion: Math.round(results.dotacionAjustada),
       cmd: inputs.CVD,
       cmh: inputs.CVH,
+      horasTanque: inputs.coefRegulacion, // R de regulación CONAGUA (m³ por L/s) — mismo valor que usa demanda
       q_ls: Math.round(results.QMD_ls * 100) / 100,
     }), 600);
     return () => clearTimeout(t);

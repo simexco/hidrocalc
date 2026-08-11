@@ -16,7 +16,8 @@ export type ActiveProject = ReportData;
 
 export const emptyProject: ActiveProject = {
   proyecto: "", localidad: "", fecha: "", folio: "", elaboro: "",
-  poblacion: null, proyectarCrecimiento: false, periodoDiseno: 20, dotacion: 150, cmd: 1.4, cmh: 2.0, horasTanque: 14.3,
+  // cmh = CVh (se aplica sobre el Qmd) y horasTanque = R de regulación CONAGUA en m³ por (L/s): 24 h = 11.0
+  poblacion: null, proyectarCrecimiento: false, periodoDiseno: 20, dotacion: 150, cmd: 1.4, cmh: 1.55, horasTanque: 11.0,
   q_ls: null, longitud: null, desnivel: null, presionRequerida: 10,
   material: "PVC Inglés", dn: "", clase: "RD 26", diametroInterior: null, c: 150,
   presionMaxLinea: null, pnLinea: null, p1: null, presionFinalLinea: null,
@@ -25,6 +26,8 @@ export const emptyProject: ActiveProject = {
   despiece: [],
   cruceros: [],
   vrpDN: null, golpeValvulaDN: null,
+  golpeA: null, golpeDeltaH: null, golpePmax: null, golpeResiste: null,
+  vrpRequerida: null, coefAccesorios: null,
 };
 
 interface ProjectState {

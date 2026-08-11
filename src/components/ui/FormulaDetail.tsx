@@ -123,12 +123,29 @@ export function pressureFormula(P1_kgcm2: number, z1: number, z2: number, hf: nu
   };
 }
 
-export function waterHammerFormula(V0: number, a: number, deltaH: number) {
+export function waterHammerFormula(V0: number, a: number, deltaH: number, Tc?: number | null, Tphase?: number | null) {
+  // En cierre lento el motor aplica Michaud (factor Tfase/Tc); la derivacion mostrada
+  // debe ser la MISMA que produce el resultado, no siempre Joukowsky.
+  const lento = Tc != null && Tphase != null && Tc > Tphase;
+  if (lento) {
+    return {
+      title: "Sobrepresion golpe de ariete",
+      value: (deltaH / 10).toFixed(2),
+      unit: "kg/cm²",
+      formula: "ΔH = (a × V₀ / g) × (Tfase / Tc)  (Michaud — cierre lento)",
+      steps: [
+        { substitution: `ΔH = (${a.toFixed(1)} × ${V0.toFixed(2)} / 9.81) × (${Tphase!.toFixed(2)} / ${Tc!.toFixed(2)})` },
+        { result: `ΔH = ${deltaH.toFixed(2)} m.c.a. = ${(deltaH / 10).toFixed(2)} kg/cm²` },
+      ],
+      reference: "Formula de Michaud (equivale a ΔH = 2·L·V₀ / (g·Tc))",
+      norm: "Ref: Streeter-Wylie, Hydraulic Transients",
+    };
+  }
   return {
     title: "Sobrepresion golpe de ariete",
     value: (deltaH / 10).toFixed(2),
     unit: "kg/cm²",
-    formula: "ΔH = a × V₀ / g  (Joukowsky)",
+    formula: "ΔH = a × V₀ / g  (Joukowsky — cierre brusco)",
     steps: [
       { substitution: `ΔH = ${a.toFixed(1)} × ${V0.toFixed(2)} / 9.81` },
       { result: `ΔH = ${deltaH.toFixed(2)} m.c.a. = ${(deltaH / 10).toFixed(2)} kg/cm²` },
@@ -154,18 +171,20 @@ export function waveSpeedFormula(D_mm: number, e_mm: number, E_Pa: number, a: nu
   };
 }
 
-export function cvFormula(Q_m3h: number, deltaP_bar: number, Cv: number) {
+export function kvFormula(Q_m3h: number, deltaP_bar: number, Kv: number) {
+  // Q(m³/h)/√(ΔP bar) define el coeficiente METRICO Kv (IEC 60534).
+  // Cv (US: gpm/psi) = 1.156 × Kv — no confundir al comparar con catalogos.
   return {
-    title: "Coeficiente de flujo Cv",
-    value: Cv.toFixed(1),
+    title: "Coeficiente de flujo Kv",
+    value: Kv.toFixed(1),
     unit: "",
-    formula: "Cv = Q(m³/h) / √(ΔP en bar)",
+    formula: "Kv = Q(m³/h) / √(ΔP en bar)",
     steps: [
-      { substitution: `Cv = ${Q_m3h.toFixed(1)} / √(${deltaP_bar.toFixed(2)})` },
-      { substitution: `Cv = ${Q_m3h.toFixed(1)} / ${Math.sqrt(deltaP_bar).toFixed(3)}` },
-      { result: `Cv = ${Cv.toFixed(1)}` },
+      { substitution: `Kv = ${Q_m3h.toFixed(1)} / √(${deltaP_bar.toFixed(2)})` },
+      { substitution: `Kv = ${Q_m3h.toFixed(1)} / ${Math.sqrt(deltaP_bar).toFixed(3)}` },
+      { result: `Kv = ${Kv.toFixed(1)}  (equivale a Cv = ${(Kv * 1.156).toFixed(1)} en unidades US)` },
     ],
-    reference: "Coeficiente de flujo para valvulas de control",
-    norm: "IEC 60534 / ISA S75.01 / Crane TP-410",
+    reference: "Coeficiente de flujo metrico para valvulas de control (Cv = 1.156 × Kv)",
+    norm: "IEC 60534 / ISA S75.01",
   };
 }
