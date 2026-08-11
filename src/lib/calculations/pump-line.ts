@@ -18,7 +18,7 @@ export const PUMPING_REGIMES = [
 
 export interface PumpLineInputs {
   // Flow
-  Qmd_ls: number | null;       // mean daily flow L/s (from demand calc)
+  Qmd_ls: number | null;       // L/s — gasto de diseño a bombear (normalmente el QMD, gasto maximo diario)
   horasBombeo: number;          // hours per day
   // Geometry
   cotaBomba: number;            // m.s.n.m. — pump centerline elevation
@@ -150,9 +150,10 @@ export function calculatePumpLine(input: PumpLineInputs): PumpLineResults | null
 
   // 7. Energy cost
   const kWh_dia = Pm_kW * horasBombeo;
-  const kWh_mes = kWh_dia * 30;
+  // Año de 365 dias (mes promedio 365/12), igual que el modulo Equipo de bombeo
+  const kWh_mes = kWh_dia * (365 / 12);
   const costo_mes = kWh_mes * tarifaCFE;
-  const costo_anual = costo_mes * 12;
+  const costo_anual = kWh_dia * 365 * tarifaCFE;
 
   // 8. Alerts
   if (V > 2.0) alerts.push({ level: 'WARN', message: `Velocidad ${V.toFixed(2)} m/s (max recomendado en impulsion: 2.0 m/s)` });

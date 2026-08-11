@@ -191,7 +191,7 @@ export default function DemandaPage() {
 
             {/* Advanced */}
             {/* Coef. de regulación siempre a la vista: editable sin entrar a crecimiento/avanzados */}
-            <InputField label="Coef. regulacion del tanque" value={inputs.coefRegulacion} onChange={(v) => set("coefRegulacion", parseFloat(v) || 11)} tooltip="Coeficiente de regulacion CONAGUA segun horas de suministro al tanque. 24h=11.0, 20h=9.0, 16h=19.0 (CDMX: 24h=14.3). Se aplica sobre el gasto maximo diario." />
+            <InputField label="Coef. regulacion del tanque" value={inputs.coefRegulacion} onChange={(v) => set("coefRegulacion", parseFloat(v) || 11)} tooltip="Coeficiente de regulacion CONAGUA en m³ por (L/s) de QMD. Suministro 24 h: 11.0 (CDMX: 14.3). Para horarios reducidos consultar la tabla MAPAS segun el horario real de bombeo. Se aplica sobre el gasto maximo diario." />
             <button onClick={() => setShowAdvanced(!showAdvanced)} className="text-[10px] text-[#1C3D5A] underline decoration-dotted">
               {showAdvanced ? 'Ocultar' : 'Mostrar'} parametros avanzados
             </button>
@@ -284,7 +284,7 @@ export default function DemandaPage() {
                 <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-xs text-gray-500">Caudal medio diario (Qmd)</p>
+                      <p className="text-xs text-gray-500">Caudal medio diario (Qmed)</p>
                       <p className="text-2xl font-bold text-gray-700 dark:text-gray-200">{formatNumber(results.Qmd_ls, 2)} <span className="text-sm font-normal">L/s</span></p>
                     </div>
                     <span className="text-sm text-gray-400">{formatNumber(results.Qmd_m3h, 1)} m3/h</span>

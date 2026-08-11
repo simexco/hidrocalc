@@ -129,7 +129,7 @@ export default function PerfilPage() {
         clase: t0?.pipeClass ?? "",
         diametroInterior: t0?.DN_mm ?? null,
         c: t0?.C ?? 150,
-        longitud: sorted.length ? sorted[sorted.length - 1].dist : null,
+        longitud: sorted.length >= 2 ? sorted[sorted.length - 1].dist - sorted[0].dist : (sorted.length ? sorted[sorted.length - 1].dist : null),
         desnivel: sorted.length >= 2 ? sorted[0].cota - sorted[sorted.length - 1].cota : null,
         vertices: sorted.map((v) => ({ cad: v.dist, cota: v.cota, desc: v.desc || "" })),
         presionMaxLinea: presiones.length ? Math.max(...presiones) : null,
@@ -685,7 +685,7 @@ export default function PerfilPage() {
                       {vel.status === 'optimo' && '— Optimo'}
                       {vel.status === 'aceptable' && '— Aceptable'}
                       {vel.status === 'alto' && '— Muy alto (>2.5)'}
-                      {vel.status === 'bajo' && '— Muy bajo (<0.3)'}
+                      {vel.status === 'bajo' && '— Bajo (<0.6)'}
                     </span>
                     {vel.status !== 'optimo' && recommendedDN && recommendedDN.dn !== t.DN_mm && (
                       <button onClick={() => updateTramo(t.id, { DN_mm: recommendedDN.dn })} className="ml-auto text-[10px] underline opacity-70 hover:opacity-100">

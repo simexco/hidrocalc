@@ -303,7 +303,7 @@ function drawProfile(doc: jsPDF, verts: ReportVertex[], y: number): number {
     doc.setFillColor(...BRAND); doc.circle(sx(p.cad), sy(p.cota), 0.8, "F");
     doc.text(`${p.cota.toFixed(1)}`, sx(p.cad), sy(p.cota) - 2, { align: "center" });
     if (p.desc) doc.text(safe(p.desc), sx(p.cad), yTop + h + 4, { align: "center" });
-    doc.text(`0+${String(Math.round(p.cad)).padStart(3, "0")}`, sx(p.cad), yTop + h + 8, { align: "center" });
+    doc.text(`${Math.floor(Math.round(p.cad) / 1000)}+${String(Math.round(p.cad) % 1000).padStart(3, "0")}`, sx(p.cad), yTop + h + 8, { align: "center" });
   }
   doc.setTextColor(120, 120, 120); doc.setFontSize(7);
   doc.text("Cadenamiento (m) - cotas en m.s.n.m.", (x0 + x1) / 2, yTop + h + 13, { align: "center" });
