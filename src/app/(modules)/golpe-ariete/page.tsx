@@ -91,31 +91,65 @@ export default function GolpeArietePage() {
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
   const persistRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
+  // Estado guardado del modulo: ademas de inputs, el caudal, el modo y la seleccion
+  // de catalogo (antes NO se guardaban → al recargar el caudal quedaba vacio y el
+  // tipo de tuberia regresaba al default, y el proyecto solo se ligaba la 1a vez).
+  type GolpeExtra = { _caudalQ?: number | null; _velMode?: "velocidad" | "caudal"; _cat?: number; _size?: number; _class?: number; _pvcSystem?: PVCSystem; _entryMode?: "simple" | "advanced" };
   useEffect(() => {
-    const saved = loadFormState<typeof inputs>("golpe-ariete");
-    if (saved) {
-      Object.entries(saved).forEach(([key, value]) => {
-        setInput(key as keyof typeof inputs, value as never);
-      });
-      return;
-    }
-    // Sin datos propios: tuberia por defecto PVC Inglés RD 26 (o lo del proyecto si existe),
-    // y ligar caudal/presion del proyecto activo.
+    const saved = loadFormState<typeof inputs & GolpeExtra>("golpe-ariete");
     const p = useProjectStore.getState().project;
     prefillingRef.current = true;
-    const m = matchGolpeCatalog(p.material || "PVC Inglés", p.diametroInterior, p.clase || "RD 26");
-    if (m) { setSelectedCatalog(m.gi); setSelectedSize(m.si); setSelectedClass(m.ci); }
-    if (p.q_ls != null) { setVelMode("caudal"); setCaudalQ(p.q_ls); }
-    if (p.presionMaxLinea != null) setInput("P0", Math.round(p.presionMaxLinea * 10) / 10);
-    if (p.longitud != null) setInput("L", p.longitud);
+    if (saved) {
+      const { _caudalQ, _velMode, _cat, _size, _class, _pvcSystem, _entryMode, ...ins } = saved;
+      Object.entries(ins).forEach(([key, value]) => {
+        setInput(key as keyof typeof inputs, value as never);
+      });
+      if (_entryMode) setEntryMode(_entryMode);
+      if (_pvcSystem) setPvcSystem(_pvcSystem);
+      if (_cat != null) { setSelectedCatalog(_cat); setSelectedSize(_size ?? 0); setSelectedClass(_class ?? 0); }
+      else {
+        const m = matchGolpeCatalog(p.material || "PVC Inglés", p.diametroInterior, p.clase || "RD 26");
+        if (m) { setSelectedCatalog(m.gi); setSelectedSize(m.si); setSelectedClass(m.ci); }
+      }
+      if (_velMode) setVelMode(_velMode);
+      // Huecos se rellenan desde el proyecto activo (lo capturado por el usuario manda)
+      if (_caudalQ != null) setCaudalQ(_caudalQ);
+      else if (p.q_ls != null) { setVelMode("caudal"); setCaudalQ(p.q_ls); }
+      if ((ins as typeof inputs).P0 == null && p.presionMaxLinea != null) setInput("P0", Math.round(p.presionMaxLinea * 10) / 10);
+      if ((ins as typeof inputs).L == null && p.longitud != null) setInput("L", p.longitud);
+    } else {
+      // Sin datos propios: tuberia por defecto PVC Inglés RD 26 (o lo del proyecto si existe),
+      // y ligar caudal/presion del proyecto activo.
+      const m = matchGolpeCatalog(p.material || "PVC Inglés", p.diametroInterior, p.clase || "RD 26");
+      if (m) { setSelectedCatalog(m.gi); setSelectedSize(m.si); setSelectedClass(m.ci); }
+      if (p.q_ls != null) { setVelMode("caudal"); setCaudalQ(p.q_ls); }
+      if (p.presionMaxLinea != null) setInput("P0", Math.round(p.presionMaxLinea * 10) / 10);
+      if (p.longitud != null) setInput("L", p.longitud);
+    }
     setTimeout(() => { prefillingRef.current = false; }, 0);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
     clearTimeout(persistRef.current);
-    persistRef.current = setTimeout(() => saveFormState("golpe-ariete", inputs), 1000);
-  }, [inputs]);
+    persistRef.current = setTimeout(() => saveFormState("golpe-ariete", {
+      ...inputs,
+      _caudalQ: caudalQ, _velMode: velMode, _cat: selectedCatalog, _size: selectedSize,
+      _class: selectedClass, _pvcSystem: pvcSystem, _entryMode: entryMode,
+    }), 1000);
+  }, [inputs, caudalQ, velMode, selectedCatalog, selectedSize, selectedClass, pvcSystem, entryMode]);
+
+  // Re-sincronizar a demanda con el proyecto activo (caudal, tuberia, presion, longitud)
+  const importarDelProyecto = () => {
+    const p = useProjectStore.getState().project;
+    prefillingRef.current = true;
+    const m = matchGolpeCatalog(p.material || "PVC Inglés", p.diametroInterior, p.clase || "RD 26");
+    if (m) { setEntryMode("simple"); setSelectedCatalog(m.gi); setSelectedSize(m.si); setSelectedClass(m.ci); }
+    if (p.q_ls != null) { setVelMode("caudal"); setCaudalQ(p.q_ls); }
+    if (p.presionMaxLinea != null) setInput("P0", Math.round(p.presionMaxLinea * 10) / 10);
+    if (p.longitud != null) setInput("L", p.longitud);
+    setTimeout(() => { prefillingRef.current = false; }, 0);
+  };
 
   const runCalc = useCallback(() => {
     // Convert P0 from kg/cm² to m.c.a. for engine
@@ -276,6 +310,13 @@ export default function GolpeArietePage() {
             <div className="flex items-center justify-between border-b border-gray-100 dark:border-gray-700 pb-2">
               <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300">Datos de entrada</h2>
               <div className="flex items-center gap-2">
+                <button
+                  onClick={importarDelProyecto}
+                  title="Vuelve a traer caudal, tubería, presión y longitud del proyecto activo"
+                  className="text-xs bg-[#E9EFF5] text-[#1C3D5A] px-2 py-1 rounded hover:bg-[#1C3D5A] hover:text-white transition-colors"
+                >
+                  ⟲ Traer datos del proyecto
+                </button>
                 {singlePipe.results?.V != null && (
                   <button
                     onClick={handleImportFromMod1}
