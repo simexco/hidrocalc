@@ -36,7 +36,8 @@ export interface ReportData {
   material: string;
   dn: string;
   clase: string;
-  diametroInterior: number | null; // mm
+  dnNominal_mm: number | null;    // mm — DN NOMINAL comercial (150 = 6"); para prefills/catálogos
+  diametroInterior: number | null; // mm — diámetro interno REAL (OD − 2e); es el diámetro hidráulico
   c: number | null;
   presionMaxLinea: number | null;  // kg/cm² — presión máxima de operación en la línea (del perfil)
   pnLinea: number | null;          // kg/cm² — presión que resiste la clase elegida
@@ -113,9 +114,11 @@ export function computeReport(d: ReportData): ReportResults {
 
   // Módulo 2 — gasto de conducción (usa Q capturado, suele ser Qmd)
   const Q = d.q_ls;
-  if (Q != null && Q > 0 && d.diametroInterior != null && d.diametroInterior > 0) {
+  // Diámetro hidráulico: el ID real; si solo se conoce el DN nominal, se usa como aproximación
+  const Di_mm = d.diametroInterior ?? d.dnNominal_mm;
+  if (Q != null && Q > 0 && Di_mm != null && Di_mm > 0) {
     const Q_m3s = Q / 1000;
-    const D_m = d.diametroInterior / 1000;
+    const D_m = Di_mm / 1000;
     const A = Math.PI * Math.pow(D_m / 2, 2);
     r.velocidad = Q_m3s / A;
     r.hv = (r.velocidad * r.velocidad) / (2 * 9.81);

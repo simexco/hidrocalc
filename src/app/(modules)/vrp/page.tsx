@@ -35,7 +35,7 @@ export default function VRPPage() {
     const p = useProjectStore.getState().project;
     if (p.q_ls != null) { setInput("rawQMax", p.q_ls as never); setInput("flowUnit", "L/s" as never); }
     if (p.presionMaxLinea != null) setInput("P1", (Math.round(p.presionMaxLinea * 10) / 10) as never);
-    if (p.diametroInterior != null) setInput("DN", p.diametroInterior as never);
+    if (p.dnNominal_mm != null) setInput("DN", p.dnNominal_mm as never);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

@@ -15,7 +15,8 @@ export interface ProfileTramo {
   id: string;
   distFrom: number;  // m — start distance
   distTo: number;    // m — end distance
-  DN_mm: number;
+  DN_mm: number;        // DN nominal comercial (etiqueta)
+  Di_mm?: number;       // diámetro interno REAL (OD − 2e) — el hidráulico; si falta se usa DN_mm
   C: number;
   materialName: string;
   pipeClass?: string;   // e.g. "SDR 26", "DR 18", "K9"
@@ -110,7 +111,8 @@ export function calculateProfile(input: ProfileInputs): ProfileResults | null {
     const tramo = findTramo(sorted[i].dist, tramos);
     const DN_mm = tramo?.DN_mm ?? tramos[0].DN_mm;
     const C = tramo?.C ?? tramos[0].C;
-    const D_m = DN_mm / 1000;
+    // Hidráulica con el ID real del catálogo; DN_mm queda solo como etiqueta
+    const D_m = (tramo?.Di_mm ?? tramo?.DN_mm ?? tramos[0].Di_mm ?? tramos[0].DN_mm) / 1000;
     const A = Math.PI * Math.pow(D_m / 2, 2);
     const V_point = Q != null && Q > 0 ? Q / A : null;
 
@@ -125,9 +127,10 @@ export function calculateProfile(input: ProfileInputs): ProfileResults | null {
         const subL = cortes[k + 1] - cortes[k];
         if (subL <= 0) continue;
         const subTramo = findTramo((cortes[k] + cortes[k + 1]) / 2, tramos);
-        const subDN = subTramo?.DN_mm ?? tramos[0].DN_mm;
+        // ID real del sub-tramo (fallback al nominal si no viene derivado)
+        const subDi = subTramo?.Di_mm ?? subTramo?.DN_mm ?? tramos[0].Di_mm ?? tramos[0].DN_mm;
         const subC = subTramo?.C ?? tramos[0].C;
-        const segHf = hfSegment(Q!, subDN / 1000, subC, subL);
+        const segHf = hfSegment(Q!, subDi / 1000, subC, subL);
         hfAccum += segHf;
         if (subTramo) tramoHf[subTramo.id] = (tramoHf[subTramo.id] ?? 0) + segHf;
       }
@@ -186,7 +189,7 @@ export function calculateProfile(input: ProfileInputs): ProfileResults | null {
 
   // Tramo summaries with max pressure check
   const tramoSummaries = tramos.map((t, tIdx) => {
-    const D_m = t.DN_mm / 1000;
+    const D_m = (t.Di_mm ?? t.DN_mm) / 1000;
     const A = Math.PI * Math.pow(D_m / 2, 2);
     const V = Q != null && Q > 0 ? Q / A : null;
     const length = t.distTo - t.distFrom;

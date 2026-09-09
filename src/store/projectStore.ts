@@ -9,6 +9,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import type { ReportData } from "@/lib/export/report-generator";
+import { getRealInternalDiameter, STANDARD_DNS } from "@/lib/constants";
 
 // El proyecto activo tiene el mismo shape que el reporte (ReportData):
 // las entradas/datos clave que viajan entre modulos.
@@ -19,7 +20,7 @@ export const emptyProject: ActiveProject = {
   // cmh = CVh (se aplica sobre el Qmd) y horasTanque = R de regulación CONAGUA en m³ por (L/s): 24 h = 11.0
   poblacion: null, proyectarCrecimiento: false, periodoDiseno: 20, dotacion: 150, cmd: 1.4, cmh: 1.55, horasTanque: 11.0,
   q_ls: null, longitud: null, desnivel: null, presionRequerida: 10,
-  material: "PVC Inglés", dn: "", clase: "RD 26", diametroInterior: null, c: 150,
+  material: "PVC Inglés", dn: "", clase: "RD 26", dnNominal_mm: null, diametroInterior: null, c: 150,
   presionMaxLinea: null, pnLinea: null, p1: null, presionFinalLinea: null,
   vertices: [], valvulas: [],
   incluyeBombeo: false, he: null, eficiencia: 70,
@@ -43,7 +44,25 @@ export const useProjectStore = create<ProjectState>()(
       patch: (p) => set((s) => ({ project: { ...s.project, ...p } })),
       reset: () => set({ project: { ...emptyProject } }),
     }),
-    { name: "hidrocalc-active-project" }
+    {
+      name: "hidrocalc-active-project",
+      version: 1,
+      // v0 guardaba el DN NOMINAL en diametroInterior: separarlo y derivar el ID real
+      migrate: (persisted, version) => {
+        const s = persisted as { project?: ActiveProject } | undefined;
+        if (version === 0 && s?.project) {
+          const p = s.project;
+          if (p.dnNominal_mm == null && p.diametroInterior != null) {
+            if (STANDARD_DNS.includes(p.diametroInterior)) {
+              p.dnNominal_mm = p.diametroInterior;
+              p.diametroInterior = getRealInternalDiameter(p.material, p.diametroInterior, p.clase) ?? p.diametroInterior;
+            }
+            // Valor fuera de la serie nominal: ya era un ID real capturado a mano — se conserva
+          }
+        }
+        return persisted;
+      },
+    }
   )
 );
 

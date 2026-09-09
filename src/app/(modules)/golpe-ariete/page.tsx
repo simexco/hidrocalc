@@ -108,7 +108,7 @@ export default function GolpeArietePage() {
       if (_pvcSystem) setPvcSystem(_pvcSystem);
       if (_cat != null) { setSelectedCatalog(_cat); setSelectedSize(_size ?? 0); setSelectedClass(_class ?? 0); }
       else {
-        const m = matchGolpeCatalog(p.material || "PVC Inglés", p.diametroInterior, p.clase || "RD 26");
+        const m = matchGolpeCatalog(p.material || "PVC Inglés", p.dnNominal_mm, p.clase || "RD 26");
         if (m) { setSelectedCatalog(m.gi); setSelectedSize(m.si); setSelectedClass(m.ci); }
       }
       if (_velMode) setVelMode(_velMode);
@@ -120,7 +120,7 @@ export default function GolpeArietePage() {
     } else {
       // Sin datos propios: tuberia por defecto PVC Inglés RD 26 (o lo del proyecto si existe),
       // y ligar caudal/presion del proyecto activo.
-      const m = matchGolpeCatalog(p.material || "PVC Inglés", p.diametroInterior, p.clase || "RD 26");
+      const m = matchGolpeCatalog(p.material || "PVC Inglés", p.dnNominal_mm, p.clase || "RD 26");
       if (m) { setSelectedCatalog(m.gi); setSelectedSize(m.si); setSelectedClass(m.ci); }
       if (p.q_ls != null) { setVelMode("caudal"); setCaudalQ(p.q_ls); }
       if (p.presionMaxLinea != null) setInput("P0", Math.round(p.presionMaxLinea * 10) / 10);
@@ -143,7 +143,7 @@ export default function GolpeArietePage() {
   const importarDelProyecto = () => {
     const p = useProjectStore.getState().project;
     prefillingRef.current = true;
-    const m = matchGolpeCatalog(p.material || "PVC Inglés", p.diametroInterior, p.clase || "RD 26");
+    const m = matchGolpeCatalog(p.material || "PVC Inglés", p.dnNominal_mm, p.clase || "RD 26");
     if (m) { setEntryMode("simple"); setSelectedCatalog(m.gi); setSelectedSize(m.si); setSelectedClass(m.ci); }
     if (p.q_ls != null) { setVelMode("caudal"); setCaudalQ(p.q_ls); }
     if (p.presionMaxLinea != null) setInput("P0", Math.round(p.presionMaxLinea * 10) / 10);

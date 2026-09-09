@@ -241,35 +241,6 @@ export default function Home() {
             </Link>
           ))}
         </div>
-
-        {/* Decision guide */}
-        <div className="max-w-4xl w-full bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-6 md:p-8 mb-8">
-          <h2 className="text-lg font-semibold text-white mb-1 text-center">Que módulo necesito?</h2>
-          <p className="text-xs text-white/40 text-center mb-6">Selecciona segun tu situacion</p>
-          <div className="space-y-3">
-            {[
-              { situation: "No se cuanto caudal necesito para mi proyecto", module: "Calculo de gasto", data: "Poblacion o viviendas, tipo, clima", href: "/demanda" },
-              { situation: "¿La presión llega al final de mi tubería?", module: "Verificar presión (Modo A)", data: "Q, DN, L, P1", href: "/tramo-simple" },
-              { situation: "¿Cuánto caudal puede pasar sin bajar la presión?", module: "Verificar presión (Modo B)", data: "DN, L, P1, P2 mínima", href: "/tramo-simple" },
-              { situation: "No sé qué diámetro usar para mi caudal", module: "Elegir diámetro", data: "Q, L, P1", href: "/dimensionamiento" },
-              { situation: "Mi linea cambia de diametro o material en el trayecto", module: "Linea de conduccion", data: "Q, P1, perfil topografico, tramos", href: "/perfil" },
-              { situation: "¿Qué clase de tubería aguanta el golpe de cierre de una válvula?", module: "Golpe de ariete", data: "V0, D interno, espesor, material, Tc", href: "/golpe-ariete" },
-              { situation: "¿Dónde pongo las válvulas de aire en mi línea?", module: "Válvulas de aire", data: "Q, DN, perfil de cotas", href: "/valvulas-aire" },
-              { situation: "Quiero ver si la presion llega a lo largo de todo el trazo", module: "Linea de conduccion", data: "Q, DN, P1, perfil topografico", href: "/perfil" },
-              { situation: "Necesito reducir la presion en una zona de mi red", module: "Valvula reductora", data: "Q, P1, P2, DN", href: "/vrp" },
-              { situation: "¿Que volumen de tanque necesito para regular el suministro?", module: "Calculo de gasto", data: "Qmd, coef. regulacion", href: "/demanda" },
-            ].map((r) => (
-              <Link key={r.module} href={r.href} className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4 bg-white/5 hover:bg-white/10 border border-white/5 rounded-lg px-4 py-3 transition-colors group">
-                <p className="text-sm text-white/80 flex-1 group-hover:text-white">{r.situation}</p>
-                <span className="text-xs font-semibold text-white/60 bg-white/10 px-2 py-0.5 rounded whitespace-nowrap">{r.module}</span>
-                <span className="text-[10px] text-white/30 whitespace-nowrap hidden md:block">{r.data}</span>
-              </Link>
-            ))}
-          </div>
-          <p className="text-[10px] text-white/20 text-center mt-4">
-            Los campos marcados con * son obligatorios. Los demas tienen valores por defecto que permiten calcular con datos parciales.
-          </p>
-        </div>
       </div>
 
       {/* Footer */}

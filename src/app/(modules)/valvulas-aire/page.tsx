@@ -72,7 +72,7 @@ export default function ValvulasAirePage() {
     if (sinDatosPropios && projVerts.length >= 2) {
       setVertices(projVerts.map((v) => ({ id: uuid(), dist: v.cad, cota: v.cota, desc: v.desc || "" })));
       if (proj.q_ls != null) { setRawQ(proj.q_ls); setFlowUnit("L/s"); }
-      if (proj.diametroInterior != null) setDN(proj.diametroInterior);
+      if (proj.dnNominal_mm != null) setDN(proj.dnNominal_mm);
       if (proj.material) setMaterialName(proj.material);
       if (proj.c != null) setC(proj.c);
     }

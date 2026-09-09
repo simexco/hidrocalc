@@ -4,6 +4,8 @@
    económico y costo de energía
    ════════════════════════════════════════ */
 
+import { getRealInternalDiameter } from "@/lib/constants";
+
 // Bresse para bombeo intermitente (Dacach): D = 1.3·λ^(1/4)·√(Qb), λ = horas/24.
 // K DISMINUYE al reducir horas porque Qb ya crecio con el factor 24/h — la tabla
 // anterior (K de 1.0 a 1.5 creciente) invertia la tendencia y sobredimensionaba.
@@ -25,7 +27,9 @@ export interface PumpLineInputs {
   cotaTanque: number;           // m.s.n.m. — tank water level
   // Pipe
   L: number | null;             // m — pipe length
-  DN_mm: number | null;         // mm — if null, use economic diameter
+  DN_mm: number | null;         // mm — DN NOMINAL; if null, use economic diameter
+  Di_mm?: number | null;        // mm — ID real (OD − 2e); si falta se deriva de material + clase
+  pipeClass?: string | null;    // clase/RD para derivar el ID real del catálogo
   C: number;                    // Hazen-Williams
   materialName: string;
   hmPercent: number;            // minor losses as % of hf (default 10)
@@ -49,6 +53,7 @@ export interface PumpLineResults {
   K_bresse: number;
   // Hydraulics (at selected DN)
   DN_used_mm: number;
+  Di_used_mm: number;           // mm — diámetro interno real usado en la hidráulica
   V: number;                    // m/s
   hf: number;                   // m
   hm: number;                   // m
@@ -115,7 +120,9 @@ export function calculatePumpLine(input: PumpLineInputs): PumpLineResults | null
 
   // 3. Use selected DN or economic
   const DN_used_mm = input.DN_mm ?? DN_econ_mm;
-  const D_m = DN_used_mm / 1000;
+  // Hidráulica con el ID real (OD − 2e) del catálogo, no con el DN nominal
+  const Di_used_mm = input.Di_mm ?? getRealInternalDiameter(input.materialName, DN_used_mm, input.pipeClass) ?? DN_used_mm;
+  const D_m = Di_used_mm / 1000;
   const A = Math.PI * Math.pow(D_m / 2, 2);
 
   // 4. Hydraulics
@@ -170,7 +177,7 @@ export function calculatePumpLine(input: PumpLineInputs): PumpLineResults | null
   return {
     Qbombeo_ls, Qbombeo_m3h, volDiario_m3,
     D_econ_m, DN_econ_mm, K_bresse: K,
-    DN_used_mm, V, hf, hm, J_km,
+    DN_used_mm, Di_used_mm, V, hf, hm, J_km,
     Hg, pServicio_m, CDT, CDT_kgcm2, requiereBombeo, margenGravedad_m,
     Ph_kW, Pb_kW, Pm_kW, Pm_HP, HP_comercial: HP_com,
     kWh_dia, kWh_mes, costo_mes, costo_anual,

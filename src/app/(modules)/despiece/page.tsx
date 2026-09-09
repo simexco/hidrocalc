@@ -63,8 +63,8 @@ export default function DespiecePage() {
     if (!tieneTramos) {
       const proj = useProjectStore.getState().project;
       if (proj.proyecto && !saved?.projectName) setProjectName(proj.proyecto);
-      if (proj.diametroInterior != null || proj.material) {
-        setTramos([{ id: uuid(), name: "Crucero 1", DN: proj.diametroInterior ?? 150, material: proj.material || "PVC Inglés", modo: "visual" }]);
+      if (proj.dnNominal_mm != null || proj.material) {
+        setTramos([{ id: uuid(), name: "Crucero 1", DN: proj.dnNominal_mm ?? 150, material: proj.material || "PVC Inglés", modo: "visual" }]);
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps

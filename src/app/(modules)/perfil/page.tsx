@@ -11,7 +11,7 @@ import { ResetButton } from "@/components/ui/ResetButton";
 import { validateHydraulicInputs, InputWarnings } from "@/components/ui/InputWarning";
 import { calculateProfile, calculateRequiredP1, type ProfileVertex, type ProfileTramo, type ProfileResults } from "@/lib/calculations/hydraulic-profile";
 import { flowToM3s, formatNumber } from "@/lib/calculations/conversions";
-import { STANDARD_DNS, STANDARD_DNS_LABELED, MATERIALS, getPipeClassesForMaterial } from "@/lib/constants";
+import { STANDARD_DNS, STANDARD_DNS_LABELED, MATERIALS, getPipeClassesForMaterial, getRealInternalDiameter } from "@/lib/constants";
 import { saveFormState, loadFormState } from "@/lib/storage/form-persistence";
 import { useProjectStore } from "@/store/projectStore";
 import { ComposedChart, Line, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
@@ -35,6 +35,9 @@ const TooltipPerfil = ({ active, payload, label }: any) => {
     </div>
   );
 };
+
+// Diámetro hidráulico de un tramo: ID real del catálogo (material + clase); fallback al DN nominal
+const tramoDi = (t: ProfileTramo): number => getRealInternalDiameter(t.materialName, t.DN_mm, t.pipeClass) ?? t.DN_mm;
 
 export default function PerfilPage() {
   const [projectName, setProjectName] = useState("Perfil hidraulico");
@@ -127,7 +130,8 @@ export default function PerfilPage() {
         material: t0?.materialName ?? "PVC C900",
         dn: dnLabel,
         clase: t0?.pipeClass ?? "",
-        diametroInterior: t0?.DN_mm ?? null,
+        dnNominal_mm: t0?.DN_mm ?? null,
+        diametroInterior: t0 ? tramoDi(t0) : null,
         c: t0?.C ?? 150,
         longitud: sorted.length >= 2 ? sorted[sorted.length - 1].dist - sorted[0].dist : (sorted.length ? sorted[sorted.length - 1].dist : null),
         desnivel: sorted.length >= 2 ? sorted[0].cota - sorted[sorted.length - 1].cota : null,
@@ -148,22 +152,25 @@ export default function PerfilPage() {
   // Calculate
   const runCalc = useCallback(() => {
     const Q = rawQ != null ? flowToM3s(rawQ, flowUnit) : null;
+    // El motor recibe el ID real de cada tramo (el DN nominal queda como etiqueta)
+    const tramosDi = tramos.map((t) => ({ ...t, Di_mm: tramoDi(t) }));
 
     let effectiveP1 = P1;
     if (calcMode === 'calcularP1' && Q != null && Q > 0) {
-      const reqP1 = calculateRequiredP1({ Q, Pmin_kgcm2: Pmin, vertices, tramos, coefAccesorios: coefAccesorios / 100 });
+      const reqP1 = calculateRequiredP1({ Q, Pmin_kgcm2: Pmin, vertices, tramos: tramosDi, coefAccesorios: coefAccesorios / 100 });
       setComputedP1(reqP1);
       effectiveP1 = reqP1;
     } else {
       setComputedP1(null);
     }
 
-    const res = calculateProfile({ Q, P1_kgcm2: effectiveP1, Pmin_kgcm2: Pmin, vertices, tramos, coefAccesorios: coefAccesorios / 100 });
+    const res = calculateProfile({ Q, P1_kgcm2: effectiveP1, Pmin_kgcm2: Pmin, vertices, tramos: tramosDi, coefAccesorios: coefAccesorios / 100 });
     setResults(res);
 
     // Scenario B
     if (showScenarioB) {
-      const resB = calculateProfile({ Q, P1_kgcm2: effectiveP1, Pmin_kgcm2: Pmin, vertices, tramos: tramosB, coefAccesorios: coefAccesorios / 100 });
+      const tramosBDi = tramosB.map((t) => ({ ...t, Di_mm: tramoDi(t) }));
+      const resB = calculateProfile({ Q, P1_kgcm2: effectiveP1, Pmin_kgcm2: Pmin, vertices, tramos: tramosBDi, coefAccesorios: coefAccesorios / 100 });
       setResultsB(resB);
     } else {
       setResultsB(null);
@@ -369,17 +376,19 @@ export default function PerfilPage() {
   };
 
   // DN Recommendation: find optimal DN for current Q
+  // Velocidades con el ID real (material/clase del primer tramo), igual que el motor
   const Q_m3s = rawQ != null ? flowToM3s(rawQ, flowUnit) : null;
+  const diOf = (dn: number) => getRealInternalDiameter(tramos[0]?.materialName ?? MATERIALS[0].name, dn, tramos[0]?.pipeClass) ?? dn;
   const recommendedDN = (() => {
     if (!Q_m3s || Q_m3s <= 0) return null;
     for (const d of STANDARD_DNS) {
-      const D_m = d / 1000;
+      const D_m = diOf(d) / 1000;
       const A = Math.PI * Math.pow(D_m / 2, 2);
       const V = Q_m3s / A;
       if (V >= 0.6 && V <= 1.5) return { dn: d, V, label: STANDARD_DNS_LABELED.find(x => x.dn === d)?.label ?? `${d}` };
     }
     for (const d of STANDARD_DNS) {
-      const D_m = d / 1000;
+      const D_m = diOf(d) / 1000;
       const A = Math.PI * Math.pow(D_m / 2, 2);
       const V = Q_m3s / A;
       if (V <= 2.5) return { dn: d, V, label: STANDARD_DNS_LABELED.find(x => x.dn === d)?.label ?? `${d}` };
@@ -387,9 +396,9 @@ export default function PerfilPage() {
     return null;
   })();
 
-  function getTramoVelocity(DN_mm: number): { V: number; status: 'optimo' | 'aceptable' | 'alto' | 'bajo' } | null {
+  function getTramoVelocity(t: ProfileTramo): { V: number; status: 'optimo' | 'aceptable' | 'alto' | 'bajo' } | null {
     if (!Q_m3s || Q_m3s <= 0) return null;
-    const D_m = DN_mm / 1000;
+    const D_m = tramoDi(t) / 1000;
     const A = Math.PI * Math.pow(D_m / 2, 2);
     const V = Q_m3s / A;
     let status: 'optimo' | 'aceptable' | 'alto' | 'bajo';
@@ -589,7 +598,7 @@ export default function PerfilPage() {
             )}
 
             {tramos.map((t, i) => {
-              const vel = getTramoVelocity(t.DN_mm);
+              const vel = getTramoVelocity(t);
               return (
               <div key={t.id} className="border border-gray-100 dark:border-gray-700 rounded-lg p-3 space-y-2" style={{ borderLeftColor: tramoColors[i % tramoColors.length], borderLeftWidth: 3 }}>
                 <div className="flex items-center justify-between">
@@ -606,6 +615,10 @@ export default function PerfilPage() {
                     <select value={t.DN_mm} onChange={(e) => updateTramo(t.id, { DN_mm: parseInt(e.target.value) })} className="w-full px-2 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 dark:text-white">
                       {STANDARD_DNS_LABELED.map(d => <option key={d.dn} value={d.dn}>{d.label}</option>)}
                     </select>
+                    {(() => {
+                      const di = getRealInternalDiameter(t.materialName, t.DN_mm, t.pipeClass);
+                      return di != null ? <p className="text-[10px] text-gray-400">Calcula con ID real: {formatNumber(di, 1)} mm</p> : null;
+                    })()}
                   </div>
                   <div className="space-y-1">
                     <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Material</label>

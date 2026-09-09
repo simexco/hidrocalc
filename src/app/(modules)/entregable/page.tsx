@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { InputField } from "@/components/ui/InputField";
 import { ResetButton } from "@/components/ui/ResetButton";
-import { MATERIALS, STANDARD_DNS_LABELED } from "@/lib/constants";
+import { MATERIALS, STANDARD_DNS_LABELED, getRealInternalDiameter } from "@/lib/constants";
 import { useProjectStore } from "@/store/projectStore";
 import { computeReport, generateReportPDF, downloadReport, type ReportData, type ReportVertex, type ReportValve } from "@/lib/export/report-generator";
 import { obtenerFolio } from "@/lib/folio";
@@ -121,7 +121,16 @@ export default function EntregablePage() {
           <InputField label="Coef. C (Hazen-Williams)" value={d.c} onChange={(v) => set("c", num(v))} tooltip="PVC/HDPE=150, HD=130, acero=120" />
           <div className="space-y-1">
             <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Diámetro nominal</label>
-            <select value={d.dn} onChange={(e) => set("dn", e.target.value)} className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 dark:text-white">
+            <select
+              value={d.dn}
+              onChange={(e) => {
+                const label = e.target.value;
+                const dn = STANDARD_DNS_LABELED.find((s) => s.label === label)?.dn ?? null;
+                // Cambiar el DN re-deriva el ID real (editable a mano en el campo de al lado)
+                patch({ dn: label, dnNominal_mm: dn, diametroInterior: dn != null ? (getRealInternalDiameter(d.material, dn, d.clase) ?? dn) : null });
+              }}
+              className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 dark:text-white"
+            >
               <option value="">—</option>
               {STANDARD_DNS_LABELED.map((s) => <option key={s.dn} value={s.label}>{s.label}</option>)}
             </select>

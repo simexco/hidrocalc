@@ -11,7 +11,7 @@ import { ResetButton } from "@/components/ui/ResetButton";
 import { FormulaDetail } from "@/components/ui/FormulaDetail";
 import { calculatePumpLine, PUMPING_REGIMES, type PumpLineInputs } from "@/lib/calculations/pump-line";
 import { formatNumber } from "@/lib/calculations/conversions";
-import { STANDARD_DNS_LABELED, MATERIALS } from "@/lib/constants";
+import { STANDARD_DNS_LABELED, MATERIALS, getRealInternalDiameter } from "@/lib/constants";
 import { saveFormState, loadFormState } from "@/lib/storage/form-persistence";
 import { useProjectStore } from "@/store/projectStore";
 
@@ -55,8 +55,9 @@ export default function ImpulsionPage() {
       saved.tramos = saved.tramos.map((t) => ({ ...t, DN_mm: dn }));
       saveFormState("perfil", saved);
     }
-    // Reflejarlo en el proyecto activo
-    patchProject({ dn: dnLabel, diametroInterior: dn });
+    // Reflejarlo en el proyecto activo: DN nominal + ID real derivado de material/clase
+    const clase = useProjectStore.getState().project.clase;
+    patchProject({ dn: dnLabel, dnNominal_mm: dn, diametroInterior: getRealInternalDiameter(inputs.materialName, dn, clase) ?? dn });
     router.push("/perfil");
   };
 
@@ -98,6 +99,8 @@ export default function ImpulsionPage() {
   const runCalc = useCallback(() => {
     const inp = { ...inputs };
     if (useEconomic) inp.DN_mm = null; // let calc pick economic DN
+    // Clase del proyecto activo: el motor deriva el ID real (OD − 2e) para V y hf
+    inp.pipeClass = useProjectStore.getState().project.clase || null;
     setResults(calculatePumpLine(inp));
   }, [inputs, useEconomic]);
 

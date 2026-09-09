@@ -193,6 +193,53 @@ export const PIPE_CATALOG: PipeCatalogGroup[] = [
   },
 ];
 
+// ── DN nominal (mm) → pulgadas — para casar con las etiquetas del catálogo de tuberías ──
+const DN_TO_INCHES: Record<number, number> = {
+  50: 2, 63: 2.5, 75: 3, 100: 4, 150: 6, 200: 8, 250: 10, 300: 12,
+  350: 14, 400: 16, 450: 18, 500: 20, 600: 24, 750: 30, 900: 36,
+};
+
+// Primer número que aparece en un nombre de clase ("RD 26" → 26, "SDR 13.6" → 13.6, "K9 (PFA ≥ 38 bar)" → 9)
+function classNumber(name: string): number | null {
+  const m = name.match(/\d+(?:\.\d+)?/);
+  return m ? parseFloat(m[0]) : null;
+}
+
+/**
+ * Diámetro interno REAL (mm) = OD − 2e, derivado de material + clase con el
+ * catálogo de tuberías (PIPE_CATALOG, mismas paredes que PVC_THICKNESS).
+ * El DN nominal NO es el diámetro hidráulico: PVC Inglés 6" RD 26 tiene
+ * ID = 168.3 − 2×6.5 = 155.3 mm, no 150 mm.
+ * Devuelve null si material/tamaño/clase no están en catálogo o falta la clase —
+ * el caller decide el fallback (típicamente el DN nominal).
+ */
+export function getRealInternalDiameter(materialName: string, dnNominal_mm: number | null, pipeClass?: string | null): number | null {
+  if (dnNominal_mm == null || !materialName || !pipeClass) return null;
+  // Mismo criterio de match de material que el catálogo del golpe de ariete
+  let group = PIPE_CATALOG.find((g) => g.label === materialName || g.material === materialName || g.label.startsWith(materialName));
+  if (!group) group = PIPE_CATALOG.find((g) => materialName.includes(g.material));
+  if (!group) return null;
+  const inches = DN_TO_INCHES[dnNominal_mm];
+  if (inches == null) return null;
+  const size = group.sizes.find((s) => parseFloat(s.label) === inches);
+  if (!size || size.classes.length === 0) return null;
+  // Clase: exacta → contenida → la de número más cercano (p.ej. "RD 18" de C900
+  // sobre un tamaño C905 que solo trae RD 41/RD 26 cae en RD 26)
+  let cls = size.classes.find((c) => c.name === pipeClass)
+    ?? size.classes.find((c) => c.name.includes(pipeClass) || pipeClass.includes(c.name));
+  if (!cls) {
+    const target = classNumber(pipeClass);
+    if (target != null) {
+      cls = [...size.classes].sort((a, b) => {
+        const da = classNumber(a.name), db = classNumber(b.name);
+        return Math.abs((da ?? Infinity) - target) - Math.abs((db ?? Infinity) - target);
+      })[0];
+    }
+  }
+  if (!cls) return null;
+  return Math.round((size.od - 2 * cls.e) * 10) / 10;
+}
+
 // ── Wall thickness reference type ──
 export interface ThicknessRef {
   title: string;
