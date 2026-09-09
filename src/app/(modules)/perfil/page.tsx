@@ -670,13 +670,30 @@ export default function PerfilPage() {
                       const suf = getPipeClassesForMaterial(m.name)?.classes.find((c) => (c.pn / 0.9807) >= ts.maxPressure_kgcm2);
                       return suf ? [{ material: m.name, c: m.c, clase: suf.clase, pn: suf.pn }] : [];
                     });
+                  // ¿Una REDUCTORA resuelve el exceso sin cambiar la tuberia? El exceso suele ser
+                  // una zona baja del trazo: se corta la presion aguas arriba del primer punto que
+                  // excede. Viable si tras el corte TODOS los puntos aguas abajo siguen >= Pmin.
+                  const pnKgNum = ts.PN_bar / 0.9807;
+                  const corteVRP = ts.maxPressure_kgcm2 - pnKgNum + 0.5; // margen 0.5 kg/cm2
+                  const ptsP = (results?.points ?? []).filter((p) => p.pressure_kgcm2 != null);
+                  const iExc = ptsP.findIndex((p) => p.pressure_kgcm2! > pnKgNum);
+                  const vrpViable = iExc > 0 && ptsP.slice(iExc).every((p) => p.pressure_kgcm2! - corteVRP >= Pmin);
                   return (
                     <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 rounded-lg px-3 py-2 text-xs text-red-700 dark:text-red-400 space-y-1">
                       <p className="font-semibold">{"⚠"} Presion excede capacidad de la tuberia</p>
                       <p>P max en este tramo: <strong>{ts.maxPressure_kgcm2.toFixed(1)} kg/cm2</strong> — Capacidad {t.pipeClass}: <strong>{pnKg} kg/cm2</strong></p>
+                      {vrpViable && (
+                        <div className="bg-white/70 dark:bg-gray-900/40 border border-red-200/60 rounded px-2 py-1.5">
+                          <p>
+                            <strong>Opcion sin cambiar la tuberia:</strong> una <strong>reductora de presion</strong> en la bajada, antes del punto critico,
+                            que corte {"~"}{corteVRP.toFixed(1)} kg/cm2 — la linea queda dentro de clase y aguas abajo se mantiene {"≥"} {Pmin} kg/cm2.{" "}
+                            <a href="/vrp" className="underline font-semibold">Dimensionarla {"→"}</a>
+                          </p>
+                        </div>
+                      )}
                       {recommended && (
                         <div className="flex items-center justify-between gap-2 flex-wrap">
-                          <p>Clase minima requerida: <strong>{recommended.clase} ({(recommended.pn / 0.9807).toFixed(1)} kg/cm2)</strong></p>
+                          <p>{vrpViable ? "O subir de clase" : "Clase minima requerida"}: <strong>{recommended.clase} ({(recommended.pn / 0.9807).toFixed(1)} kg/cm2)</strong></p>
                           <button onClick={() => updateTramo(t.id, { pipeClass: recommended.clase, PN_bar: recommended.pn })} className="text-[10px] bg-red-600 text-white px-2 py-1 rounded hover:bg-red-700 transition-colors whitespace-nowrap">
                             Usar {recommended.clase}
                           </button>
@@ -684,7 +701,10 @@ export default function PerfilPage() {
                       )}
                       {!recommended && alternativas.length > 0 && (
                         <div className="space-y-1.5 pt-0.5">
-                          <p>Ninguna clase de <strong>{t.materialName}</strong> resiste esta presion. Materiales que SI la soportan — un clic la aplica a este tramo:</p>
+                          <p>
+                            {vrpViable ? "O cambiar la tuberia" : "Ninguna clase de " + t.materialName + " resiste esta presion. Cambiar la tuberia"} de este tramo
+                            {" "}(puedes partirlo con {"“"}+ Tramo{"”"} para que la clase alta cubra solo la zona baja):
+                          </p>
                           <div className="flex flex-wrap gap-1.5">
                             {alternativas.map((a) => (
                               <button
@@ -699,7 +719,7 @@ export default function PerfilPage() {
                         </div>
                       )}
                       {!recommended && alternativas.length === 0 && (
-                        <p>Ninguna tuberia del catalogo resiste {ts.maxPressure_kgcm2.toFixed(1)} kg/cm2 — hay que romper la presion (VRP o tanque rompedor) o replantear el trazo.</p>
+                        <p>Ninguna tuberia del catalogo resiste {ts.maxPressure_kgcm2.toFixed(1)} kg/cm2 — hay que romper la presion (VRP o tanque rompedor, incluso en cascada) o replantear el trazo.</p>
                       )}
                     </div>
                   );
