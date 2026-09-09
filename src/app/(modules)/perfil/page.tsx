@@ -661,12 +661,46 @@ export default function PerfilPage() {
                   const pnKg = (ts.PN_bar / 0.9807).toFixed(1);
                   const classes = getPipeClassesForMaterial(t.materialName);
                   const recommended = classes?.classes.find(c => (c.pn / 0.9807) >= ts.maxPressure_kgcm2);
+                  // Sin clase suficiente en el material actual: buscar en los DEMAS materiales
+                  // la clase minima que si resiste, para que el proyectista no tenga que
+                  // recorrer el catalogo a mano (un clic la aplica a este tramo)
+                  const alternativas = recommended ? [] : MATERIALS
+                    .filter((m) => m.name !== t.materialName)
+                    .flatMap((m) => {
+                      const suf = getPipeClassesForMaterial(m.name)?.classes.find((c) => (c.pn / 0.9807) >= ts.maxPressure_kgcm2);
+                      return suf ? [{ material: m.name, c: m.c, clase: suf.clase, pn: suf.pn }] : [];
+                    });
                   return (
                     <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 rounded-lg px-3 py-2 text-xs text-red-700 dark:text-red-400 space-y-1">
                       <p className="font-semibold">{"⚠"} Presion excede capacidad de la tuberia</p>
                       <p>P max en este tramo: <strong>{ts.maxPressure_kgcm2.toFixed(1)} kg/cm2</strong> — Capacidad {t.pipeClass}: <strong>{pnKg} kg/cm2</strong></p>
-                      {recommended && <p>Clase minima requerida: <strong>{recommended.clase} (PN {recommended.pn} bar)</strong></p>}
-                      {!recommended && <p>Ninguna clase de {t.materialName} es suficiente — considerar Hierro ductil o Acero</p>}
+                      {recommended && (
+                        <div className="flex items-center justify-between gap-2 flex-wrap">
+                          <p>Clase minima requerida: <strong>{recommended.clase} ({(recommended.pn / 0.9807).toFixed(1)} kg/cm2)</strong></p>
+                          <button onClick={() => updateTramo(t.id, { pipeClass: recommended.clase, PN_bar: recommended.pn })} className="text-[10px] bg-red-600 text-white px-2 py-1 rounded hover:bg-red-700 transition-colors whitespace-nowrap">
+                            Usar {recommended.clase}
+                          </button>
+                        </div>
+                      )}
+                      {!recommended && alternativas.length > 0 && (
+                        <div className="space-y-1.5 pt-0.5">
+                          <p>Ninguna clase de <strong>{t.materialName}</strong> resiste esta presion. Materiales que SI la soportan — un clic la aplica a este tramo:</p>
+                          <div className="flex flex-wrap gap-1.5">
+                            {alternativas.map((a) => (
+                              <button
+                                key={a.material}
+                                onClick={() => updateTramo(t.id, { materialName: a.material, C: a.c, pipeClass: a.clase, PN_bar: a.pn })}
+                                className="text-[10px] bg-red-600 text-white px-2 py-1 rounded hover:bg-red-700 transition-colors"
+                              >
+                                {a.material} {a.clase} — {(a.pn / 0.9807).toFixed(1)} kg/cm2
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      {!recommended && alternativas.length === 0 && (
+                        <p>Ninguna tuberia del catalogo resiste {ts.maxPressure_kgcm2.toFixed(1)} kg/cm2 — hay que romper la presion (VRP o tanque rompedor) o replantear el trazo.</p>
+                      )}
                     </div>
                   );
                 })()}
