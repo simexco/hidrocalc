@@ -188,6 +188,21 @@ export default function Home() {
         </div>
       </div>
 
+      {/* ── Flujo como historia ── */}
+      <div className="max-w-6xl mx-auto w-full px-6 pt-12 pb-8 text-center">
+        <h2 className="text-xl font-bold text-white mb-2">Un flujo que piensa como tú proyectas</h2>
+        <p className="text-xs text-white/40 mb-6">Los datos avanzan solos de un paso al siguiente — sin recapturar nada</p>
+        <div className="flex items-center justify-center gap-2 flex-wrap mb-4">
+          {["Gasto", "Línea de conducción", "Equipo de bombeo", "Golpe de ariete", "Reductora de presión", "Válvulas de aire", "Cruceros", "Reporte PDF"].map((p, i, arr) => (
+            <span key={p} className="flex items-center gap-2">
+              <span className="text-[11px] font-semibold text-white/80 bg-white/[0.07] border border-white/10 rounded-full px-3 py-1.5">{p}</span>
+              {i < arr.length - 1 && <span className="text-[#7FC4E8]/50 text-xs">→</span>}
+            </span>
+          ))}
+        </div>
+        <Link href="/asistente" className="text-xs text-[#7FC4E8] hover:text-white transition-colors underline decoration-dotted">Ver el asistente de proyecto →</Link>
+      </div>
+
       {/* ── Números ── */}
       <div className="w-full border-y border-white/10 bg-white/[0.04]">
         <div className="max-w-6xl mx-auto px-6 py-6 grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
@@ -203,21 +218,6 @@ export default function Home() {
             </div>
           ))}
         </div>
-      </div>
-
-      {/* ── Flujo como historia ── */}
-      <div className="max-w-6xl mx-auto w-full px-6 pt-12 pb-4 text-center">
-        <h2 className="text-xl font-bold text-white mb-2">Un flujo que piensa como tú proyectas</h2>
-        <p className="text-xs text-white/40 mb-6">Los datos avanzan solos de un paso al siguiente — sin recapturar nada</p>
-        <div className="flex items-center justify-center gap-2 flex-wrap mb-4">
-          {["Gasto", "Línea de conducción", "Equipo de bombeo", "Golpe de ariete", "VRP", "Válvulas de aire", "Cruceros", "Reporte PDF"].map((p, i, arr) => (
-            <span key={p} className="flex items-center gap-2">
-              <span className="text-[11px] font-semibold text-white/80 bg-white/[0.07] border border-white/10 rounded-full px-3 py-1.5">{p}</span>
-              {i < arr.length - 1 && <span className="text-[#7FC4E8]/50 text-xs">→</span>}
-            </span>
-          ))}
-        </div>
-        <Link href="/asistente" className="text-xs text-[#7FC4E8] hover:text-white transition-colors underline decoration-dotted">Ver el asistente de proyecto →</Link>
       </div>
 
       {/* Main content */}
