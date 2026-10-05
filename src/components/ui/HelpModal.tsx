@@ -18,8 +18,13 @@ export function HelpButton({ moduleTitle, sections }: HelpModalProps) {
 
   return (
     <>
-      <button onClick={() => setOpen(true)} className="text-xs font-semibold text-white bg-[#1C3D5A] px-4 py-1.5 rounded-lg hover:bg-[#0F2438] transition-colors whitespace-nowrap shadow-sm flex items-center gap-1.5">
-        Como usar ?
+      <button onClick={() => setOpen(true)} className="text-sm font-semibold text-white bg-[#1C3D5A] px-5 py-2 rounded-lg hover:bg-[#0F2438] transition-colors whitespace-nowrap shadow-md flex items-center gap-2">
+        <svg viewBox="0 0 24 24" className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="12" cy="12" r="10" />
+          <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
+          <path d="M12 17h.01" />
+        </svg>
+        ¿Cómo usar?
       </button>
 
       {/* Portal al body: el header tiene backdrop-blur y eso "atrapa" al position:fixed
