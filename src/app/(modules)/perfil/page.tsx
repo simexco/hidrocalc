@@ -481,7 +481,7 @@ export default function PerfilPage() {
                   Importar CSV
                 </button>
                 <button onClick={addVertex} className="text-xs bg-[#1C3D5A] text-white px-3 py-1.5 rounded-lg hover:bg-[#0F2438] transition-colors">
-                  + Punto
+                  + Agregar cota
                 </button>
               </div>
               <input ref={fileRef} type="file" accept=".csv,.txt,.tsv" onChange={handleCSVImport} className="hidden" />

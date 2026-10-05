@@ -149,7 +149,7 @@ export default function EntregablePage() {
         <div className="space-y-2 pt-1">
           <div className="flex items-center justify-between">
             <label className="text-xs font-semibold text-gray-600 dark:text-gray-400">Perfil topográfico (cadenamiento, cota, descripción)</label>
-            <button onClick={addVertex} className="text-xs bg-[#1C3D5A] text-white px-2 py-1 rounded hover:bg-[#0F2438]">+ Punto</button>
+            <button onClick={addVertex} className="text-xs bg-[#1C3D5A] text-white px-2 py-1 rounded hover:bg-[#0F2438]">+ Agregar cota</button>
           </div>
           {d.vertices.map((v, i) => (
             <div key={i} className="flex gap-2 items-center">
