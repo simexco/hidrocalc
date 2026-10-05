@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { createPortal } from "react-dom";
 
 interface HelpSection {
   title: string;
@@ -21,7 +22,9 @@ export function HelpButton({ moduleTitle, sections }: HelpModalProps) {
         Como usar ?
       </button>
 
-      {open && (
+      {/* Portal al body: el header tiene backdrop-blur y eso "atrapa" al position:fixed
+          (el modal se centraba en la franja del header y se cortaba arriba) */}
+      {open && createPortal(
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setOpen(false)}>
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl max-w-xl w-full mx-4 max-h-[85vh] overflow-auto" onClick={(e) => e.stopPropagation()}>
             <div className="sticky top-0 bg-[#1C3D5A] px-5 py-3 flex items-center justify-between rounded-t-xl">
@@ -37,7 +40,8 @@ export function HelpButton({ moduleTitle, sections }: HelpModalProps) {
               ))}
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </>
   );

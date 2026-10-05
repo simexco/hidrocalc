@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { createPortal } from "react-dom";
 
 /* ════════════════════════════════════════
    Diccionario "para todos": cada término explicado en lenguaje llano,
@@ -132,7 +133,8 @@ export function GlossaryButton({ variant = "footer" }: { variant?: "footer" | "h
         </button>
       )}
 
-      {open && (
+      {/* Portal al body: el header tiene backdrop-blur y eso "atrapa" al position:fixed */}
+      {open && createPortal(
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setOpen(false)}>
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl max-w-2xl w-full mx-4 max-h-[85vh] overflow-auto" onClick={(e) => e.stopPropagation()}>
             <div className="sticky top-0 bg-[#1C3D5A] px-5 py-3 flex items-center justify-between rounded-t-xl z-10">
@@ -170,7 +172,8 @@ export function GlossaryButton({ variant = "footer" }: { variant?: "footer" | "h
               )}
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </>
   );
