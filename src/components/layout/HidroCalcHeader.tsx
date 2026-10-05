@@ -94,6 +94,39 @@ const moduleHelp: Record<string, { title: string; sections: { title: string; con
       { title: "Interpretacion", content: "Los % son capacidad Kv utilizada (no carrera de la valvula)\nOptimo: usa 35-65% de su capacidad a Q max — operacion estable\nFuncional: 20-35% o 65-75% — aceptable\nSobredimensionada: <20% — regulacion inestable, considerar DN menor\nLimite: >75% — valvula demasiado chica\nInsuficiente: el Kv de la valvula no alcanza\nIndice de cavitacion sigma < 1.5 (presiones absolutas, aguas abajo): verificar carta del fabricante\nRelacion P1/P2 > 3:1: considerar dos VRP en serie" },
     ],
   },
+  "/demanda": {
+    title: "Calculo de gasto — Guia de uso",
+    sections: [
+      { title: "¿Cuando usar?", content: "Es el PASO 1 de todo proyecto: convierte la poblacion en el caudal de diseño (cuanta agua hay que llevar). Sin este dato ningun otro modulo puede dimensionar nada." },
+      { title: "Datos que necesitas", content: "- Poblacion a servir (si solo tienes viviendas: multiplica por ~4 habitantes)\n- Tipo de localidad y clima (definen la dotacion sugerida)\n- Si el proyecto es a futuro: años del periodo de diseño" },
+      { title: "Paso a paso", content: "1. Captura la poblacion\n2. Revisa la dotacion sugerida en L/hab/dia (si dudas, dejala como esta)\n3. Si diseñas a futuro, activa el crecimiento y pon los años\n4. Lee el QMD (para conduccion y bombeo) y el QMH (para red)\n5. El volumen de tanque sale solo con el coeficiente de regulacion" },
+      { title: "Interpretacion", content: "Qm = el promedio del dia\nQMD = el dia de mayor consumo del año → con este se diseña la conduccion y el bombeo\nQMH = la hora pico de ese dia → con este se diseña la red de distribucion\nEstos caudales viajan solos a los demas modulos del proyecto" },
+    ],
+  },
+  "/impulsion": {
+    title: "Diametro economico — Guia de uso",
+    sections: [
+      { title: "¿Cuando usar?", content: "Solo en lineas de BOMBEO: encuentra el diametro donde la suma de tuberia + recibo de luz cuesta menos. Tubo chico = bombeo caro para siempre; tubo grande = inversion inicial alta." },
+      { title: "Paso a paso", content: "1. Verifica el caudal (llega solo del proyecto)\n2. Elige las horas de bombeo al dia\n3. Captura longitud y cotas de bomba y tanque\n4. Lee el DN economico (formula de Bresse)\n5. Con un clic lo aplicas a la Linea de conduccion" },
+      { title: "Interpretacion", content: "El modulo compara velocidad, perdidas y costo de energia de cada DN\nSi eliges un DN menor al economico veras el sobrecosto de energia\nLa potencia y el costo mensual/anual son de referencia para decidir" },
+    ],
+  },
+  "/despiece": {
+    title: "Generador de cruceros — Guia de uso",
+    sections: [
+      { title: "¿Cuando usar?", content: "Para armar los nudos de piezas (cruceros) de la red: cruces, derivaciones, valvulas, y obtener la lista de materiales con SKU Sigma Flow lista para cotizar." },
+      { title: "Paso a paso", content: "1. El DN y el material llegan solos del proyecto\n2. Arma el crucero con los botones visuales: codo, tee, valvula, brida...\n3. Agrega tantos cruceros como nudos tenga tu red\n4. La lista de materiales se consolida sola (suma piezas repetidas)\n5. El despiece pasa automaticamente al reporte" },
+      { title: "Interpretacion", content: "Cada pieza lleva su SKU del catalogo Sigma Flow\nEl consolidado agrupa las piezas de todos los cruceros\nUsalo directo para cotizar con tu distribuidor" },
+    ],
+  },
+  "/entregable": {
+    title: "Reporte de proyecto — Guia de uso",
+    sections: [
+      { title: "¿Cuando usar?", content: "El paso FINAL: genera el PDF consolidado con todo lo capturado en el proyecto (demanda, linea, bombeo, protecciones, valvulas y despiece)." },
+      { title: "Paso a paso", content: "1. Revisa la portada: nombre del proyecto, localidad, folio y quien elabora\n2. Los datos ya vienen llenos desde los otros pasos — completa a mano lo que falte\n3. Pulsa Generar PDF\n4. Revisa el documento antes de entregarlo" },
+      { title: "Interpretacion", content: "El reporte es un PREdimensionamiento: sirve para cotizar y arrancar el proyecto\nNo sustituye al proyecto ejecutivo firmado por un responsable tecnico" },
+    ],
+  },
 };
 
 export function HidroCalcHeader() {
