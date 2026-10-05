@@ -1004,6 +1004,10 @@ export default function PerfilPage() {
                       </ComposedChart>
                     </ResponsiveContainer>
                   </div>
+                  {/* Como leer la grafica — para quien no conoce el termino "piezometrica" */}
+                  <div className="bg-white dark:bg-gray-900 border-t border-gray-100 dark:border-gray-700 px-4 py-2.5 text-[10px] text-gray-500 dark:text-gray-400 leading-relaxed">
+                    <strong className="text-[#1C3D5A] dark:text-blue-300">¿Cómo leer esta gráfica?</strong> La línea azul (<strong>piezométrica</strong>) marca hasta dónde subiría el agua si pusieras un tubito vertical abierto en cada punto — es la energía que trae el agua. La separación vertical entre la línea azul y el terreno es la <strong>presión</strong> en ese punto (10 m de separación ≈ 1 kg/cm²). Si la línea azul <strong>toca</strong> el terreno, ahí la presión es cero; si <strong>cruza por debajo</strong>, el agua no puede pasar — por eso la piezométrica nunca debe cruzar el terreno.
+                  </div>
                 </div>
               )}
 
@@ -1055,7 +1059,7 @@ export default function PerfilPage() {
                   </table>
                 </div>
                 <div className="px-4 py-2.5 text-[10px] text-gray-500 dark:text-gray-400 border-t border-gray-100 dark:border-gray-700 leading-relaxed">
-                  <strong>Cadenam.</strong> = distancia desde el inicio (m). <strong>Cota</strong> = elevación del terreno (m.s.n.m.). <strong>Piezom.</strong> = línea piezométrica (nivel de energía del agua). <strong>P</strong> = presión disponible en ese punto. <strong>hf</strong> = pérdida por fricción acumulada. <strong>V</strong> = velocidad del agua. <strong>Estado</strong>: ✓ cumple, ⚠ presión baja, ✗ crítica.
+                  <strong>Cadenam.</strong> = distancia desde el inicio (m). <strong>Cota</strong> = elevación del terreno (m.s.n.m.). <strong>Piezom.</strong> = línea piezométrica: hasta dónde subiría el agua en un tubito vertical en ese punto; su altura menos la cota del terreno es la presión. <strong>P</strong> = presión disponible en ese punto. <strong>hf</strong> = pérdida por fricción acumulada. <strong>V</strong> = velocidad del agua. <strong>Estado</strong>: ✓ cumple, ⚠ presión baja, ✗ crítica.
                 </div>
               </div>
 
