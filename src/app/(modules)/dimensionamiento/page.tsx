@@ -10,7 +10,7 @@ import { ExportPDFButton } from "@/components/ui/ExportPDFButton";
 import { validateHydraulicInputs, InputWarnings } from "@/components/ui/InputWarning";
 import { calculatePipeSizing } from "@/lib/calculations/diameter-sizing";
 import { flowToM3s, mcaToKgcm2 } from "@/lib/calculations/conversions";
-import { MATERIALS, DEFAULTS, getPipeClassesForMaterial } from "@/lib/constants";
+import { MATERIALS, DEFAULTS, getPipeClassesForMaterial, CLASE_RD_HELP } from "@/lib/constants";
 import { saveFormState, loadFormState } from "@/lib/storage/form-persistence";
 import { ResetButton } from "@/components/ui/ResetButton";
 import type { FlowUnit, AssumedValue } from "@/types/hydraulic";
@@ -165,6 +165,7 @@ export default function DimensionamientoPage() {
                     ))}
                   </select>
                   {!pipeClass && <p className="text-[10px] text-yellow-600">Selecciona la clase para verificar resistencia</p>}
+                  <p className="text-[10px] text-gray-400">{CLASE_RD_HELP}</p>
                 </div>
               );
             })()}

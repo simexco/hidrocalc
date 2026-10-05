@@ -11,7 +11,7 @@ import { ResetButton } from "@/components/ui/ResetButton";
 import { validateHydraulicInputs, InputWarnings } from "@/components/ui/InputWarning";
 import { calculateProfile, calculateRequiredP1, type ProfileVertex, type ProfileTramo, type ProfileResults } from "@/lib/calculations/hydraulic-profile";
 import { flowToM3s, formatNumber } from "@/lib/calculations/conversions";
-import { STANDARD_DNS, STANDARD_DNS_LABELED, MATERIALS, getPipeClassesForMaterial, getRealInternalDiameter } from "@/lib/constants";
+import { STANDARD_DNS, STANDARD_DNS_LABELED, MATERIALS, getPipeClassesForMaterial, getRealInternalDiameter, CLASE_RD_HELP } from "@/lib/constants";
 import { saveFormState, loadFormState } from "@/lib/storage/form-persistence";
 import { useProjectStore } from "@/store/projectStore";
 import { ComposedChart, Line, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
@@ -617,7 +617,9 @@ export default function PerfilPage() {
                     </select>
                     {(() => {
                       const di = getRealInternalDiameter(t.materialName, t.DN_mm, t.pipeClass);
-                      return di != null ? <p className="text-[10px] text-gray-400">Calcula con ID real: {formatNumber(di, 1)} mm</p> : null;
+                      return di != null
+                        ? <p className="text-[10px] text-gray-400">DN = tamaño comercial del tubo. El calculo usa el diametro interno real: {formatNumber(di, 1)} mm</p>
+                        : <p className="text-[10px] text-gray-400">DN = tamaño comercial del tubo</p>;
                     })()}
                   </div>
                   <div className="space-y-1">
@@ -650,6 +652,7 @@ export default function PerfilPage() {
                         ))}
                       </select>
                       {!t.pipeClass && <p className="text-[10px] text-yellow-600">Selecciona la clase para verificar que resista la presion</p>}
+                      <p className="text-[10px] text-gray-400">{CLASE_RD_HELP}</p>
                     </div>
                   );
                 })()}

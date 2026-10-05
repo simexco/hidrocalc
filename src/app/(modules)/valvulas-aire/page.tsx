@@ -9,7 +9,7 @@ import { ExportPDFButton } from "@/components/ui/ExportPDFButton";
 import { validateHydraulicInputs, InputWarnings } from "@/components/ui/InputWarning";
 import { calculateAirValves, type AirValveVertex, type AirValveInputs, type AirValveOutputs } from "@/lib/calculations/air-valves";
 import { flowToM3s, formatNumber } from "@/lib/calculations/conversions";
-import { STANDARD_DNS_LABELED, MATERIALS, getPipeClassesForMaterial } from "@/lib/constants";
+import { STANDARD_DNS_LABELED, MATERIALS, getPipeClassesForMaterial, CLASE_RD_HELP } from "@/lib/constants";
 import { saveFormState, loadFormState } from "@/lib/storage/form-persistence";
 import { useProjectStore } from "@/store/projectStore";
 import { ResetButton } from "@/components/ui/ResetButton";
@@ -259,6 +259,7 @@ export default function ValvulasAirePage() {
                     ))}
                   </select>
                   {!pipeClass && <p className="text-[10px] text-yellow-600">Selecciona la clase para verificar resistencia</p>}
+                  <p className="text-[10px] text-gray-400">{CLASE_RD_HELP}</p>
                 </div>
               );
             })()}

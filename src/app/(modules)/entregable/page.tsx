@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { InputField } from "@/components/ui/InputField";
 import { ResetButton } from "@/components/ui/ResetButton";
-import { MATERIALS, STANDARD_DNS_LABELED, getRealInternalDiameter } from "@/lib/constants";
+import { MATERIALS, STANDARD_DNS_LABELED, getRealInternalDiameter, CLASE_RD_HELP } from "@/lib/constants";
 import { useProjectStore } from "@/store/projectStore";
 import { computeReport, generateReportPDF, downloadReport, type ReportData, type ReportVertex, type ReportValve } from "@/lib/export/report-generator";
 import { obtenerFolio } from "@/lib/folio";
@@ -136,7 +136,7 @@ export default function EntregablePage() {
             </select>
           </div>
           <InputField label="Diámetro interior" value={d.diametroInterior} onChange={(v) => set("diametroInterior", num(v))} unit="mm" tooltip="Diámetro interno real para calcular la velocidad" />
-          <InputField label="Clase / RD" value={d.clase} onChange={(v) => set("clase", v)} type="text" placeholder="RD-26" />
+          <InputField label="Clase / RD" value={d.clase} onChange={(v) => set("clase", v)} type="text" placeholder="RD-26" tooltip={CLASE_RD_HELP} />
         </div>
         <div className="bg-[#E9EFF5] dark:bg-[#1C3D5A]/20 rounded-lg px-3 py-2 text-xs text-[#1C3D5A] dark:text-blue-300 grid grid-cols-2 sm:grid-cols-4 gap-2">
           <span>Velocidad: <strong>{r.velocidad != null ? r.velocidad.toFixed(2) : "—"} m/s</strong></span>

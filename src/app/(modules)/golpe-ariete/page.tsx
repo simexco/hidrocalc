@@ -11,7 +11,7 @@ import { ExportPDFButton } from "@/components/ui/ExportPDFButton";
 import { FormulaDetail, waterHammerFormula, waveSpeedFormula } from "@/components/ui/FormulaDetail";
 import { calculateWaterHammer } from "@/lib/calculations/water-hammer";
 import { formatNumber, mcaToKgcm2 } from "@/lib/calculations/conversions";
-import { PIPE_ELASTICITY, THICKNESS_BY_MATERIAL, PIPE_CLASSES_BY_MATERIAL, PVC_THICKNESS, getPVCClasses, PVC_SYSTEM_LABELS, type PVCSystem, PIPE_CATALOG, type PipeCatalogGroup, STANDARD_DNS_LABELED, KV_VALVULAS_GLOBO, KV_FACTOR_SELECCION } from "@/lib/constants";
+import { PIPE_ELASTICITY, THICKNESS_BY_MATERIAL, PIPE_CLASSES_BY_MATERIAL, PVC_THICKNESS, getPVCClasses, PVC_SYSTEM_LABELS, type PVCSystem, PIPE_CATALOG, type PipeCatalogGroup, STANDARD_DNS_LABELED, KV_VALVULAS_GLOBO, KV_FACTOR_SELECCION, CLASE_RD_HELP } from "@/lib/constants";
 import { saveFormState, loadFormState } from "@/lib/storage/form-persistence";
 import { useProjectStore } from "@/store/projectStore";
 
@@ -390,6 +390,7 @@ export default function GolpeArietePage() {
                   <select value={selectedClass} onChange={(e) => setSelectedClass(parseInt(e.target.value))} className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 dark:text-white">
                     {sizeEntry?.classes.map((c, i) => <option key={i} value={i}>{c.name} (e={c.e} mm)</option>)}
                   </select>
+                  <p className="text-[10px] text-gray-400">{CLASE_RD_HELP} (e = espesor de la pared en mm)</p>
                 </div>
 
                 {/* Auto-filled summary */}

@@ -41,6 +41,9 @@ export const MATERIALS = [
 // Tooltip for C selection
 export const C_TOOLTIP = "Para mayor precisión en líneas existentes en buen estado usar C=140 con la opción Personalizado.";
 
+// Ayuda inline del selector de clase (RD/SDR) — lenguaje llano, va junto al campo
+export const CLASE_RD_HELP = "¿Qué es RD/SDR? El grosor de la pared del tubo: número MENOR = pared más gruesa = aguanta MÁS presión. Los kg/cm² de cada opción son la presión que esa clase resiste.";
+
 // ── Fittings Catalog (K values) ──
 export const FITTINGS_CATALOG = [
   { type: "Codo 90° radio corto", k: 0.90 },

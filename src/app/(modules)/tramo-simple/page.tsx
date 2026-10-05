@@ -13,7 +13,7 @@ import { ExportPDFButton } from "@/components/ui/ExportPDFButton";
 import ListaMaterialesSIMEX, { type SIMEXAcc } from "@/components/ListaMaterialesSIMEX";
 import { calculateHazenWilliams, findMaxFlow, compareDiameters } from "@/lib/calculations/hazen-williams";
 import { flowToM3s, m3sToFlow, formatNumber, mcaToKgcm2 } from "@/lib/calculations/conversions";
-import { STANDARD_DNS, STANDARD_DNS_LABELED, MATERIALS, DEFAULTS, getPipeClassesForMaterial } from "@/lib/constants";
+import { STANDARD_DNS, STANDARD_DNS_LABELED, MATERIALS, DEFAULTS, getPipeClassesForMaterial, CLASE_RD_HELP } from "@/lib/constants";
 import { saveFormState, loadFormState } from "@/lib/storage/form-persistence";
 import { ResetButton } from "@/components/ui/ResetButton";
 import { FormulaDetail, velocityFormula, hazenWilliamsFormula, gradientFormula, pressureFormula } from "@/components/ui/FormulaDetail";
@@ -357,6 +357,7 @@ export default function TramoSimplePage() {
                     ))}
                   </select>
                   {!pipeClass && <p className="text-[10px] text-yellow-600">Selecciona la clase para verificar resistencia</p>}
+                  <p className="text-[10px] text-gray-400">{CLASE_RD_HELP}</p>
                 </div>
               );
             })()}
