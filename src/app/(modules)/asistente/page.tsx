@@ -83,7 +83,7 @@ export default function AsistentePage() {
         ten: "El tiempo de cierre de la válvula (Tc, dato del fabricante); si no lo tienes, deja el valor por defecto.",
         haz: [
           "Los datos del proyecto se cargan solos (o pulsa “Traer datos del proyecto”).",
-          "Revisa el veredicto: ¿tu clase de tubería resiste el manotazo de presión?",
+          "Revisa el veredicto: ¿tu clase de tubería resiste la sacudida de presión?",
         ],
         obtienes: "Si resiste: confirmación con factor de seguridad. Si no: la clase que sí resiste o la protección necesaria.",
       } },

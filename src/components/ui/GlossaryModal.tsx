@@ -87,7 +87,7 @@ const GLOSSARY: { cat: string; items: { term: string; def: string }[] }[] = [
   {
     cat: "Protecciones",
     items: [
-      { term: "Golpe de ariete", def: "El \"manotazo\" de presión que da el agua cuando algo la detiene de golpe: el cierre de una válvula o el paro de la bomba. Puede agregar mucha presión extra en segundos; por eso se verifica que la clase del tubo lo aguante." },
+      { term: "Golpe de ariete", def: "La sacudida de presión que da el agua cuando algo la detiene de golpe: el cierre de una válvula o el paro de la bomba. Puede agregar mucha presión extra en segundos; por eso se verifica que la clase del tubo la aguante." },
       { term: "Celeridad (a)", def: "La velocidad a la que viaja la onda del golpe de ariete por el tubo (m/s). Depende del material: en PVC ronda 300-500 m/s, en acero más de 1,000." },
       { term: "Tc (tiempo de cierre)", def: "Lo que tarda la válvula en cerrar, en segundos. Cerrar LENTO suaviza el golpe; cerrar de golpe produce la sobrepresión máxima." },
       { term: "Sobrepresión (ΔH)", def: "Los metros de presión EXTRA que agrega el golpe de ariete encima de la operación normal. Operación + sobrepresión debe quedar dentro de lo que aguanta la clase." },
