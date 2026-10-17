@@ -89,7 +89,7 @@ export default function EnSeriePage() {
   };
 
   const assumed: AssumedValue[] = [];
-  if (inputs.P1 == null) assumed.push({ field: "P1", value: 0, label: "Sin P₁ — presiones no disponibles" });
+  if (inputs.P1 == null) assumed.push({ field: "P1", value: 0, label: "Sin presión inicial (P₁) — presiones no disponibles" });
 
   // Build profile chart data
   const profilePoints: { x: number; terrain: number; piezo: number | null }[] = [];
@@ -124,7 +124,7 @@ export default function EnSeriePage() {
 
             <div className="flex items-end gap-2">
               <div className="flex-1">
-                <InputField label="Caudal Q global" value={inputs.rawQ} onChange={(v) => setInput("rawQ", (v === "" ? null : parseFloat(v)) as never)} required={!inputs.variableFlow} tooltip="Caudal de agua que circula por toda la línea. Es el mismo en todos los tramos a menos que actives 'Caudal variable'" />
+                <InputField label="Caudal global (Q)" value={inputs.rawQ} onChange={(v) => setInput("rawQ", (v === "" ? null : parseFloat(v)) as never)} required={!inputs.variableFlow} tooltip="Caudal de agua que circula por toda la línea. Es el mismo en todos los tramos a menos que actives 'Caudal variable'" />
               </div>
               <select value={inputs.flowUnit} onChange={(e) => setInput("flowUnit", e.target.value as FlowUnit)} className="px-2 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 dark:text-white">
                 <option value="L/s">L/s</option>
@@ -132,8 +132,8 @@ export default function EnSeriePage() {
               </select>
             </div>
 
-            <InputField label="Presión entrada P₁" value={inputs.P1} onChange={(v) => setInput("P1", (v === "" ? null : parseFloat(v)) as never)} unit="kg/cm²" tooltip="Presión del agua al inicio de la línea. Se mide con manómetro. Si no la conoces, se calculan pérdidas pero no presiones" />
-            <InputField label="Cota inicial z₁" value={inputs.z1} onChange={(v) => setInput("z1", parseFloat(v) || 0)} unit="m.s.n.m." tooltip="Elevación del punto de inicio respecto al nivel del mar. Si no la conoces, déjala en 0" />
+            <InputField label="Presión inicial (P₁)" value={inputs.P1} onChange={(v) => setInput("P1", (v === "" ? null : parseFloat(v)) as never)} unit="kg/cm²" tooltip="Presión del agua al inicio de la línea. Se mide con manómetro. Si no la conoces, se calculan pérdidas pero no presiones" />
+            <InputField label="Cota inicial (z₁)" value={inputs.z1} onChange={(v) => setInput("z1", parseFloat(v) || 0)} unit="m.s.n.m." tooltip="Elevación del punto de inicio respecto al nivel del mar. Si no la conoces, déjala en 0" />
 
             <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
               <input type="checkbox" checked={inputs.variableFlow} onChange={(e) => setInput("variableFlow", e.target.checked)} className="rounded border-gray-300" />
@@ -167,8 +167,8 @@ export default function EnSeriePage() {
                     <thead>
                       <tr className="bg-[#1C3D5A] text-white">
                         <th className="px-3 py-2 text-left">Accesorio</th>
-                        <th className="px-3 py-2 text-center">K (adim.)</th>
-                        <th className="px-3 py-2 text-center">Le/D</th>
+                        <th className="px-3 py-2 text-center">Coeficiente de pérdida (K, adim.)</th>
+                        <th className="px-3 py-2 text-center">Longitud equivalente (Le/D)</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -203,9 +203,9 @@ export default function EnSeriePage() {
                   <button onClick={() => removeTramo(t.id)} className="text-red-400 hover:text-red-600 text-xs">&#10005;</button>
                 </div>
                 <div className="grid grid-cols-2 gap-2 text-xs">
-                  <InputField label="L (m)" value={t.L} onChange={(v) => updateTramo(t.id, { L: v === "" ? null : parseFloat(v) })} tooltip="Longitud de este tramo en metros" />
+                  <InputField label="Longitud de la tubería (L, m)" value={t.L} onChange={(v) => updateTramo(t.id, { L: v === "" ? null : parseFloat(v) })} tooltip="Longitud de este tramo en metros" />
                   <div className="space-y-1">
-                    <label className="text-sm font-medium text-gray-700 dark:text-gray-300">DN (mm)</label>
+                    <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Diámetro nominal (DN, mm)</label>
                     <select
                       value={t.DN ?? ""}
                       onChange={(e) => updateTramo(t.id, { DN: parseInt(e.target.value) })}
@@ -229,7 +229,7 @@ export default function EnSeriePage() {
                   </div>
                   <InputField label="Cota final" value={t.zEnd} onChange={(v) => updateTramo(t.id, { zEnd: parseFloat(v) || 0 })} unit="m" tooltip="Elevacion al final de este tramo (m.s.n.m.)" />
                   {inputs.variableFlow && (
-                    <InputField label={`Q (${inputs.flowUnit})`} value={t.Q != null ? Math.round(m3sToFlow(t.Q, inputs.flowUnit) * 10000) / 10000 : null} onChange={(v) => updateTramo(t.id, { Q: v === "" ? null : flowToM3s(parseFloat(v), inputs.flowUnit) })} tooltip="Caudal de este tramo, en la misma unidad seleccionada arriba" />
+                    <InputField label={`Caudal (Q, ${inputs.flowUnit})`} value={t.Q != null ? Math.round(m3sToFlow(t.Q, inputs.flowUnit) * 10000) / 10000 : null} onChange={(v) => updateTramo(t.id, { Q: v === "" ? null : flowToM3s(parseFloat(v), inputs.flowUnit) })} tooltip="Caudal de este tramo, en la misma unidad seleccionada arriba" />
                   )}
                 </div>
 
@@ -271,16 +271,16 @@ export default function EnSeriePage() {
                   projectName: inputs.projectName,
                   hasAssumedValues: inputs.P1 == null,
                   inputs: [
-                    { label: "Caudal Q", value: inputs.rawQ != null ? `${inputs.rawQ} ${inputs.flowUnit}` : "—" },
-                    { label: "Presión P₁", value: inputs.P1 != null ? `${inputs.P1} kg/cm²` : "No ingresada" },
-                    { label: "Cota z₁", value: `${inputs.z1} m.s.n.m.` },
+                    { label: "Caudal (Q)", value: inputs.rawQ != null ? `${inputs.rawQ} ${inputs.flowUnit}` : "—" },
+                    { label: "Presión inicial (P₁)", value: inputs.P1 != null ? `${inputs.P1} kg/cm²` : "No ingresada" },
+                    { label: "Cota inicial (z₁)", value: `${inputs.z1} m.s.n.m.` },
                     { label: "N° de tramos", value: `${inputs.tramos.length}` },
                   ],
                   results: [
                     { label: "Longitud total", value: formatNumber(results.totalLength, 1), unit: "m" },
-                    { label: "hf total", value: formatNumber(results.totalHf, 3), unit: "m" },
-                    { label: "hm total", value: formatNumber(results.totalHm, 3), unit: "m" },
-                    { label: "P₂ final", value: results.finalPressure != null ? formatNumber(mcaToKgcm2(results.finalPressure), 2) : "Requiere P₁", unit: "kg/cm²" },
+                    { label: "Pérdida por fricción total (hf)", value: formatNumber(results.totalHf, 3), unit: "m" },
+                    { label: "Pérdida por accesorios total (hm)", value: formatNumber(results.totalHm, 3), unit: "m" },
+                    { label: "Presión final (P₂)", value: results.finalPressure != null ? formatNumber(mcaToKgcm2(results.finalPressure), 2) : "Requiere presión inicial (P₁)", unit: "kg/cm²" },
                   ],
                   alerts: results.alerts.filter((a) => a.level !== "OK").map((a) => ({ level: a.level, message: a.message })),
                   tableData: {
@@ -300,9 +300,9 @@ export default function EnSeriePage() {
               {/* Summary cards */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 <MetricCard label="Longitud total" value={formatNumber(results.totalLength, 1)} unit="m" dataStatus={results.dataStatus} />
-                <MetricCard label="hf total" value={formatNumber(results.totalHf, 3)} unit="m" dataStatus={results.dataStatus} />
-                <MetricCard label="hm total" value={formatNumber(results.totalHm, 3)} unit="m" dataStatus={results.dataStatus} />
-                <MetricCard label="P₂ final" value={results.finalPressure != null ? formatNumber(mcaToKgcm2(results.finalPressure), 2) : "—"} unit="kg/cm²" unavailableMessage={results.finalPressure == null ? "Requiere P₁" : undefined} />
+                <MetricCard label="Pérdida por fricción total (hf)" value={formatNumber(results.totalHf, 3)} unit="m" dataStatus={results.dataStatus} />
+                <MetricCard label="Pérdida por accesorios total (hm)" value={formatNumber(results.totalHm, 3)} unit="m" dataStatus={results.dataStatus} />
+                <MetricCard label="Presión final (P₂)" value={results.finalPressure != null ? formatNumber(mcaToKgcm2(results.finalPressure), 2) : "—"} unit="kg/cm²" unavailableMessage={results.finalPressure == null ? "Requiere presión inicial (P₁)" : undefined} />
               </div>
 
               {/* Tramo results table */}
@@ -312,13 +312,13 @@ export default function EnSeriePage() {
                     <thead>
                       <tr className="bg-[#1C3D5A] text-white">
                         <th className="px-3 py-2 text-left">Tramo</th>
-                        <th className="px-3 py-2 text-right">DN</th>
-                        <th className="px-3 py-2 text-right">L (m)</th>
-                        <th className="px-3 py-2 text-right">V (m/s)</th>
-                        <th className="px-3 py-2 text-right">hf (m)</th>
-                        <th className="px-3 py-2 text-right">hm (m)</th>
-                        <th className="px-3 py-2 text-right">P ent.</th>
-                        <th className="px-3 py-2 text-right">P sal.</th>
+                        <th className="px-3 py-2 text-right">Diámetro nominal (DN)</th>
+                        <th className="px-3 py-2 text-right">Longitud de la tubería (L, m)</th>
+                        <th className="px-3 py-2 text-right">Velocidad del agua (V, m/s)</th>
+                        <th className="px-3 py-2 text-right">Pérdida por fricción (hf, m)</th>
+                        <th className="px-3 py-2 text-right">Pérdida por accesorios (hm, m)</th>
+                        <th className="px-3 py-2 text-right">Presión de entrada (P ent.)</th>
+                        <th className="px-3 py-2 text-right">Presión de salida (P sal.)</th>
                       </tr>
                     </thead>
                     <tbody>

@@ -73,15 +73,15 @@ export default function DimensionamientoPage() {
   };
 
   const missing: string[] = [];
-  if (!inputs.rawQ || inputs.rawQ <= 0) missing.push("caudal (Q)");
-  if (!inputs.L || inputs.L <= 0) missing.push("longitud (L)");
+  if (!inputs.rawQ || inputs.rawQ <= 0) missing.push("Caudal (Q)");
+  if (!inputs.L || inputs.L <= 0) missing.push("Longitud de la tubería (L)");
 
   const assumed: AssumedValue[] = [];
-  if (inputs.P1 == null) assumed.push({ field: "P1", value: 0, label: "Sin P₁ — tabla muestra solo velocidad y pérdidas" });
+  if (inputs.P1 == null) assumed.push({ field: "P1", value: 0, label: "Sin presión inicial (P₁) — tabla muestra solo velocidad y pérdidas" });
 
   const handleExportCSV = () => {
     if (!results) return;
-    const headers = ["DN (mm)", "V (m/s)", "hf (m)", "J (m/km)", "P2 (kg/cm²)", "Vel OK", "Pres OK", "Recomendado"];
+    const headers = ["Diámetro nominal DN (mm)", "Velocidad del agua V (m/s)", "Pérdida por fricción hf (m)", "Pendiente de fricción J (m/km)", "Presión final P2 (kg/cm²)", "Cumple velocidad", "Cumple presión", "Recomendado"];
     const rows = results.rows.map((r) =>
       [r.dn, r.V.toFixed(3), r.hf.toFixed(2), r.J_km.toFixed(2), r.P2 != null ? mcaToKgcm2(r.P2).toFixed(2) : "—", r.meetsVelocity ? "Sí" : "No", r.meetsPressure === true ? "Sí" : r.meetsPressure === false ? "No" : "—", r.recommended ? "Sí" : "No"].join(",")
     );
@@ -110,7 +110,7 @@ export default function DimensionamientoPage() {
 
             <div className="flex items-end gap-2">
               <div className="flex-1">
-                <InputField label="Caudal Q de diseño" value={inputs.rawQ} onChange={(v) => handleNum("rawQ", v)} required min={0} step="0.1" tooltip="Caudal que necesitas que pase por la tubería. Es el dato principal para seleccionar el diámetro correcto" />
+                <InputField label="Caudal de diseño (Q)" value={inputs.rawQ} onChange={(v) => handleNum("rawQ", v)} required min={0} step="0.1" tooltip="Caudal que necesitas que pase por la tubería. Es el dato principal para seleccionar el diámetro correcto" />
               </div>
               <select
                 value={inputs.flowUnit}
@@ -123,10 +123,10 @@ export default function DimensionamientoPage() {
               </select>
             </div>
 
-            <InputField label="Longitud L" value={inputs.L} onChange={(v) => handleNum("L", v)} unit="m" required min={0} tooltip="Distancia total de la tubería que vas a instalar, en metros" />
+            <InputField label="Longitud de la tubería (L)" value={inputs.L} onChange={(v) => handleNum("L", v)} unit="m" required min={0} tooltip="Distancia total de la tubería que vas a instalar, en metros" />
 
             <div className="space-y-1">
-              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Material / C</label>
+              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Material y coeficiente de fricción (C)</label>
               <select
                 value={inputs.materialName}
                 onChange={(e) => handleMaterial(e.target.value)}
@@ -170,19 +170,19 @@ export default function DimensionamientoPage() {
               );
             })()}
 
-            <InputField label="Presión entrada P₁" value={inputs.P1} onChange={(v) => handleNum("P1", v)} unit="kg/cm²" tooltip="Presión disponible al inicio de la tubería. Si no la conoces, la tabla mostrará solo velocidad y pérdidas, pero no podrá verificar presión de salida" />
+            <InputField label="Presión inicial (P₁)" value={inputs.P1} onChange={(v) => handleNum("P1", v)} unit="kg/cm²" tooltip="Presión disponible al inicio de la tubería. Si no la conoces, la tabla mostrará solo velocidad y pérdidas, pero no podrá verificar presión de salida" />
 
             <button onClick={() => setShowAdvanced(!showAdvanced)} className="text-[10px] text-[#1C3D5A] underline decoration-dotted">
               {showAdvanced ? 'Ocultar' : 'Mostrar'} parametros avanzados
             </button>
             {showAdvanced && (
               <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-3 space-y-3">
-                <InputField label="P₂ mínima requerida" value={inputs.P2min} onChange={(v) => setInput("P2min", parseFloat(v) || DEFAULTS.P2min)} unit="kg/cm²" tooltip="Presión mínima que necesitas al final de la tubería. CONAGUA establece 1.0 kg/cm² (10 m.c.a.) como mínimo para agua potable" />
+                <InputField label="Presión final mínima (P₂)" value={inputs.P2min} onChange={(v) => setInput("P2min", parseFloat(v) || DEFAULTS.P2min)} unit="kg/cm²" tooltip="Presión mínima que necesitas al final de la tubería. CONAGUA establece 1.0 kg/cm² (10 m.c.a.) como mínimo para agua potable" />
                 <InputField label="Velocidad máxima" value={inputs.maxVelocity} onChange={(v) => setInput("maxVelocity", parseFloat(v) || DEFAULTS.maxVelocity)} unit="m/s" tooltip="Velocidad máxima permitida. La norma recomienda no exceder 2.5 m/s en agua potable para evitar desgaste y golpe de ariete" />
 
                 <div className="grid grid-cols-2 gap-3">
-                  <InputField label="Cota z₁" value={inputs.z1} onChange={(v) => setInput("z1", parseFloat(v) || 0)} unit="m.s.n.m." assumed={inputs.z1 === 0} assumedLabel="0 m" tooltip="Elevación del punto de inicio sobre el nivel del mar. Si no la conoces, déjala en 0 (terreno plano)" />
-                  <InputField label="Cota z₂" value={inputs.z2} onChange={(v) => setInput("z2", parseFloat(v) || 0)} unit="m.s.n.m." assumed={inputs.z2 === 0} assumedLabel="0 m" tooltip="Elevación del punto final sobre el nivel del mar. Si es más alto que z1, el agua sube (más pérdida de presión)" />
+                  <InputField label="Elevación inicial (z₁)" value={inputs.z1} onChange={(v) => setInput("z1", parseFloat(v) || 0)} unit="m.s.n.m." assumed={inputs.z1 === 0} assumedLabel="0 m" tooltip="Elevación del punto de inicio sobre el nivel del mar. Si no la conoces, déjala en 0 (terreno plano)" />
+                  <InputField label="Elevación final (z₂)" value={inputs.z2} onChange={(v) => setInput("z2", parseFloat(v) || 0)} unit="m.s.n.m." assumed={inputs.z2 === 0} assumedLabel="0 m" tooltip="Elevación del punto final sobre el nivel del mar. Si es más alto que z1, el agua sube (más pérdida de presión)" />
                 </div>
               </div>
             )}
@@ -210,19 +210,19 @@ export default function DimensionamientoPage() {
                   projectName: inputs.projectName,
                   hasAssumedValues: inputs.P1 == null,
                   inputs: [
-                    { label: "Caudal Q", value: inputs.rawQ != null ? `${inputs.rawQ} ${inputs.flowUnit}` : "—" },
-                    { label: "Longitud L", value: inputs.L != null ? `${inputs.L} m` : "—" },
+                    { label: "Caudal de diseño (Q)", value: inputs.rawQ != null ? `${inputs.rawQ} ${inputs.flowUnit}` : "—" },
+                    { label: "Longitud de la tubería (L)", value: inputs.L != null ? `${inputs.L} m` : "—" },
                     { label: "Material", value: `${inputs.materialName} (C=${inputs.C})` },
-                    { label: "Presión P₁", value: inputs.P1 != null ? `${inputs.P1} kg/cm²` : "No ingresada" },
-                    { label: "P₂ mínima", value: `${inputs.P2min} kg/cm²` },
-                    { label: "Vel. máxima", value: `${inputs.maxVelocity} m/s` },
+                    { label: "Presión inicial (P₁)", value: inputs.P1 != null ? `${inputs.P1} kg/cm²` : "No ingresada" },
+                    { label: "Presión final mínima (P₂)", value: `${inputs.P2min} kg/cm²` },
+                    { label: "Velocidad máxima", value: `${inputs.maxVelocity} m/s` },
                   ],
                   results: [
-                    { label: "DN recomendado", value: results.recommendedDN ? `${results.recommendedDN} mm` : "Ninguno cumple", unit: "" },
+                    { label: "Diámetro nominal recomendado (DN)", value: results.recommendedDN ? `${results.recommendedDN} mm` : "Ninguno cumple", unit: "" },
                   ],
                   alerts: results.alerts.map((a) => ({ level: a.level, message: a.message })),
                   tableData: {
-                    head: ["DN (mm)", "V (m/s)", "hf (m)", "J (m/km)", "P₂ (kg/cm²)", "Estado"],
+                    head: ["Diámetro nominal DN (mm)", "Velocidad del agua V (m/s)", "Pérdida por fricción hf (m)", "Pendiente de fricción J (m/km)", "Presión final P₂ (kg/cm²)", "Estado"],
                     body: results.rows.map((r) => [
                       `${r.dn}${r.recommended ? " ★" : ""}`, r.V.toFixed(3), r.hf.toFixed(2), r.J_km.toFixed(2),
                       r.P2 != null ? mcaToKgcm2(r.P2).toFixed(2) : "—", r.recommended ? "RECOMENDADO" : r.meetsVelocity ? "OK" : "No cumple",

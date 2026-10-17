@@ -85,9 +85,9 @@ export default function EntregablePage() {
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
           <InputField label={d.proyectarCrecimiento ? "Población de diseño" : "Población"} value={d.poblacion} onChange={(v) => set("poblacion", num(v))} unit="hab" />
           <InputField label="Dotación" value={d.dotacion} onChange={(v) => set("dotacion", num(v))} unit="L/hab/día" />
-          <InputField label="CMD" value={d.cmd} onChange={(v) => set("cmd", num(v))} tooltip="Coef. máximo diario (MAPAS: 1.2-1.5)" />
-          <InputField label="CMH" value={d.cmh} onChange={(v) => set("cmh", num(v))} tooltip="Coef. máximo horario (MAPAS: 1.5-2.0)" />
-          <InputField label="Coef. regulación R" value={d.horasTanque} onChange={(v) => set("horasTanque", num(v))} tooltip="Coeficiente R de MAPAS (Tablas 1.3/1.4) según el horario de bombeo: 24 h = 11.0 · 20 h (4-24) = 9.0 · 16 h (5-21) = 19.0 · CDMX: 14.3. V = Qmd × R" />
+          <InputField label="Coeficiente del día de más consumo (CVD)" value={d.cmd} onChange={(v) => set("cmd", num(v))} tooltip="También llamado CMD, coeficiente máximo diario (MAPAS: 1.2-1.5)" />
+          <InputField label="Coeficiente de la hora pico (CVH)" value={d.cmh} onChange={(v) => set("cmh", num(v))} tooltip="También llamado CMH, coeficiente máximo horario (MAPAS: 1.5-2.0)" />
+          <InputField label="Coeficiente de regulación (R)" value={d.horasTanque} onChange={(v) => set("horasTanque", num(v))} tooltip="Coeficiente R de MAPAS (Tablas 1.3/1.4) según el horario de bombeo: 24 h = 11.0 · 20 h (4-24) = 9.0 · 16 h (5-21) = 19.0 · CDMX: 14.3. V = Qmd × R" />
         </div>
         <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
           <input type="checkbox" checked={d.proyectarCrecimiento} onChange={(e) => set("proyectarCrecimiento", e.target.checked)} className="rounded border-gray-300" />
@@ -97,9 +97,9 @@ export default function EntregablePage() {
           <InputField label="Periodo de diseño" value={d.periodoDiseno} onChange={(v) => set("periodoDiseno", num(v))} unit="años" />
         )}
         <div className="bg-[#E9EFF5] dark:bg-[#1C3D5A]/20 rounded-lg px-3 py-2 text-xs text-[#1C3D5A] dark:text-blue-300 grid grid-cols-2 sm:grid-cols-4 gap-2">
-          <span>Qm: <strong>{r.qm != null ? r.qm.toFixed(2) : "—"} L/s</strong></span>
-          <span>Qmd: <strong>{r.qmd != null ? r.qmd.toFixed(2) : "—"} L/s</strong></span>
-          <span>Qmh: <strong>{r.qmh != null ? r.qmh.toFixed(2) : "—"} L/s</strong></span>
+          <span>Gasto medio diario (Qmed): <strong>{r.qm != null ? r.qm.toFixed(2) : "—"} L/s</strong></span>
+          <span>Gasto máximo diario (QMD): <strong>{r.qmd != null ? r.qmd.toFixed(2) : "—"} L/s</strong></span>
+          <span>Gasto máximo horario (QMH): <strong>{r.qmh != null ? r.qmh.toFixed(2) : "—"} L/s</strong></span>
           <span>Tanque: <strong>{r.vtanque != null ? r.vtanque.toFixed(1) : "—"} m³</strong></span>
         </div>
       </Card>
@@ -107,10 +107,10 @@ export default function EntregablePage() {
       {/* Modulo 2 */}
       <Card title="Hoja 2 — Dimensionamiento de tubería">
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-          <InputField label="Gasto de diseño Q" value={d.q_ls} onChange={(v) => set("q_ls", num(v))} unit="L/s" tooltip="Normalmente el Qmd de la hoja 1" />
-          <InputField label="Longitud L" value={d.longitud} onChange={(v) => set("longitud", num(v))} unit="m" />
+          <InputField label="Gasto de diseño (Q)" value={d.q_ls} onChange={(v) => set("q_ls", num(v))} unit="L/s" tooltip="Normalmente el gasto máximo diario (QMD) de la hoja 1" />
+          <InputField label="Longitud de la tubería (L)" value={d.longitud} onChange={(v) => set("longitud", num(v))} unit="m" />
           <InputField label="Desnivel (inicio-fin)" value={d.desnivel} onChange={(v) => set("desnivel", num(v))} unit="m" />
-          <InputField label="Presión de entrada P1" value={d.p1} onChange={(v) => set("p1", num(v))} unit="kg/cm²" tooltip="Presión disponible al inicio de la línea. Necesaria para estimar la presión final." />
+          <InputField label="Presión de entrada a la línea (P1)" value={d.p1} onChange={(v) => set("p1", num(v))} unit="kg/cm²" tooltip="Presión disponible al inicio de la línea. Necesaria para estimar la presión final." />
           <InputField label="Presión requerida final" value={d.presionRequerida} onChange={(v) => set("presionRequerida", num(v))} unit="m.c.a." />
           <div className="space-y-1">
             <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Material</label>
@@ -118,9 +118,9 @@ export default function EntregablePage() {
               {MATERIALS.map((m) => <option key={m.name} value={m.name}>{m.name}</option>)}
             </select>
           </div>
-          <InputField label="Coef. C (Hazen-Williams)" value={d.c} onChange={(v) => set("c", num(v))} tooltip="PVC/HDPE=150, HD=130, acero=120" />
+          <InputField label="Coeficiente de fricción del material (C)" value={d.c} onChange={(v) => set("c", num(v))} tooltip="Coeficiente C de Hazen-Williams. PVC/HDPE=150, HD=130, acero=120" />
           <div className="space-y-1">
-            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Diámetro nominal</label>
+            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Diámetro nominal (DN)</label>
             <select
               value={d.dn}
               onChange={(e) => {
@@ -135,14 +135,14 @@ export default function EntregablePage() {
               {STANDARD_DNS_LABELED.map((s) => <option key={s.dn} value={s.label}>{s.label}</option>)}
             </select>
           </div>
-          <InputField label="Diámetro interior" value={d.diametroInterior} onChange={(v) => set("diametroInterior", num(v))} unit="mm" tooltip="Diámetro interno real para calcular la velocidad" />
+          <InputField label="Diámetro interior real" value={d.diametroInterior} onChange={(v) => set("diametroInterior", num(v))} unit="mm" tooltip="Diámetro interno real para calcular la velocidad" />
           <InputField label="Clase / RD" value={d.clase} onChange={(v) => set("clase", v)} type="text" placeholder="RD-26" tooltip={CLASE_RD_HELP} />
         </div>
         <div className="bg-[#E9EFF5] dark:bg-[#1C3D5A]/20 rounded-lg px-3 py-2 text-xs text-[#1C3D5A] dark:text-blue-300 grid grid-cols-2 sm:grid-cols-4 gap-2">
-          <span>Velocidad: <strong>{r.velocidad != null ? r.velocidad.toFixed(2) : "—"} m/s</strong></span>
-          <span>Hf: <strong>{r.hf != null ? r.hf.toFixed(2) : "—"} m</strong></span>
+          <span>Velocidad del agua (V): <strong>{r.velocidad != null ? r.velocidad.toFixed(2) : "—"} m/s</strong></span>
+          <span>Pérdida por fricción (hf): <strong>{r.hf != null ? r.hf.toFixed(2) : "—"} m</strong></span>
           <span>Pérdida total: <strong>{r.perdidaTotal != null ? r.perdidaTotal.toFixed(2) : "—"} m</strong></span>
-          <span>P. final: <strong>{r.presionFinal != null ? r.presionFinal.toFixed(1) : "—"} m</strong></span>
+          <span>Presión final (P2): <strong>{r.presionFinal != null ? r.presionFinal.toFixed(1) : "—"} m</strong></span>
         </div>
 
         {/* Perfil */}
@@ -186,13 +186,13 @@ export default function EntregablePage() {
         {d.incluyeBombeo && (
           <>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-              <InputField label="Carga estática He" value={d.he} onChange={(v) => set("he", num(v))} unit="m" tooltip="Diferencia de cotas entre succión y descarga" />
+              <InputField label="Carga estática (He)" value={d.he} onChange={(v) => set("he", num(v))} unit="m" tooltip="Diferencia de cotas entre succión y descarga" />
               <InputField label="Eficiencia del equipo" value={d.eficiencia} onChange={(v) => set("eficiencia", num(v))} unit="%" />
             </div>
             <div className="bg-[#E9EFF5] dark:bg-[#1C3D5A]/20 rounded-lg px-3 py-2 text-xs text-[#1C3D5A] dark:text-blue-300 grid grid-cols-2 sm:grid-cols-3 gap-2">
-              <span>CDT: <strong>{r.cdt != null ? r.cdt.toFixed(1) : "—"} m</strong></span>
+              <span>Carga dinámica total (CDT): <strong>{r.cdt != null ? r.cdt.toFixed(1) : "—"} m</strong></span>
               <span>Potencia: <strong>~{r.hp != null ? r.hp.toFixed(1) : "—"} HP</strong></span>
-              <span>Q: <strong>{r.qm3h != null ? r.qm3h.toFixed(1) : "—"} m³/h</strong></span>
+              <span>Caudal (Q): <strong>{r.qm3h != null ? r.qm3h.toFixed(1) : "—"} m³/h</strong></span>
             </div>
           </>
         )}

@@ -447,8 +447,8 @@ export default function PerfilPage() {
   })();
 
   const missing: string[] = [];
-  if (rawQ == null) missing.push("caudal Q");
-  if (calcMode === 'verificar' && P1 == null) missing.push("presion P1");
+  if (rawQ == null) missing.push("caudal (Q)");
+  if (calcMode === 'verificar' && P1 == null) missing.push("presión inicial (P1)");
 
   // Colors per tramo for the table
   const tramoColors = ["#1C3D5A", "#2E7D32", "#C62828", "#F57F17", "#6A1B9A", "#00838F"];
@@ -496,7 +496,7 @@ export default function PerfilPage() {
             )}
 
             <div className="grid grid-cols-[1fr_1fr_1fr_24px] gap-2 text-[10px] text-gray-400 font-semibold uppercase px-1">
-              <span>Cadenam. (m)</span><span>Cota (m.s.n.m.)</span><span>Descripcion</span><span></span>
+              <span>Cadenamiento (m)</span><span>Cota (m.s.n.m.)</span><span>Descripcion</span><span></span>
             </div>
             <div className="space-y-1 max-h-[350px] overflow-y-auto">
               {vertices.map((v, i) => {
@@ -537,12 +537,12 @@ export default function PerfilPage() {
                 </button>
               </div>
               <p className="text-[10px] text-gray-400">
-                {tipoLinea === 'conduccion' ? 'Se diseña con el gasto máximo diario (Qmd).' : 'Se diseña con el gasto máximo horario (Qmh = Qmd × CVh).'} Al cambiar, el caudal se actualiza desde el Cálculo de gasto.
+                {tipoLinea === 'conduccion' ? 'Se diseña con el gasto máximo diario (QMD).' : 'Se diseña con el gasto máximo horario (QMH): el gasto máximo diario (QMD) multiplicado por el coeficiente de la hora pico (CVH).'} Al cambiar, el caudal se actualiza desde el Cálculo de gasto.
               </p>
             </div>
             <div className="flex items-end gap-2">
               <div className="flex-1">
-                <InputField label={`Caudal Q (${tipoLinea === 'conduccion' ? 'Qmd' : 'Qmh'})`} value={rawQ} onChange={(v) => setRawQ(v === "" ? null : parseFloat(v))} required tooltip="Caudal de diseño — se usa en todos los tramos" />
+                <InputField label={tipoLinea === 'conduccion' ? "Gasto máximo diario (QMD)" : "Gasto máximo horario (QMH)"} value={rawQ} onChange={(v) => setRawQ(v === "" ? null : parseFloat(v))} required tooltip="Caudal de diseño — se usa en todos los tramos" />
               </div>
               <select value={flowUnit} onChange={(e) => setFlowUnit(e.target.value as FlowUnit)} className="px-2 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 dark:text-white">
                 <option value="L/s">L/s</option>
@@ -551,10 +551,10 @@ export default function PerfilPage() {
             </div>
             {/* El módulo siempre calcula la P1 requerida; para líneas existentes está la herramienta "Verificar presión" */}
             {calcMode === 'verificar' ? (
-              <InputField label="Presion de entrada P1" value={P1} onChange={(v) => setP1(v === "" ? null : parseFloat(v))} unit="kg/cm2" required tooltip="Presion disponible al inicio de la linea" />
+              <InputField label="Presión de entrada a la línea (P1)" value={P1} onChange={(v) => setP1(v === "" ? null : parseFloat(v))} unit="kg/cm2" required tooltip="Presion disponible al inicio de la linea" />
             ) : (
               <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3 text-center">
-                <p className="text-[10px] text-blue-500 dark:text-blue-400 mb-1">P1 requerida para cumplir Pmin</p>
+                <p className="text-[10px] text-blue-500 dark:text-blue-400 mb-1">Presión inicial (P1) requerida para cumplir la presión mínima (Pmin)</p>
                 <p className="text-xl font-bold text-[#1C3D5A] dark:text-blue-300">
                   {computedP1 != null ? formatNumber(computedP1, 2) : "--"} <span className="text-sm font-normal">kg/cm2</span>
                 </p>
@@ -563,8 +563,8 @@ export default function PerfilPage() {
             <InputWarnings warnings={validateHydraulicInputs({ Q_ls: rawQ, P1_kgcm2: P1 })} />
 
             <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-3 space-y-3">
-              <InputField label="Presion minima requerida" value={Pmin} onChange={(v) => setPmin(parseFloat(v) || 1)} unit="kg/cm2" tooltip="Presion minima aceptable en cualquier punto" />
-              <InputField label="Perdida por accesorios" value={coefAccesorios} onChange={(v) => setCoefAccesorios(parseFloat(v) || 5)} unit="% de hf" tooltip="Perdida por accesorios estimada como porcentaje de la perdida por friccion. Tipico 5% en lineas de conduccion." />
+              <InputField label="Presión mínima requerida (Pmin)" value={Pmin} onChange={(v) => setPmin(parseFloat(v) || 1)} unit="kg/cm2" tooltip="Presion minima aceptable en cualquier punto" />
+              <InputField label="Pérdida por accesorios (hm)" value={coefAccesorios} onChange={(v) => setCoefAccesorios(parseFloat(v) || 5)} unit="% de hf" tooltip="Perdida por accesorios estimada como porcentaje de la perdida por friccion. Tipico 5% en lineas de conduccion." />
             </div>
           </div>
 
@@ -587,8 +587,8 @@ export default function PerfilPage() {
               <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-3 space-y-2">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-xs font-semibold text-green-800 dark:text-green-300">DN recomendado para Q={rawQ} {flowUnit}</p>
-                    <p className="text-lg font-bold text-green-900 dark:text-green-200">{recommendedDN.label} <span className="text-xs font-normal text-green-600">V={formatNumber(recommendedDN.V, 2)} m/s</span></p>
+                    <p className="text-xs font-semibold text-green-800 dark:text-green-300">Diámetro nominal (DN) recomendado para el caudal de {rawQ} {flowUnit}</p>
+                    <p className="text-lg font-bold text-green-900 dark:text-green-200">{recommendedDN.label} <span className="text-xs font-normal text-green-600">Velocidad del agua (V) = {formatNumber(recommendedDN.V, 2)} m/s</span></p>
                   </div>
                   <button onClick={applyRecommendedDN} className="text-xs bg-green-600 text-white px-3 py-2 rounded-lg hover:bg-green-700 transition-colors font-medium shadow-sm">
                     Aplicar a todos
@@ -611,7 +611,7 @@ export default function PerfilPage() {
                 </div>
                 <div className="grid grid-cols-2 gap-2">
                   <div className="space-y-1">
-                    <label className="text-sm font-medium text-gray-700 dark:text-gray-300">DN (mm)</label>
+                    <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Diámetro nominal (DN, mm)</label>
                     <select value={t.DN_mm} onChange={(e) => updateTramo(t.id, { DN_mm: parseInt(e.target.value) })} className="w-full px-2 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 dark:text-white">
                       {STANDARD_DNS_LABELED.map(d => <option key={d.dn} value={d.dn}>{d.label}</option>)}
                     </select>
@@ -684,7 +684,7 @@ export default function PerfilPage() {
                   return (
                     <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 rounded-lg px-3 py-2 text-xs text-red-700 dark:text-red-400 space-y-1">
                       <p className="font-semibold">{"⚠"} Presion excede capacidad de la tuberia</p>
-                      <p>P max en este tramo: <strong>{ts.maxPressure_kgcm2.toFixed(1)} kg/cm2</strong> — Capacidad {t.pipeClass}: <strong>{pnKg} kg/cm2</strong></p>
+                      <p>Presión máxima (Pmax) en este tramo: <strong>{ts.maxPressure_kgcm2.toFixed(1)} kg/cm2</strong> — Capacidad {t.pipeClass}: <strong>{pnKg} kg/cm2</strong></p>
                       {vrpViable && (
                         <div className="bg-white/70 dark:bg-gray-900/40 border border-red-200/60 rounded px-2 py-1.5">
                           <p>
@@ -741,12 +741,12 @@ export default function PerfilPage() {
                       vel.status === 'aceptable' ? 'bg-blue-500' :
                       vel.status === 'alto' ? 'bg-red-500' : 'bg-yellow-500'
                     }`} />
-                    <span>V = {formatNumber(vel.V, 2)} m/s</span>
+                    <span>Velocidad del agua (V) = {formatNumber(vel.V, 2)} m/s</span>
                     {(() => {
                       const ts = results?.tramoSummaries.find(s => s.id === t.id);
                       if (ts && ts.J_km > 0) return (
                         <span className={`font-semibold ${ts.J_km <= 5 ? 'text-green-600' : ts.J_km <= 10 ? 'text-yellow-600' : 'text-red-600'}`}>
-                          J={formatNumber(ts.J_km, 1)} m/km
+                          Pendiente de fricción (J) = {formatNumber(ts.J_km, 1)} m/km
                         </span>
                       );
                       return null;
@@ -796,7 +796,7 @@ export default function PerfilPage() {
                     </div>
                     <div className="grid grid-cols-2 gap-2">
                       <div className="space-y-1">
-                        <label className="text-sm font-medium text-gray-700 dark:text-gray-300">DN (mm)</label>
+                        <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Diámetro nominal (DN, mm)</label>
                         <select value={t.DN_mm} onChange={(e) => updateTramoB(t.id, { DN_mm: parseInt(e.target.value) })} className="w-full px-2 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 dark:text-white">
                           {STANDARD_DNS_LABELED.map(d => <option key={d.dn} value={d.dn}>{d.label}</option>)}
                         </select>
@@ -835,22 +835,22 @@ export default function PerfilPage() {
                   projectName,
                   hasAssumedValues: false,
                   inputs: [
-                    { label: "Q", value: rawQ != null ? `${rawQ} ${flowUnit}` : "--" },
-                    { label: "P1", value: calcMode === 'calcularP1' && computedP1 != null ? `${formatNumber(computedP1, 2)} kg/cm2 (calculada)` : P1 != null ? `${P1} kg/cm2` : "--" },
-                    { label: "P min", value: `${Pmin} kg/cm2` },
-                    { label: "Tramos", value: tramos.map((t, i) => `T${i + 1}: ${t.DN_mm}mm ${t.materialName}`).join(", ") },
+                    { label: "Caudal (Q)", value: rawQ != null ? `${rawQ} ${flowUnit}` : "--" },
+                    { label: "Presión inicial (P1)", value: calcMode === 'calcularP1' && computedP1 != null ? `${formatNumber(computedP1, 2)} kg/cm2 (calculada)` : P1 != null ? `${P1} kg/cm2` : "--" },
+                    { label: "Presión mínima (Pmin)", value: `${Pmin} kg/cm2` },
+                    { label: "Tramos", value: tramos.map((t, i) => `Tramo ${i + 1}: ${t.DN_mm}mm ${t.materialName}`).join(", ") },
                     { label: "Puntos", value: `${vertices.length}` },
                   ],
                   results: [
                     { label: "Longitud total", value: formatNumber(results.totalLength, 0), unit: "m" },
-                    { label: "Perdida longitudinal (hf)", value: formatNumber(results.totalHf, 3), unit: "m" },
-                    { label: `Perdida accesorios (${coefAccesorios}%)`, value: formatNumber(results.totalHm, 3), unit: "m" },
+                    { label: "Pérdida por fricción (hf)", value: formatNumber(results.totalHf, 3), unit: "m" },
+                    { label: `Pérdida por accesorios (hm, ${coefAccesorios}% de hf)`, value: formatNumber(results.totalHm, 3), unit: "m" },
                     { label: "Perdida total", value: formatNumber(results.totalPerdida, 3), unit: "m" },
-                    { label: "P final", value: results.finalPressure_kgcm2 != null ? formatNumber(results.finalPressure_kgcm2, 2) : "--", unit: "kg/cm2" },
+                    { label: "Presión final", value: results.finalPressure_kgcm2 != null ? formatNumber(results.finalPressure_kgcm2, 2) : "--", unit: "kg/cm2" },
                   ],
                   alerts: results.alerts.map(a => ({ level: a.level, message: a.message })),
                   tableData: {
-                    head: ["Cadenam.", "Cota", "Piezo", "P (kg/cm2)", "DN", "V (m/s)", "Estado"],
+                    head: ["Cadenamiento (m)", "Cota", "Piezométrica", "Presión (P, kg/cm2)", "Diámetro nominal (DN)", "Velocidad del agua (V, m/s)", "Estado"],
                     body: results.points.map(p => [
                       `${p.dist}`, formatNumber(p.cota, 1),
                       p.piezo != null ? formatNumber(p.piezo, 1) : "--",
@@ -871,7 +871,7 @@ export default function PerfilPage() {
                 <MetricCard label="Longitud total" value={formatNumber(results.totalLength, 0)} unit="m" dataStatus="calculated" />
                 <MetricCard label="Perdida total" value={formatNumber(results.totalPerdida, 2)} unit="m" dataStatus="calculated" />
                 <MetricCard
-                  label="P final"
+                  label="Presión final"
                   value={results.finalPressure_kgcm2 != null ? formatNumber(results.finalPressure_kgcm2, 2) : "--"}
                   unit="kg/cm2"
                   alertLevel={results.finalPressure_kgcm2 != null && results.finalPressure_kgcm2 < Pmin ? "ERROR" : "OK"}
@@ -902,7 +902,7 @@ export default function PerfilPage() {
               </div>
               {calcMode === 'calcularP1' && computedP1 != null && (
                 <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-4 text-center">
-                  <span className="text-xs text-blue-500">P1 requerida para Pmin = {Pmin} kg/cm2:</span>
+                  <span className="text-xs text-blue-500">Presión inicial (P1) requerida para la presión mínima (Pmin) = {Pmin} kg/cm2:</span>
                   <span className="ml-2 text-lg font-bold text-[#1C3D5A] dark:text-blue-300">{formatNumber(computedP1, 2)} kg/cm2</span>
                 </div>
               )}
@@ -912,17 +912,17 @@ export default function PerfilPage() {
                 <div className="flex flex-wrap gap-2">
                   {results.tramoSummaries.map((ts, i) => (
                     <div key={ts.id} className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 text-xs" style={{ borderLeftColor: tramoColors[i % tramoColors.length], borderLeftWidth: 3 }}>
-                      <span className="font-semibold">T{i + 1}</span>
+                      <span className="font-semibold">Tramo {i + 1}</span>
                       <span className="text-gray-400 mx-1">|</span>
                       <span>{ts.DN_mm}mm {ts.materialName}</span>
                       <span className="text-gray-400 mx-1">|</span>
                       <span>{formatNumber(ts.length, 0)}m</span>
                       <span className="text-gray-400 mx-1">|</span>
-                      <span>V={ts.V != null ? formatNumber(ts.V, 2) : "--"} m/s</span>
+                      <span>Velocidad del agua (V) = {ts.V != null ? formatNumber(ts.V, 2) : "--"} m/s</span>
                       <span className="text-gray-400 mx-1">|</span>
-                      <span>hf={formatNumber(ts.hf, 2)}m</span>
+                      <span>Pérdida por fricción (hf) = {formatNumber(ts.hf, 2)} m</span>
                       <span className="text-gray-400 mx-1">|</span>
-                      <span className={`font-semibold ${ts.J_km <= 5 ? 'text-green-600' : ts.J_km <= 10 ? 'text-yellow-600' : 'text-red-600'}`}>J={formatNumber(ts.J_km, 1)} m/km</span>
+                      <span className={`font-semibold ${ts.J_km <= 5 ? 'text-green-600' : ts.J_km <= 10 ? 'text-yellow-600' : 'text-red-600'}`}>Pendiente de fricción (J) = {formatNumber(ts.J_km, 1)} m/km</span>
                     </div>
                   ))}
                 </div>
@@ -941,19 +941,19 @@ export default function PerfilPage() {
                   <div className="bg-white dark:bg-gray-800 rounded-xl border-2 border-[#1C3D5A]/30 p-4 space-y-2">
                     <h4 className="text-xs font-bold text-[#1C3D5A] dark:text-blue-300">Escenario A</h4>
                     <div className="text-xs space-y-1 text-gray-600 dark:text-gray-300">
-                      <p>hf total: <span className="font-mono font-semibold">{formatNumber(results.totalHf, 2)} m</span></p>
-                      <p>P final: <span className="font-mono font-semibold">{results.finalPressure_kgcm2 != null ? formatNumber(results.finalPressure_kgcm2, 2) : "--"} kg/cm2</span></p>
+                      <p>Pérdida por fricción (hf) total: <span className="font-mono font-semibold">{formatNumber(results.totalHf, 2)} m</span></p>
+                      <p>Presión final: <span className="font-mono font-semibold">{results.finalPressure_kgcm2 != null ? formatNumber(results.finalPressure_kgcm2, 2) : "--"} kg/cm2</span></p>
                       <p>Puntos criticos: <span className="font-mono font-semibold">{results.pointsCritical}</span></p>
-                      <p>Puntos bajo Pmin: <span className="font-mono font-semibold">{results.pointsBelowMin}</span></p>
+                      <p>Puntos bajo la presión mínima (Pmin): <span className="font-mono font-semibold">{results.pointsBelowMin}</span></p>
                     </div>
                   </div>
                   <div className="bg-white dark:bg-gray-800 rounded-xl border-2 border-orange-300 p-4 space-y-2">
                     <h4 className="text-xs font-bold text-orange-600 dark:text-orange-400">Escenario B</h4>
                     <div className="text-xs space-y-1 text-gray-600 dark:text-gray-300">
-                      <p>hf total: <span className="font-mono font-semibold">{formatNumber(resultsB.totalHf, 2)} m</span></p>
-                      <p>P final: <span className="font-mono font-semibold">{resultsB.finalPressure_kgcm2 != null ? formatNumber(resultsB.finalPressure_kgcm2, 2) : "--"} kg/cm2</span></p>
+                      <p>Pérdida por fricción (hf) total: <span className="font-mono font-semibold">{formatNumber(resultsB.totalHf, 2)} m</span></p>
+                      <p>Presión final: <span className="font-mono font-semibold">{resultsB.finalPressure_kgcm2 != null ? formatNumber(resultsB.finalPressure_kgcm2, 2) : "--"} kg/cm2</span></p>
                       <p>Puntos criticos: <span className="font-mono font-semibold">{resultsB.pointsCritical}</span></p>
-                      <p>Puntos bajo Pmin: <span className="font-mono font-semibold">{resultsB.pointsBelowMin}</span></p>
+                      <p>Puntos bajo la presión mínima (Pmin): <span className="font-mono font-semibold">{resultsB.pointsBelowMin}</span></p>
                     </div>
                   </div>
                 </div>
@@ -1021,15 +1021,15 @@ export default function PerfilPage() {
                     <thead>
                       <tr className="bg-gray-50 dark:bg-gray-700 text-gray-500">
                         <th className="px-2 py-2 text-left">#</th>
-                        <th className="px-2 py-2 text-right">Cadenam. (m)</th>
+                        <th className="px-2 py-2 text-right">Cadenamiento (m)</th>
                         <th className="px-2 py-2 text-right">Cota</th>
-                        <th className="px-2 py-2 text-right">Piezom.</th>
-                        <th className="px-2 py-2 text-right">P (kg/cm2)</th>
-                        <th className="px-2 py-2 text-right">hf (m)</th>
-                        <th className="px-2 py-2 text-center">DN</th>
-                        <th className="px-2 py-2 text-right">V (m/s)</th>
+                        <th className="px-2 py-2 text-right">Piezométrica (m)</th>
+                        <th className="px-2 py-2 text-right">Presión (P, kg/cm2)</th>
+                        <th className="px-2 py-2 text-right">Pérdida por fricción (hf, m)</th>
+                        <th className="px-2 py-2 text-center">Diámetro nominal (DN)</th>
+                        <th className="px-2 py-2 text-right">Velocidad del agua (V, m/s)</th>
                         <th className="px-2 py-2 text-center">Estado</th>
-                        <th className="px-2 py-2 text-left">Desc.</th>
+                        <th className="px-2 py-2 text-left">Descripción</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -1059,7 +1059,7 @@ export default function PerfilPage() {
                   </table>
                 </div>
                 <div className="px-4 py-2.5 text-[10px] text-gray-500 dark:text-gray-400 border-t border-gray-100 dark:border-gray-700 leading-relaxed">
-                  <strong>Cadenam.</strong> = distancia desde el inicio (m). <strong>Cota</strong> = elevación del terreno (m.s.n.m.). <strong>Piezom.</strong> = línea piezométrica: hasta dónde subiría el agua en un tubito vertical en ese punto; su altura menos la cota del terreno es la presión. <strong>P</strong> = presión disponible en ese punto. <strong>hf</strong> = pérdida por fricción acumulada. <strong>V</strong> = velocidad del agua. <strong>Estado</strong>: ✓ cumple, ⚠ presión baja, ✗ crítica.
+                  <strong>Cadenamiento</strong> = distancia desde el inicio (m). <strong>Cota</strong> = elevación del terreno (m.s.n.m.). <strong>Piezométrica</strong> = hasta dónde subiría el agua en un tubito vertical en ese punto; su altura menos la cota del terreno es la presión. <strong>Presión (P)</strong> = presión disponible en ese punto. <strong>Pérdida por fricción (hf)</strong> = pérdida acumulada por el rozamiento del agua con el tubo. <strong>Velocidad del agua (V)</strong> = qué tan rápido viaja el agua dentro del tubo. <strong>Estado</strong>: ✓ cumple, ⚠ presión baja, ✗ crítica.
                 </div>
               </div>
 

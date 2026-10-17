@@ -148,7 +148,7 @@ export default function ImpulsionPage() {
 
             <InputField label="Nombre del proyecto" value={inputs.Qmd_ls === null ? "" : ""} onChange={() => {}} type="text" className="hidden" />
 
-            <InputField label="Gasto medio diario Qmd" value={inputs.Qmd_ls} onChange={(v) => set("Qmd_ls", v === "" ? null : parseFloat(v))} unit="L/s" required tooltip="Caudal medio diario — obtenlo del modulo Calculo de gasto" />
+            <InputField label="Gasto de diseño a bombear (QMD)" value={inputs.Qmd_ls} onChange={(v) => set("Qmd_ls", v === "" ? null : parseFloat(v))} unit="L/s" required tooltip="El caudal que la bomba debe entregar: normalmente el gasto MÁXIMO diario (QMD) del módulo Cálculo de gasto — es el que llega solo desde tu proyecto" />
 
             {/* Pumping regime */}
             <div className="space-y-1">
@@ -169,10 +169,10 @@ export default function ImpulsionPage() {
             </div>
 
             <div className="bg-[#E9EFF5] dark:bg-[#1C3D5A]/20 rounded-lg px-3 py-2 text-xs text-[#1C3D5A]">
-              Desnivel Hg = {(inputs.cotaTanque - inputs.cotaBomba).toFixed(1)} m
+              Desnivel a vencer (Hg) = {(inputs.cotaTanque - inputs.cotaBomba).toFixed(1)} m
             </div>
 
-            <InputField label="Longitud de tuberia" value={inputs.L} onChange={(v) => set("L", v === "" ? null : parseFloat(v))} unit="m" required tooltip="Longitud total de la linea de impulsion" />
+            <InputField label="Longitud de la tubería (L)" value={inputs.L} onChange={(v) => set("L", v === "" ? null : parseFloat(v))} unit="m" required tooltip="Longitud total de la linea de impulsion" />
 
             {/* Material */}
             <div className="space-y-1">
@@ -195,7 +195,7 @@ export default function ImpulsionPage() {
               </p>
               {!useEconomic && (
                 <div className="space-y-1">
-                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300">DN manual</label>
+                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Diámetro nominal (DN) manual</label>
                   <select value={inputs.DN_mm ?? ""} onChange={(e) => set("DN_mm", parseInt(e.target.value))} className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 dark:text-white">
                     {STANDARD_DNS_LABELED.map(d => <option key={d.dn} value={d.dn}>{d.label}</option>)}
                   </select>
@@ -209,7 +209,7 @@ export default function ImpulsionPage() {
             </button>
             {showAdvanced && (
               <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-3 space-y-3">
-                <InputField label="Perdidas menores" value={inputs.hmPercent} onChange={(v) => set("hmPercent", parseFloat(v) || 10)} unit="% de hf" tooltip="Estimacion de perdidas por accesorios como porcentaje de hf" />
+                <InputField label="Pérdida por accesorios (hm)" value={inputs.hmPercent} onChange={(v) => set("hmPercent", parseFloat(v) || 10)} unit="% de hf" tooltip="Estimacion de perdidas por accesorios como porcentaje de hf" />
                 <div className="grid grid-cols-2 gap-3">
                   <InputField label="Eficiencia bomba" value={(inputs.eficienciaBomba * 100)} onChange={(v) => set("eficienciaBomba", (parseFloat(v) || 70) / 100)} unit="%" tooltip="Eficiencia de la bomba (tipico 60-80%)" />
                   <InputField label="Eficiencia motor" value={(inputs.eficienciaMotor * 100)} onChange={(v) => set("eficienciaMotor", (parseFloat(v) || 90) / 100)} unit="%" tooltip="Eficiencia del motor electrico (tipico 85-95%)" />
@@ -233,19 +233,19 @@ export default function ImpulsionPage() {
                   projectName: "Linea de impulsion",
                   hasAssumedValues: false,
                   inputs: [
-                    { label: "Qmd", value: `${inputs.Qmd_ls} L/s` },
+                    { label: "Gasto de diseño a bombear (QMD)", value: `${inputs.Qmd_ls} L/s` },
                     { label: "Bombeo", value: `${inputs.horasBombeo} h/dia` },
-                    { label: "Hg", value: `${results.Hg.toFixed(1)} m` },
-                    { label: "L", value: `${inputs.L} m` },
+                    { label: "Desnivel a vencer (Hg)", value: `${results.Hg.toFixed(1)} m` },
+                    { label: "Longitud de la tubería (L)", value: `${inputs.L} m` },
                     { label: "Material", value: inputs.materialName },
                   ],
                   results: [
-                    { label: "Q bombeo", value: formatNumber(results.Qbombeo_ls, 2), unit: "L/s" },
-                    { label: "DN economico", value: `${results.DN_econ_mm}`, unit: "mm" },
-                    { label: "DN usado", value: `${results.DN_used_mm}`, unit: "mm" },
-                    { label: "CDT", value: formatNumber(results.CDT, 2), unit: "m" },
+                    { label: "Caudal de bombeo (Q)", value: formatNumber(results.Qbombeo_ls, 2), unit: "L/s" },
+                    { label: "Diámetro económico (DN)", value: `${results.DN_econ_mm}`, unit: "mm" },
+                    { label: "Diámetro usado (DN)", value: `${results.DN_used_mm}`, unit: "mm" },
+                    { label: "Carga dinámica total (CDT)", value: formatNumber(results.CDT, 2), unit: "m" },
                     { label: "Potencia motor", value: formatNumber(results.Pm_HP, 1), unit: "HP" },
-                    { label: "HP comercial", value: `${results.HP_comercial}`, unit: "HP" },
+                    { label: "Potencia comercial (HP)", value: `${results.HP_comercial}`, unit: "HP" },
                     { label: "Costo mensual", value: `$${formatNumber(results.costo_mes, 0)}`, unit: "" },
                   ],
                   alerts: results.alerts.map(a => ({ level: a.level, message: a.message })),
@@ -261,7 +261,7 @@ export default function ImpulsionPage() {
                 <p className="text-xs text-[#1C3D5A]/60 dark:text-blue-300/60">Caudal de bombeo ({inputs.horasBombeo}h/dia)</p>
                 <p className="text-2xl font-bold text-[#1C3D5A] dark:text-blue-200">{formatNumber(results.Qbombeo_ls, 2)} <span className="text-sm font-normal">L/s</span> <span className="text-sm text-[#1C3D5A]/50 ml-2">({formatNumber(results.Qbombeo_m3h, 1)} m3/h)</span></p>
                 <FormulaDetail
-                  title="Q bombeo" value={formatNumber(results.Qbombeo_ls, 2)} unit="L/s"
+                  title="Caudal de bombeo (Q)" value={formatNumber(results.Qbombeo_ls, 2)} unit="L/s"
                   formula="Q_bombeo = Qmd × (24 / horas_bombeo)"
                   steps={[
                     { substitution: `Q = ${inputs.Qmd_ls} × (24 / ${inputs.horasBombeo})` },
@@ -285,7 +285,7 @@ export default function ImpulsionPage() {
                   </div>
                   {results.DN_used_mm !== results.DN_econ_mm && (
                     <div className="text-right">
-                      <p className="text-[10px] text-gray-500">DN seleccionado</p>
+                      <p className="text-[10px] text-gray-500">Diámetro seleccionado (DN)</p>
                       <p className="text-lg font-bold text-gray-700">{results.DN_used_mm} mm</p>
                     </div>
                   )}
@@ -297,7 +297,7 @@ export default function ImpulsionPage() {
                   Aplicar {results.DN_econ_mm} mm a la Línea de conducción →
                 </button>
                 <FormulaDetail
-                  title="D economico" value={`${results.DN_econ_mm}`} unit="mm"
+                  title="Diámetro económico (D)" value={`${results.DN_econ_mm}`} unit="mm"
                   formula="D = K × √Q  (Bresse)"
                   steps={[
                     { label: `K = ${results.K_bresse} (para ${inputs.horasBombeo}h de bombeo)` },
@@ -311,16 +311,16 @@ export default function ImpulsionPage() {
 
               {/* Hydraulics */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                <MetricCard label="Velocidad (V)" value={formatNumber(results.V, 2)} unit="m/s" alertLevel={results.V > 2.0 ? "WARN" : results.V < 0.5 ? "WARN" : "OK"} dataStatus="calculated" />
-                <MetricCard label="hf — fricción" value={formatNumber(results.hf, 2)} unit="m" dataStatus="calculated" />
-                <MetricCard label="hm — accesorios" value={formatNumber(results.hm, 2)} unit="m" dataStatus="calculated" />
-                <MetricCard label="J — gradiente" value={formatNumber(results.J_km, 2)} unit="m/km" alertLevel={results.J_km > 10 ? "WARN" : "OK"} dataStatus="calculated" />
+                <MetricCard label="Velocidad del agua (V)" value={formatNumber(results.V, 2)} unit="m/s" alertLevel={results.V > 2.0 ? "WARN" : results.V < 0.5 ? "WARN" : "OK"} dataStatus="calculated" />
+                <MetricCard label="Pérdida por fricción (hf)" value={formatNumber(results.hf, 2)} unit="m" dataStatus="calculated" />
+                <MetricCard label="Pérdida por accesorios (hm)" value={formatNumber(results.hm, 2)} unit="m" dataStatus="calculated" />
+                <MetricCard label="Pendiente de fricción (J)" value={formatNumber(results.J_km, 2)} unit="m/km" alertLevel={results.J_km > 10 ? "WARN" : "OK"} dataStatus="calculated" />
               </div>
               <div className="bg-gray-50 dark:bg-gray-800/60 border border-gray-100 dark:border-gray-700 rounded-lg px-3 py-2.5 text-[11px] text-gray-600 dark:text-gray-400 space-y-1 leading-relaxed">
                 <p><strong>V (velocidad):</strong> qué tan rápido va el agua = Q / área del tubo. Ideal 0.6 a 2 m/s.</p>
                 <p><strong>hf (pérdida por fricción):</strong> energía que pierde el agua al rozar la pared del tubo, a lo largo de toda la línea. Se calcula con Hazen-Williams.</p>
                 <p><strong>hm (pérdida por accesorios):</strong> energía que se pierde en codos, válvulas y piezas especiales. Aquí estimada como % de hf.</p>
-                <p><strong>J (gradiente):</strong> cuánta presión se pierde por cada kilómetro de tubo (hf entre la longitud). Sirve para comparar diámetros.</p>
+                <p><strong>J (pendiente de fricción):</strong> cuánta presión se pierde por cada kilómetro de tubo (hf entre la longitud). Sirve para comparar diámetros.</p>
               </div>
 
               {/* Sin bombeo: la gravedad alcanza — nunca mostrar potencias negativas */}
@@ -336,7 +336,7 @@ export default function ImpulsionPage() {
               {results.requiereBombeo && (<>
               {/* CDT */}
               <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
-                <p className="text-xs text-gray-500 mb-2">Carga Dinamica Total (CDT)</p>
+                <p className="text-xs text-gray-500 mb-2">Carga dinámica total (CDT)</p>
                 <p className="text-3xl font-bold text-[#1C3D5A] dark:text-blue-200">{formatNumber(results.CDT, 2)} <span className="text-sm font-normal">m</span> <span className="text-sm text-gray-400 ml-2">({formatNumber(results.CDT_kgcm2, 2)} kg/cm2)</span></p>
                 <div className="flex gap-4 mt-2 text-xs text-gray-500 flex-wrap">
                   <span>Hg = {formatNumber(results.Hg, 1)} m</span>
@@ -348,7 +348,7 @@ export default function ImpulsionPage() {
                   La <strong>CDT (carga dinámica total)</strong> es la &quot;altura&quot; total que la bomba debe vencer: <strong>Hg</strong> = desnivel entre la bomba y el tanque (carga estática) <strong>+ hf</strong> (fricción) <strong>+ hm</strong> (accesorios){""} y, si entregas a una red, <strong>+ la presión de servicio</strong>. Es uno de los dos datos para pedir la bomba (el otro es el caudal Q).
                 </p>
                 <FormulaDetail
-                  title="CDT" value={formatNumber(results.CDT, 2)} unit="m"
+                  title="Carga dinámica total (CDT)" value={formatNumber(results.CDT, 2)} unit="m"
                   formula={results.pServicio_m > 0 ? "CDT = Hg + hf + hm + P_servicio" : "CDT = Hg + hf + hm"}
                   steps={[
                     { substitution: `CDT = ${formatNumber(results.Hg, 1)} + ${formatNumber(results.hf, 2)} + ${formatNumber(results.hm, 2)}${results.pServicio_m > 0 ? ` + ${formatNumber(results.pServicio_m, 1)}` : ""}` },
@@ -376,7 +376,7 @@ export default function ImpulsionPage() {
                     <p className="text-lg font-bold text-amber-800">{formatNumber(results.Pm_HP, 1)} <span className="text-xs font-normal">HP</span></p>
                   </div>
                   <div>
-                    <p className="text-[10px] text-amber-600">HP comercial</p>
+                    <p className="text-[10px] text-amber-600">Potencia comercial (HP)</p>
                     <p className="text-2xl font-bold text-amber-900">{results.HP_comercial} <span className="text-sm font-normal">HP</span></p>
                   </div>
                 </div>
@@ -411,11 +411,11 @@ export default function ImpulsionPage() {
                 <p className="text-xs text-gray-500 font-semibold mb-3">Costo de energía preliminar — para comparar diámetros</p>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                   <div>
-                    <p className="text-[10px] text-gray-400">kWh/dia</p>
+                    <p className="text-[10px] text-gray-400">Energía al día (kWh)</p>
                     <p className="text-sm font-bold text-gray-700">{formatNumber(results.kWh_dia, 1)}</p>
                   </div>
                   <div>
-                    <p className="text-[10px] text-gray-400">kWh/mes</p>
+                    <p className="text-[10px] text-gray-400">Energía al mes (kWh)</p>
                     <p className="text-sm font-bold text-gray-700">{formatNumber(results.kWh_mes, 0)}</p>
                   </div>
                   <div>

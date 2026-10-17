@@ -71,8 +71,8 @@ export default function BombeoPage() {
   };
 
   const missing: string[] = [];
-  if (inputs.Hg == null) missing.push("altura estática (Hg)");
-  if (inputs.L == null) missing.push("longitud (L)");
+  if (inputs.Hg == null) missing.push("desnivel a vencer (Hg)");
+  if (inputs.L == null) missing.push("longitud de la tubería (L)");
   if (inputs.pumpMethod === "equation" && (inputs.H0 == null || inputs.Kbomba == null)) missing.push("datos de la bomba (H₀, K)");
   if (inputs.pumpMethod === "points" && inputs.pumpPoints.length < 2) missing.push("al menos 2 puntos de la bomba");
 
@@ -88,11 +88,11 @@ export default function BombeoPage() {
               <ResetButton moduleKey="bombeo" onReset={() => { reset(); setMaterialName(MATERIALS[0].name); setPipeClass(""); setPNBar(null); }} />
             </div>
             <InputField label="Nombre del proyecto" value={inputs.projectName} onChange={(v) => setInput("projectName", v)} type="text" />
-            <InputField label="Altura geométrica Hg" value={inputs.Hg} onChange={(v) => handleNum("Hg", v)} unit="m" required tooltip="Diferencia de elevacion entre la succion y la descarga de la bomba (z2 - z1)" />
-            <InputField label="Longitud total L" value={inputs.L} onChange={(v) => handleNum("L", v)} unit="m" required tooltip="Longitud total de la tubería desde la bomba hasta el punto de descarga" />
+            <InputField label="Desnivel a vencer (Hg)" value={inputs.Hg} onChange={(v) => handleNum("Hg", v)} unit="m" required tooltip="Diferencia de elevacion entre la succion y la descarga de la bomba (z2 - z1)" />
+            <InputField label="Longitud de la tubería (L)" value={inputs.L} onChange={(v) => handleNum("L", v)} unit="m" required tooltip="Longitud total de la tubería desde la bomba hasta el punto de descarga" />
 
             <div className="space-y-1">
-              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">DN</label>
+              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Diámetro nominal (DN)</label>
               <select
                 value={inputs.DN ?? ""}
                 onChange={(e) => setInput("DN", parseInt(e.target.value))}
@@ -149,9 +149,9 @@ export default function BombeoPage() {
             </button>
             {showAdvanced && (
               <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-3 space-y-3">
-                <InputField label="Presión remanente P2" value={p2Req} onChange={(v) => setP2Req(parseFloat(v) || 0)} unit="kg/cm2" tooltip="Presión minima requerida en el punto de entrega (tanque, red). Si descarga a tanque atmosferico, usar 0." />
+                <InputField label="Presión remanente (P2)" value={p2Req} onChange={(v) => setP2Req(parseFloat(v) || 0)} unit="kg/cm2" tooltip="Presión minima requerida en el punto de entrega (tanque, red). Si descarga a tanque atmosferico, usar 0." />
                 <p className="text-[10px] text-gray-400 -mt-2 mb-1">Hs = Hg + P2 = {((inputs.Hg ?? 0) + p2Req * 10).toFixed(1)} m</p>
-                <InputField label="K total accesorios" value={inputs.kTotal} onChange={(v) => setInput("kTotal", parseFloat(v) || 0)} tooltip="Suma de todos los coeficientes K de pérdidas menores (codos, válvulas, tees, etc.). Si no lo conoces, déjalo en 0 y se estimará como 10% de las pérdidas por fricción" />
+                <InputField label="Coeficiente total de accesorios (K)" value={inputs.kTotal} onChange={(v) => setInput("kTotal", parseFloat(v) || 0)} tooltip="Suma de todos los coeficientes K de pérdidas menores (codos, válvulas, tees, etc.). Si no lo conoces, déjalo en 0 y se estimará como 10% de las pérdidas por fricción" />
               </div>
             )}
           </div>
@@ -179,8 +179,8 @@ export default function BombeoPage() {
             {inputs.pumpMethod === "equation" ? (
               <>
                 <p className="text-xs text-gray-500 dark:text-gray-400">H = H₀ - K × Q²</p>
-                <InputField label="H₀ (carga a Q=0)" value={inputs.H0} onChange={(v) => handleNum("H0", v)} unit="m" required tooltip="Altura máxima que da la bomba cuando no fluye agua (caudal cero). Se obtiene de la curva del fabricante o de la placa de la bomba" />
-                <InputField label="K bomba" value={inputs.Kbomba} onChange={(v) => handleNum("Kbomba", v)} required tooltip="Coeficiente de la curva de la bomba. Define qué tan rápido cae la altura al aumentar el caudal. Valores típicos: 0.001 a 0.1. A menor K, la bomba mantiene más presión a caudales altos" />
+                <InputField label="Carga de la bomba a caudal cero (H₀)" value={inputs.H0} onChange={(v) => handleNum("H0", v)} unit="m" required tooltip="Altura máxima que da la bomba cuando no fluye agua (caudal cero). Se obtiene de la curva del fabricante o de la placa de la bomba" />
+                <InputField label="Coeficiente de la curva de la bomba (K)" value={inputs.Kbomba} onChange={(v) => handleNum("Kbomba", v)} required tooltip="Coeficiente de la curva de la bomba. Define qué tan rápido cae la altura al aumentar el caudal. Valores típicos: 0.001 a 0.1. A menor K, la bomba mantiene más presión a caudales altos" />
               </>
             ) : (
               <>
@@ -196,8 +196,8 @@ export default function BombeoPage() {
                 </div>
                 {inputs.pumpPoints.map((p, i) => (
                   <div key={i} className="flex gap-2 items-center">
-                    <InputField label={`Q${i + 1}`} value={p.Q} onChange={(v) => updatePumpPoint(i, { Q: parseFloat(v) || 0, H: p.H })} unit="L/s" className="flex-1" />
-                    <InputField label={`H${i + 1}`} value={p.H} onChange={(v) => updatePumpPoint(i, { Q: p.Q, H: parseFloat(v) || 0 })} unit="m" className="flex-1" />
+                    <InputField label={`Caudal (Q${i + 1})`} value={p.Q} onChange={(v) => updatePumpPoint(i, { Q: parseFloat(v) || 0, H: p.H })} unit="L/s" className="flex-1" />
+                    <InputField label={`Carga (H${i + 1})`} value={p.H} onChange={(v) => updatePumpPoint(i, { Q: p.Q, H: parseFloat(v) || 0 })} unit="m" className="flex-1" />
                     <button onClick={() => removePumpPoint(i)} className="text-red-400 hover:text-red-600 text-xs mt-5">&#10005;</button>
                   </div>
                 ))}
@@ -226,22 +226,22 @@ export default function BombeoPage() {
                   projectName: inputs.projectName,
                   hasAssumedValues: false,
                   inputs: [
-                    { label: "Altura estática Hg", value: inputs.Hg != null ? `${inputs.Hg} m` : "—" },
-                    { label: "Longitud L", value: inputs.L != null ? `${inputs.L} m` : "—" },
-                    { label: "DN", value: inputs.DN != null ? `${inputs.DN} mm` : "—" },
-                    { label: "C", value: `${inputs.C}` },
-                    { label: "K accesorios", value: `${inputs.kTotal}` },
+                    { label: "Desnivel a vencer (Hg)", value: inputs.Hg != null ? `${inputs.Hg} m` : "—" },
+                    { label: "Longitud de la tubería (L)", value: inputs.L != null ? `${inputs.L} m` : "—" },
+                    { label: "Diámetro nominal (DN)", value: inputs.DN != null ? `${inputs.DN} mm` : "—" },
+                    { label: "Coeficiente de fricción del material (C)", value: `${inputs.C}` },
+                    { label: "Coeficiente total de accesorios (K)", value: `${inputs.kTotal}` },
                     { label: "Método bomba", value: inputs.pumpMethod === "equation" ? `Ecuación: H=${inputs.H0} - ${inputs.Kbomba}×Q²` : `${inputs.pumpPoints.length} puntos` },
                   ],
                   results: [
-                    { label: "Q operación", value: results.Qop != null ? formatNumber(results.Qop, 1) : "No encontrado", unit: "L/s" },
-                    { label: "H operación", value: results.Hop != null ? formatNumber(results.Hop, 1) : "—", unit: "m" },
+                    { label: "Caudal de operación (Q)", value: results.Qop != null ? formatNumber(results.Qop, 1) : "No encontrado", unit: "L/s" },
+                    { label: "Carga de operación (H)", value: results.Hop != null ? formatNumber(results.Hop, 1) : "—", unit: "m" },
                     ...(results.recommendation ? [
                       { label: "Tipo de bomba", value: results.recommendation.pumpType, unit: "" },
                       { label: "Potencia motor", value: `${results.recommendation.powerHP} HP (${formatNumber(results.recommendation.powerKW, 1)} kW)`, unit: "" },
                       { label: "Eficiencia minima", value: `${results.recommendation.minEfficiency}%`, unit: "" },
-                      { label: "RPM recomendadas", value: `${results.recommendation.motorRPM}`, unit: "RPM" },
-                      { label: "NPSH requerido (est.)", value: formatNumber(results.recommendation.NPSHr_estimated, 1), unit: "m" },
+                      { label: "Velocidad de giro recomendada (RPM)", value: `${results.recommendation.motorRPM}`, unit: "RPM" },
+                      { label: "Carga de succión requerida (NPSH est.)", value: formatNumber(results.recommendation.NPSHr_estimated, 1), unit: "m" },
                     ] : []),
                   ],
                   alerts: [
@@ -273,8 +273,8 @@ export default function BombeoPage() {
               )}
 
               <div className="grid grid-cols-2 gap-3">
-                <MetricCard label="Q operación" value={results.Qop != null ? formatNumber(results.Qop, 1) : "—"} unit="L/s" dataStatus={results.dataStatus} />
-                <MetricCard label="H operación" value={results.Hop != null ? formatNumber(results.Hop, 1) : "—"} unit="m" dataStatus={results.dataStatus} />
+                <MetricCard label="Caudal de operación (Q)" value={results.Qop != null ? formatNumber(results.Qop, 1) : "—"} unit="L/s" dataStatus={results.dataStatus} />
+                <MetricCard label="Carga de operación (H)" value={results.Hop != null ? formatNumber(results.Hop, 1) : "—"} unit="m" dataStatus={results.dataStatus} />
               </div>
 
               {/* Curve chart */}
@@ -313,11 +313,11 @@ export default function BombeoPage() {
                         <p className="text-xl font-bold text-[#1C3D5A] dark:text-white">{results.recommendation.minEfficiency}%</p>
                       </div>
                       <div className="bg-[#E9EFF5] dark:bg-gray-700 rounded-lg p-3 text-center">
-                        <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">RPM</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Velocidad de giro (RPM)</p>
                         <p className="text-xl font-bold text-[#1C3D5A] dark:text-white">{results.recommendation.motorRPM}</p>
                       </div>
                       <div className="bg-[#E9EFF5] dark:bg-gray-700 rounded-lg p-3 text-center">
-                        <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">NPSH req.</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Carga de succión requerida (NPSH)</p>
                         <p className="text-xl font-bold text-[#1C3D5A] dark:text-white">{formatNumber(results.recommendation.NPSHr_estimated, 1)}</p>
                         <p className="text-xs text-gray-500 dark:text-gray-400">m</p>
                       </div>

@@ -219,12 +219,12 @@ export default function DemandaPage() {
                     <InputField label="Hora en que arranca" value={inputs.horaInicioBombeo ?? 0} onChange={(v) => setHorarioTanque(inputs.horasBombeoTanque ?? 24, parseInt(v) || 0)} unit="h (0-23)" tooltip="El horario importa: 20 h de las 4 a las 24 da R = 9.0, pero de las 0 a las 20 da R = 12.6 (manual MAPAS)" />
                   </div>
                   <p className="text-xs font-semibold text-[#1C3D5A] dark:text-blue-300">
-                    R calculado = {inputs.coefRegulacion} m³/(L/s) — método oficial MAPAS (curva Fig. 1.1, ec. 1.2)
+                    Coeficiente de regulación (R) calculado = {inputs.coefRegulacion} m³/(L/s) — método oficial MAPAS (curva Fig. 1.1, ec. 1.2)
                   </p>
                 </>
               )}
               {inputs.rManualTanque && (
-                <InputField label="R manual" value={inputs.coefRegulacion} onChange={(v) => set("coefRegulacion", parseFloat(v) || 11)} unit="m³/(L/s)" tooltip="Coeficiente de otra curva local. CDMX (Tabla 1.4): 24 h = 14.3 · 20 h (4-24) = 9.6 · 16 h (5-21) = 17.3" />
+                <InputField label="Coeficiente de regulación (R) manual" value={inputs.coefRegulacion} onChange={(v) => set("coefRegulacion", parseFloat(v) || 11)} unit="m³/(L/s)" tooltip="Coeficiente de otra curva local. CDMX (Tabla 1.4): 24 h = 14.3 · 20 h (4-24) = 9.6 · 16 h (5-21) = 17.3" />
               )}
               <label className="flex items-center gap-2 text-xs text-gray-700 dark:text-gray-300">
                 <input
@@ -236,7 +236,7 @@ export default function DemandaPage() {
                   }}
                   className="rounded border-gray-300"
                 />
-                Capturar R manual (p. ej. CDMX: 14.3)
+                Capturar coeficiente de regulación (R) manual (p. ej. CDMX: 14.3)
               </label>
               <a
                 href={MAPAS_TANQUES_URL}
@@ -268,8 +268,8 @@ export default function DemandaPage() {
 
                 {/* Coeficientes de variacion */}
                 <div className="grid grid-cols-2 gap-3">
-                  <InputField label="CVD (variacion diaria)" value={inputs.CVD} onChange={(v) => set("CVD", parseFloat(v) || 1.4)} tooltip="Coeficiente de variacion diaria. CONAGUA: 1.2-1.5, default 1.4" />
-                  <InputField label="CVH (variacion horaria)" value={inputs.CVH} onChange={(v) => set("CVH", parseFloat(v) || 1.55)} tooltip="Coeficiente de variacion horaria. CONAGUA: 1.5-2.0, default 1.55" />
+                  <InputField label="Coeficiente del día de más consumo (CVD)" value={inputs.CVD} onChange={(v) => set("CVD", parseFloat(v) || 1.4)} tooltip="Coeficiente de variacion diaria. CONAGUA: 1.2-1.5, default 1.4" />
+                  <InputField label="Coeficiente de la hora pico (CVH)" value={inputs.CVH} onChange={(v) => set("CVH", parseFloat(v) || 1.55)} tooltip="Coeficiente de variacion horaria. CONAGUA: 1.5-2.0, default 1.55" />
                 </div>
               </div>
             )}
@@ -295,14 +295,14 @@ export default function DemandaPage() {
                     { label: "Clima", value: CLIMATE_TYPES.find(c => c.key === inputs.climaKey)?.label ?? inputs.climaKey },
                     { label: "Dotacion", value: `${inputs.dotacionBase} L/hab/dia (ajustada: ${results.dotacionAjustada.toFixed(0)})` },
                     { label: "Crecimiento", value: inputs.proyectarCrecimiento ? `${inputs.tasaCrecimiento}% × ${inputs.periodoDiseno} años` : "Sin proyección" },
-                    { label: "CVD / CVH", value: `${inputs.CVD} / ${inputs.CVH}` },
+                    { label: "Coeficientes de variación (CVD / CVH)", value: `${inputs.CVD} / ${inputs.CVH}` },
                   ],
                   results: [
                     { label: "Poblacion actual", value: `${results.poblacionActual}`, unit: "hab" },
                     { label: "Población de diseño", value: `${results.poblacionDiseno}`, unit: "hab" },
-                    { label: "Qmd", value: formatNumber(results.Qmd_ls, 2), unit: "L/s" },
-                    { label: "QMD (conduccion)", value: formatNumber(results.QMD_ls, 2), unit: "L/s" },
-                    { label: "QMH (distribucion)", value: formatNumber(results.QMH_ls, 2), unit: "L/s" },
+                    { label: "Gasto medio diario (Qmed)", value: formatNumber(results.Qmd_ls, 2), unit: "L/s" },
+                    { label: "Gasto máximo diario (QMD) — conducción", value: formatNumber(results.QMD_ls, 2), unit: "L/s" },
+                    { label: "Gasto máximo horario (QMH) — distribución", value: formatNumber(results.QMH_ls, 2), unit: "L/s" },
                     { label: "Volumen diario", value: formatNumber(results.volDiario_m3, 0), unit: "m3/dia" },
                     { label: "Tanque de regulacion", value: formatNumber(results.volTanque_m3, 0), unit: "m3" },
                   ],
@@ -338,13 +338,13 @@ export default function DemandaPage() {
                 <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-xs text-gray-500">Caudal medio diario (Qmed)</p>
+                      <p className="text-xs text-gray-500">Gasto medio diario (Qmed)</p>
                       <p className="text-2xl font-bold text-gray-700 dark:text-gray-200">{formatNumber(results.Qmd_ls, 2)} <span className="text-sm font-normal">L/s</span></p>
                     </div>
                     <span className="text-sm text-gray-400">{formatNumber(results.Qmd_m3h, 1)} m3/h</span>
                   </div>
                   <FormulaDetail
-                    title="Qmd"
+                    title="Gasto medio diario (Qmed)"
                     value={formatNumber(results.Qmd_ls, 2)}
                     unit="L/s"
                     formula="Qmd = (Poblacion × Dotacion) / 86,400"
@@ -361,14 +361,14 @@ export default function DemandaPage() {
                 <div className="bg-green-50 dark:bg-green-900/20 rounded-xl border border-green-200 dark:border-green-800 p-4">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-xs text-green-600 dark:text-green-400 font-medium">Caudal maximo diario — QMD</p>
+                      <p className="text-xs text-green-600 dark:text-green-400 font-medium">Gasto máximo diario (QMD)</p>
                       <p className="text-2xl font-bold text-green-800 dark:text-green-200">{formatNumber(results.QMD_ls, 2)} <span className="text-sm font-normal">L/s</span></p>
                       <p className="text-[11px] text-green-600/80 mt-1">Usar para lineas de conduccion</p>
                     </div>
                     <span className="text-sm text-green-500">{formatNumber(results.QMD_m3h, 1)} m3/h</span>
                   </div>
                   <FormulaDetail
-                    title="QMD"
+                    title="Gasto máximo diario (QMD)"
                     value={formatNumber(results.QMD_ls, 2)}
                     unit="L/s"
                     formula="QMD = Qmd × CVD"
@@ -385,14 +385,14 @@ export default function DemandaPage() {
                 <div className="bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-200 dark:border-blue-800 p-4">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-xs text-blue-600 dark:text-blue-400 font-medium">Caudal maximo horario — QMH</p>
+                      <p className="text-xs text-blue-600 dark:text-blue-400 font-medium">Gasto máximo horario (QMH)</p>
                       <p className="text-2xl font-bold text-blue-800 dark:text-blue-200">{formatNumber(results.QMH_ls, 2)} <span className="text-sm font-normal">L/s</span></p>
                       <p className="text-[11px] text-blue-600/80 mt-1">Usar para redes de distribucion</p>
                     </div>
                     <span className="text-sm text-blue-500">{formatNumber(results.QMH_m3h, 1)} m3/h</span>
                   </div>
                   <FormulaDetail
-                    title="QMH"
+                    title="Gasto máximo horario (QMH)"
                     value={formatNumber(results.QMH_ls, 2)}
                     unit="L/s"
                     formula="QMH = QMD × CVH"

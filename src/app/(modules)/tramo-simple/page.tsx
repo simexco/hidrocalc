@@ -244,7 +244,7 @@ export default function TramoSimplePage() {
               <div className="flex items-end gap-2">
                 <div className="flex-1">
                   <InputField
-                    label="Caudal Q"
+                    label="Caudal (Q)"
                     value={inputs.rawQ}
                     onChange={(v) => handleNumInput("rawQ", v)}
                     tooltip="Volumen de agua por unidad de tiempo. Unidades: L/s (mas comun en Mexico), m3/h o m3/s. Rango típico: 2-500 L/s para lineas municipales. Campo obligatorio."
@@ -269,7 +269,7 @@ export default function TramoSimplePage() {
             {inputs.mode !== "C" && (
               <div>
                 <InputField
-                  label="Diámetro nominal DN"
+                  label="Diámetro nominal (DN)"
                   value={inputs.DN}
                   onChange={(v) => handleNumInput("DN", v)}
                   unit="mm"
@@ -296,7 +296,7 @@ export default function TramoSimplePage() {
             )}
 
             <InputField
-              label="Longitud L"
+              label="Longitud de la tubería (L)"
               value={inputs.L}
               onChange={(v) => handleNumInput("L", v)}
               unit="m"
@@ -308,7 +308,7 @@ export default function TramoSimplePage() {
 
             {/* Material / C */}
             <div className="space-y-1">
-              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Material / Coef. C</label>
+              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Material y coeficiente de fricción (C)</label>
               <select
                 value={inputs.materialName}
                 onChange={(e) => handleMaterial(e.target.value)}
@@ -325,7 +325,7 @@ export default function TramoSimplePage() {
               </p>
               {inputs.materialName === "Personalizado" && (
                 <InputField
-                  label="C personalizado"
+                  label="Coeficiente de fricción del material (C)"
                   value={inputs.C}
                   onChange={(v) => setInput("C", parseFloat(v) || 130)}
                   tooltip="Coeficiente de rugosidad de Hazen-Williams"
@@ -363,7 +363,7 @@ export default function TramoSimplePage() {
             })()}
 
             <InputField
-              label="Presión entrada P₁"
+              label="Presión inicial (P₁)"
               value={inputs.P1}
               onChange={(v) => handleNumInput("P1", v)}
               unit="kg/cm²"
@@ -373,7 +373,7 @@ export default function TramoSimplePage() {
             {/* Mode B: P2 min */}
             {(inputs.mode === "B" || inputs.mode === "C") && (
               <InputField
-                label="P₂ mínima requerida"
+                label="Presión final mínima requerida (P₂)"
                 value={inputs.P2min}
                 onChange={(v) => setInput("P2min", parseFloat(v) || DEFAULTS.P2min)}
                 unit="kg/cm²"
@@ -398,7 +398,7 @@ export default function TramoSimplePage() {
 
                 <div className="grid grid-cols-2 gap-3">
                   <InputField
-                    label="Cota entrada z₁"
+                    label="Cota de entrada (z₁)"
                     value={inputs.z1}
                     onChange={(v) => setInput("z1", parseFloat(v) || 0)}
                     unit="m.s.n.m."
@@ -407,7 +407,7 @@ export default function TramoSimplePage() {
                     assumedLabel="Valor por defecto: 0 m"
                   />
                   <InputField
-                    label="Cota salida z₂"
+                    label="Cota de salida (z₂)"
                     value={inputs.z2}
                     onChange={(v) => setInput("z2", parseFloat(v) || 0)}
                     unit="m.s.n.m."
@@ -465,29 +465,29 @@ export default function TramoSimplePage() {
                   projectName: inputs.projectName,
                   hasAssumedValues: results.hmEstimated || inputs.P1 == null,
                   inputs: [
-                    { label: "Caudal Q", value: inputs.rawQ != null ? `${inputs.rawQ} ${inputs.flowUnit}` : "—" },
-                    { label: "Diámetro DN", value: inputs.DN != null ? `${inputs.DN} mm` : "—" },
-                    { label: "Longitud L", value: inputs.L != null ? `${inputs.L} m` : "—" },
+                    { label: "Caudal (Q)", value: inputs.rawQ != null ? `${inputs.rawQ} ${inputs.flowUnit}` : "—" },
+                    { label: "Diámetro nominal (DN)", value: inputs.DN != null ? `${inputs.DN} mm` : "—" },
+                    { label: "Longitud de la tubería (L)", value: inputs.L != null ? `${inputs.L} m` : "—" },
                     { label: "Material", value: `${inputs.materialName} (C=${inputs.C})` },
-                    { label: "Presión P₁", value: inputs.P1 != null ? `${inputs.P1} kg/cm²` : "No ingresada" },
-                    { label: "Cota z₁", value: `${inputs.z1} m.s.n.m.` },
-                    { label: "Cota z₂", value: `${inputs.z2} m.s.n.m.` },
+                    { label: "Presión inicial (P₁)", value: inputs.P1 != null ? `${inputs.P1} kg/cm²` : "No ingresada" },
+                    { label: "Cota de entrada (z₁)", value: `${inputs.z1} m.s.n.m.` },
+                    { label: "Cota de salida (z₂)", value: `${inputs.z2} m.s.n.m.` },
                   ],
                   results: [
-                    { label: "Velocidad V", value: formatNumber(results.V, 3), unit: "m/s" },
-                    { label: "Pérdida fricción hf", value: formatNumber(results.hf, 3), unit: "m" },
-                    { label: "Pérdida accesorios hm", value: formatNumber(results.hm, 3), unit: results.hmEstimated ? "m [EST]" : "m" },
-                    { label: "Pérdida total hf+hm", value: formatNumber((results.hf ?? 0) + (results.hm ?? 0), 3), unit: "m" },
-                    { label: "Gradiente J", value: formatNumber(results.J_km, 2), unit: "m/km" },
-                    { label: "Carga H₁", value: results.H1 != null ? formatNumber(results.H1, 2) : "Requiere P₁", unit: "m" },
-                    { label: "Carga H₂", value: results.H2 != null ? formatNumber(results.H2, 2) : "Requiere P₁", unit: "m" },
-                    { label: "Presión salida P₂", value: results.P2 != null ? formatNumber(mcaToKgcm2(results.P2), 3) : "Requiere P₁", unit: "kg/cm²" },
-                    { label: "P₂ (kPa)", value: results.P2_kPa != null ? formatNumber(results.P2_kPa, 1) : "—", unit: "kPa" },
-                    ...(results.Qmax != null ? [{ label: "Caudal máximo", value: formatNumber(results.Qmax * 1000, 2), unit: "L/s" }] : []),
+                    { label: "Velocidad del agua (V)", value: formatNumber(results.V, 3), unit: "m/s" },
+                    { label: "Pérdida por fricción (hf)", value: formatNumber(results.hf, 3), unit: "m" },
+                    { label: "Pérdida por accesorios (hm)", value: formatNumber(results.hm, 3), unit: results.hmEstimated ? "m [EST]" : "m" },
+                    { label: "Pérdida total (hf+hm)", value: formatNumber((results.hf ?? 0) + (results.hm ?? 0), 3), unit: "m" },
+                    { label: "Pendiente de fricción (J)", value: formatNumber(results.J_km, 2), unit: "m/km" },
+                    { label: "Carga hidráulica de entrada (H₁)", value: results.H1 != null ? formatNumber(results.H1, 2) : "Requiere P₁", unit: "m" },
+                    { label: "Carga hidráulica de salida (H₂)", value: results.H2 != null ? formatNumber(results.H2, 2) : "Requiere P₁", unit: "m" },
+                    { label: "Presión final (P₂)", value: results.P2 != null ? formatNumber(mcaToKgcm2(results.P2), 3) : "Requiere P₁", unit: "kg/cm²" },
+                    { label: "Presión final (P₂) en kPa", value: results.P2_kPa != null ? formatNumber(results.P2_kPa, 1) : "—", unit: "kPa" },
+                    ...(results.Qmax != null ? [{ label: "Caudal máximo (Qmax)", value: formatNumber(results.Qmax * 1000, 2), unit: "L/s" }] : []),
                   ],
                   alerts: results.alerts.map((a) => ({ level: a.level, message: a.message })),
                   tableData: results.diameterComparison ? {
-                    head: ["DN (mm)", "V (m/s)", "hf (m)", "J (m/km)", "P₂ (kg/cm²)", "Estado"],
+                    head: ["Diámetro nominal (DN, mm)", "Velocidad (V, m/s)", "Pérdida por fricción (hf, m)", "Pendiente de fricción (J, m/km)", "Presión final (P₂, kg/cm²)", "Estado"],
                     body: results.diameterComparison.map((r) => [
                       `${r.dn}${r.recommended ? " ★" : ""}`, r.V.toFixed(3), r.hf.toFixed(2), r.J_km.toFixed(2),
                       r.P2 != null ? mcaToKgcm2(r.P2).toFixed(2) : "—", r.recommended ? "RECOMENDADO" : r.meetsVelocity ? "OK" : "No cumple",
@@ -557,15 +557,15 @@ export default function TramoSimplePage() {
 
               {/* Metric Cards */}
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                <MetricCard label="Velocidad V" value={formatNumber(results.V, 3)} unit="m/s" alertLevel={alertFor("V")?.level} alertMessage={alertFor("V")?.message} dataStatus={results.dataStatus} />
-                <MetricCard label="Pérdida fricción hf" value={formatNumber(results.hf, 3)} unit="m" dataStatus={results.dataStatus} />
-                <MetricCard label="Pérdida accesorios hm" value={formatNumber(results.hm, 3)} unit="m" dataStatus={results.hmEstimated ? "estimated" : results.dataStatus} />
-                <MetricCard label="Pérdida total hf+hm" value={formatNumber((results.hf ?? 0) + (results.hm ?? 0), 3)} unit="m" dataStatus={results.dataStatus} />
-                <MetricCard label="Gradiente J" value={formatNumber(results.J_km, 2)} unit="m/km" alertLevel={alertFor("J")?.level} alertMessage={alertFor("J")?.message} dataStatus={results.dataStatus} />
-                <MetricCard label="Carga H₁" value={results.H1 != null ? formatNumber(results.H1, 2) : "—"} unit="m" unavailableMessage={results.H1 == null ? "Requiere P₁" : undefined} />
-                <MetricCard label="Carga H₂" value={results.H2 != null ? formatNumber(results.H2, 2) : "—"} unit="m" unavailableMessage={results.H2 == null ? "Requiere P₁" : undefined} />
-                <MetricCard label="Presión salida P₂" value={results.P2 != null ? formatNumber(mcaToKgcm2(results.P2), 3) : "—"} unit="kg/cm²" alertLevel={alertFor("P2")?.level} alertMessage={alertFor("P2")?.message} unavailableMessage={results.P2 == null ? "Requiere P₁" : undefined} />
-                <MetricCard label="P₂ (kPa)" value={results.P2_kPa != null ? formatNumber(results.P2_kPa, 1) : "—"} unit="kPa" unavailableMessage={results.P2_kPa == null ? "Requiere P₁" : undefined} />
+                <MetricCard label="Velocidad del agua (V)" value={formatNumber(results.V, 3)} unit="m/s" alertLevel={alertFor("V")?.level} alertMessage={alertFor("V")?.message} dataStatus={results.dataStatus} />
+                <MetricCard label="Pérdida por fricción (hf)" value={formatNumber(results.hf, 3)} unit="m" dataStatus={results.dataStatus} />
+                <MetricCard label="Pérdida por accesorios (hm)" value={formatNumber(results.hm, 3)} unit="m" dataStatus={results.hmEstimated ? "estimated" : results.dataStatus} />
+                <MetricCard label="Pérdida total (hf+hm)" value={formatNumber((results.hf ?? 0) + (results.hm ?? 0), 3)} unit="m" dataStatus={results.dataStatus} />
+                <MetricCard label="Pendiente de fricción (J)" value={formatNumber(results.J_km, 2)} unit="m/km" alertLevel={alertFor("J")?.level} alertMessage={alertFor("J")?.message} dataStatus={results.dataStatus} />
+                <MetricCard label="Carga hidráulica de entrada (H₁)" value={results.H1 != null ? formatNumber(results.H1, 2) : "—"} unit="m" unavailableMessage={results.H1 == null ? "Requiere P₁" : undefined} />
+                <MetricCard label="Carga hidráulica de salida (H₂)" value={results.H2 != null ? formatNumber(results.H2, 2) : "—"} unit="m" unavailableMessage={results.H2 == null ? "Requiere P₁" : undefined} />
+                <MetricCard label="Presión final (P₂)" value={results.P2 != null ? formatNumber(mcaToKgcm2(results.P2), 3) : "—"} unit="kg/cm²" alertLevel={alertFor("P2")?.level} alertMessage={alertFor("P2")?.message} unavailableMessage={results.P2 == null ? "Requiere P₁" : undefined} />
+                <MetricCard label="Presión final (P₂) en kPa" value={results.P2_kPa != null ? formatNumber(results.P2_kPa, 1) : "—"} unit="kPa" unavailableMessage={results.P2_kPa == null ? "Requiere P₁" : undefined} />
               </div>
 
               {/* Formulas — separate section below cards */}

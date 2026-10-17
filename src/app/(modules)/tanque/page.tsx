@@ -77,7 +77,7 @@ export default function TanquePage() {
 
             <InputField label="Nombre del proyecto" value={inputs.projectName} onChange={(v) => set("projectName", v)} type="text" />
 
-            <InputField label="Gasto máximo diario QMd" value={inputs.Qmd_ls} onChange={(v) => set("Qmd_ls", v === "" ? null : parseFloat(v))} unit="L/s" required tooltip="Gasto MÁXIMO diario (QMD) — obtenlo del módulo Cálculo de gasto. El volumen de regulación de MAPAS se calcula sobre el máximo diario, no sobre el medio." />
+            <InputField label="Gasto máximo diario (QMD)" value={inputs.Qmd_ls} onChange={(v) => set("Qmd_ls", v === "" ? null : parseFloat(v))} unit="L/s" required tooltip="Gasto MÁXIMO diario (QMD) — obtenlo del módulo Cálculo de gasto. El volumen de regulación de MAPAS se calcula sobre el máximo diario, no sobre el medio." />
 
             {/* Advanced */}
             <button onClick={() => setShowAdvanced(!showAdvanced)} className="text-[10px] text-[#1C3D5A] underline decoration-dotted">
@@ -104,7 +104,7 @@ export default function TanquePage() {
                   </div>
                   {results && !results.rEsManual && (
                     <p className="text-xs font-semibold text-[#1C3D5A] dark:text-blue-300 bg-[#E9EFF5] dark:bg-[#1C3D5A]/20 rounded-lg px-2.5 py-1.5">
-                      R calculado = {results.R} m³/(L/s) — {results.regimenLabel}
+                      Coeficiente de regulación (R) calculado = {results.R} m³/(L/s) — {results.regimenLabel}
                     </p>
                   )}
                   <label className="flex items-center gap-2 text-xs text-gray-700 dark:text-gray-300">
@@ -114,10 +114,10 @@ export default function TanquePage() {
                       onChange={(e) => set("rManual", e.target.checked ? (REGULATION_COEFFICIENTS.find((c) => c.key === "cdmx-24")?.R ?? 14.3) : null)}
                       className="rounded border-gray-300"
                     />
-                    Capturar R manual (p. ej. CDMX — Tabla 1.4: 14.3 / 9.6 / 17.3)
+                    Capturar coeficiente de regulación (R) manual (p. ej. CDMX — Tabla 1.4: 14.3 / 9.6 / 17.3)
                   </label>
                   {inputs.rManual != null && (
-                    <InputField label="R manual" value={inputs.rManual} onChange={(v) => set("rManual", parseFloat(v) || null)} unit="m³/(L/s)" tooltip="Coeficiente de otra curva local (CDMX u organismo). Anula el calculado con la curva nacional." />
+                    <InputField label="Coeficiente de regulación (R) manual" value={inputs.rManual} onChange={(v) => set("rManual", parseFloat(v) || null)} unit="m³/(L/s)" tooltip="Coeficiente de otra curva local (CDMX u organismo). Anula el calculado con la curva nacional." />
                   )}
                   <div className="bg-[#E9EFF5] dark:bg-[#1C3D5A]/20 border border-[#1C3D5A]/15 rounded-lg px-2.5 py-2 space-y-1">
                     <p className="text-[10px] text-[#1C3D5A] dark:text-blue-300 leading-relaxed">
@@ -138,7 +138,7 @@ export default function TanquePage() {
                     Incluir volumen de reserva
                   </label>
                   {inputs.incluirReserva && (
-                    <InputField label="Horas de reserva (Qmd)" value={inputs.horasReserva} onChange={(v) => set("horasReserva", parseFloat(v) || 2)} unit="h" tooltip="Horas de Qmd almacenadas como reserva ante fallas (tipico 2-4 h)" />
+                    <InputField label="Horas de reserva" value={inputs.horasReserva} onChange={(v) => set("horasReserva", parseFloat(v) || 2)} unit="h" tooltip="Horas de gasto máximo diario (QMD) almacenadas como reserva ante fallas (tipico 2-4 h)" />
                   )}
                 </div>
 
@@ -184,18 +184,18 @@ export default function TanquePage() {
                   projectName: inputs.projectName,
                   hasAssumedValues: false,
                   inputs: [
-                    { label: "QMd (maximo diario)", value: `${inputs.Qmd_ls} L/s` },
+                    { label: "Gasto máximo diario (QMD)", value: `${inputs.Qmd_ls} L/s` },
                     { label: "Suministro al tanque", value: `${results.regimenLabel} (R = ${results.R} ${results.rEsManual ? "capturado manual" : "calculado con el metodo MAPAS"})` },
                     { label: "Reserva", value: inputs.incluirReserva ? `${inputs.horasReserva} h` : "No" },
                     { label: "Forma", value: inputs.shape },
                     { label: "Tirante", value: `${inputs.altura} m` },
                   ],
                   results: [
-                    { label: "Vol diario", value: formatNumber(results.volDiario_m3, 1), unit: "m3" },
-                    { label: "Vol regulacion", value: formatNumber(results.volRegulacion_m3, 1), unit: "m3" },
-                    { label: "Vol reserva", value: formatNumber(results.volReserva_m3, 1), unit: "m3" },
-                    { label: "Vol total", value: formatNumber(results.volTotal_m3, 1), unit: "m3" },
-                    { label: "Vol comercial", value: `${results.volComercial_m3}`, unit: "m3" },
+                    { label: "Volumen diario", value: formatNumber(results.volDiario_m3, 1), unit: "m3" },
+                    { label: "Volumen de regulación", value: formatNumber(results.volRegulacion_m3, 1), unit: "m3" },
+                    { label: "Volumen de reserva", value: formatNumber(results.volReserva_m3, 1), unit: "m3" },
+                    { label: "Volumen total", value: formatNumber(results.volTotal_m3, 1), unit: "m3" },
+                    { label: "Volumen comercial", value: `${results.volComercial_m3}`, unit: "m3" },
                     { label: "Altura total", value: formatNumber(results.alturaTotal_m, 2), unit: "m" },
                   ],
                   alerts: results.alerts.map(a => ({ level: a.level, message: a.message })),
@@ -225,15 +225,15 @@ export default function TanquePage() {
                 <p className="text-xs text-gray-500 font-semibold">Desglose de volumenes</p>
                 <div className="grid grid-cols-3 gap-3">
                   <div>
-                    <p className="text-[10px] text-gray-400">Vol diario</p>
+                    <p className="text-[10px] text-gray-400">Volumen diario</p>
                     <p className="text-lg font-bold text-gray-700 dark:text-gray-200">{formatNumber(results.volDiario_m3, 1)} <span className="text-xs font-normal">m3</span></p>
                   </div>
                   <div>
-                    <p className="text-[10px] text-gray-400">Vol regulacion (R={results.R} m3/(L/s))</p>
+                    <p className="text-[10px] text-gray-400">Volumen de regulación (R = {results.R} m3/(L/s))</p>
                     <p className="text-lg font-bold text-gray-700 dark:text-gray-200">{formatNumber(results.volRegulacion_m3, 1)} <span className="text-xs font-normal">m3</span></p>
                   </div>
                   <div>
-                    <p className="text-[10px] text-gray-400">Vol reserva</p>
+                    <p className="text-[10px] text-gray-400">Volumen de reserva</p>
                     <p className="text-lg font-bold text-gray-700 dark:text-gray-200">{formatNumber(results.volReserva_m3, 1)} <span className="text-xs font-normal">m3</span></p>
                   </div>
                 </div>

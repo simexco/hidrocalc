@@ -215,7 +215,7 @@ export default function ValvulasAirePage() {
             <InputField label="Nombre del proyecto" value={projectName} onChange={setProjectName} type="text" />
             <div className="flex items-end gap-2">
               <div className="flex-1">
-                <InputField label="Caudal Q" value={rawQ} onChange={(v) => setRawQ(v === "" ? null : parseFloat(v))} tooltip="Volumen de agua por unidad de tiempo. Si no lo conoces, se calculará solo ubicación geométrica." />
+                <InputField label="Caudal (Q)" value={rawQ} onChange={(v) => setRawQ(v === "" ? null : parseFloat(v))} tooltip="Volumen de agua por unidad de tiempo. Si no lo conoces, se calculará solo ubicación geométrica." />
               </div>
               <select value={flowUnit} onChange={(e) => setFlowUnit(e.target.value as FlowUnit)} className="px-2 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 dark:text-white">
                 <option value="L/s">L/s</option>
@@ -223,13 +223,13 @@ export default function ValvulasAirePage() {
               </select>
             </div>
             <div className="space-y-1">
-              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Diámetro DN</label>
+              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Diámetro nominal (DN)</label>
               <select value={DN} onChange={(e) => setDN(parseInt(e.target.value))} className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 dark:text-white">
                 {DN_LIST.map((d) => <option key={d.dn} value={d.dn}>{d.label}</option>)}
               </select>
             </div>
             <div className="space-y-1">
-              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Material / C</label>
+              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Material y coeficiente de fricción (C)</label>
               <select value={materialName} onChange={(e) => handleMaterial(e.target.value)} className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 dark:text-white">
                 {MATERIALS.map((m) => <option key={m.name} value={m.name}>{m.name}</option>)}
               </select>
@@ -271,9 +271,9 @@ export default function ValvulasAirePage() {
             </button>
             {showAdvanced && (
               <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-3 space-y-3">
-                <InputField label="Presión de operación P₀" value={P0} onChange={(v) => setP0(v === "" ? null : parseFloat(v))} unit="kg/cm²" tooltip="Presión al inicio de la línea. Si no la conoces, se calculará solo geometría." />
-                <InputField label="Presión mínima normativa" value={pressureMin} onChange={(v) => setPressureMin(parseFloat(v) || 5)} unit="m.c.a." tooltip="NOM-001-CONAGUA: mínimo absoluto 5 m.c.a. (0.5 kg/cm²), recomendado 10 m.c.a." />
-                <InputField label="Espaciado máximo VA-E" value={maxSpacing} onChange={(v) => setMaxSpacing(parseFloat(v) || 500)} unit="m" tooltip="Distancia máxima entre válvulas eliminadoras en tramos rectos. Práctica usual: cada 500 m (AWWA M51: 500-800 m)." />
+                <InputField label="Presión de operación (P₀)" value={P0} onChange={(v) => setP0(v === "" ? null : parseFloat(v))} unit="kg/cm²" tooltip="Presión al inicio de la línea. Si no la conoces, se calculará solo geometría." />
+                <InputField label="Presión mínima normativa (Pmin)" value={pressureMin} onChange={(v) => setPressureMin(parseFloat(v) || 5)} unit="m.c.a." tooltip="NOM-001-CONAGUA: mínimo absoluto 5 m.c.a. (0.5 kg/cm²), recomendado 10 m.c.a." />
+                <InputField label="Espaciado máximo entre válvulas (VA-E)" value={maxSpacing} onChange={(v) => setMaxSpacing(parseFloat(v) || 500)} unit="m" tooltip="Distancia máxima entre válvulas eliminadoras en tramos rectos. Práctica usual: cada 500 m (AWWA M51: 500-800 m)." />
               </div>
             )}
           </div>
@@ -293,7 +293,7 @@ export default function ValvulasAirePage() {
               <p className="text-[10px] opacity-70">Incluye todos los puntos altos, bajos y cambios de pendiente.</p>
             </div>
             <div className="grid grid-cols-[24px_1fr_1fr_1.5fr_24px] gap-2 text-[10px] text-gray-400 font-semibold uppercase px-1">
-              <span>#</span><span>Dist. (m)</span><span>Cota (m)</span><span>Descripcion</span><span></span>
+              <span>#</span><span>Distancia (m)</span><span>Cota (m)</span><span>Descripcion</span><span></span>
             </div>
             <div className="space-y-1 max-h-[400px] overflow-y-auto">
               {vertices.map((v, i) => (
@@ -325,23 +325,23 @@ export default function ValvulasAirePage() {
                   projectName,
                   hasAssumedValues: P0 == null || rawQ == null,
                   inputs: [
-                    { label: "Caudal Q", value: rawQ != null ? `${rawQ} ${flowUnit}` : "No ingresado" },
-                    { label: "DN", value: `${DN} mm` },
+                    { label: "Caudal (Q)", value: rawQ != null ? `${rawQ} ${flowUnit}` : "No ingresado" },
+                    { label: "Diámetro nominal (DN)", value: `${DN} mm` },
                     { label: "Material", value: `${materialName} (C=${C})` },
-                    { label: "P0", value: P0 != null ? `${P0} kg/cm2` : "No ingresada" },
-                    { label: "Presión mín.", value: `${pressureMin} m.c.a.` },
-                    { label: "Espaciado VA-E", value: `${maxSpacing} m` },
+                    { label: "Presión de operación (P0)", value: P0 != null ? `${P0} kg/cm2` : "No ingresada" },
+                    { label: "Presión mínima (Pmin)", value: `${pressureMin} m.c.a.` },
+                    { label: "Espaciado máximo entre válvulas (VA-E)", value: `${maxSpacing} m` },
                     { label: "Vértices", value: `${vertices.length}` },
                   ],
                   results: [
                     { label: "Total válvulas", value: `${results.valves.length}` },
-                    { label: "VA-C", value: `${results.totalVAC}` },
-                    { label: "VA-A", value: `${results.totalVAA}` },
-                    { label: "VA-E", value: `${results.totalVAE}` },
+                    { label: "Válvulas combinadas (VA-C)", value: `${results.totalVAC}` },
+                    { label: "Válvulas de admisión y expulsión (VA-A)", value: `${results.totalVAA}` },
+                    { label: "Válvulas eliminadoras de aire (VA-E)", value: `${results.totalVAE}` },
                   ],
                   alerts: results.alerts.map((a) => ({ level: "WARN", message: a })),
                   tableData: {
-                    head: ["Dist (m)", "Cota (m)", "P (m.c.a.)", "Tipo", "Cuerpo", "Orificio", "PN", "Razón"],
+                    head: ["Distancia (m)", "Cota (m)", "Presión (m.c.a.)", "Tipo", "Cuerpo", "Orificio", "Presión nominal (PN)", "Razón"],
                     body: results.valves.map((v) => [
                       formatNumber(v.dist, 0), formatNumber(v.cota, 1), v.pressure != null ? formatNumber(v.pressure, 1) : "—",
                       v.type, v.bodySize, v.orificeSize, v.pn, v.reason,
@@ -366,9 +366,9 @@ export default function ValvulasAirePage() {
           {results && (
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               <MetricCard label="Total válvulas" value={`${results.valves.length}`} dataStatus="calculated" />
-              <MetricCard label="VA-C (Combinada)" value={`${results.totalVAC}`} dataStatus="calculated" />
-              <MetricCard label="VA-A (Admisión)" value={`${results.totalVAA}`} dataStatus="calculated" />
-              <MetricCard label="VA-E (Eliminadora)" value={`${results.totalVAE}`} dataStatus="calculated" />
+              <MetricCard label="Válvulas combinadas (VA-C)" value={`${results.totalVAC}`} dataStatus="calculated" />
+              <MetricCard label="Válvulas de admisión y expulsión (VA-A)" value={`${results.totalVAA}`} dataStatus="calculated" />
+              <MetricCard label="Válvulas eliminadoras de aire (VA-E)" value={`${results.totalVAE}`} dataStatus="calculated" />
             </div>
           )}
 
@@ -406,14 +406,14 @@ export default function ValvulasAirePage() {
                   {chartData.some((d) => d.presion != null) && (
                     <Line type="monotone" dataKey="presion" stroke="#60a5fa" strokeWidth={1.5} strokeDasharray="5 3" dot={false} name="Presion (m.c.a.)" />
                   )}
-                  <ReferenceLine y={pressureMin} stroke="#f59e0b" strokeDasharray="3 3" label={{ value: `P min ${pressureMin}`, position: "right", style: { fontSize: 9 } }} />
+                  <ReferenceLine y={pressureMin} stroke="#f59e0b" strokeDasharray="3 3" label={{ value: `Presión mínima (Pmin) ${pressureMin}`, position: "right", style: { fontSize: 9 } }} />
                 </ComposedChart>
               </ResponsiveContainer>
               {/* Valve legend */}
               <div className="flex gap-4 mt-2 text-[10px] text-gray-500">
-                <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 bg-blue-500 rounded-full" /> VA-C Combinada</span>
-                <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 bg-yellow-500 rounded-full" /> VA-A Admisión</span>
-                <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 bg-green-500 rounded-full" /> VA-E Eliminadora</span>
+                <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 bg-blue-500 rounded-full" /> Válvula de aire combinada (VA-C)</span>
+                <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 bg-yellow-500 rounded-full" /> Válvula de admisión y expulsión (VA-A)</span>
+                <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 bg-green-500 rounded-full" /> Válvula eliminadora de aire (VA-E)</span>
               </div>
             </div>
           )}
@@ -429,13 +429,13 @@ export default function ValvulasAirePage() {
                   <thead>
                     <tr className="bg-gray-50 dark:bg-gray-700 text-gray-500">
                       <th className="px-2 py-2 text-left">N°</th>
-                      <th className="px-2 py-2 text-right">Dist (m)</th>
+                      <th className="px-2 py-2 text-right">Distancia (m)</th>
                       <th className="px-2 py-2 text-right">Cota</th>
-                      <th className="px-2 py-2 text-right">P (m.c.a.)</th>
+                      <th className="px-2 py-2 text-right">Presión (m.c.a.)</th>
                       <th className="px-2 py-2 text-center">Tipo</th>
                       <th className="px-2 py-2 text-center">Cuerpo</th>
                       <th className="px-2 py-2 text-center">Orificio</th>
-                      <th className="px-2 py-2 text-center">PN</th>
+                      <th className="px-2 py-2 text-center">Presión nominal (PN)</th>
                       <th className="px-2 py-2 text-left">Razón</th>
                     </tr>
                   </thead>

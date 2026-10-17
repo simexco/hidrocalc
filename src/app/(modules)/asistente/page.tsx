@@ -47,7 +47,7 @@ export default function AsistentePage() {
 
   const vrpRecomendada = p.vrpRequerida ?? (p.presionMaxLinea != null && p.pnLinea != null && p.presionMaxLinea > p.pnLinea);
   const steps: Step[] = [
-    { n: 1, title: "Cálculo de gasto", desc: "Demanda de agua: población, dotación → QMD.", href: "/demanda", done: gastoDone, summary: r.qmd != null ? `QMD ${r.qmd.toFixed(2)} L/s (máx. diario)` : "Pendiente",
+    { n: 1, title: "Cálculo de gasto", desc: "Demanda de agua: población, dotación → gasto máximo diario (QMD).", href: "/demanda", done: gastoDone, summary: r.qmd != null ? `Gasto máximo diario (QMD): ${r.qmd.toFixed(2)} L/s` : "Pendiente",
       guia: {
         ten: "El número de habitantes (si solo tienes viviendas, multiplica por ~4) y el tipo de localidad/clima.",
         haz: [
@@ -55,7 +55,7 @@ export default function AsistentePage() {
           "Si el proyecto es a futuro, activa el crecimiento y pon los años.",
           "No tienes que calcular nada: los caudales aparecen solos.",
         ],
-        obtienes: "El caudal de diseño (QMD) y el volumen de tanque. Ese caudal viaja solo a los siguientes pasos.",
+        obtienes: "El gasto máximo diario (QMD) —el caudal con el que se diseña— y el volumen de tanque. Ese caudal viaja solo a los siguientes pasos.",
       } },
     { n: 2, title: "Línea de conducción", desc: "Caudal, material, diámetro del tubo, longitud, perfil y presiones.", href: "/perfil", done: condDone, summary: condDone ? `${p.material} ${p.dn} · ${p.longitud} m` : "Pendiente",
       guia: {
@@ -66,9 +66,9 @@ export default function AsistentePage() {
           "Elige material, diámetro y clase. Si no sabes el diámetro, aplica el recomendado en verde.",
           "Lee el semáforo de la tabla: verde cumple, amarillo presión baja, rojo no funciona ahí.",
         ],
-        obtienes: "La presión en cada punto del trazo, la P1 requerida al inicio y, si la presión excede la tubería, las soluciones con un clic (subir de clase, otro material o reductora de presión).",
+        obtienes: "La presión en cada punto del trazo, la presión de entrada a la línea (P1) que se necesita al inicio y, si la presión excede la tubería, las soluciones con un clic (subir de clase, otro material o reductora de presión).",
       } },
-    { n: 3, title: "Equipo de bombeo", desc: "Solo si es bombeo: CDT con cotas reales y potencia comercial (HP) para cotizar la bomba. ¿No sabes qué diámetro poner? Usa la herramienta «Diámetro económico».", href: "/equipo-bombeo", done: bombeoDone, summary: p.incluyeBombeo ? (p.he != null ? `He ${p.he} m · Q + CDT para el proveedor` : "Pendiente") : "Opcional (solo bombeo)",
+    { n: 3, title: "Equipo de bombeo", desc: "Solo si es bombeo: carga dinámica total (CDT) con cotas reales y potencia comercial (HP) para cotizar la bomba. ¿No sabes qué diámetro poner? Usa la herramienta «Diámetro económico».", href: "/equipo-bombeo", done: bombeoDone, summary: p.incluyeBombeo ? (p.he != null ? `Carga estática (He): ${p.he} m · CDT y HP listos` : "Pendiente") : "Opcional (solo bombeo)",
       guia: {
         ten: "Solo si el agua debe SUBIR con bomba. Necesitas la cota donde estará la bomba (pozo o cárcamo) y la cota de entrega (tanque).",
         haz: [
@@ -76,11 +76,11 @@ export default function AsistentePage() {
           "Captura las cotas y las horas de bombeo al día.",
           "El caudal y la tubería llegan solos del proyecto.",
         ],
-        obtienes: "El CDT y los HP: los dos datos con los que le pides cotización al proveedor de bombas.",
+        obtienes: "La carga dinámica total (CDT) y la potencia de la bomba (HP): los dos datos con los que le pides cotización al proveedor de bombas.",
       } },
     { n: 4, title: "Golpe de ariete", desc: "¿La tubería resiste el golpe? Si no, válvula de protección.", href: "/golpe-ariete", done: null, summary: "Protección contra sobrepresión / vacío",
       guia: {
-        ten: "El tiempo de cierre de la válvula (dato del fabricante); si no lo tienes, deja el valor por defecto.",
+        ten: "El tiempo de cierre de la válvula (Tc, dato del fabricante); si no lo tienes, deja el valor por defecto.",
         haz: [
           "Los datos del proyecto se cargan solos (o pulsa “Traer datos del proyecto”).",
           "Revisa el veredicto: ¿tu clase de tubería resiste el manotazo de presión?",

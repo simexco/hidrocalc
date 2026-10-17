@@ -83,7 +83,7 @@ export default function FuentePage() {
 
                 <InputField label="Factor de seguridad" value={inputs.factorSeguridad * 100} onChange={(v) => set("factorSeguridad", (parseFloat(v) || 70) / 100)} unit="%" tooltip="Fraccion del abatimiento maximo que se permite usar (tipico 70%)" />
 
-                <InputField label="QMD requerido" value={inputs.QMD_ls} onChange={(v) => set("QMD_ls", v === "" ? null : parseFloat(v))} unit="L/s" tooltip="Gasto maximo diario requerido — para comparar con la demanda (opcional)" />
+                <InputField label="Gasto máximo diario requerido (QMD)" value={inputs.QMD_ls} onChange={(v) => set("QMD_ls", v === "" ? null : parseFloat(v))} unit="L/s" tooltip="Gasto maximo diario requerido — para comparar con la demanda (opcional)" />
 
                 <InputField label="Horas de bombeo" value={inputs.horasBombeo} onChange={(v) => set("horasBombeo", parseFloat(v) || 16)} unit="h/dia" tooltip="Horas de bombeo del pozo al dia (tipico 16-20 h)" />
               </div>
@@ -106,16 +106,16 @@ export default function FuentePage() {
                   inputs: [
                     { label: "Nivel estatico", value: `${inputs.nivelEstatico} m` },
                     { label: "Nivel dinamico", value: `${inputs.nivelDinamico} m` },
-                    { label: "Q prueba", value: `${inputs.Qprueba_ls} L/s` },
-                    { label: "Profundidad", value: inputs.profundidadPozo != null ? `${inputs.profundidadPozo} m` : "N/D" },
-                    { label: "Factor seg.", value: `${(inputs.factorSeguridad * 100).toFixed(0)} %` },
+                    { label: "Caudal de prueba (Q)", value: `${inputs.Qprueba_ls} L/s` },
+                    { label: "Profundidad del pozo", value: inputs.profundidadPozo != null ? `${inputs.profundidadPozo} m` : "N/D" },
+                    { label: "Factor de seguridad", value: `${(inputs.factorSeguridad * 100).toFixed(0)} %` },
                   ],
                   results: [
                     { label: "Abatimiento", value: formatNumber(results.abatimiento, 2), unit: "m" },
                     { label: "Caudal especifico", value: formatNumber(results.caudalEspecifico, 3), unit: "L/s/m" },
-                    { label: "Q explotacion", value: formatNumber(results.Qexplotacion_ls, 2), unit: "L/s" },
-                    { label: "Q explotacion", value: formatNumber(results.Qexplotacion_m3h, 1), unit: "m3/h" },
-                    { label: "Vol diario pozo", value: formatNumber(results.volDiarioPozo_m3, 1), unit: "m3" },
+                    { label: "Caudal de explotación (Q)", value: formatNumber(results.Qexplotacion_ls, 2), unit: "L/s" },
+                    { label: "Caudal de explotación (Q)", value: formatNumber(results.Qexplotacion_m3h, 1), unit: "m3/h" },
+                    { label: "Volumen diario del pozo", value: formatNumber(results.volDiarioPozo_m3, 1), unit: "m3" },
                     ...(results.numPozos != null ? [{ label: "Pozos requeridos", value: `${results.numPozos}`, unit: "" }] : []),
                   ],
                   alerts: results.alerts.map(a => ({ level: a.level, message: a.message })),
@@ -137,7 +137,7 @@ export default function FuentePage() {
                 <p className="text-xs text-green-600 font-medium">Caudal de explotacion recomendado</p>
                 <p className="text-3xl font-bold text-green-800 dark:text-green-200">{formatNumber(results.Qexplotacion_ls, 2)} <span className="text-sm font-normal">L/s</span> <span className="text-sm text-green-600/60 ml-2">({formatNumber(results.Qexplotacion_m3h, 1)} m3/h)</span></p>
                 <FormulaDetail
-                  title="Q explotacion" value={formatNumber(results.Qexplotacion_ls, 2)} unit="L/s"
+                  title="Caudal de explotación (Q)" value={formatNumber(results.Qexplotacion_ls, 2)} unit="L/s"
                   formula="Q_explotacion = Caudal_especifico × Abatimiento_permisible"
                   steps={[
                     { label: `Caudal especifico = ${formatNumber(results.caudalEspecifico, 3)} L/s/m` },
@@ -149,7 +149,7 @@ export default function FuentePage() {
                   norm="CONAGUA MAPAS"
                 />
                 <div className="flex gap-4 mt-2 text-xs text-green-700/70">
-                  {results.abatimientoMaximo != null && <span>Abatimiento max = {formatNumber(results.abatimientoMaximo, 2)} m</span>}
+                  {results.abatimientoMaximo != null && <span>Abatimiento máximo = {formatNumber(results.abatimientoMaximo, 2)} m</span>}
                   {results.abatimientoPermisible != null && <span>Abatimiento permisible = {formatNumber(results.abatimientoPermisible, 2)} m</span>}
                 </div>
               </div>
@@ -161,9 +161,9 @@ export default function FuentePage() {
                     {results.cubreDemanda ? "El pozo cubre la demanda" : `Se requieren ${results.numPozos} pozos`}
                   </p>
                   <div className="flex gap-4 mt-2 text-xs text-gray-600 dark:text-gray-300">
-                    {results.Qbombeo_requerido_ls != null && <span>Q bombeo requerido = {formatNumber(results.Qbombeo_requerido_ls, 2)} L/s</span>}
+                    {results.Qbombeo_requerido_ls != null && <span>Caudal de bombeo requerido = {formatNumber(results.Qbombeo_requerido_ls, 2)} L/s</span>}
                     {results.numPozos != null && <span>Pozos = {results.numPozos}</span>}
-                    <span>Vol diario del pozo = {formatNumber(results.volDiarioPozo_m3, 1)} m3</span>
+                    <span>Volumen diario del pozo = {formatNumber(results.volDiarioPozo_m3, 1)} m3</span>
                   </div>
                 </div>
               )}

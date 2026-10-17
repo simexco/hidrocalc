@@ -259,7 +259,7 @@ export default function GolpeArietePage() {
   if (inputs.L == null) missing.push("longitud L");
 
   const assumed: AssumedValue[] = [];
-  if (inputs.P0 == null) assumed.push({ field: "P0", value: 0, label: "Sin presión estática — resultados parciales" });
+  if (inputs.P0 == null) assumed.push({ field: "P0", value: 0, label: "Sin presión de operación (P0) — resultados parciales" });
 
   // ¿La tubería que elegiste resiste el golpe? (PN de la clase seleccionada vs Pmax)
   const matClassesSel = inputs.materialName === "PVC"
@@ -353,7 +353,7 @@ export default function GolpeArietePage() {
               {velMode === "caudal" ? (
                 <>
                   <InputField
-                    label="Caudal Q"
+                    label="Caudal (Q)"
                     value={caudalQ}
                     onChange={(v) => setCaudalQ(v === "" ? null : parseFloat(v))}
                     unit="L/s"
@@ -370,7 +370,7 @@ export default function GolpeArietePage() {
                 </>
               ) : (
                 <InputField
-                  label="Velocidad V0"
+                  label="Velocidad del agua (V₀)"
                   value={inputs.V0}
                   onChange={(v) => handleNum("V0", v)}
                   unit="m/s"
@@ -395,7 +395,7 @@ export default function GolpeArietePage() {
 
                 {/* 2. Diámetro */}
                 <div className="space-y-1">
-                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Diámetro</label>
+                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Diámetro nominal (DN)</label>
                   <select value={selectedSize} onChange={(e) => setSelectedSize(parseInt(e.target.value))} className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 dark:text-white">
                     {catalog?.sizes.map((s, i) => <option key={i} value={i}>{s.label} (OD {s.od} mm)</option>)}
                   </select>
@@ -415,12 +415,12 @@ export default function GolpeArietePage() {
                   <div className="bg-[#E9EFF5] dark:bg-[#1C3D5A]/20 rounded-lg px-3 py-2.5 text-xs space-y-1">
                     <p className="font-medium text-[#1C3D5A] dark:text-blue-300 mb-1">Datos de la tubería (auto)</p>
                     <div className="grid grid-cols-2 gap-x-4 gap-y-0.5 text-gray-600 dark:text-gray-400">
-                      <span>OD: <strong>{sizeEntry.od} mm</strong></span>
-                      <span>e: <strong>{classEntry.e} mm</strong></span>
-                      <span>D int: <strong>{(sizeEntry.od - 2 * classEntry.e).toFixed(1)} mm</strong></span>
-                      <span>DR: <strong>{(sizeEntry.od / classEntry.e).toFixed(1)}</strong></span>
+                      <span>Diámetro exterior (OD): <strong>{sizeEntry.od} mm</strong></span>
+                      <span>Espesor de pared (e): <strong>{classEntry.e} mm</strong></span>
+                      <span>Diámetro interior real: <strong>{(sizeEntry.od - 2 * classEntry.e).toFixed(1)} mm</strong></span>
+                      <span>Relación diámetro/espesor (DR): <strong>{(sizeEntry.od / classEntry.e).toFixed(1)}</strong></span>
                       <span>Material: <strong>{catalog.material}</strong></span>
-                      <span>E: <strong>{(catalog.E / 1e9).toFixed(0)} GPa</strong></span>
+                      <span>Módulo de elasticidad (E): <strong>{(catalog.E / 1e9).toFixed(0)} GPa</strong></span>
                     </div>
                   </div>
                 )}
@@ -428,19 +428,19 @@ export default function GolpeArietePage() {
             ) : (
               <>
                 {/* Advanced: manual entry */}
-                <InputField label="D interno" value={inputs.D} onChange={(v) => handleNum("D", v)} unit="mm" required tooltip="Diámetro interior real de la tuberia" />
-                <InputField label="Espesor de pared e" value={inputs.e} onChange={(v) => handleNum("e", v)} unit="mm" required tooltip="Grosor de la pared de la tuberia" />
+                <InputField label="Diámetro interior real (D)" value={inputs.D} onChange={(v) => handleNum("D", v)} unit="mm" required tooltip="Diámetro interior real de la tuberia" />
+                <InputField label="Espesor de pared (e)" value={inputs.e} onChange={(v) => handleNum("e", v)} unit="mm" required tooltip="Grosor de la pared de la tuberia" />
 
                 {/* OD/DR display */}
                 {computedOD != null && computedDR != null && (
                   <div className="bg-gray-50 dark:bg-gray-700 rounded-lg px-3 py-2 text-xs text-gray-500 dark:text-gray-400 flex gap-4">
-                    <span>OD = <strong className="text-gray-700 dark:text-gray-300">{computedOD.toFixed(1)} mm</strong></span>
-                    <span>DR = <strong className="text-gray-700 dark:text-gray-300">{computedDR.toFixed(1)}</strong></span>
+                    <span>Diámetro exterior (OD) = <strong className="text-gray-700 dark:text-gray-300">{computedOD.toFixed(1)} mm</strong></span>
+                    <span>Relación diámetro/espesor (DR) = <strong className="text-gray-700 dark:text-gray-300">{computedDR.toFixed(1)}</strong></span>
                   </div>
                 )}
 
                 <div className="space-y-1">
-                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Material (Módulo E)</label>
+                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Material (módulo de elasticidad E)</label>
                   <select value={inputs.materialName} onChange={(e) => handleMaterial(e.target.value)}
                 className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 dark:text-white"
               >
@@ -449,7 +449,7 @@ export default function GolpeArietePage() {
                 ))}
               </select>
               {inputs.materialName === "Personalizado" && (
-                <InputField label="E (Pa)" value={inputs.E} onChange={(v) => setInput("E", parseFloat(v) || 0)} tooltip="Módulo de elasticidad del material en Pascales. Ej: Hierro dúctil = 169,000,000,000 Pa" />
+                <InputField label="Módulo de elasticidad (E) en Pa" value={inputs.E} onChange={(v) => setInput("E", parseFloat(v) || 0)} tooltip="Módulo de elasticidad del material en Pascales. Ej: Hierro dúctil = 169,000,000,000 Pa" />
               )}
               {inputs.materialName === "PVC" && (
                 <div className="mt-2">
@@ -485,10 +485,10 @@ export default function GolpeArietePage() {
               );
             })()}
 
-            <InputField label="Presión estática P0" value={inputs.P0} onChange={(v) => handleNum("P0", v)} unit="kg/cm2" tooltip="Presión normal de operación antes del cierre de valvula" />
+            <InputField label="Presión de operación (P0)" value={inputs.P0} onChange={(v) => handleNum("P0", v)} unit="kg/cm2" tooltip="Presión normal de operación antes del cierre de valvula" />
             <div className="space-y-1.5">
               <InputField
-                label="Tiempo de cierre Tc"
+                label="Tiempo de cierre (Tc)"
                 value={inputs.Tc}
                 onChange={(v) => handleNum("Tc", v)}
                 unit="s"
@@ -522,7 +522,7 @@ export default function GolpeArietePage() {
                 </p>
               </div>
             )}
-            <InputField label="Longitud L" value={inputs.L} onChange={(v) => handleNum("L", v)} unit="m" required tooltip="Longitud total de la tubería desde la válvula hasta el punto donde se refleja la onda de presión (tanque, reservorio, etc.)" />
+            <InputField label="Longitud de la tubería (L)" value={inputs.L} onChange={(v) => handleNum("L", v)} unit="m" required tooltip="Longitud total de la tubería desde la válvula hasta el punto donde se refleja la onda de presión (tanque, reservorio, etc.)" />
           </div>
         </div>
 
@@ -546,24 +546,24 @@ export default function GolpeArietePage() {
                   projectName: inputs.projectName,
                   hasAssumedValues: inputs.P0 == null,
                   inputs: [
-                    { label: "Velocidad V₀", value: inputs.V0 != null ? `${inputs.V0} m/s` : "—" },
-                    { label: "Diámetro D", value: inputs.D != null ? `${inputs.D} mm` : "—" },
-                    { label: "Espesor e", value: inputs.e != null ? `${inputs.e} mm` : "—" },
+                    { label: "Velocidad del agua (V₀)", value: inputs.V0 != null ? `${inputs.V0} m/s` : "—" },
+                    { label: "Diámetro interior real (D)", value: inputs.D != null ? `${inputs.D} mm` : "—" },
+                    { label: "Espesor de pared (e)", value: inputs.e != null ? `${inputs.e} mm` : "—" },
                     { label: "Material", value: `${inputs.materialName}` },
-                    { label: "Presión estática P₀", value: inputs.P0 != null ? `${inputs.P0} kg/cm²` : "No ingresada" },
-                    { label: "Tiempo cierre Tc", value: inputs.Tc != null ? `${inputs.Tc} s` : "—" },
-                    { label: "Longitud L", value: inputs.L != null ? `${inputs.L} m` : "—" },
+                    { label: "Presión de operación (P₀)", value: inputs.P0 != null ? `${inputs.P0} kg/cm²` : "No ingresada" },
+                    { label: "Tiempo de cierre (Tc)", value: inputs.Tc != null ? `${inputs.Tc} s` : "—" },
+                    { label: "Longitud de la tubería (L)", value: inputs.L != null ? `${inputs.L} m` : "—" },
                     { label: "Línea por bombeo", value: esBombeo ? "Sí — transitorio por paro de bomba" : "No — cierre de válvula" },
                   ],
                   results: [
-                    { label: "Velocidad de onda a", value: formatNumber(results.a, 1), unit: "m/s" },
-                    { label: "Período de fase T", value: formatNumber(results.Tphase, 2), unit: "s" },
+                    { label: "Velocidad de la onda (a)", value: formatNumber(results.a, 1), unit: "m/s" },
+                    { label: "Período de la onda (T = 2L/a)", value: formatNumber(results.Tphase, 2), unit: "s" },
                     { label: "Tipo de cierre", value: results.closureType === "brusco" ? "BRUSCO" : "LENTO", unit: "" },
-                    { label: "Sobrepresión ΔH", value: formatNumber(mcaToKgcm2(results.deltaH ?? 0), 3), unit: "kg/cm²" },
-                    { label: "ΔP", value: formatNumber(results.deltaP_kPa, 1), unit: "kPa" },
-                    { label: "P máxima", value: formatNumber(mcaToKgcm2(results.Pmax ?? 0), 3), unit: "kg/cm²" },
-                    { label: "P mínima", value: formatNumber(mcaToKgcm2(Math.max(results.Pmin ?? 0, -10.33)), 3), unit: `kg/cm²${results.Pmin != null && results.Pmin < -10.33 ? " (limite de vacio)" : ""}` },
-                    { label: "P máx (bar)", value: formatNumber(results.Pmax_bar, 1), unit: "bar" },
+                    { label: "Sobrepresión del golpe (ΔH)", value: formatNumber(mcaToKgcm2(results.deltaH ?? 0), 3), unit: "kg/cm²" },
+                    { label: "Sobrepresión (ΔP)", value: formatNumber(results.deltaP_kPa, 1), unit: "kPa" },
+                    { label: "Presión máxima (Pmax)", value: formatNumber(mcaToKgcm2(results.Pmax ?? 0), 3), unit: "kg/cm²" },
+                    { label: "Presión mínima (Pmin)", value: formatNumber(mcaToKgcm2(Math.max(results.Pmin ?? 0, -10.33)), 3), unit: `kg/cm²${results.Pmin != null && results.Pmin < -10.33 ? " (limite de vacio)" : ""}` },
+                    { label: "Presión máxima en bar (Pmax)", value: formatNumber(results.Pmax_bar, 1), unit: "bar" },
                     { label: "Clase recomendada", value: results.pipeClass ?? "—", unit: "" },
                   ],
                   alerts: results.alerts.map((a) => ({ level: a.level, message: a.message })),
@@ -755,35 +755,35 @@ export default function GolpeArietePage() {
               {/* Metrics */}
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                 <div>
-                  <MetricCard label="Velocidad de onda a" value={formatNumber(results.a, 1)} unit="m/s" dataStatus={results.dataStatus} />
+                  <MetricCard label="Velocidad de la onda (a)" value={formatNumber(results.a, 1)} unit="m/s" dataStatus={results.dataStatus} />
                   {inputs.D != null && inputs.e != null && inputs.E != null && results.a != null && (
                     <FormulaDetail {...waveSpeedFormula(inputs.D, inputs.e, inputs.E, results.a)} />
                   )}
                 </div>
-                <MetricCard label="Período de fase T" value={formatNumber(results.Tphase, 2)} unit="s" dataStatus={results.dataStatus} />
+                <MetricCard label="Período de la onda (T = 2L/a)" value={formatNumber(results.Tphase, 2)} unit="s" dataStatus={results.dataStatus} />
                 <div>
-                  <MetricCard label="Sobrepresión ΔH" value={formatNumber(mcaToKgcm2(results.deltaH ?? 0), 3)} unit="kg/cm²" dataStatus={results.dataStatus} />
+                  <MetricCard label="Sobrepresión del golpe (ΔH)" value={formatNumber(mcaToKgcm2(results.deltaH ?? 0), 3)} unit="kg/cm²" dataStatus={results.dataStatus} />
                   {inputs.V0 != null && results.a != null && results.deltaH != null && (
                     <FormulaDetail {...waterHammerFormula(inputs.V0, results.a, results.deltaH, inputs.Tc, results.Tphase)} />
                   )}
                 </div>
-                <MetricCard label="ΔP" value={formatNumber(results.deltaP_kPa, 1)} unit="kPa" dataStatus={results.dataStatus} />
-                <MetricCard label="ΔP" value={formatNumber(results.deltaP_bar, 2)} unit="bar" dataStatus={results.dataStatus} />
+                <MetricCard label="Sobrepresión (ΔP)" value={formatNumber(results.deltaP_kPa, 1)} unit="kPa" dataStatus={results.dataStatus} />
+                <MetricCard label="Sobrepresión (ΔP)" value={formatNumber(results.deltaP_bar, 2)} unit="bar" dataStatus={results.dataStatus} />
                 <MetricCard
-                  label="P máxima"
+                  label="Presión máxima (Pmax)"
                   value={formatNumber(mcaToKgcm2(results.Pmax ?? 0), 3)}
                   unit="kg/cm²"
                   alertLevel={results.Pmax != null && results.Pmax_bar != null && results.Pmax_bar > 64 ? "ERROR" : results.Pmax_bar != null && results.Pmax_bar > 40 ? "WARN" : "OK"}
                   dataStatus={results.dataStatus}
                 />
                 <MetricCard
-                  label={results.Pmin != null && results.Pmin < -10.33 ? "P mínima (límite de vacío)" : "P mínima"}
+                  label={results.Pmin != null && results.Pmin < -10.33 ? "Presión mínima (Pmin) — límite de vacío" : "Presión mínima (Pmin)"}
                   value={formatNumber(mcaToKgcm2(Math.max(results.Pmin ?? 0, -10.33)), 3)}
                   unit="kg/cm²"
                   alertLevel={results.Pmin != null && results.Pmin < -10 ? "CRITICAL" : results.Pmin != null && results.Pmin < 0 ? "ERROR" : "OK"}
                   dataStatus={results.dataStatus}
                 />
-                <MetricCard label="P máx (bar)" value={formatNumber(results.Pmax_bar, 1)} unit="bar" dataStatus={results.dataStatus} />
+                <MetricCard label="Presión máxima en bar (Pmax)" value={formatNumber(results.Pmax_bar, 1)} unit="bar" dataStatus={results.dataStatus} />
                 <MetricCard
                   label="Clase recomendada"
                   value={results.pipeClass ?? "—"}
@@ -795,13 +795,13 @@ export default function GolpeArietePage() {
               {/* Qué significa cada término */}
               <div className="bg-gray-50 dark:bg-gray-800/60 border border-gray-100 dark:border-gray-700 rounded-lg px-3 py-2.5 text-[11px] text-gray-600 dark:text-gray-400 space-y-1.5 leading-relaxed">
                 <p className="font-semibold text-gray-700 dark:text-gray-300">¿Qué significa cada dato?</p>
-                <p><strong>Velocidad de onda (a):</strong> qué tan rápido viaja la onda de presión por el tubo cuando se cierra la válvula. Depende del material y el espesor (un tubo rígido como el acero la transmite más rápido que el PVC). Fórmula: a = √(K/ρ) ÷ √(1 + K·D / (E·e)).</p>
-                <p><strong>Período de fase (T):</strong> el tiempo que tarda la onda en ir hasta el extremo y regresar = 2·L / a. Es la referencia para saber si el cierre es brusco o lento.</p>
+                <p><strong>Velocidad de la onda (a):</strong> qué tan rápido viaja la onda de presión por el tubo cuando se cierra la válvula. Depende del material y el espesor (un tubo rígido como el acero la transmite más rápido que el PVC). Fórmula: a = √(K/ρ) ÷ √(1 + K·D / (E·e)).</p>
+                <p><strong>Período de la onda (T):</strong> el tiempo que tarda la onda en ir hasta el extremo y regresar = 2·L / a. Es la referencia para saber si el cierre es brusco o lento.</p>
                 <p><strong>Cierre brusco / lento:</strong> si cierras la válvula <em>más rápido</em> que T → cierre <strong>brusco</strong> (golpe máximo). Si tardas más que T, el golpe se reduce <em>en proporción T/Tc</em>: cerrando justo en T el golpe <strong>aún es el máximo</strong>; en Tc = 2T baja a la mitad, en Tc = 5T a ~20%.</p>
-                <p><strong>Sobrepresión (ΔH):</strong> cuánto sube la presión por el golpe = a·V / g (fórmula de Joukowsky). Es el corazón del cálculo.</p>
-                <p><strong>ΔP:</strong> la misma sobrepresión, expresada en kPa o bar (solo cambia la unidad).</p>
-                <p><strong>P máxima:</strong> presión de operación + sobrepresión. Es la que tu tubería debe aguantar (se compara con la clase del tubo).</p>
-                <p><strong>P mínima:</strong> presión de operación − sobrepresión. Si sale negativa, hay riesgo de vacío (cavitación / colapso del tubo).</p>
+                <p><strong>Sobrepresión del golpe (ΔH):</strong> cuánto sube la presión por el golpe = a·V / g (fórmula de Joukowsky). Es el corazón del cálculo.</p>
+                <p><strong>Sobrepresión (ΔP):</strong> la misma sobrepresión, expresada en kPa o bar (solo cambia la unidad).</p>
+                <p><strong>Presión máxima (Pmax):</strong> presión de operación + sobrepresión. Es la que tu tubería debe aguantar (se compara con la clase del tubo).</p>
+                <p><strong>Presión mínima (Pmin):</strong> presión de operación − sobrepresión. Si sale negativa, hay riesgo de vacío (cavitación / colapso del tubo).</p>
                 <p><strong>Clase recomendada:</strong> la clase de tubería más económica cuyo PN (presión que resiste) es mayor o igual a la P máxima.</p>
               </div>
 
@@ -847,9 +847,9 @@ export default function GolpeArietePage() {
                       <thead>
                         <tr className="bg-gray-50 dark:bg-gray-700 text-gray-500 dark:text-gray-400">
                           <th className="px-3 py-2 text-left">Clase</th>
-                          <th className="px-3 py-2 text-right">PN (bar)</th>
+                          <th className="px-3 py-2 text-right">Presión que resiste (PN, bar)</th>
                           <th className="px-3 py-2 text-center">Aguanta golpe</th>
-                          <th className="px-3 py-2 text-right">Factor seg.</th>
+                          <th className="px-3 py-2 text-right">Factor de seguridad</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -884,7 +884,7 @@ export default function GolpeArietePage() {
                     </table>
                     {matClasses.note && (
                       <div className="px-3 py-2 text-[10px] text-gray-400 border-t border-gray-100 dark:border-gray-700">
-                        {matClasses.note}. Factor seg. = PN / Pmax.
+                        {matClasses.note}. Factor de seguridad = presión que resiste (PN) / presión máxima (Pmax).
                       </div>
                     )}
                   </div>
@@ -933,11 +933,11 @@ export default function GolpeArietePage() {
                       <>
                         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                           <div>
-                            <div className="text-[11px] text-amber-600 dark:text-amber-400">DN valvula</div>
+                            <div className="text-[11px] text-amber-600 dark:text-amber-400">Diámetro de la válvula (DN)</div>
                             <div className="text-xl font-semibold text-amber-900 dark:text-amber-200">{valv_recomendada.dn}</div>
                           </div>
                           <div>
-                            <div className="text-[11px] text-amber-600 dark:text-amber-400">Kv requerido</div>
+                            <div className="text-[11px] text-amber-600 dark:text-amber-400">Capacidad de flujo requerida (Kv)</div>
                             <div className="text-xl font-semibold text-amber-900 dark:text-amber-200">{formatNumber(Kv_requerido, 1)}</div>
                           </div>
                           <div>
@@ -945,7 +945,7 @@ export default function GolpeArietePage() {
                             <div className="text-xl font-semibold text-amber-900 dark:text-amber-200">{pct_capacidad}%</div>
                           </div>
                           <div>
-                            <div className="text-[11px] text-amber-600 dark:text-amber-400">Relacion DN</div>
+                            <div className="text-[11px] text-amber-600 dark:text-amber-400">Relación de diámetros (DN)</div>
                             <div className="text-xl font-semibold text-amber-900 dark:text-amber-200">{pct_dn}% de la linea</div>
                           </div>
                         </div>

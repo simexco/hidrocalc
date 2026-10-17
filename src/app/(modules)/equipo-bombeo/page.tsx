@@ -253,9 +253,9 @@ export default function EquipoBombeoPage() {
             )}
           </div>
           <div className="grid grid-cols-2 gap-3">
-            <InputField label="Caudal Q" value={st.Q} onChange={(v) => set("Q", num(v))} unit="L/s" assumed={heredado.q} assumedLabel="Del proyecto" />
+            <InputField label="Caudal (Q)" value={st.Q} onChange={(v) => set("Q", num(v))} unit="L/s" assumed={heredado.q} assumedLabel="Del proyecto" />
             <div className="space-y-1">
-              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Diámetro nominal {heredado.d && <span className="text-[10px] bg-[#E9EFF5] text-[#1C3D5A] rounded px-1 ml-1">del proyecto</span>}</label>
+              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Diámetro nominal (DN) {heredado.d && <span className="text-[10px] bg-[#E9EFF5] text-[#1C3D5A] rounded px-1 ml-1">del proyecto</span>}</label>
               <select value={st.D} onChange={(e) => set("D", parseInt(e.target.value))} className={selCls}>
                 {!STANDARD_DNS_LABELED.some((d) => d.dn === st.D) && <option value={st.D}>{st.D} mm</option>}
                 {STANDARD_DNS_LABELED.map((d) => <option key={d.dn} value={d.dn}>{d.label}</option>)}
@@ -269,7 +269,7 @@ export default function EquipoBombeoPage() {
                 {MATERIALS.map((m) => <option key={m.name} value={m.name}>{m.name} (C={m.c})</option>)}
               </select>
             </div>
-            <InputField label="Longitud de la línea" value={st.L} onChange={(v) => set("L", num(v))} unit="m" assumed={heredado.l} assumedLabel="Del proyecto" />
+            <InputField label="Longitud de la tubería (L)" value={st.L} onChange={(v) => set("L", num(v))} unit="m" assumed={heredado.l} assumedLabel="Del proyecto" />
           </div>
 
           {/* 3 — Entrega */}
@@ -446,7 +446,7 @@ export default function EquipoBombeoPage() {
 
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4">
               {[
-                { v: r.CDT.toFixed(1), k: "CDT (m)" },
+                { v: r.CDT.toFixed(1), k: "Carga dinámica total — CDT (m)" },
                 { v: st.Q.toFixed(1), k: "Gasto total (L/s)" },
                 { v: r.Qb.toFixed(1), k: "Gasto por bomba (L/s)" },
                 { v: `${r.hpCom}`, k: "Potencia por bomba (HP)" },
@@ -462,7 +462,7 @@ export default function EquipoBombeoPage() {
               Solicite {r.varios ? "cada" : "una"} <strong>{r.tipo.toLowerCase()}</strong> con <strong className="text-base">Q = {r.Qb.toFixed(1)} L/s</strong> y <strong className="text-base">CDT = {r.CDT.toFixed(1)} m</strong>{r.varios ? <> · arreglo {r.etiquetaArreglo} equipos</> : null}
             </div>
 
-            <p className="text-[11px] opacity-90 mb-1">Cómo se compone la CDT:</p>
+            <p className="text-[11px] opacity-90 mb-1">Cómo se compone la carga dinámica total (CDT):</p>
             <div className="flex h-7 rounded-md overflow-hidden text-[10px] mb-1.5">
               {partes.map((p) => {
                 const w = (p.v / totParts) * 100;

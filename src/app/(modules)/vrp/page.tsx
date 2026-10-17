@@ -67,12 +67,12 @@ export default function VRPPage() {
   };
 
   const missing: string[] = [];
-  if (inputs.rawQMax == null) missing.push("caudal maximo Q");
-  if (inputs.P1 == null) missing.push("presion aguas arriba P1");
-  if (inputs.P2 == null) missing.push("presion objetivo P2");
+  if (inputs.rawQMax == null) missing.push("caudal máximo (Q)");
+  if (inputs.P1 == null) missing.push("presión aguas arriba (P1)");
+  if (inputs.P2 == null) missing.push("presión objetivo (P2)");
 
   const assumed: AssumedValue[] = [];
-  if (inputs.rawQMin == null) assumed.push({ field: "qMin", value: 0, label: "Sin Q minimo - se estima 10% de Q max" });
+  if (inputs.rawQMin == null) assumed.push({ field: "qMin", value: 0, label: "Sin caudal mínimo — se estima 10% del caudal máximo" });
 
   return (
     <div className="max-w-6xl mx-auto space-y-6">
@@ -90,7 +90,7 @@ export default function VRPPage() {
             <div className="flex items-end gap-2">
               <div className="flex-1">
                 <InputField
-                  label="Caudal maximo Q"
+                  label="Caudal máximo (Q)"
                   value={inputs.rawQMax}
                   onChange={(v) => handleNum("rawQMax", v)}
                   required
@@ -108,7 +108,7 @@ export default function VRPPage() {
             </div>
 
             <InputField
-              label="Presion aguas arriba P1"
+              label="Presión aguas arriba (P1)"
               value={inputs.P1}
               onChange={(v) => handleNum("P1", v)}
               unit="kg/cm2"
@@ -116,7 +116,7 @@ export default function VRPPage() {
               tooltip="Presion disponible antes de la valvula reductora"
             />
             <InputField
-              label="Presion objetivo P2"
+              label="Presión objetivo (P2)"
               value={inputs.P2}
               onChange={(v) => handleNum("P2", v)}
               unit="kg/cm2"
@@ -125,7 +125,7 @@ export default function VRPPage() {
             />
 
             <div className="space-y-1">
-              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Diametro de la linea DN (mm)</label>
+              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Diámetro nominal de la línea (DN), en mm</label>
               <select
                 value={inputs.DN ?? ""}
                 onChange={(e) => setInput("DN", parseInt(e.target.value))}
@@ -142,7 +142,7 @@ export default function VRPPage() {
             {showAdvanced && (
               <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-3 space-y-3">
                 <InputField
-                  label="Caudal minimo Q (opcional)"
+                  label="Caudal mínimo (Qmin) — opcional"
                   value={inputs.rawQMin}
                   onChange={(v) => handleNum("rawQMin", v)}
                   unit={inputs.flowUnit}
@@ -183,25 +183,25 @@ export default function VRPPage() {
                   projectName: inputs.projectName,
                   hasAssumedValues: inputs.rawQMin == null,
                   inputs: [
-                    { label: "Q maximo", value: inputs.rawQMax != null ? `${inputs.rawQMax} ${inputs.flowUnit}` : "--" },
-                    { label: "Q minimo", value: inputs.rawQMin != null ? `${inputs.rawQMin} ${inputs.flowUnit}` : "10% de Q max" },
-                    { label: "P1", value: inputs.P1 != null ? `${inputs.P1} kg/cm2` : "--" },
-                    { label: "P2", value: inputs.P2 != null ? `${inputs.P2} kg/cm2` : "--" },
-                    { label: "DN linea", value: inputs.DN != null ? `${inputs.DN} mm` : "--" },
+                    { label: "Caudal máximo (Q)", value: inputs.rawQMax != null ? `${inputs.rawQMax} ${inputs.flowUnit}` : "--" },
+                    { label: "Caudal mínimo (Qmin)", value: inputs.rawQMin != null ? `${inputs.rawQMin} ${inputs.flowUnit}` : "10% del caudal máximo" },
+                    { label: "Presión aguas arriba (P1)", value: inputs.P1 != null ? `${inputs.P1} kg/cm2` : "--" },
+                    { label: "Presión objetivo (P2)", value: inputs.P2 != null ? `${inputs.P2} kg/cm2` : "--" },
+                    { label: "Diámetro nominal de la línea (DN)", value: inputs.DN != null ? `${inputs.DN} mm` : "--" },
                   ],
                   results: [
-                    { label: "DN recomendado", value: results.recommendedDN ?? "Excede catalogo", unit: "" },
-                    { label: "Kv requerido (Cv = 1.156 Kv)", value: formatNumber(results.Kv_max_req, 1), unit: "" },
-                    { label: "Capacidad usada Q max", value: results.pct_capacidad_max != null ? `${results.pct_capacidad_max}` : "--", unit: "%" },
-                    { label: "Capacidad usada Q min", value: results.pct_capacidad_min != null ? `${results.pct_capacidad_min}` : "--", unit: "%" },
-                    { label: "Indice cavitacion (abs.)", value: formatNumber(results.sigma, 2), unit: "" },
-                    { label: "Relacion P1/P2", value: `${results.relacionPresion}:1`, unit: "" },
-                    { label: "DeltaP", value: formatNumber(results.deltaP_bar, 2), unit: "bar" },
-                    { label: "V aguas abajo", value: formatNumber(results.v_aguas_abajo, 2), unit: "m/s" },
+                    { label: "Diámetro nominal recomendado (DN)", value: results.recommendedDN ?? "Excede catalogo", unit: "" },
+                    { label: "Capacidad de flujo requerida (Kv)", value: formatNumber(results.Kv_max_req, 1), unit: "" },
+                    { label: "Capacidad usada a caudal máximo", value: results.pct_capacidad_max != null ? `${results.pct_capacidad_max}` : "--", unit: "%" },
+                    { label: "Capacidad usada a caudal mínimo", value: results.pct_capacidad_min != null ? `${results.pct_capacidad_min}` : "--", unit: "%" },
+                    { label: "Índice de cavitación (σ)", value: formatNumber(results.sigma, 2), unit: "" },
+                    { label: "Relación de presiones (P1/P2)", value: `${results.relacionPresion}:1`, unit: "" },
+                    { label: "Caída de presión (ΔP)", value: formatNumber(results.deltaP_bar, 2), unit: "bar" },
+                    { label: "Velocidad del agua a la salida (V)", value: formatNumber(results.v_aguas_abajo, 2), unit: "m/s" },
                   ],
                   alerts: results.alerts.map((a) => ({ level: a.level, message: a.message })),
                   tableData: {
-                    head: ["DN", "Kv max", "% cap. Q max", "% cap. Q min", "Estado"],
+                    head: ["Diámetro nominal (DN)", "Capacidad de flujo máxima (Kv)", "% capacidad a caudal máximo", "% capacidad a caudal mínimo", "Estado"],
                     body: results.selectionTable.map(r => [
                       r.dn,
                       `${r.kv_max}`,
@@ -227,19 +227,19 @@ export default function VRPPage() {
                   </h3>
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                     <div>
-                      <div className="text-[11px] text-green-600 dark:text-green-400">DN valvula</div>
+                      <div className="text-[11px] text-green-600 dark:text-green-400">Diámetro de la válvula (DN)</div>
                       <div className="text-2xl font-semibold text-green-900 dark:text-green-200">{results.recommendedDN}</div>
                     </div>
                     <div>
-                      <div className="text-[11px] text-green-600 dark:text-green-400">Kv requerido</div>
+                      <div className="text-[11px] text-green-600 dark:text-green-400">Capacidad de flujo requerida (Kv)</div>
                       <div className="text-2xl font-semibold text-green-900 dark:text-green-200">{formatNumber(results.Kv_max_req, 1)}</div>
                     </div>
                     <div>
-                      <div className="text-[11px] text-green-600 dark:text-green-400">Capacidad usada Q max</div>
+                      <div className="text-[11px] text-green-600 dark:text-green-400">Capacidad usada a caudal máximo</div>
                       <div className="text-2xl font-semibold text-green-900 dark:text-green-200">{results.pct_capacidad_max}%</div>
                     </div>
                     <div>
-                      <div className="text-[11px] text-green-600 dark:text-green-400">Capacidad usada Q min</div>
+                      <div className="text-[11px] text-green-600 dark:text-green-400">Capacidad usada a caudal mínimo</div>
                       <div className="text-2xl font-semibold text-green-900 dark:text-green-200">{results.pct_capacidad_min}%</div>
                     </div>
                   </div>
@@ -255,23 +255,23 @@ export default function VRPPage() {
 
               {/* System parameters */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                <MetricCard label="DeltaP" value={formatNumber(results.deltaP_bar, 2)} unit="bar" dataStatus={results.dataStatus} />
-                <MetricCard label="Q max" value={formatNumber(results.Q_max_m3h, 1)} unit="m3/h" dataStatus={results.dataStatus} />
+                <MetricCard label="Caída de presión (ΔP)" value={formatNumber(results.deltaP_bar, 2)} unit="bar" dataStatus={results.dataStatus} />
+                <MetricCard label="Caudal máximo (Q)" value={formatNumber(results.Q_max_m3h, 1)} unit="m3/h" dataStatus={results.dataStatus} />
                 <MetricCard
-                  label="Indice cavitacion"
+                  label="Índice de cavitación (σ)"
                   value={formatNumber(results.sigma, 2)}
                   unit={`σ`}
                   alertLevel={results.riesgoCavitacion ? "WARN" : "OK"}
                   dataStatus={results.dataStatus}
                 />
                 <MetricCard
-                  label="Relacion P1/P2"
+                  label="Relación de presiones (P1/P2)"
                   value={`${results.relacionPresion}:1`}
                   alertLevel={results.dobleEtapa ? "WARN" : "OK"}
                   dataStatus={results.dataStatus}
                 />
-                <MetricCard label="V aguas abajo" value={formatNumber(results.v_aguas_abajo, 2)} unit="m/s" alertLevel={results.v_aguas_abajo > 3 ? "WARN" : "OK"} dataStatus={results.dataStatus} />
-                <MetricCard label="Kv min req" value={formatNumber(results.Kv_min_req, 1)} dataStatus={results.dataStatus} />
+                <MetricCard label="Velocidad del agua a la salida (V)" value={formatNumber(results.v_aguas_abajo, 2)} unit="m/s" alertLevel={results.v_aguas_abajo > 3 ? "WARN" : "OK"} dataStatus={results.dataStatus} />
+                <MetricCard label="Capacidad de flujo mínima requerida (Kv)" value={formatNumber(results.Kv_min_req, 1)} dataStatus={results.dataStatus} />
               </div>
 
               {/* Selection table */}
@@ -289,10 +289,10 @@ export default function VRPPage() {
                 <table className="w-full text-xs">
                   <thead>
                     <tr className="bg-gray-50 dark:bg-gray-700 text-gray-500 dark:text-gray-400">
-                      <th className="px-3 py-2 text-left">DN</th>
-                      <th className="px-3 py-2 text-right">Kv max</th>
-                      <th className="px-3 py-2 text-right">% cap. Q max</th>
-                      <th className="px-3 py-2 text-right">% cap. Q min</th>
+                      <th className="px-3 py-2 text-left">Diámetro nominal (DN)</th>
+                      <th className="px-3 py-2 text-right">Capacidad de flujo máxima (Kv)</th>
+                      <th className="px-3 py-2 text-right">% capacidad a caudal máximo</th>
+                      <th className="px-3 py-2 text-right">% capacidad a caudal mínimo</th>
                       <th className="px-3 py-2 text-center">Estado</th>
                     </tr>
                   </thead>
