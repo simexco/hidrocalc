@@ -58,7 +58,12 @@ export interface WaterDemandInputs {
   CVD: number;  // daily variation (default 1.4)
   CVH: number;  // hourly variation (default 1.55)
   // Tanque de regulacion (integrado)
-  coefRegulacion: number;  // coeficiente de regulacion CONAGUA en % (default 11.0 para 24h)
+  coefRegulacion: number;  // coeficiente R de MAPAS en m³ por (L/s) de QMD (11.0 para 24 h)
+  // Horario de bombeo con el que se CALCULA coefRegulacion (metodo oficial MAPAS);
+  // si rManualTanque es true, coefRegulacion viene capturado a mano (p. ej. CDMX)
+  horasBombeoTanque?: number;
+  horaInicioBombeo?: number;
+  rManualTanque?: boolean;
 }
 
 export interface WaterDemandResults {

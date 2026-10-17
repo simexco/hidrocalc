@@ -11,6 +11,7 @@ import { calculateWaterDemand, DEVELOPMENT_TYPES, CLIMATE_TYPES, DENSITY_CATEGOR
 import { useProjectStore } from "@/store/projectStore";
 import { formatNumber } from "@/lib/calculations/conversions";
 import { saveFormState, loadFormState } from "@/lib/storage/form-persistence";
+import { calcularCoefRegulacion, MAPAS_TANQUES_URL } from "@/lib/calculations/tank-storage";
 
 const defaults: WaterDemandInputs = {
   projectName: "Demanda de agua",
@@ -29,6 +30,9 @@ const defaults: WaterDemandInputs = {
   CVD: 1.4,
   CVH: 1.55,
   coefRegulacion: 11.0,
+  horasBombeoTanque: 24,
+  horaInicioBombeo: 0,
+  rManualTanque: false,
 };
 
 export default function DemandaPage() {
@@ -41,11 +45,26 @@ export default function DemandaPage() {
     setInputs(prev => ({ ...prev, [key]: value }));
   };
 
+  // Horario de bombeo del pozo → R calculado con el método oficial MAPAS (igual que el módulo Tanque)
+  const setHorarioTanque = (horas: number, inicio: number) => {
+    const h = Math.min(24, Math.max(1, horas));
+    const i = Math.min(23, Math.max(0, inicio));
+    setInputs(prev => ({ ...prev, horasBombeoTanque: h, horaInicioBombeo: i, coefRegulacion: calcularCoefRegulacion(h, i).R }));
+  };
+
   // Persist
   useEffect(() => {
     const saved = loadFormState<WaterDemandInputs>("demanda");
     // habPorVivienda siempre arranca en 4; el coef. de regulación SÍ respeta lo guardado (editable por el usuario)
-    if (saved) setInputs({ ...defaults, ...saved, habPorVivienda: 4, coefRegulacion: saved.coefRegulacion ?? 11.0 });
+    if (saved) {
+      const base = { ...defaults, ...saved, habPorVivienda: 4, coefRegulacion: saved.coefRegulacion ?? 11.0 };
+      // Estados guardados antes del calculador por horario: si su R no corresponde al
+      // horario default (24 h → 11.0), se conserva como R manual para no cambiarles el numero
+      if (saved.horasBombeoTanque == null && Math.abs(base.coefRegulacion - 11.0) > 0.05) {
+        base.rManualTanque = true;
+      }
+      setInputs(base);
+    }
   }, []);
 
   useEffect(() => {
@@ -189,16 +208,44 @@ export default function DemandaPage() {
             {/* Dotacion — siempre visible, editable */}
             <InputField label="Dotacion" value={inputs.dotacionBase} onChange={(v) => set("dotacionBase", parseFloat(v) || 150)} unit="L/hab/dia" tooltip="Sugerida segun tipo de desarrollo. Puedes modificarla si tienes un dato especifico." />
 
-            {/* Advanced */}
-            {/* Coef. de regulación siempre a la vista: editable sin entrar a crecimiento/avanzados */}
-            <InputField label="Coef. regulacion del tanque (R)" value={inputs.coefRegulacion} onChange={(v) => set("coefRegulacion", parseFloat(v) || 11)} tooltip="Coeficiente R oficial de MAPAS (Tabla 1.3) segun el horario de bombeo del pozo: 24 h = 11.0 · 20 h (de 4 a 24) = 9.0 · 16 h (de 5 a 21) = 19.0. CDMX (Tabla 1.4): 14.3 / 9.6 / 17.3. El horario importa, no solo las horas. V = R × QMD." />
-            <a
-              href="https://www.conagua.gob.mx/CONAGUA07/Publicaciones/Publicaciones/Libros/13DisenoConstruccionyOperacionDeTanquesDeRegulacion.pdf"
-              target="_blank" rel="noreferrer"
-              className="inline-block text-[10px] text-[#1C3D5A] dark:text-blue-300 underline decoration-dotted -mt-2"
-            >
-              Tabla oficial de R por horario de bombeo — manual MAPAS de tanques (CONAGUA) →
-            </a>
+            {/* Tanque de regulación: R se CALCULA del horario de bombeo del pozo
+                (mismo método oficial MAPAS que el módulo Tanque — se mantienen sincronizados) */}
+            <div className="space-y-1.5 bg-gray-50 dark:bg-gray-900 rounded-lg p-3">
+              <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Tanque de regulación — horario de bombeo del pozo</p>
+              {!inputs.rManualTanque && (
+                <>
+                  <div className="grid grid-cols-2 gap-2">
+                    <InputField label="Horas de bombeo al día" value={inputs.horasBombeoTanque ?? 24} onChange={(v) => setHorarioTanque(parseInt(v) || 24, inputs.horaInicioBombeo ?? 0)} unit="h" tooltip="Cuántas horas al día bombea el pozo de la zona al tanque (1 a 24)" />
+                    <InputField label="Hora en que arranca" value={inputs.horaInicioBombeo ?? 0} onChange={(v) => setHorarioTanque(inputs.horasBombeoTanque ?? 24, parseInt(v) || 0)} unit="h (0-23)" tooltip="El horario importa: 20 h de las 4 a las 24 da R = 9.0, pero de las 0 a las 20 da R = 12.6 (manual MAPAS)" />
+                  </div>
+                  <p className="text-xs font-semibold text-[#1C3D5A] dark:text-blue-300">
+                    R calculado = {inputs.coefRegulacion} m³/(L/s) — método oficial MAPAS (curva Fig. 1.1, ec. 1.2)
+                  </p>
+                </>
+              )}
+              {inputs.rManualTanque && (
+                <InputField label="R manual" value={inputs.coefRegulacion} onChange={(v) => set("coefRegulacion", parseFloat(v) || 11)} unit="m³/(L/s)" tooltip="Coeficiente de otra curva local. CDMX (Tabla 1.4): 24 h = 14.3 · 20 h (4-24) = 9.6 · 16 h (5-21) = 17.3" />
+              )}
+              <label className="flex items-center gap-2 text-xs text-gray-700 dark:text-gray-300">
+                <input
+                  type="checkbox"
+                  checked={!!inputs.rManualTanque}
+                  onChange={(e) => {
+                    if (e.target.checked) set("rManualTanque", true);
+                    else setInputs((prev) => ({ ...prev, rManualTanque: false, coefRegulacion: calcularCoefRegulacion(prev.horasBombeoTanque ?? 24, prev.horaInicioBombeo ?? 0).R }));
+                  }}
+                  className="rounded border-gray-300"
+                />
+                Capturar R manual (p. ej. CDMX: 14.3)
+              </label>
+              <a
+                href={MAPAS_TANQUES_URL}
+                target="_blank" rel="noreferrer"
+                className="inline-block text-[10px] text-[#1C3D5A] dark:text-blue-300 underline decoration-dotted"
+              >
+                Tabla oficial de R por horario de bombeo — manual MAPAS de tanques (CONAGUA) →
+              </a>
+            </div>
             <button onClick={() => setShowAdvanced(!showAdvanced)} className="text-[10px] text-[#1C3D5A] underline decoration-dotted">
               {showAdvanced ? 'Ocultar' : 'Mostrar'} parametros avanzados
             </button>
