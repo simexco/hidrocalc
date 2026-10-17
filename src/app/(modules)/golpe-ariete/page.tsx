@@ -49,6 +49,23 @@ export default function GolpeArietePage() {
   const [esBombeoManual, setEsBombeoManual] = useState<boolean | null>(null);
   const esBombeo = esBombeoManual ?? proyectoBombeo;
 
+  // Ubicación recomendada de la protección a partir del perfil del proyecto (cotas):
+  // arranque (bombeo) o llegada (gravedad), punto más bajo (ahí pega la presión máxima)
+  // y puntos altos (ahí van las ventosas contra vacío)
+  const vertsPerfil = useProjectStore((s) => s.project.vertices);
+  const ubicacion = (() => {
+    const vs = (vertsPerfil ?? [])
+      .filter((v) => v.cad != null && v.cota != null)
+      .map((v) => ({ cad: v.cad as number, cota: v.cota as number, desc: v.desc ?? "" }))
+      .sort((a, b) => a.cad - b.cad);
+    if (vs.length < 2) return null;
+    let bajo = vs[0];
+    for (const v of vs) if (v.cota < bajo.cota) bajo = v;
+    const altos = vs.filter((v, i) => i > 0 && i < vs.length - 1 && v.cota > vs[i - 1].cota && v.cota >= vs[i + 1].cota);
+    return { inicio: vs[0], fin: vs[vs.length - 1], bajo, altos };
+  })();
+  const fmtCad = (cad: number) => `${Math.floor(Math.round(cad) / 1000)}+${String(Math.round(cad) % 1000).padStart(3, "0")}`;
+
   // Velocidad calculada a partir del caudal (L/s) y el diametro interno D (mm)
   const velFromQ = caudalQ != null && caudalQ > 0 && inputs.D != null && inputs.D > 0
     ? (caudalQ / 1000) / (Math.PI * Math.pow(inputs.D / 1000 / 2, 2))
@@ -656,7 +673,15 @@ export default function GolpeArietePage() {
                           <p className="text-[10px] uppercase tracking-wide text-gray-500">Opción B — válvula de protección</p>
                           <p className="text-base font-bold text-amber-800 dark:text-amber-300">{protecValvula?.dn ? `Válvula DN ${protecValvula.dn}` : "Consultar fabricante"}</p>
                           <p className="text-[10px] text-gray-500">{esBombeo ? "Anticipadora de onda (paro de bomba)" : "Alivio/anticipadora de golpe"} — deja tu tubería actual.</p>
-                          <p className="text-[10px] text-gray-500 mt-1"><strong>Dónde:</strong> {esBombeo ? "en la descarga de la bomba, después de la válvula check." : "aguas arriba de la válvula de cierre rápido, o en el punto bajo de la línea."}</p>
+                          <p className="text-[10px] text-gray-500 mt-1"><strong>Dónde:</strong> {esBombeo ? "en la descarga de la bomba, después de la válvula check." : "aguas arriba de la válvula de cierre rápido (normalmente en la llegada de la línea)."}</p>
+                          {ubicacion ? (
+                            <p className="text-[10px] font-semibold text-amber-800 dark:text-amber-300 mt-1 bg-amber-100/70 dark:bg-amber-900/30 rounded px-1.5 py-1 leading-relaxed">
+                              {"📍"} Punto recomendado: <strong>cad {esBombeo ? fmtCad(ubicacion.inicio.cad) : fmtCad(ubicacion.fin.cad)}</strong> (cota {esBombeo ? ubicacion.inicio.cota : ubicacion.fin.cota} m{(esBombeo ? ubicacion.inicio.desc : ubicacion.fin.desc) ? ` — ${esBombeo ? ubicacion.inicio.desc : ubicacion.fin.desc}` : ""}), {esBombeo ? "el arranque de la línea" : "la llegada de la línea"}.
+                              {" "}La presión máxima se concentra en el punto más bajo del perfil: cad {fmtCad(ubicacion.bajo.cad)} (cota {ubicacion.bajo.cota} m).
+                            </p>
+                          ) : (
+                            <p className="text-[10px] text-gray-400 mt-1">Captura el perfil (cadenamientos y cotas) en «Línea de conducción» y aquí te marco el punto exacto de instalación.</p>
+                          )}
                           <p className="text-[10px] font-mono text-amber-700 dark:text-amber-400 mt-1">SKU: ← CONF — confírmalo con tu asesor SIMEX</p>
                         </div>
                       </div>
@@ -673,7 +698,12 @@ export default function GolpeArietePage() {
                       <div className="mt-3 bg-white/70 dark:bg-gray-800/50 rounded-lg p-3 border border-red-200 dark:border-red-800">
                         <p className="text-[10px] uppercase tracking-wide text-gray-500">Además — presión negativa (vacío)</p>
                         <p className="text-sm font-bold text-red-700 dark:text-red-300">Ventosas de admisión de aire en los puntos altos</p>
-                        <p className="text-[10px] text-gray-500">La válvula de alivio NO protege contra vacío. El tamaño y la ubicación exacta los da el módulo Válvulas de aire (detalle abajo).</p>
+                        {ubicacion && ubicacion.altos.length > 0 && (
+                          <p className="text-[10px] font-semibold text-red-700 dark:text-red-300 mt-0.5">
+                            {"📍"} Puntos altos de tu perfil: {ubicacion.altos.slice(0, 3).map((v) => `cad ${fmtCad(v.cad)} (cota ${v.cota} m)`).join(" · ")}{ubicacion.altos.length > 3 ? " · …" : ""}
+                          </p>
+                        )}
+                        <p className="text-[10px] text-gray-500">La válvula de alivio NO protege contra vacío. El tamaño y la ubicación fina los da el módulo Válvulas de aire (detalle abajo).</p>
                       </div>
                     )}
                   </div>
@@ -693,6 +723,11 @@ export default function GolpeArietePage() {
                   <p className="text-xs text-gray-700 dark:text-gray-300 leading-relaxed">
                     <strong>Qué instalar:</strong> una <strong>válvula de admisión de aire (ventosa)</strong> en los <strong>puntos altos</strong> de la línea. Deja entrar aire y rompe el vacío. Es <em>distinta</em> de la válvula de alivio (esa es para la sobrepresión).
                   </p>
+                  {ubicacion && ubicacion.altos.length > 0 && (
+                    <p className="text-xs font-semibold text-red-700 dark:text-red-300">
+                      {"📍"} En tu perfil: {ubicacion.altos.slice(0, 3).map((v) => `cad ${fmtCad(v.cad)} (cota ${v.cota} m${v.desc ? ` — ${v.desc}` : ""})`).join(" · ")}{ubicacion.altos.length > 3 ? " · …" : ""}
+                    </p>
+                  )}
                   <Link href="/valvulas-aire" className="inline-block text-xs bg-[#1C3D5A] text-white px-3 py-1.5 rounded-lg hover:bg-[#0F2438] transition-colors font-medium">
                     Ubicar las ventosas en el módulo Válvulas de aire →
                   </Link>
