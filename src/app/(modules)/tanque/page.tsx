@@ -6,7 +6,7 @@ import { AlertBanner } from "@/components/ui/AlertBanner";
 import { ExportPDFButton } from "@/components/ui/ExportPDFButton";
 import { ResetButton } from "@/components/ui/ResetButton";
 import { FormulaDetail } from "@/components/ui/FormulaDetail";
-import { calculateTankStorage, REGULATION_COEFFICIENTS, type TankStorageInputs, type TankShape } from "@/lib/calculations/tank-storage";
+import { calculateTankStorage, REGULATION_COEFFICIENTS, MAPAS_TANQUES_URL, type TankStorageInputs, type TankShape } from "@/lib/calculations/tank-storage";
 import { formatNumber } from "@/lib/calculations/conversions";
 import { saveFormState, loadFormState } from "@/lib/storage/form-persistence";
 
@@ -14,6 +14,7 @@ const defaults: TankStorageInputs = {
   projectName: "Tanque de regulacion",
   Qmd_ls: null,
   horasAportacion: 24,
+  regimen: "24",
   incluirReserva: false,
   horasReserva: 2,
   shape: "rectangular",
@@ -74,15 +75,31 @@ export default function TanquePage() {
             </button>
             {showAdvanced && (
               <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-3 space-y-3">
-                {/* Horas de aportacion */}
+                {/* Horario de aportacion (Tablas 1.3 y 1.4 de MAPAS) */}
                 <div className="space-y-1">
-                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Horas de aportacion al tanque</label>
-                  <select value={inputs.horasAportacion} onChange={(e) => set("horasAportacion", parseInt(e.target.value))} className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 dark:text-white">
+                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Horario de suministro al tanque (bombeo del pozo)</label>
+                  <select
+                    value={inputs.regimen ?? String(inputs.horasAportacion)}
+                    onChange={(e) => {
+                      const c = REGULATION_COEFFICIENTS.find((x) => x.key === e.target.value);
+                      setInputs((prev) => ({ ...prev, regimen: e.target.value, horasAportacion: c?.hours ?? prev.horasAportacion }));
+                    }}
+                    className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 dark:text-white"
+                  >
                     {REGULATION_COEFFICIENTS.map(c => (
-                      <option key={c.hours} value={c.hours}>{c.label} (C = {c.R})</option>
+                      <option key={c.key} value={c.key}>{c.label} (R = {c.R})</option>
                     ))}
                   </select>
-                  <p className="text-[10px] text-gray-400">Menos horas de aportacion → mayor coeficiente de regulacion</p>
+                  <div className="bg-[#E9EFF5] dark:bg-[#1C3D5A]/20 border border-[#1C3D5A]/15 rounded-lg px-2.5 py-2 space-y-1">
+                    <p className="text-[10px] text-[#1C3D5A] dark:text-blue-300 leading-relaxed">
+                      Coeficientes <strong>oficiales</strong> de las Tablas 1.3 (nacional) y 1.4 (CDMX) del manual MAPAS.
+                      <strong> El horario importa, no solo las horas:</strong> el mismo manual muestra que bombear 20 h de las 0 a las 20 da R = 12.57 (no 9.0).
+                      Si el pozo de tu zona opera otro horario, R se calcula con la curva de demandas (método de la Tabla 1.1 del manual).
+                    </p>
+                    <a href={MAPAS_TANQUES_URL} target="_blank" rel="noreferrer" className="inline-block text-[10px] font-semibold text-[#1C3D5A] dark:text-blue-300 underline">
+                      Ver el manual MAPAS de tanques (PDF oficial de CONAGUA) →
+                    </a>
+                  </div>
                 </div>
 
                 {/* Reserva */}
@@ -139,7 +156,7 @@ export default function TanquePage() {
                   hasAssumedValues: false,
                   inputs: [
                     { label: "QMd (maximo diario)", value: `${inputs.Qmd_ls} L/s` },
-                    { label: "Aportacion", value: `${inputs.horasAportacion} h (C = ${results.R} m3/(L/s))` },
+                    { label: "Suministro al tanque", value: `${results.regimenLabel} (R = ${results.R}, MAPAS Tablas 1.3/1.4)` },
                     { label: "Reserva", value: inputs.incluirReserva ? `${inputs.horasReserva} h` : "No" },
                     { label: "Forma", value: inputs.shape },
                     { label: "Tirante", value: `${inputs.altura} m` },
@@ -183,7 +200,7 @@ export default function TanquePage() {
                     <p className="text-lg font-bold text-gray-700 dark:text-gray-200">{formatNumber(results.volDiario_m3, 1)} <span className="text-xs font-normal">m3</span></p>
                   </div>
                   <div>
-                    <p className="text-[10px] text-gray-400">Vol regulacion (C={results.R} m3/(L/s))</p>
+                    <p className="text-[10px] text-gray-400">Vol regulacion (R={results.R} m3/(L/s))</p>
                     <p className="text-lg font-bold text-gray-700 dark:text-gray-200">{formatNumber(results.volRegulacion_m3, 1)} <span className="text-xs font-normal">m3</span></p>
                   </div>
                   <div>
@@ -193,14 +210,14 @@ export default function TanquePage() {
                 </div>
                 <FormulaDetail
                   title="Volumen de regulacion" value={formatNumber(results.volRegulacion_m3, 1)} unit="m3"
-                  formula="Vr = C × QMd  (C en m3 por L/s)"
+                  formula="C = R × QMd  (ec. 1.3 del manual; R en m3 por L/s)"
                   steps={[
-                    { label: `C = ${results.R} m3/(L/s) (para ${inputs.horasAportacion} h de aportacion)` },
-                    { substitution: `Vr = ${results.R} × ${inputs.Qmd_ls} L/s` },
-                    { result: `Vr = ${formatNumber(results.volRegulacion_m3, 1)} m3` },
+                    { label: `R = ${results.R} — ${results.regimenLabel}` },
+                    { substitution: `C = ${results.R} × ${inputs.Qmd_ls} L/s` },
+                    { result: `C = ${formatNumber(results.volRegulacion_m3, 1)} m3` },
                   ]}
-                  reference="Volumen de regulacion"
-                  norm="CONAGUA MAPAS"
+                  reference="Volumen de regulacion (Tablas 1.3 y 1.4)"
+                  norm="CONAGUA MAPAS — Tanques de regulacion"
                 />
               </div>
 
@@ -233,8 +250,8 @@ export default function TanquePage() {
               {/* Reference */}
               <div className="bg-gray-50 dark:bg-gray-800 rounded-xl px-4 py-3 text-[11px] text-gray-500 leading-relaxed space-y-1">
                 <p className="font-semibold">Referencias</p>
-                <p>Volumen de regulacion: Vr = C × QMd, con C en m3 por (L/s) — CONAGUA MAPAS (24 h: C = 11.0)</p>
-                <p>Coeficiente C segun horas de aportacion al tanque (horarios reducidos: validar con la tabla MAPAS)</p>
+                <p>Volumen de regulacion: C = R × QMd (ec. 1.3) — Tablas 1.3 y 1.4 del manual MAPAS de tanques</p>
+                <p>R oficial: 24 h = 11.0 · 20 h (4-24) = 9.0 · 16 h (5-21) = 19.0 · CDMX: 14.3 / 9.6 / 17.3</p>
                 <p>Volumen diario de referencia: Vol = QMd × 86.4 (L/s a m3/dia)</p>
               </div>
             </>

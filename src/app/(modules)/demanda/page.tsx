@@ -191,7 +191,14 @@ export default function DemandaPage() {
 
             {/* Advanced */}
             {/* Coef. de regulación siempre a la vista: editable sin entrar a crecimiento/avanzados */}
-            <InputField label="Coef. regulacion del tanque" value={inputs.coefRegulacion} onChange={(v) => set("coefRegulacion", parseFloat(v) || 11)} tooltip="Coeficiente de regulacion CONAGUA en m³ por (L/s) de QMD. Suministro 24 h: 11.0 (CDMX: 14.3). Para horarios reducidos consultar la tabla MAPAS segun el horario real de bombeo. Se aplica sobre el gasto maximo diario." />
+            <InputField label="Coef. regulacion del tanque (R)" value={inputs.coefRegulacion} onChange={(v) => set("coefRegulacion", parseFloat(v) || 11)} tooltip="Coeficiente R oficial de MAPAS (Tabla 1.3) segun el horario de bombeo del pozo: 24 h = 11.0 · 20 h (de 4 a 24) = 9.0 · 16 h (de 5 a 21) = 19.0. CDMX (Tabla 1.4): 14.3 / 9.6 / 17.3. El horario importa, no solo las horas. V = R × QMD." />
+            <a
+              href="https://www.conagua.gob.mx/CONAGUA07/Publicaciones/Publicaciones/Libros/13DisenoConstruccionyOperacionDeTanquesDeRegulacion.pdf"
+              target="_blank" rel="noreferrer"
+              className="inline-block text-[10px] text-[#1C3D5A] dark:text-blue-300 underline decoration-dotted -mt-2"
+            >
+              Tabla oficial de R por horario de bombeo — manual MAPAS de tanques (CONAGUA) →
+            </a>
             <button onClick={() => setShowAdvanced(!showAdvanced)} className="text-[10px] text-[#1C3D5A] underline decoration-dotted">
               {showAdvanced ? 'Ocultar' : 'Mostrar'} parametros avanzados
             </button>
