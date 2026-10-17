@@ -14,7 +14,8 @@ const defaults: TankStorageInputs = {
   projectName: "Tanque de regulacion",
   Qmd_ls: null,
   horasAportacion: 24,
-  regimen: "24",
+  horaInicio: 0,
+  rManual: null,
   incluirReserva: false,
   horasReserva: 2,
   shape: "rectangular",
@@ -34,7 +35,16 @@ export default function TanquePage() {
 
   useEffect(() => {
     const saved = loadFormState<TankStorageInputs>("tanque");
-    if (saved) setInputs({ ...defaults, ...saved });
+    if (saved) {
+      // Migración de estados viejos con horario por catálogo (regimen):
+      // CDMX pasa a R manual; los demás a su hora de inicio oficial
+      const legado = saved.regimen ? REGULATION_COEFFICIENTS.find((c) => c.key === saved.regimen) : undefined;
+      setInputs({
+        ...defaults, ...saved,
+        horaInicio: saved.horaInicio ?? legado?.inicio ?? 0,
+        rManual: saved.rManual ?? (saved.regimen?.startsWith("cdmx") ? legado?.R ?? null : null),
+      });
+    }
   }, []);
 
   useEffect(() => {
@@ -75,26 +85,45 @@ export default function TanquePage() {
             </button>
             {showAdvanced && (
               <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-3 space-y-3">
-                {/* Horario de aportacion (Tablas 1.3 y 1.4 de MAPAS) */}
-                <div className="space-y-1">
-                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Horario de suministro al tanque (bombeo del pozo)</label>
-                  <select
-                    value={inputs.regimen ?? String(inputs.horasAportacion)}
-                    onChange={(e) => {
-                      const c = REGULATION_COEFFICIENTS.find((x) => x.key === e.target.value);
-                      setInputs((prev) => ({ ...prev, regimen: e.target.value, horasAportacion: c?.hours ?? prev.horasAportacion }));
-                    }}
-                    className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 dark:text-white"
-                  >
-                    {REGULATION_COEFFICIENTS.map(c => (
-                      <option key={c.key} value={c.key}>{c.label} (R = {c.R})</option>
+                {/* Horario de bombeo del pozo → R se CALCULA con el método oficial del manual */}
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Horario de bombeo del pozo al tanque</label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <InputField label="Horas de bombeo al día" value={inputs.horasAportacion} onChange={(v) => set("horasAportacion", Math.min(24, Math.max(1, parseInt(v) || 24)))} unit="h" tooltip="Cuántas horas al día bombea el pozo que llena este tanque (1 a 24)" />
+                    <InputField label="Hora en que arranca" value={inputs.horaInicio ?? 0} onChange={(v) => set("horaInicio", Math.min(23, Math.max(0, parseInt(v) || 0)))} unit="h (0-23)" tooltip="Hora del día en que inicia el bombeo. IMPORTA: bombear 20 h de las 4 a las 24 da R = 9.0, pero de las 0 a las 20 da R = 12.57 (mismo manual)" />
+                  </div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {REGULATION_COEFFICIENTS.filter((c) => !c.key.startsWith("cdmx")).map((c) => (
+                      <button
+                        key={c.key}
+                        type="button"
+                        onClick={() => setInputs((prev) => ({ ...prev, horasAportacion: c.hours, horaInicio: c.inicio, rManual: null }))}
+                        className="text-[10px] px-2 py-1 rounded-lg border border-[#1C3D5A]/25 text-[#1C3D5A] dark:text-blue-300 dark:border-blue-300/25 hover:bg-[#1C3D5A] hover:text-white transition-colors"
+                      >{c.label} (R = {c.R})</button>
                     ))}
-                  </select>
+                  </div>
+                  {results && !results.rEsManual && (
+                    <p className="text-xs font-semibold text-[#1C3D5A] dark:text-blue-300 bg-[#E9EFF5] dark:bg-[#1C3D5A]/20 rounded-lg px-2.5 py-1.5">
+                      R calculado = {results.R} m³/(L/s) — {results.regimenLabel}
+                    </p>
+                  )}
+                  <label className="flex items-center gap-2 text-xs text-gray-700 dark:text-gray-300">
+                    <input
+                      type="checkbox"
+                      checked={inputs.rManual != null}
+                      onChange={(e) => set("rManual", e.target.checked ? (REGULATION_COEFFICIENTS.find((c) => c.key === "cdmx-24")?.R ?? 14.3) : null)}
+                      className="rounded border-gray-300"
+                    />
+                    Capturar R manual (p. ej. CDMX — Tabla 1.4: 14.3 / 9.6 / 17.3)
+                  </label>
+                  {inputs.rManual != null && (
+                    <InputField label="R manual" value={inputs.rManual} onChange={(v) => set("rManual", parseFloat(v) || null)} unit="m³/(L/s)" tooltip="Coeficiente de otra curva local (CDMX u organismo). Anula el calculado con la curva nacional." />
+                  )}
                   <div className="bg-[#E9EFF5] dark:bg-[#1C3D5A]/20 border border-[#1C3D5A]/15 rounded-lg px-2.5 py-2 space-y-1">
                     <p className="text-[10px] text-[#1C3D5A] dark:text-blue-300 leading-relaxed">
-                      Coeficientes <strong>oficiales</strong> de las Tablas 1.3 (nacional) y 1.4 (CDMX) del manual MAPAS.
-                      <strong> El horario importa, no solo las horas:</strong> el mismo manual muestra que bombear 20 h de las 0 a las 20 da R = 12.57 (no 9.0).
-                      Si el pozo de tu zona opera otro horario, R se calcula con la curva de demandas (método de la Tabla 1.1 del manual).
+                      R se calcula con el <strong>método oficial del manual MAPAS</strong> (curva de demanda horaria nacional de la Figura 1.1 + diferencias acumuladas, ec. 1.2).
+                      Reproduce exacto la Tabla 1.3: 24 h → 11.0 · 20 h (4-24) → 9.0 · 16 h (5-21) → 19.0.
+                      Para CDMX usa la casilla de R manual (su curva es distinta — Tabla 1.4).
                     </p>
                     <a href={MAPAS_TANQUES_URL} target="_blank" rel="noreferrer" className="inline-block text-[10px] font-semibold text-[#1C3D5A] dark:text-blue-300 underline">
                       Ver el manual MAPAS de tanques (PDF oficial de CONAGUA) →
@@ -156,7 +185,7 @@ export default function TanquePage() {
                   hasAssumedValues: false,
                   inputs: [
                     { label: "QMd (maximo diario)", value: `${inputs.Qmd_ls} L/s` },
-                    { label: "Suministro al tanque", value: `${results.regimenLabel} (R = ${results.R}, MAPAS Tablas 1.3/1.4)` },
+                    { label: "Suministro al tanque", value: `${results.regimenLabel} (R = ${results.R} ${results.rEsManual ? "capturado manual" : "calculado con el metodo MAPAS"})` },
                     { label: "Reserva", value: inputs.incluirReserva ? `${inputs.horasReserva} h` : "No" },
                     { label: "Forma", value: inputs.shape },
                     { label: "Tirante", value: `${inputs.altura} m` },
@@ -210,13 +239,19 @@ export default function TanquePage() {
                 </div>
                 <FormulaDetail
                   title="Volumen de regulacion" value={formatNumber(results.volRegulacion_m3, 1)} unit="m3"
-                  formula="C = R × QMd  (ec. 1.3 del manual; R en m3 por L/s)"
-                  steps={[
-                    { label: `R = ${results.R} — ${results.regimenLabel}` },
+                  formula="C = R × QMd  ·  R = (máx excedente − máx faltante) × 3.6/100  (ecs. 1.2 y 1.3)"
+                  steps={results.rEsManual ? [
+                    { label: `R = ${results.R} m³/(L/s) — capturado manual (${results.regimenLabel})` },
+                    { substitution: `C = ${results.R} × ${inputs.Qmd_ls} L/s` },
+                    { result: `C = ${formatNumber(results.volRegulacion_m3, 1)} m3` },
+                  ] : [
+                    { label: `Bombeo ${results.regimenLabel}: suministro = ${results.suministroPct}% de QMd por hora activa` },
+                    { label: `Diferencias acumuladas vs curva de demanda (Fig. 1.1): máx excedente ${results.maxExcedente}%, máx faltante ${results.maxFaltante}%` },
+                    { substitution: `R = (${results.maxExcedente} − (${results.maxFaltante})) × 3.6 / 100 = ${results.R} m³/(L/s)` },
                     { substitution: `C = ${results.R} × ${inputs.Qmd_ls} L/s` },
                     { result: `C = ${formatNumber(results.volRegulacion_m3, 1)} m3` },
                   ]}
-                  reference="Volumen de regulacion (Tablas 1.3 y 1.4)"
+                  reference="Metodo de la Tabla 1.1 (curva de demanda nacional)"
                   norm="CONAGUA MAPAS — Tanques de regulacion"
                 />
               </div>
