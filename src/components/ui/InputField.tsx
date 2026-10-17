@@ -91,11 +91,17 @@ export function InputField({
     }
   };
 
+  // Campo requerido y vacío → se pinta de amarillo con aviso, para que nadie
+  // avance sin notar que falta un dato (los defaults silenciosos confunden)
+  const missing = required && !disabled && localValue === "";
+
   const borderClass = error
-    ? "border-red-400 focus:ring-red-300"
-    : assumed
-      ? "border-yellow-400 focus:ring-yellow-300"
-      : "border-gray-300 focus:ring-[#1C3D5A]/30 dark:border-gray-600";
+    ? "border-red-400 focus:ring-red-300 bg-white dark:bg-gray-800"
+    : missing
+      ? "border-amber-400 bg-amber-50 dark:bg-amber-900/20 dark:border-amber-500 focus:ring-amber-300"
+      : assumed
+        ? "border-yellow-400 focus:ring-yellow-300 bg-white dark:bg-gray-800"
+        : "border-gray-300 focus:ring-[#1C3D5A]/30 dark:border-gray-600 bg-white dark:bg-gray-800";
 
   return (
     <div className={`space-y-1 ${className}`}>
@@ -137,7 +143,7 @@ export function InputField({
           min={min}
           max={max}
           step={step}
-          className={`w-full px-3 py-2 text-sm rounded-lg border ${borderClass} bg-white dark:bg-gray-800 dark:text-white focus:outline-none focus:ring-2 transition-colors disabled:bg-gray-100 dark:disabled:bg-gray-700 disabled:text-gray-400`}
+          className={`w-full px-3 py-2 text-sm rounded-lg border ${borderClass} dark:text-white focus:outline-none focus:ring-2 transition-colors disabled:bg-gray-100 dark:disabled:bg-gray-700 disabled:text-gray-400`}
         />
         {unit && (
           <span className="text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap min-w-[40px]">
@@ -146,7 +152,12 @@ export function InputField({
         )}
       </div>
 
-      {assumed && assumedLabel && (
+      {missing && !error && (
+        <p className="text-xs text-amber-600 dark:text-amber-400 flex items-center gap-1">
+          <span>&#9888;</span> Falta este dato — captúralo para que el cálculo sea correcto
+        </p>
+      )}
+      {assumed && assumedLabel && !missing && (
         <p className="text-xs text-yellow-600 dark:text-yellow-400 flex items-center gap-1">
           <span>&#9888;</span> {assumedLabel}
         </p>
