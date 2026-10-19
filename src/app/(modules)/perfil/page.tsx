@@ -17,6 +17,13 @@ import { useProjectStore } from "@/store/projectStore";
 import { ComposedChart, Line, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { NumInput } from "@/components/ui/NumInput";
 import type { FlowUnit } from "@/types/hydraulic";
+import dynamic from "next/dynamic";
+
+// El mapa solo carga cuando el usuario lo abre (Leaflet necesita el navegador)
+const MapaTrazo = dynamic(() => import("@/components/MapaTrazo"), {
+  ssr: false,
+  loading: () => <p className="text-xs text-gray-400 py-8 text-center">Cargando mapa…</p>,
+});
 
 // Tooltip de marca para la gráfica del perfil
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -81,6 +88,7 @@ export default function PerfilPage() {
   const kmlRef = useRef<HTMLInputElement>(null);
   const [importandoKML, setImportandoKML] = useState(false);
   const [kmlInfo, setKmlInfo] = useState<string | null>(null);
+  const [mostrarMapa, setMostrarMapa] = useState(false);
 
   // Persist
   useEffect(() => {
@@ -378,18 +386,14 @@ export default function PerfilPage() {
     e.target.value = "";
   };
 
-  // Importar ruta trazada en Google Earth (KML/KMZ): cadenamientos por haversine
-  // y cotas satelitales (SRTM ~30 m) vía /api/elevacion; el perfil se reduce a los
-  // vértices que importan (quiebres, puntos altos y bajos).
-  const handleKMLImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    e.target.value = "";
-    if (!file) return;
+  // Pipeline compartido (KML de Google Earth y trazo sobre el mapa): cadenamientos
+  // por haversine, cotas satelitales (SRTM ~30 m) vía /api/elevacion, y reducción
+  // del perfil a los vértices que importan (quiebres, puntos altos y bajos).
+  const procesarRuta = async (coords: { lat: number; lon: number }[], origen: string) => {
     setImportandoKML(true);
     setKmlInfo(null);
     try {
-      const { cargarArchivoRuta, muestrearRuta, reducirPerfil } = await import("@/lib/geo/ruta-kml");
-      const coords = await cargarArchivoRuta(file);
+      const { muestrearRuta, reducirPerfil } = await import("@/lib/geo/ruta-kml");
       const muestras = muestrearRuta(coords, 30, 400);
       const res = await fetch("/api/elevacion", {
         method: "POST",
@@ -410,16 +414,30 @@ export default function PerfilPage() {
         id: uuid(),
         dist: Math.round(p.dist),
         cota: Math.round(p.cota * 10) / 10,
-        desc: i === 0 ? "Inicio (Google Earth)" : i === reducidos.length - 1 ? "Fin (Google Earth)" : "",
+        desc: i === 0 ? `Inicio (${origen})` : i === reducidos.length - 1 ? `Fin (${origen})` : "",
       }));
       setVertices(newVerts);
       const maxDist = Math.max(...newVerts.map((v) => v.dist));
       if (tramos.length === 1) setTramos([{ ...tramos[0], distFrom: newVerts[0].dist, distTo: maxDist }]);
-      setKmlInfo(`Ruta importada: ${(maxDist / 1000).toFixed(2)} km · ${perfilPts.length} puntos muestreados → ${newVerts.length} vértices. Cotas satelitales SRTM ~30 m (precisión típica ±5-10 m): verificar los puntos críticos en campo antes del proyecto ejecutivo.`);
+      setKmlInfo(`Ruta de ${origen}: ${(maxDist / 1000).toFixed(2)} km · ${perfilPts.length} puntos muestreados → ${newVerts.length} vértices. Cotas satelitales SRTM ~30 m (precisión típica ±5-10 m): verificar los puntos críticos en campo antes del proyecto ejecutivo.`);
     } catch (err) {
-      alert(err instanceof Error ? err.message : "No se pudo importar la ruta.");
+      alert(err instanceof Error ? err.message : "No se pudo generar el perfil.");
     } finally {
       setImportandoKML(false);
+    }
+  };
+
+  // Importar ruta trazada en Google Earth (KML/KMZ)
+  const handleKMLImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    try {
+      const { cargarArchivoRuta } = await import("@/lib/geo/ruta-kml");
+      const coords = await cargarArchivoRuta(file);
+      await procesarRuta(coords, "Google Earth");
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "No se pudo importar la ruta.");
     }
   };
 
@@ -520,6 +538,13 @@ export default function PerfilPage() {
               <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300"><span className="inline-flex w-5 h-5 rounded-full bg-[#1C3D5A] text-white text-[10px] font-bold items-center justify-center mr-1.5">1</span>Perfil del terreno</h2>
               <div className="flex gap-2 flex-wrap">
                 <button
+                  onClick={() => setMostrarMapa(!mostrarMapa)}
+                  title="Traza la línea con clics sobre el mapa satelital: cadenamientos y cotas se generan solos"
+                  className={`text-[10px] font-semibold px-2 py-1 rounded border transition-colors ${mostrarMapa ? "bg-[#1C3D5A] text-white border-[#1C3D5A]" : "text-white bg-emerald-600 border-emerald-600 hover:bg-emerald-700"}`}
+                >
+                  {mostrarMapa ? "🗺 Cerrar mapa" : "🗺 Trazar en mapa"}
+                </button>
+                <button
                   onClick={() => kmlRef.current?.click()}
                   disabled={importandoKML}
                   title="Traza tu línea en Google Earth (Agregar ruta), guárdala como KML o KMZ y súbela aquí: los cadenamientos y las cotas satelitales se llenan solos"
@@ -549,6 +574,12 @@ export default function PerfilPage() {
               <div className="bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-300 dark:border-emerald-700 rounded-lg px-3 py-2 text-[11px] text-emerald-800 dark:text-emerald-300">
                 {"🌍"} {kmlInfo}
               </div>
+            )}
+            {mostrarMapa && (
+              <MapaTrazo
+                ocupado={importandoKML}
+                onUsar={(pts) => { void procesarRuta(pts, "Mapa"); }}
+              />
             )}
 
             {perfilMax > lineLength && lineLength > 0 && (

@@ -1,0 +1,156 @@
+"use client";
+
+/* ════════════════════════════════════════
+   Trazar la línea de conducción directamente sobre el mapa (Leaflet):
+   cada clic agrega un punto del trazo; la longitud corre en vivo y la cota
+   del último punto se consulta al instante (y queda en el caché).
+   Al confirmar, el perfil completo se genera igual que al importar un KML.
+   La última vista del mapa se recuerda (ideal para el demo de la expo).
+   ════════════════════════════════════════ */
+
+import { useEffect, useRef, useState } from "react";
+import type * as LT from "leaflet";
+import "leaflet/dist/leaflet.css";
+import { haversine, type PuntoRuta } from "@/lib/geo/ruta-kml";
+
+const VISTA_KEY = "hidrocalc_mapa_vista";
+
+interface Props {
+  ocupado: boolean; // true mientras el perfil procesa (consultando cotas)
+  onUsar: (puntos: PuntoRuta[]) => void;
+}
+
+export default function MapaTrazo({ ocupado, onUsar }: Props) {
+  const divRef = useRef<HTMLDivElement>(null);
+  const mapRef = useRef<LT.Map | null>(null);
+  const LRef = useRef<typeof LT | null>(null);
+  const capaSat = useRef<LT.TileLayer | null>(null);
+  const capaCalles = useRef<LT.TileLayer | null>(null);
+  const capaTrazo = useRef<LT.LayerGroup | null>(null);
+  const puntosRef = useRef<PuntoRuta[]>([]);
+  const [nPuntos, setNPuntos] = useState(0);
+  const [longitud, setLongitud] = useState(0);
+  const [cotaUltimo, setCotaUltimo] = useState<number | null>(null);
+  const [vista, setVista] = useState<"sat" | "calles">("sat");
+
+  const redibujar = () => {
+    const L = LRef.current, capa = capaTrazo.current;
+    if (!L || !capa) return;
+    capa.clearLayers();
+    const pts = puntosRef.current;
+    if (pts.length >= 2) {
+      L.polyline(pts.map((p) => [p.lat, p.lon] as [number, number]), { color: "#7FC4E8", weight: 4, opacity: 0.95 }).addTo(capa);
+      L.polyline(pts.map((p) => [p.lat, p.lon] as [number, number]), { color: "#1C3D5A", weight: 1.5, opacity: 0.9, dashArray: "6 6" }).addTo(capa);
+    }
+    pts.forEach((p, i) => {
+      L.circleMarker([p.lat, p.lon], {
+        radius: i === 0 || i === pts.length - 1 ? 7 : 5,
+        color: "#1C3D5A", weight: 2,
+        fillColor: i === 0 ? "#22c55e" : i === pts.length - 1 ? "#ef4444" : "#7FC4E8",
+        fillOpacity: 1,
+      }).addTo(capa);
+    });
+    let acum = 0;
+    for (let i = 1; i < pts.length; i++) acum += haversine(pts[i - 1], pts[i]);
+    setLongitud(acum);
+    setNPuntos(pts.length);
+  };
+
+  const agregarPunto = (lat: number, lon: number) => {
+    puntosRef.current = [...puntosRef.current, { lat, lon }];
+    redibujar();
+    // Cota del punto recién puesto, al instante (y queda cacheada para el perfil completo)
+    setCotaUltimo(null);
+    fetch("/api/elevacion", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ puntos: [{ lat, lon }] }),
+    })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((j: { cotas?: (number | null)[] } | null) => { if (j?.cotas?.[0] != null) setCotaUltimo(j.cotas[0]); })
+      .catch(() => { /* la cota en vivo es cortesía; el perfil completo se consulta al confirmar */ });
+  };
+
+  useEffect(() => {
+    let cancelado = false;
+    (async () => {
+      const L = (await import("leaflet")).default as unknown as typeof LT;
+      if (cancelado || !divRef.current || mapRef.current) return;
+      LRef.current = L;
+      let centro: [number, number] = [23.63, -102.55]; // México
+      let zoom = 5;
+      try {
+        const v = JSON.parse(localStorage.getItem(VISTA_KEY) ?? "null") as { lat: number; lon: number; z: number } | null;
+        if (v) { centro = [v.lat, v.lon]; zoom = v.z; }
+      } catch { /* vista default */ }
+      const map = L.map(divRef.current, { zoomControl: true }).setView(centro, zoom);
+      mapRef.current = map;
+      capaSat.current = L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", {
+        maxZoom: 19, attribution: "Imágenes © Esri — Maxar, Earthstar Geographics",
+      });
+      capaCalles.current = L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        maxZoom: 19, attribution: "© OpenStreetMap",
+      });
+      capaSat.current.addTo(map);
+      capaTrazo.current = L.layerGroup().addTo(map);
+      map.on("click", (e: LT.LeafletMouseEvent) => agregarPunto(e.latlng.lat, e.latlng.lng));
+      map.on("moveend", () => {
+        const c = map.getCenter();
+        try { localStorage.setItem(VISTA_KEY, JSON.stringify({ lat: c.lat, lon: c.lng, z: map.getZoom() })); } catch { /* sin persistencia */ }
+      });
+    })();
+    return () => { cancelado = true; mapRef.current?.remove(); mapRef.current = null; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !capaSat.current || !capaCalles.current) return;
+    if (vista === "sat") { map.removeLayer(capaCalles.current); capaSat.current.addTo(map); }
+    else { map.removeLayer(capaSat.current); capaCalles.current.addTo(map); }
+  }, [vista]);
+
+  const deshacer = () => { puntosRef.current = puntosRef.current.slice(0, -1); setCotaUltimo(null); redibujar(); };
+  const limpiar = () => { puntosRef.current = []; setCotaUltimo(null); redibujar(); };
+  const irAMiUbicacion = () => {
+    navigator.geolocation?.getCurrentPosition(
+      (pos) => mapRef.current?.setView([pos.coords.latitude, pos.coords.longitude], 14),
+      () => alert("No se pudo obtener tu ubicación — puedes navegar el mapa con el mouse."),
+    );
+  };
+
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center gap-2 flex-wrap">
+        <div className="flex rounded-lg border border-gray-300 dark:border-gray-600 overflow-hidden">
+          <button type="button" onClick={() => setVista("sat")} className={`text-[10px] px-2.5 py-1 ${vista === "sat" ? "bg-[#1C3D5A] text-white font-semibold" : "bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300"}`}>Satélite</button>
+          <button type="button" onClick={() => setVista("calles")} className={`text-[10px] px-2.5 py-1 ${vista === "calles" ? "bg-[#1C3D5A] text-white font-semibold" : "bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300"}`}>Calles</button>
+        </div>
+        <button type="button" onClick={irAMiUbicacion} className="text-[10px] text-[#1C3D5A] dark:text-blue-300 border border-[#1C3D5A]/30 px-2 py-1 rounded hover:bg-[#1C3D5A]/10 transition-colors">📍 Mi ubicación</button>
+        <span className="flex-1" />
+        <button type="button" onClick={deshacer} disabled={nPuntos === 0} className="text-[10px] text-gray-600 dark:text-gray-300 border border-gray-300 dark:border-gray-600 px-2 py-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors disabled:opacity-40">↩ Deshacer</button>
+        <button type="button" onClick={limpiar} disabled={nPuntos === 0} className="text-[10px] text-red-600 border border-red-300 px-2 py-1 rounded hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors disabled:opacity-40">✕ Limpiar</button>
+      </div>
+
+      <div ref={divRef} className="h-[420px] rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700 relative z-0" />
+
+      <div className="flex items-center gap-3 flex-wrap">
+        <p className="text-xs text-gray-600 dark:text-gray-300">
+          {nPuntos === 0
+            ? "Haz clic sobre el mapa siguiendo el trazo de tu línea (del inicio a la entrega)."
+            : <><strong>{nPuntos}</strong> punto{nPuntos === 1 ? "" : "s"} · <strong>{(longitud / 1000).toFixed(2)} km</strong>{cotaUltimo != null && <> · último punto: cota <strong>{Math.round(cotaUltimo)} m</strong></>}</>}
+        </p>
+        <span className="flex-1" />
+        <button
+          type="button"
+          onClick={() => onUsar(puntosRef.current)}
+          disabled={nPuntos < 2 || ocupado}
+          className="text-xs font-semibold bg-emerald-600 text-white px-4 py-2 rounded-lg hover:bg-emerald-700 transition-colors disabled:opacity-50"
+        >
+          {ocupado ? "Generando perfil…" : "✓ Usar este trazo → generar perfil"}
+        </button>
+      </div>
+      <p className="text-[10px] text-gray-400">Verde = inicio · rojo = último punto. Las cotas son satelitales (SRTM ~30 m, ±5–10 m): verificar puntos críticos en campo.</p>
+    </div>
+  );
+}
