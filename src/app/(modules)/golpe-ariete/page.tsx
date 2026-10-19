@@ -266,10 +266,13 @@ export default function GolpeArietePage() {
     ? getPVCClasses(pvcSystem, pvcSystem === "c905")
     : PIPE_CLASSES_BY_MATERIAL[inputs.materialName];
   let userPN: number | null = null;
-  if (inputs.materialName === "Hierro dúctil" || inputs.materialName === "Acero") {
-    // Materiales con una sola clase en tabla (K9 PFA 38 bar / Cédula): el numero del
-    // nombre NO es un DR — usar directamente el PN de esa clase.
-    userPN = PIPE_CLASSES_BY_MATERIAL[inputs.materialName]?.classes[0]?.pn ?? null;
+  if (inputs.materialName === "Hierro dúctil") {
+    // Clase de presion vigente (ISO 2531:2009): el numero ES la presion en bar.
+    // Clase preferente por diametro: C40 hasta DN 300 (OD ~326), C30 hasta DN 600, C25 mayores.
+    userPN = computedOD != null ? (computedOD <= 330 ? 40 : computedOD <= 640 ? 30 : 25) : 40;
+  } else if (inputs.materialName === "Acero") {
+    // Una sola clase en tabla (Cédula): el numero del nombre no es un DR
+    userPN = PIPE_CLASSES_BY_MATERIAL["Acero"]?.classes[0]?.pn ?? null;
   } else if (inputs.materialName === "PVC" && pvcSystem === "métrico" && entryMode === "simple" && classEntry) {
     // PVC Métrico: los nombres 'Clase 5/7/10/14' son PN en kg/cm², no DR — emparejar por NOMBRE
     userPN = matClassesSel?.classes.find((c) => c.clase === classEntry.name)?.pn ?? null;

@@ -163,18 +163,20 @@ export const PIPE_CATALOG: PipeCatalogGroup[] = [
   },
   {
     material: "Hierro dúctil", E: 169e9, label: "Hierro dúctil — ISO 2531",
+    // Clase de presion vigente (C40 hasta DN 300, C30 de DN 350 a 600); el espesor
+    // listado es el K9 equivalente del catalogo (sirve para la celeridad de onda)
     sizes: [
-      { label: '3" (DN 80)', od: 98, classes: [{ name: "K9", e: 6.0 }] },
-      { label: '4" (DN 100)', od: 118, classes: [{ name: "K9", e: 6.0 }] },
-      { label: '6" (DN 150)', od: 170, classes: [{ name: "K9", e: 6.0 }] },
-      { label: '8" (DN 200)', od: 222, classes: [{ name: "K9", e: 6.3 }] },
-      { label: '10" (DN 250)', od: 274, classes: [{ name: "K9", e: 6.8 }] },
-      { label: '12" (DN 300)', od: 326, classes: [{ name: "K9", e: 7.2 }] },
-      { label: '14" (DN 350)', od: 378, classes: [{ name: "K9", e: 7.7 }] },
-      { label: '16" (DN 400)', od: 429, classes: [{ name: "K9", e: 8.1 }] },
-      { label: '18" (DN 450)', od: 480, classes: [{ name: "K9", e: 8.6 }] },
-      { label: '20" (DN 500)', od: 532, classes: [{ name: "K9", e: 9.0 }] },
-      { label: '24" (DN 600)', od: 635, classes: [{ name: "K9", e: 9.9 }] },
+      { label: '3" (DN 80)', od: 98, classes: [{ name: "C40 (esp. K9)", e: 6.0 }] },
+      { label: '4" (DN 100)', od: 118, classes: [{ name: "C40 (esp. K9)", e: 6.0 }] },
+      { label: '6" (DN 150)', od: 170, classes: [{ name: "C40 (esp. K9)", e: 6.0 }] },
+      { label: '8" (DN 200)', od: 222, classes: [{ name: "C40 (esp. K9)", e: 6.3 }] },
+      { label: '10" (DN 250)', od: 274, classes: [{ name: "C40 (esp. K9)", e: 6.8 }] },
+      { label: '12" (DN 300)', od: 326, classes: [{ name: "C40 (esp. K9)", e: 7.2 }] },
+      { label: '14" (DN 350)', od: 378, classes: [{ name: "C30 (esp. K9)", e: 7.7 }] },
+      { label: '16" (DN 400)', od: 429, classes: [{ name: "C30 (esp. K9)", e: 8.1 }] },
+      { label: '18" (DN 450)', od: 480, classes: [{ name: "C30 (esp. K9)", e: 8.6 }] },
+      { label: '20" (DN 500)', od: 532, classes: [{ name: "C30 (esp. K9)", e: 9.0 }] },
+      { label: '24" (DN 600)', od: 635, classes: [{ name: "C30 (esp. K9)", e: 9.9 }] },
     ],
   },
   {
@@ -458,12 +460,13 @@ export const PIPE_CLASSES_BY_MATERIAL: Record<string, {
 } | null> = {
   "Hierro dúctil": {
     title: "Hierro dúctil",
-    // La clase K NO equivale a un PN fijo: la presion admisible (PFA, EN 545/ISO 2531)
-    // depende del DN. Para K9 la PFA va de 38 bar (DN600) a 64 bar (DN100); se usa el
-    // minimo como comparacion conservadora.
-    note: "La clase K no tiene PN fijo: la presion admisible (PFA) depende del DN — K9: 38-64 bar segun EN 545/ISO 2531. Se compara contra la PFA minima (38 bar); verificar con el fabricante.",
+    // Clasificacion VIGENTE por presion (ISO 2531:2009 / EN 545): el numero de la
+    // clase ES la presion admisible en bar (C40 = 40 bar). Clase preferente segun
+    // diametro: C40 hasta DN 300 (12"), C30 de DN 350 a 600, C25 de DN 700 en adelante.
+    // La clasificacion vieja era por espesor (K7/K9/K12) con PFA variable por DN.
+    note: "Clases vigentes por PRESION (ISO 2531:2009 / EN 545): C40 resiste 40 bar, C30 resiste 30, C25 resiste 25. Clase preferente: C40 hasta 12\" (DN 300), C30 de 14\" a 24\", C25 en mayores. Los catalogos viejos usan clases K por espesor (K9) — confirmar equivalencia con el fabricante.",
     classes: [
-      { clase: "K9 (PFA ≥ 38 bar)", pn: 38 },
+      { clase: "C25", pn: 25 }, { clase: "C30", pn: 30 }, { clase: "C40", pn: 40 },
     ],
   },
   PVC: null, // handled by PVC_CLASSES subsystem
