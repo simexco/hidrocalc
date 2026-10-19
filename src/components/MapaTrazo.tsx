@@ -27,6 +27,7 @@ export default function MapaTrazo({ ocupado, onUsar }: Props) {
   const capaSat = useRef<LT.TileLayer | null>(null);
   const capaCalles = useRef<LT.TileLayer | null>(null);
   const capaTrazo = useRef<LT.LayerGroup | null>(null);
+  const pinBusqueda = useRef<LT.Marker | null>(null);
   const puntosRef = useRef<PuntoRuta[]>([]);
   const [nPuntos, setNPuntos] = useState(0);
   const [longitud, setLongitud] = useState(0);
@@ -183,7 +184,23 @@ export default function MapaTrazo({ ocupado, onUsar }: Props) {
     }
   };
   const irAResultado = (res: { nombre: string; lat: number; lon: number }) => {
-    mapRef.current?.setView([res.lat, res.lon], 13);
+    const map = mapRef.current, L = LRef.current;
+    if (!map || !L) return;
+    map.setView([res.lat, res.lon], 14);
+    // Pin de referencia en el lugar encontrado: NO estorba (los clics lo atraviesan,
+    // así el trazo puede empezar exactamente ahí); una nueva búsqueda lo reemplaza
+    pinBusqueda.current?.remove();
+    const pin = L.marker([res.lat, res.lon], {
+      interactive: false,
+      icon: L.divIcon({
+        className: "",
+        html: `<div style="font-size:34px;line-height:34px;filter:drop-shadow(0 2px 3px rgba(0,0,0,.55))">📍</div>`,
+        iconSize: [34, 34],
+        iconAnchor: [17, 32],
+      }),
+    }).addTo(map);
+    pin.bindTooltip(res.nombre.split(",").slice(0, 2).join(","), { permanent: true, direction: "top", offset: [0, -30], opacity: 0.95 });
+    pinBusqueda.current = pin;
     setResultados([]);
   };
 
@@ -196,7 +213,7 @@ export default function MapaTrazo({ ocupado, onUsar }: Props) {
     redibujar();
   };
   const deshacer = () => { puntosRef.current = puntosRef.current.slice(0, -1); deseleccionar(); setCotaUltimo(null); redibujar(); };
-  const limpiar = () => { puntosRef.current = []; deseleccionar(); setCotaUltimo(null); redibujar(); };
+  const limpiar = () => { puntosRef.current = []; deseleccionar(); setCotaUltimo(null); pinBusqueda.current?.remove(); pinBusqueda.current = null; redibujar(); };
   const irAMiUbicacion = () => {
     navigator.geolocation?.getCurrentPosition(
       (pos) => mapRef.current?.setView([pos.coords.latitude, pos.coords.longitude], 14),
