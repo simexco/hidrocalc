@@ -78,6 +78,9 @@ export default function PerfilPage() {
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
   const fileRef = useRef<HTMLInputElement>(null);
   const xlsxRef = useRef<HTMLInputElement>(null);
+  const kmlRef = useRef<HTMLInputElement>(null);
+  const [importandoKML, setImportandoKML] = useState(false);
+  const [kmlInfo, setKmlInfo] = useState<string | null>(null);
 
   // Persist
   useEffect(() => {
@@ -375,6 +378,51 @@ export default function PerfilPage() {
     e.target.value = "";
   };
 
+  // Importar ruta trazada en Google Earth (KML/KMZ): cadenamientos por haversine
+  // y cotas satelitales (SRTM ~30 m) vía /api/elevacion; el perfil se reduce a los
+  // vértices que importan (quiebres, puntos altos y bajos).
+  const handleKMLImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    setImportandoKML(true);
+    setKmlInfo(null);
+    try {
+      const { cargarArchivoRuta, muestrearRuta, reducirPerfil } = await import("@/lib/geo/ruta-kml");
+      const coords = await cargarArchivoRuta(file);
+      const muestras = muestrearRuta(coords, 30, 400);
+      const res = await fetch("/api/elevacion", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ puntos: muestras.map((m) => ({ lat: m.lat, lon: m.lon })) }),
+      });
+      if (!res.ok) {
+        const err = (await res.json().catch(() => null)) as { error?: string } | null;
+        throw new Error(err?.error ?? "No se pudieron consultar las cotas. Intenta de nuevo en un minuto.");
+      }
+      const { cotas } = (await res.json()) as { cotas: (number | null)[] };
+      const perfilPts = muestras
+        .map((m, i) => ({ dist: m.dist, cota: cotas[i] }))
+        .filter((p): p is { dist: number; cota: number } => p.cota != null);
+      if (perfilPts.length < 2) throw new Error("El servicio de elevación no devolvió cotas para esta zona.");
+      const reducidos = reducirPerfil(perfilPts, 1.0, 40);
+      const newVerts: ProfileVertex[] = reducidos.map((p, i) => ({
+        id: uuid(),
+        dist: Math.round(p.dist),
+        cota: Math.round(p.cota * 10) / 10,
+        desc: i === 0 ? "Inicio (Google Earth)" : i === reducidos.length - 1 ? "Fin (Google Earth)" : "",
+      }));
+      setVertices(newVerts);
+      const maxDist = Math.max(...newVerts.map((v) => v.dist));
+      if (tramos.length === 1) setTramos([{ ...tramos[0], distFrom: newVerts[0].dist, distTo: maxDist }]);
+      setKmlInfo(`Ruta importada: ${(maxDist / 1000).toFixed(2)} km · ${perfilPts.length} puntos muestreados → ${newVerts.length} vértices. Cotas satelitales SRTM ~30 m (precisión típica ±5-10 m): verificar los puntos críticos en campo antes del proyecto ejecutivo.`);
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "No se pudo importar la ruta.");
+    } finally {
+      setImportandoKML(false);
+    }
+  };
+
   // DN Recommendation: find optimal DN for current Q
   // Velocidades con el ID real (material/clase del primer tramo), igual que el motor
   const Q_m3s = rawQ != null ? flowToM3s(rawQ, flowUnit) : null;
@@ -470,7 +518,15 @@ export default function PerfilPage() {
           <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 space-y-3">
             <div className="flex items-center justify-between">
               <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300"><span className="inline-flex w-5 h-5 rounded-full bg-[#1C3D5A] text-white text-[10px] font-bold items-center justify-center mr-1.5">1</span>Perfil del terreno</h2>
-              <div className="flex gap-2">
+              <div className="flex gap-2 flex-wrap">
+                <button
+                  onClick={() => kmlRef.current?.click()}
+                  disabled={importandoKML}
+                  title="Traza tu línea en Google Earth (Agregar ruta), guárdala como KML o KMZ y súbela aquí: los cadenamientos y las cotas satelitales se llenan solos"
+                  className="text-[10px] font-semibold text-white bg-emerald-600 border border-emerald-600 px-2 py-1 rounded hover:bg-emerald-700 transition-colors disabled:opacity-60"
+                >
+                  {importandoKML ? "Consultando cotas…" : "🌍 Importar de Google Earth (KML)"}
+                </button>
                 <button onClick={downloadTemplate} className="text-[10px] text-[#1C3D5A] border border-[#1C3D5A]/30 px-2 py-1 rounded hover:bg-[#1C3D5A]/10 transition-colors">
                   Plantilla .xlsx
                 </button>
@@ -486,8 +542,14 @@ export default function PerfilPage() {
               </div>
               <input ref={fileRef} type="file" accept=".csv,.txt,.tsv" onChange={handleCSVImport} className="hidden" />
               <input ref={xlsxRef} type="file" accept=".xlsx" onChange={handleXLSXImport} className="hidden" />
+              <input ref={kmlRef} type="file" accept=".kml,.kmz" onChange={handleKMLImport} className="hidden" />
             </div>
             <p className="text-[10px] text-gray-400">Empieza aquí: captura el terreno (o impórtalo). El último punto define la longitud de la línea{lineLength > 0 ? ` (${formatNumber(lineLength, 0)} m)` : ""} y los tramos se ajustan solos. CSV: cadenamiento, cota, descripcion (opcional)</p>
+            {kmlInfo && (
+              <div className="bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-300 dark:border-emerald-700 rounded-lg px-3 py-2 text-[11px] text-emerald-800 dark:text-emerald-300">
+                {"🌍"} {kmlInfo}
+              </div>
+            )}
 
             {perfilMax > lineLength && lineLength > 0 && (
               <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-300 dark:border-amber-700 rounded-lg px-3 py-2 text-[11px] text-amber-700 dark:text-amber-300">
