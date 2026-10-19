@@ -136,9 +136,43 @@ export function calculateAirValves(input: AirValveInputs): AirValveOutputs | nul
     slopes[i] = dx > 0 ? (dz / dx) * 100 : 0;
   }
 
+  // Extremos SIGNIFICATIVOS del perfil (poda por amplitud): los perfiles satelitales
+  // traen 30-40 vertices y cada ondulacion de 1-2 m marcaba punto alto/bajo, inundando
+  // de valvulas y desagues. Solo cuentan los que sobresalen >= UMBRAL de su entorno.
+  // (Umbral preliminar de 5 m ≈ 0.5 kg/cm2 — validar con el ing.)
+  const UMBRAL_EXTREMO_M = 5;
+  const cotas = sorted.map((v) => v.cota);
+  type Ext = { i: number; tipo: "alto" | "bajo" };
+  const exts: Ext[] = [];
+  for (let i = 1; i < cotas.length - 1; i++) {
+    if (cotas[i] > cotas[i - 1] && cotas[i] >= cotas[i + 1]) exts.push({ i, tipo: "alto" });
+    else if (cotas[i] < cotas[i - 1] && cotas[i] <= cotas[i + 1]) exts.push({ i, tipo: "bajo" });
+  }
+  // Poda iterativa: elimina el par adyacente de extremos con la menor amplitud
+  // mientras esa amplitud quede por debajo del umbral
+  for (;;) {
+    let peor = -1, peorAmp = Infinity;
+    for (let k = 0; k + 1 < exts.length; k++) {
+      const amp = Math.abs(cotas[exts[k].i] - cotas[exts[k + 1].i]);
+      if (amp < peorAmp) { peorAmp = amp; peor = k; }
+    }
+    if (peor < 0 || peorAmp >= UMBRAL_EXTREMO_M) break;
+    exts.splice(peor, 2);
+  }
+  // Verificacion final contra los vecinos conservados (y los bordes de la serie)
+  const refs = [0, ...exts.map((e) => e.i), cotas.length - 1];
+  const altosSig = new Set<number>();
+  const bajosSig = new Set<number>();
+  exts.forEach((e) => {
+    const pos = refs.indexOf(e.i);
+    const izq = cotas[refs[pos - 1]], der = cotas[refs[pos + 1]];
+    if (e.tipo === "alto" && cotas[e.i] - Math.max(izq, der) >= UMBRAL_EXTREMO_M * 0.5) altosSig.add(e.i);
+    if (e.tipo === "bajo" && Math.min(izq, der) - cotas[e.i] >= UMBRAL_EXTREMO_M * 0.5) bajosSig.add(e.i);
+  });
+
   // Step 3: Apply rules — collect candidate valves
   // Criterio (CONAGUA MAPAS / AWWA M51):
-  //   VA-C en inicio, fin (si no llega bajando) y puntos altos.
+  //   VA-C en inicio, fin (si no llega bajando) y puntos altos SIGNIFICATIVOS.
   //   VA-E donde el aire se acumula en operacion (la subida se aplana, arranca un ascenso)
   //        y cada maxSpacing en corridas largas ascendentes o planas.
   //   VA-A donde hay riesgo de vacio (la bajada se hace mas pronunciada)
@@ -160,8 +194,9 @@ export function calculateAirValves(input: AirValveInputs): AirValveOutputs | nul
 
   const puntosBajos: number[] = [];
   for (let i = 1; i < sorted.length - 1; i++) {
-    const isHighPoint = sorted[i].cota > sorted[i - 1].cota && sorted[i].cota >= sorted[i + 1].cota;
-    const isLowPoint = sorted[i].cota < sorted[i - 1].cota && sorted[i].cota <= sorted[i + 1].cota;
+    // Solo los extremos SIGNIFICATIVOS (≥ umbral de prominencia) cuentan como alto/bajo
+    const isHighPoint = altosSig.has(i);
+    const isLowPoint = bajosSig.has(i);
     const p = pressures[i];
 
     // Punto alto → VA-C (el aire se acumula y hay riesgo de vacio al vaciar la linea)
@@ -192,7 +227,6 @@ export function calculateAirValves(input: AirValveInputs): AirValveOutputs | nul
   // del mismo tipo, aunque el perfil se haya capturado con varios vertices intermedios:
   //   ascendente o plana → VA-E de purga cada maxSpacing
   //   descendente → VA-A de proteccion de vacio cada maxSpacing
-  const clase = (s: number): "up" | "down" | "flat" => (s > 1 ? "up" : s < -1 ? "down" : "flat");
   const interpola = (d: number) => {
     let k = 0;
     while (k < sorted.length - 2 && sorted[k + 1].dist <= d) k++;
@@ -202,22 +236,34 @@ export function calculateAirValves(input: AirValveInputs): AirValveOutputs | nul
     const pr = pressures[k] != null && pressures[k + 1] != null ? pressures[k]! + frac * (pressures[k + 1]! - pressures[k]!) : null;
     return { cota, pr };
   };
-  let i0 = 0;
-  while (i0 < slopes.length) {
-    let i1 = i0;
-    while (i1 + 1 < slopes.length && clase(slopes[i1 + 1]) === clase(slopes[i0])) i1++;
-    const cl = clase(slopes[i0]);
-    const runStart = sorted[i0].dist;
-    const runEnd = sorted[i1 + 1].dist;
-    if (runEnd - runStart > maxSpacing) {
-      const tipo: "VA-A" | "VA-E" = cl === "down" ? "VA-A" : "VA-E";
-      const reason = cl === "up" ? "Tramo ascendente largo — purga de aire" : cl === "flat" ? "Tramo plano largo — purga de aire" : "Tramo descendente largo — proteccion contra vacio";
-      for (let d = runStart + maxSpacing; d < runEnd - 1; d += maxSpacing) {
-        const { cota, pr } = interpola(d);
-        candidates.push({ dist: d, cota, pressure: pr, type: tipo, reason });
-      }
+  // Las corridas se miden entre los extremos del ESQUELETO significativo (post-poda):
+  // asi el rizado satelital de 1-3 m no fragmenta una bajada o subida larga en
+  // pedacitos que nunca alcanzan el espaciamiento. El caracter de cada corrida es
+  // su pendiente NETA (cota final - inicial sobre su longitud).
+  const nodos = Array.from(new Set([0, ...exts.map((e) => e.i), last])).sort((a, b) => a - b);
+  for (let k = 0; k + 1 < nodos.length; k++) {
+    const a = nodos[k], b = nodos[k + 1];
+    const runStart = sorted[a].dist;
+    const runEnd = sorted[b].dist;
+    const Lrun = runEnd - runStart;
+    if (Lrun <= maxSpacing) continue;
+    const pendNeta = ((sorted[b].cota - sorted[a].cota) / Lrun) * 100;
+    const cl: "up" | "down" | "flat" = pendNeta > 1 ? "up" : pendNeta < -1 ? "down" : "flat";
+    const tipo: "VA-A" | "VA-E" = cl === "down" ? "VA-A" : "VA-E";
+    const reason = cl === "up" ? "Tramo ascendente largo — purga de aire" : cl === "flat" ? "Tramo plano largo — purga de aire" : "Tramo descendente largo — proteccion contra vacio";
+    for (let d = runStart + maxSpacing; d < runEnd - 1; d += maxSpacing) {
+      const { cota, pr } = interpola(d);
+      candidates.push({ dist: d, cota, pressure: pr, type: tipo, reason });
     }
-    i0 = i1 + 1;
+  }
+
+  // El punto MAS BAJO real del perfil siempre merece desagüe (aunque desemboque en
+  // un tramo plano y la prominencia de dos lados no lo marque), si es interior y
+  // el perfil tiene relieve suficiente
+  const iMin = cotas.indexOf(Math.min(...cotas));
+  if (iMin > 0 && iMin < last && Math.max(...cotas) - cotas[iMin] >= UMBRAL_EXTREMO_M && !puntosBajos.includes(sorted[iMin].dist)) {
+    puntosBajos.push(sorted[iMin].dist);
+    puntosBajos.sort((x, y) => x - y);
   }
 
   // Avisos de diseno (no son valvulas)
@@ -230,7 +276,12 @@ export function calculateAirValves(input: AirValveInputs): AirValveOutputs | nul
       if (bajos.length > 0) alerts.push(`Presion por debajo de ${pressureMin} m.c.a. en ${bajos.length} punto(s): verifica con el fabricante que la valvula de aire selle a baja presion.`);
     }
   }
-  puntosBajos.forEach((d) => alerts.push(`Punto bajo en cad ${d.toFixed(0)} m: no lleva valvula de aire — se recomienda un desague (desfogue) para drenado y limpieza. Puedes armar ese crucero en el Generador de cruceros.`));
+  // Un solo aviso con TODOS los puntos bajos significativos (antes era uno por punto)
+  if (puntosBajos.length > 0) {
+    const lista = puntosBajos.slice(0, 6).map((d) => `${d.toFixed(0)} m`).join(" · ");
+    const extra = puntosBajos.length > 6 ? ` (y ${puntosBajos.length - 6} más)` : "";
+    alerts.push(`Puntos bajos del perfil (cad ${lista}${extra}): no llevan válvula de aire — se recomienda un desagüe (desfogue) para drenado y limpieza en cada uno. Puedes armar esos cruceros en el Generador de cruceros.`);
+  }
 
   // Step 4: Deduplicate — within 30m, keep each type's highest priority
   // But DON'T merge different types — a location can have both VA-C and VA-E
