@@ -183,14 +183,14 @@ export default function MapaTrazo({ ocupado, onUsar }: Props) {
       setBuscando(false);
     }
   };
-  const irAResultado = (res: { nombre: string; lat: number; lon: number }) => {
+  // Pin de referencia: NO estorba (los clics lo atraviesan, así el trazo puede
+  // empezar exactamente ahí); una nueva búsqueda o "Mi ubicación" lo reemplaza
+  const ponerPin = (lat: number, lon: number, etiqueta: string) => {
     const map = mapRef.current, L = LRef.current;
     if (!map || !L) return;
-    map.setView([res.lat, res.lon], 14);
-    // Pin de referencia en el lugar encontrado: NO estorba (los clics lo atraviesan,
-    // así el trazo puede empezar exactamente ahí); una nueva búsqueda lo reemplaza
+    map.setView([lat, lon], 14);
     pinBusqueda.current?.remove();
-    const pin = L.marker([res.lat, res.lon], {
+    const pin = L.marker([lat, lon], {
       interactive: false,
       icon: L.divIcon({
         className: "",
@@ -199,8 +199,11 @@ export default function MapaTrazo({ ocupado, onUsar }: Props) {
         iconAnchor: [17, 32],
       }),
     }).addTo(map);
-    pin.bindTooltip(res.nombre.split(",").slice(0, 2).join(","), { permanent: true, direction: "top", offset: [0, -30], opacity: 0.95 });
+    pin.bindTooltip(etiqueta, { permanent: true, direction: "top", offset: [0, -30], opacity: 0.95 });
     pinBusqueda.current = pin;
+  };
+  const irAResultado = (res: { nombre: string; lat: number; lon: number }) => {
+    ponerPin(res.lat, res.lon, res.nombre.split(",").slice(0, 2).join(","));
     setResultados([]);
   };
 
@@ -216,7 +219,7 @@ export default function MapaTrazo({ ocupado, onUsar }: Props) {
   const limpiar = () => { puntosRef.current = []; deseleccionar(); setCotaUltimo(null); pinBusqueda.current?.remove(); pinBusqueda.current = null; redibujar(); };
   const irAMiUbicacion = () => {
     navigator.geolocation?.getCurrentPosition(
-      (pos) => mapRef.current?.setView([pos.coords.latitude, pos.coords.longitude], 14),
+      (pos) => ponerPin(pos.coords.latitude, pos.coords.longitude, "Tu ubicación"),
       () => alert("No se pudo obtener tu ubicación — puedes navegar el mapa con el mouse."),
     );
   };
