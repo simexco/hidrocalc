@@ -78,16 +78,25 @@ export default function AsistentePage() {
         ],
         obtienes: "La carga dinámica total (CDT) y la potencia de la bomba (HP): los dos datos con los que le pides cotización al proveedor de bombas.",
       } },
-    { n: 4, title: "Golpe de ariete", desc: "¿La tubería resiste el golpe? Si no, válvula de protección.", href: "/golpe-ariete", done: null, summary: "Protección contra sobrepresión / vacío",
+    { n: 4, title: "Válvulas de aire", desc: "Ubicación de ventosas, seccionamiento y desfogue.", href: "/valvulas-aire", done: valvDone, summary: valvDone ? `${p.valvulas.length} válvulas/accesorios` : "Pendiente",
+      guia: {
+        ten: "Nada nuevo: el perfil del terreno llega solo del paso 2.",
+        haz: [
+          "Revisa que el perfil esté completo (que no falte ningún punto alto o bajo del trazo).",
+          "Ajusta el espaciamiento máximo solo si tu normativa pide otro (típico 500 m).",
+        ],
+        obtienes: "Dónde va cada válvula de aire (en los puntos altos) y dónde conviene un desagüe (puntos bajos). Pasan solas al reporte.",
+      } },
+    { n: 5, title: "Golpe de ariete", desc: "¿La tubería resiste el golpe? Si no, válvula de protección.", href: "/golpe-ariete", done: null, summary: "Protección contra sobrepresión / vacío",
       guia: {
         ten: "El tiempo de cierre de la válvula (Tc, dato del fabricante); si no lo tienes, deja el valor por defecto.",
         haz: [
           "Los datos del proyecto se cargan solos (o pulsa “Traer datos del proyecto”).",
           "Revisa el veredicto: ¿tu clase de tubería resiste la sacudida de presión?",
         ],
-        obtienes: "Si resiste: confirmación con factor de seguridad. Si no: la clase que sí resiste o la protección necesaria.",
+        obtienes: "Si resiste: confirmación con factor de seguridad. Si no: la clase que sí resiste o la protección necesaria. Las ventosas contra vacío que recomiende ya las ubicaste en el paso 4.",
       } },
-    { n: 5, title: "Válvula reductora (VRP)", desc: "Si la presión excede la clase del tubo: reducir presión.", href: "/vrp", done: null, summary: vrpRecomendada ? "Recomendada (presión alta)" : "Revisar si aplica",
+    { n: 6, title: "Válvula reductora (VRP)", desc: "Si la presión excede la clase del tubo: reducir presión.", href: "/vrp", done: null, summary: vrpRecomendada ? "Recomendada (presión alta)" : "Revisar si aplica",
       guia: {
         ten: "Este paso solo aplica si el paso 2 lo marcó “Recomendada” (hay demasiada presión en alguna zona).",
         haz: [
@@ -96,15 +105,6 @@ export default function AsistentePage() {
           "Lee la tabla: la válvula óptima viene marcada.",
         ],
         obtienes: "El tamaño (DN) de la válvula reductora, listo para cotizar.",
-      } },
-    { n: 6, title: "Válvulas de aire", desc: "Ubicación de ventosas, seccionamiento y desfogue.", href: "/valvulas-aire", done: valvDone, summary: valvDone ? `${p.valvulas.length} válvulas/accesorios` : "Pendiente",
-      guia: {
-        ten: "Nada nuevo: el perfil del terreno llega solo del paso 2.",
-        haz: [
-          "Revisa que el perfil esté completo (que no falte ningún punto alto o bajo del trazo).",
-          "Ajusta el espaciamiento máximo solo si tu normativa pide otro (típico 500 m).",
-        ],
-        obtienes: "Dónde va cada válvula de aire (en los puntos altos) y dónde conviene un desagüe (puntos bajos). Pasan solas al reporte.",
       } },
     { n: 7, title: "Generador de cruceros", desc: "Arma los cruceros pieza por pieza; la lista de materiales (despiece) con SKU Sigma Flow se genera sola.", href: "/despiece", done: null, summary: "Arma tus cruceros",
       guia: {
