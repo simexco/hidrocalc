@@ -128,14 +128,6 @@ export function calculateAirValves(input: AirValveInputs): AirValveOutputs | nul
   // Profile points for chart
   const profilePoints = sorted.map((v, i) => ({ dist: v.dist, cota: v.cota, pressure: pressures[i] ?? null }));
 
-  // Step 2: Calculate slopes (%)
-  const slopes: number[] = [];
-  for (let i = 0; i < sorted.length - 1; i++) {
-    const dz = sorted[i + 1].cota - sorted[i].cota;
-    const dx = sorted[i + 1].dist - sorted[i].dist;
-    slopes[i] = dx > 0 ? (dz / dx) * 100 : 0;
-  }
-
   // Extremos SIGNIFICATIVOS del perfil (poda por amplitud): los perfiles satelitales
   // traen 30-40 vertices y cada ondulacion de 1-2 m marcaba punto alto/bajo, inundando
   // de valvulas y desagues. Solo cuentan los que sobresalen >= UMBRAL de su entorno.
@@ -207,19 +199,43 @@ export function calculateAirValves(input: AirValveInputs): AirValveOutputs | nul
     // Punto bajo → desague recomendado, NO valvula de aire (se agrega a los avisos)
     if (isLowPoint) puntosBajos.push(sorted[i].dist);
 
-    // La subida se aplana (sin ser pico): el aire arrastrado se junta ahi → VA-E
-    if (i < slopes.length && slopes[i - 1] > 3 && slopes[i] >= -1 && slopes[i] < slopes[i - 1] - 2 && !isHighPoint) {
-      candidates.push({ dist: sorted[i].dist, cota: sorted[i].cota, pressure: p, type: "VA-E", reason: "Reduccion de pendiente ascendente — acumulacion de aire" });
-    }
+  }
 
-    // Arranca un ascenso fuerte desde plano: el aire migra hacia arriba → VA-E
-    if (i < slopes.length && slopes[i - 1] <= 1 && slopes[i] > 3 && !isHighPoint && !isLowPoint) {
-      candidates.push({ dist: sorted[i].dist, cota: sorted[i].cota, pressure: p, type: "VA-E", reason: "Inicio de ascenso — aire migra hacia arriba" });
+  // Quiebres de pendiente SIGNIFICATIVOS: simplificacion gruesa del perfil (DP con
+  // el mismo umbral de 5 m) y las reglas de cambio de pendiente SOLO aplican en esos
+  // vertices macro, con pendientes NETAS entre ellos. Antes corrian sobre cada par de
+  // vertices satelitales y cada escalon del terreno disparaba una valvula.
+  const dpKeep = new Set<number>([0, last]);
+  (function dp(i0: number, i1: number) {
+    if (i1 - i0 < 2) return;
+    let peor = -1, peorDesv = 0;
+    for (let i = i0 + 1; i < i1; i++) {
+      const f = (sorted[i].dist - sorted[i0].dist) / ((sorted[i1].dist - sorted[i0].dist) || 1);
+      const cotaLinea = sorted[i0].cota + f * (sorted[i1].cota - sorted[i0].cota);
+      const desv = Math.abs(sorted[i].cota - cotaLinea);
+      if (desv > peorDesv) { peorDesv = desv; peor = i; }
     }
-
+    if (peor >= 0 && peorDesv > UMBRAL_EXTREMO_M) { dpKeep.add(peor); dp(i0, peor); dp(peor, i1); }
+  })(0, last);
+  const macro = Array.from(dpKeep).sort((a, b) => a - b);
+  for (let k = 1; k <= macro.length - 2; k++) {
+    const j = macro[k];
+    if (altosSig.has(j) || bajosSig.has(j)) continue; // los extremos ya tienen su propio tratamiento
+    const a = macro[k - 1], b = macro[k + 1];
+    const pendA = ((sorted[j].cota - sorted[a].cota) / ((sorted[j].dist - sorted[a].dist) || 1)) * 100;
+    const pendB = ((sorted[b].cota - sorted[j].cota) / ((sorted[b].dist - sorted[j].dist) || 1)) * 100;
+    const p = pressures[j];
+    // La subida se aplana: el aire arrastrado se junta ahi → VA-E
+    if (pendA > 3 && pendB >= -1 && pendB < pendA - 2) {
+      candidates.push({ dist: sorted[j].dist, cota: sorted[j].cota, pressure: p, type: "VA-E", reason: "Reduccion de pendiente ascendente — acumulacion de aire" });
+    }
+    // Arranca un ascenso fuerte desde plano/descenso suave: el aire migra hacia arriba → VA-E
+    else if (pendA <= 1 && pendB > 3) {
+      candidates.push({ dist: sorted[j].dist, cota: sorted[j].cota, pressure: p, type: "VA-E", reason: "Inicio de ascenso — aire migra hacia arriba" });
+    }
     // La bajada se hace mas pronunciada → VA-A (riesgo de vacio / separacion de columna)
-    if (i < slopes.length && slopes[i - 1] < -1 && slopes[i] < slopes[i - 1] - 3) {
-      candidates.push({ dist: sorted[i].dist, cota: sorted[i].cota, pressure: p, type: "VA-A", reason: "La bajada se hace mas pronunciada — riesgo de vacio" });
+    else if (pendA < -1 && pendB < pendA - 3) {
+      candidates.push({ dist: sorted[j].dist, cota: sorted[j].cota, pressure: p, type: "VA-A", reason: "La bajada se hace mas pronunciada — riesgo de vacio" });
     }
   }
 
