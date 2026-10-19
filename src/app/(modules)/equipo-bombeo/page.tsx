@@ -29,7 +29,9 @@ const TIPOS_EQUIPO = [
 
 interface BombeoState {
   caso: "pozo" | "tanque";
-  cotaPozo: number; nivelDin: number; profBomba: number;
+  // Nivel dinámico y profundidad de bomba NO traen default: cambian en cada pozo
+  // y un valor precargado se confunde con un dato real (se piden en amarillo)
+  cotaPozo: number; nivelDin: number | null; profBomba: number | null;
   cotaTanqueOrigen: number;
   Q: number; D: number; material: string; L: number;
   cotaTanque: number; altTanque: number;
@@ -46,7 +48,7 @@ const CAMPOS_HEREDABLES = ["Q", "D", "material", "L", "cotaPozo", "cotaTanque", 
 
 const DEFAULTS: BombeoState = {
   caso: "pozo",
-  cotaPozo: 1850, nivelDin: 40, profBomba: 55,
+  cotaPozo: 1850, nivelDin: null, profBomba: null,
   cotaTanqueOrigen: 1900,
   Q: 15, D: 150, material: "PVC Inglés", L: 850,
   cotaTanque: 1980, altTanque: 5,
@@ -62,6 +64,9 @@ const selCls = "w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray
 export default function EquipoBombeoPage() {
   const [st, setSt] = useState<BombeoState>(DEFAULTS);
   const [heredado, setHeredado] = useState<{ q: boolean; d: boolean; m: boolean; l: boolean }>({ q: false, d: false, m: false, l: false });
+  // Etiqueta comercial del diámetro heredado: el proyecto manda el Ø interior REAL
+  // (p. ej. 422 mm para 18") y sin esto el usuario ve "422 mm" sin reconocer su tubo
+  const [dnEtiqueta, setDnEtiqueta] = useState<string | null>(null);
   const dirtyRef = useRef(false);
 
   const set = <K extends keyof BombeoState>(key: K, value: BombeoState[K]) => {
@@ -94,7 +99,10 @@ export default function EquipoBombeoPage() {
       const ed = base.edited ?? {};
       const her = { q: false, d: false, m: false, l: false };
       if (!ed.Q && proj.q_ls != null && proj.q_ls > 0) { base.Q = proj.q_ls; her.q = true; }
-      if (!ed.D && proj.diametroInterior != null && proj.diametroInterior > 0) { base.D = proj.diametroInterior; her.d = true; }
+      if (!ed.D && proj.diametroInterior != null && proj.diametroInterior > 0) {
+        base.D = proj.diametroInterior; her.d = true;
+        setDnEtiqueta(proj.dn ? `${proj.dn} — Ø interior real ${proj.diametroInterior} mm` : null);
+      }
       if (!ed.material && proj.material) { base.material = proj.material; her.m = true; }
       if (!ed.L && proj.longitud != null && proj.longitud > 0) { base.L = proj.longitud; her.l = true; }
       // Cotas desde el perfil del terreno: inicio = succión/pozo, fin = entrega/tanque
@@ -124,7 +132,7 @@ export default function EquipoBombeoPage() {
 
     let cotaSucc: number, cotaDesc: number, nOper = 1;
     if (st.caso === "pozo") {
-      cotaSucc = st.cotaPozo - st.nivelDin;      // nivel del agua trabajando (dinámico)
+      cotaSucc = st.cotaPozo - (st.nivelDin ?? 0); // nivel del agua trabajando (dinámico)
       cotaDesc = st.cotaTanque + st.altTanque;   // nivel de entrada al tanque
     } else {
       cotaSucc = st.cotaTanqueOrigen;
@@ -138,7 +146,7 @@ export default function EquipoBombeoPage() {
     // Fricción Hazen-Williams (SI): Q en m³/s, D en m — el caudal TOTAL pasa por la línea.
     // En pozo se suma la COLUMNA (tubería vertical desde la bomba hasta la superficie).
     const Qm = st.Q / 1000, Dm = st.D / 1000;
-    const Lcolumna = st.caso === "pozo" ? Math.max(0, st.profBomba) : 0;
+    const Lcolumna = st.caso === "pozo" ? Math.max(0, st.profBomba ?? 0) : 0;
     const Lfric = st.L + Lcolumna;
     const hf = st.D > 0 ? 10.674 * Math.pow(Qm / C, 1.852) * Lfric / Math.pow(Dm, 4.871) : 0;
     const hl = hf * (st.pctLocal / 100);
@@ -170,7 +178,8 @@ export default function EquipoBombeoPage() {
   useEffect(() => {
     if (!dirtyRef.current) return;
     const t = setTimeout(() => {
-      if (st.Q > 0 && st.D > 0 && st.L > 0 && r.CDT > 0) {
+      const pozoCompleto = st.caso !== "pozo" || (st.nivelDin != null && st.profBomba != null);
+      if (st.Q > 0 && st.D > 0 && st.L > 0 && r.CDT > 0 && pozoCompleto) {
         patchProject({ incluyeBombeo: true, he: Math.round(r.Hest * 10) / 10, eficiencia: st.efic });
       }
     }, 900);
@@ -189,7 +198,9 @@ export default function EquipoBombeoPage() {
   const totParts = partes.reduce((s, p) => s + p.v, 0) || 1;
 
   const advertencias: string[] = [];
-  if (st.caso === "pozo" && st.profBomba <= st.nivelDin) advertencias.push("La bomba debe instalarse por debajo del nivel dinámico (profundidad de instalación > nivel dinámico).");
+  const faltanDatosPozo = st.caso === "pozo" && (st.nivelDin == null || st.profBomba == null);
+  if (faltanDatosPozo) advertencias.push("Faltan datos del pozo (en amarillo): captura el nivel dinámico del agua y la profundidad de instalación de la bomba. El resultado NO es válido hasta capturarlos — cambian en cada pozo.");
+  if (st.caso === "pozo" && st.nivelDin != null && st.profBomba != null && st.profBomba <= st.nivelDin) advertencias.push("La bomba debe instalarse por debajo del nivel dinámico (profundidad de instalación > nivel dinámico).");
   if (r.vel > 2.5) advertencias.push(`Velocidad alta (${r.vel.toFixed(2)} m/s > 2.5 m/s): considerar un diámetro mayor.`);
   if (r.vel > 0 && r.vel < 0.3) advertencias.push(`Velocidad baja (${r.vel.toFixed(2)} m/s < 0.3 m/s): riesgo de sedimentación.`);
   if (r.Hest < 0) advertencias.push("La entrega está por debajo de la succión (carga estática negativa): verificar cotas — podría no requerirse bombeo.");
@@ -237,8 +248,8 @@ export default function EquipoBombeoPage() {
           {st.caso === "pozo" ? (
             <>
               <InputField label="Cota del terreno en el pozo" value={st.cotaPozo} onChange={(v) => set("cotaPozo", num(v))} unit="msnm" tooltip="Elevación del terreno donde está el pozo. Puede tomarse de Google Earth." />
-              <InputField label="Nivel dinámico del agua" value={st.nivelDin} onChange={(v) => set("nivelDin", num(v))} unit="m bajo el terreno" tooltip="Profundidad a la que baja el agua MIENTRAS la bomba trabaja (nivel estático + abatimiento). Desde aquí levanta la bomba — no desde donde está instalada." />
-              <InputField label="Profundidad de instalación de la bomba" value={st.profBomba} onChange={(v) => set("profBomba", num(v))} unit="m" tooltip="Debe quedar por debajo del nivel dinámico para no descebarse." />
+              <InputField label="Nivel dinámico del agua" required value={st.nivelDin} onChange={(v) => set("nivelDin", v === "" ? null : num(v))} unit="m bajo el terreno" tooltip="Profundidad a la que baja el agua MIENTRAS la bomba trabaja (nivel estático + abatimiento). Desde aquí levanta la bomba — no desde donde está instalada. Dato del aforo del pozo: cambia en cada pozo." />
+              <InputField label="Profundidad de instalación de la bomba" required value={st.profBomba} onChange={(v) => set("profBomba", v === "" ? null : num(v))} unit="m" tooltip="Debe quedar por debajo del nivel dinámico para no descebarse. Dato de cada pozo." />
             </>
           ) : (
             <InputField label="Cota de desplante del tanque de origen" value={st.cotaTanqueOrigen} onChange={(v) => set("cotaTanqueOrigen", num(v))} unit="msnm" tooltip="Nivel de succión: la cota donde está desplantado el tanque del que toma la bomba." />
@@ -257,7 +268,7 @@ export default function EquipoBombeoPage() {
             <div className="space-y-1">
               <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Diámetro nominal (DN) {heredado.d && <span className="text-[10px] bg-[#E9EFF5] text-[#1C3D5A] rounded px-1 ml-1">del proyecto</span>}</label>
               <select value={st.D} onChange={(e) => set("D", parseInt(e.target.value))} className={selCls}>
-                {!STANDARD_DNS_LABELED.some((d) => d.dn === st.D) && <option value={st.D}>{st.D} mm</option>}
+                {!STANDARD_DNS_LABELED.some((d) => d.dn === st.D) && <option value={st.D}>{heredado.d && dnEtiqueta ? dnEtiqueta : `${st.D} mm`}</option>}
                 {STANDARD_DNS_LABELED.map((d) => <option key={d.dn} value={d.dn}>{d.label}</option>)}
               </select>
             </div>
@@ -366,15 +377,15 @@ export default function EquipoBombeoPage() {
                   {/* pozo con profundidad */}
                   <rect x="58" y="120" width="30" height="172" fill="url(#pozoSombra)" />
                   <rect x="61" y="120" width="24" height="172" fill="#EDF2F7" />
-                  {(() => { const yAgua = 120 + Math.min(st.nivelDin, 60) * 1.6; return (<g>
+                  {(() => { const yAgua = 120 + Math.min(st.nivelDin ?? 40, 60) * 1.6; return (<g>
                     <rect x="61" y={yAgua} width="24" height={292 - yAgua} fill="url(#aguaTk)" opacity="0.85" />
                     <line x1="55" y1={yAgua} x2="130" y2={yAgua} stroke="#0EA5E9" strokeWidth="1.6" strokeDasharray="5 3" />
-                    <text x="96" y={yAgua - 4} fontSize="10.5" fontWeight="bold" fill="#0369A1">Nivel dinámico −{st.nivelDin} m</text>
+                    <text x="96" y={yAgua - 4} fontSize="10.5" fontWeight="bold" fill="#0369A1">Nivel dinámico {st.nivelDin != null ? `−${st.nivelDin} m` : "— captúralo"}</text>
                   </g>); })()}
                   {/* bomba sumergible */}
                   <rect x="65" y="268" width="16" height="22" rx="3" fill="url(#tubo)" filter="url(#sombra)" />
                   <circle cx="73" cy="274" r="2.4" fill="#7FC4E8" />
-                  <text x="96" y="284" fontSize="10.5" fill="#475569">Bomba a −{st.profBomba} m</text>
+                  <text x="96" y="284" fontSize="10.5" fill="#475569">Bomba a {st.profBomba != null ? `−${st.profBomba} m` : "— captúralo"}</text>
                   {/* tanque cilíndrico */}
                   <g filter="url(#sombra)">
                     <rect x="420" y="72" width="90" height="52" fill="#E9EFF5" stroke="#1C3D5A" strokeWidth="1.6" />
