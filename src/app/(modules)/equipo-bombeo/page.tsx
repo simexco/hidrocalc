@@ -101,7 +101,8 @@ export default function EquipoBombeoPage() {
       if (!ed.Q && proj.q_ls != null && proj.q_ls > 0) { base.Q = proj.q_ls; her.q = true; }
       if (!ed.D && proj.diametroInterior != null && proj.diametroInterior > 0) {
         base.D = proj.diametroInterior; her.d = true;
-        setDnEtiqueta(proj.dn ? `${proj.dn} — Ø interior real ${proj.diametroInterior} mm` : null);
+        setDnEtiqueta(proj.dn || null); // etiqueta comercial (p. ej. 18" (DN 450)); el detalle del interior real va en la notita
+
       }
       if (!ed.material && proj.material) { base.material = proj.material; her.m = true; }
       if (!ed.L && proj.longitud != null && proj.longitud > 0) { base.L = proj.longitud; her.l = true; }
@@ -271,6 +272,9 @@ export default function EquipoBombeoPage() {
                 {!STANDARD_DNS_LABELED.some((d) => d.dn === st.D) && <option value={st.D}>{heredado.d && dnEtiqueta ? dnEtiqueta : `${st.D} mm`}</option>}
                 {STANDARD_DNS_LABELED.map((d) => <option key={d.dn} value={d.dn}>{d.label}</option>)}
               </select>
+              {heredado.d && dnEtiqueta && (
+                <p className="text-[11px] text-gray-400">El cálculo usa el Ø interior real del tubo: {st.D} mm.</p>
+              )}
             </div>
           </div>
           <div className="grid grid-cols-2 gap-3">
