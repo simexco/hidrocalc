@@ -499,7 +499,7 @@ export default function GolpeArietePage() {
                 tooltip="Tiempo en que la válvula pasa de totalmente abierta a cerrada. A mayor tiempo de cierre, menor golpe de ariete"
               />
               <div className="flex items-center gap-1.5">
-                <span className="text-[10px] text-gray-400">Inicia en 0 s (peor caso — así te cubres). Si conoces el cierre real:</span>
+                <span className="text-[10px] text-gray-400">Inicia en 0 s (el peor caso: el resultado queda del lado seguro). Si conoces el cierre real:</span>
                 <button type="button" onClick={() => setInput("Tc", 0)} className="text-[10px] px-2 py-0.5 rounded border border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
                   Instantáneo (0 s)
                 </button>
@@ -586,7 +586,7 @@ export default function GolpeArietePage() {
                     <p className="text-sm font-semibold text-amber-800 dark:text-amber-300">{"⚠"} Velocidad muy alta: {formatNumber(inputs.V0, 2)} m/s</p>
                     <p className="text-xs text-amber-700 dark:text-amber-300 mt-1 leading-relaxed">
                       El diametro es chico para este caudal (lo recomendable es {"≤"} 2 m/s). Esa velocidad alta es lo que dispara el golpe de ariete, y por eso aparecen los errores de abajo.
-                      {dSug != null && <> Para este caudal conviene un diametro interno de al menos <strong>{dSug} mm</strong> {"—"} sube el diametro en &quot;Seleccionar tuberia&quot; y veras como bajan las presiones.</>}
+                      {dSug != null && <> Para este caudal conviene un diámetro interno de al menos <strong>{dSug} mm</strong> {"—"} aumenta el diámetro en &quot;Seleccionar tubería&quot; y las presiones bajarán.</>}
                     </p>
                   </div>
                 );

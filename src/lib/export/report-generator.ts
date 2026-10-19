@@ -689,7 +689,7 @@ export async function generateReportPDF(d: ReportData): Promise<jsPDF> {
 
   y = subhead(doc, "Secuencia de instalacion", 46);
   const pasos = [
-    "1. Excavar la zanja al ancho y profundidad indicados; fondo parejo, sin piedras.",
+    "1. Excavar la zanja al ancho y profundidad indicados; fondo nivelado, sin piedras.",
     "2. Colocar plantilla (cama) de arena de 10 cm y nivelarla.",
     "3. Tender el tubo y ensamblar uniones espiga-campana con lubricante.",
     "4. Acostillar con material fino compactado a mano hasta el lomo del tubo.",
