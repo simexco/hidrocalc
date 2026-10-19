@@ -35,6 +35,10 @@ export default function MapaTrazo({ ocupado, onUsar }: Props) {
   const [busqueda, setBusqueda] = useState("");
   const [buscando, setBuscando] = useState(false);
   const [resultados, setResultados] = useState<{ nombre: string; lat: number; lon: number }[]>([]);
+  // Edición táctil (tablet/celular, también sirve en escritorio): tocar un punto lo
+  // selecciona y aparece el botón Borrar; sin clic derecho necesario
+  const [seleccionado, setSeleccionado] = useState<number | null>(null);
+  const seleccionadoRef = useRef<number | null>(null);
 
   // Cota de un punto, al instante (y queda cacheada para el perfil completo)
   const consultarCota = (lat: number, lon: number) => {
@@ -58,19 +62,28 @@ export default function MapaTrazo({ ocupado, onUsar }: Props) {
       L.polyline(pts.map((p) => [p.lat, p.lon] as [number, number]), { color: "#7FC4E8", weight: 4, opacity: 0.95 }).addTo(capa);
       L.polyline(pts.map((p) => [p.lat, p.lon] as [number, number]), { color: "#1C3D5A", weight: 1.5, opacity: 0.9, dashArray: "6 6" }).addTo(capa);
     }
-    // Cada punto es un marcador EDITABLE: arrastrar lo mueve, clic derecho lo borra
+    // Cada punto es un marcador EDITABLE: arrastrar lo mueve (mouse o dedo),
+    // tocarlo lo selecciona (botón Borrar), y en escritorio clic derecho lo borra directo
     pts.forEach((p, i) => {
+      const sel = seleccionadoRef.current === i;
       const esExtremo = i === 0 || i === pts.length - 1;
-      const tam = esExtremo ? 16 : 12;
+      const tam = sel ? 22 : esExtremo ? 16 : 12;
       const color = i === 0 ? "#22c55e" : i === pts.length - 1 ? "#ef4444" : "#7FC4E8";
+      const borde = sel ? "3px solid #f59e0b" : "2px solid #1C3D5A";
       const icono = L.divIcon({
         className: "",
-        html: `<div style="width:${tam}px;height:${tam}px;border-radius:50%;background:${color};border:2px solid #1C3D5A;box-shadow:0 1px 3px rgba(0,0,0,.45);cursor:grab"></div>`,
+        html: `<div style="width:${tam}px;height:${tam}px;border-radius:50%;background:${color};border:${borde};box-shadow:0 1px 4px rgba(0,0,0,.5);cursor:grab"></div>`,
         iconSize: [tam, tam],
         iconAnchor: [tam / 2, tam / 2],
       });
       const m = L.marker([p.lat, p.lon], { icon: icono, draggable: true });
-      m.bindTooltip(`Punto ${i + 1} · arrástralo para moverlo · clic derecho para borrarlo`, { direction: "top", opacity: 0.9 });
+      m.bindTooltip(`Punto ${i + 1} · arrástralo para moverlo · tócalo para seleccionar/borrar`, { direction: "top", opacity: 0.9 });
+      m.on("click", () => {
+        const nuevo = seleccionadoRef.current === i ? null : i;
+        seleccionadoRef.current = nuevo;
+        setSeleccionado(nuevo);
+        redibujar();
+      });
       m.on("dragend", () => {
         const ll = m.getLatLng();
         puntosRef.current = puntosRef.current.map((q, j) => (j === i ? { lat: ll.lat, lon: ll.lng } : q));
@@ -80,6 +93,8 @@ export default function MapaTrazo({ ocupado, onUsar }: Props) {
       m.on("contextmenu", (ev: LT.LeafletMouseEvent) => {
         ev.originalEvent.preventDefault();
         puntosRef.current = puntosRef.current.filter((_, j) => j !== i);
+        seleccionadoRef.current = null;
+        setSeleccionado(null);
         setCotaUltimo(null);
         redibujar();
       });
@@ -109,7 +124,9 @@ export default function MapaTrazo({ ocupado, onUsar }: Props) {
         const v = JSON.parse(localStorage.getItem(VISTA_KEY) ?? "null") as { lat: number; lon: number; z: number } | null;
         if (v) { centro = [v.lat, v.lon]; zoom = v.z; }
       } catch { /* vista default */ }
-      const map = L.map(divRef.current, { zoomControl: true }).setView(centro, zoom);
+      // Sin zoom por doble clic/tap: en táctil el doble toque metía puntos dobles;
+      // el zoom queda en los botones +/−, la rueda del mouse y el pellizco
+      const map = L.map(divRef.current, { zoomControl: true, doubleClickZoom: false }).setView(centro, zoom);
       mapRef.current = map;
       capaSat.current = L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", {
         maxZoom: 19, attribution: "Imágenes © Esri — Maxar, Earthstar Geographics",
@@ -119,7 +136,17 @@ export default function MapaTrazo({ ocupado, onUsar }: Props) {
       });
       capaSat.current.addTo(map);
       capaTrazo.current = L.layerGroup().addTo(map);
-      map.on("click", (e: LT.LeafletMouseEvent) => agregarPunto(e.latlng.lat, e.latlng.lng));
+      map.on("click", (e: LT.LeafletMouseEvent) => {
+        // Con un punto seleccionado, el toque en el mapa solo deselecciona
+        // (evita agregar puntos sin querer mientras se edita en tablet)
+        if (seleccionadoRef.current != null) {
+          seleccionadoRef.current = null;
+          setSeleccionado(null);
+          redibujar();
+          return;
+        }
+        agregarPunto(e.latlng.lat, e.latlng.lng);
+      });
       map.on("moveend", () => {
         const c = map.getCenter();
         try { localStorage.setItem(VISTA_KEY, JSON.stringify({ lat: c.lat, lon: c.lng, z: map.getZoom() })); } catch { /* sin persistencia */ }
@@ -160,8 +187,16 @@ export default function MapaTrazo({ ocupado, onUsar }: Props) {
     setResultados([]);
   };
 
-  const deshacer = () => { puntosRef.current = puntosRef.current.slice(0, -1); setCotaUltimo(null); redibujar(); };
-  const limpiar = () => { puntosRef.current = []; setCotaUltimo(null); redibujar(); };
+  const deseleccionar = () => { seleccionadoRef.current = null; setSeleccionado(null); };
+  const borrarSeleccionado = () => {
+    if (seleccionadoRef.current == null) return;
+    puntosRef.current = puntosRef.current.filter((_, j) => j !== seleccionadoRef.current);
+    deseleccionar();
+    setCotaUltimo(null);
+    redibujar();
+  };
+  const deshacer = () => { puntosRef.current = puntosRef.current.slice(0, -1); deseleccionar(); setCotaUltimo(null); redibujar(); };
+  const limpiar = () => { puntosRef.current = []; deseleccionar(); setCotaUltimo(null); redibujar(); };
   const irAMiUbicacion = () => {
     navigator.geolocation?.getCurrentPosition(
       (pos) => mapRef.current?.setView([pos.coords.latitude, pos.coords.longitude], 14),
@@ -205,6 +240,20 @@ export default function MapaTrazo({ ocupado, onUsar }: Props) {
 
       <div ref={divRef} className="h-[420px] rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700 relative z-0" />
 
+      {seleccionado != null && (
+        <div className="flex items-center gap-2 flex-wrap bg-amber-50 dark:bg-amber-900/20 border border-amber-300 dark:border-amber-700 rounded-lg px-3 py-2">
+          <span className="text-xs text-amber-800 dark:text-amber-300">
+            <strong>Punto {seleccionado + 1} seleccionado</strong> — arrástralo para moverlo, o:
+          </span>
+          <button type="button" onClick={borrarSeleccionado} className="text-xs font-semibold bg-red-600 text-white px-3 py-1.5 rounded-lg hover:bg-red-700 transition-colors">
+            🗑 Borrar este punto
+          </button>
+          <button type="button" onClick={() => { deseleccionar(); redibujar(); }} className="text-xs text-gray-600 dark:text-gray-300 border border-gray-300 dark:border-gray-600 px-3 py-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+            Cancelar
+          </button>
+        </div>
+      )}
+
       <div className="flex items-center gap-3 flex-wrap">
         <p className="text-xs text-gray-600 dark:text-gray-300">
           {nPuntos === 0
@@ -221,7 +270,7 @@ export default function MapaTrazo({ ocupado, onUsar }: Props) {
           {ocupado ? "Generando perfil…" : "✓ Usar este trazo → generar perfil"}
         </button>
       </div>
-      <p className="text-[10px] text-gray-400">Verde = inicio · rojo = último punto. ¿Te equivocaste? <strong>Arrastra</strong> cualquier punto para moverlo, <strong>clic derecho</strong> sobre un punto para borrarlo, o «Deshacer» quita el último. Las cotas son satelitales (SRTM ~30 m, ±5–10 m): verificar puntos críticos en campo.</p>
+      <p className="text-[10px] text-gray-400">Verde = inicio · rojo = último punto. ¿Te equivocaste? <strong>Arrastra</strong> cualquier punto para moverlo (con el mouse o el dedo), <strong>tócalo</strong> para seleccionarlo y borrarlo con el botón (en escritorio también sirve el clic derecho), o «Deshacer» quita el último. Las cotas son satelitales (SRTM ~30 m, ±5–10 m): verificar puntos críticos en campo.</p>
     </div>
   );
 }
