@@ -32,6 +32,9 @@ export default function MapaTrazo({ ocupado, onUsar }: Props) {
   const [longitud, setLongitud] = useState(0);
   const [cotaUltimo, setCotaUltimo] = useState<number | null>(null);
   const [vista, setVista] = useState<"sat" | "calles">("sat");
+  const [busqueda, setBusqueda] = useState("");
+  const [buscando, setBuscando] = useState(false);
+  const [resultados, setResultados] = useState<{ nombre: string; lat: number; lon: number }[]>([]);
 
   const redibujar = () => {
     const L = LRef.current, capa = capaTrazo.current;
@@ -110,6 +113,30 @@ export default function MapaTrazo({ ocupado, onUsar }: Props) {
     else { map.removeLayer(capaSat.current); capaCalles.current.addTo(map); }
   }, [vista]);
 
+  // Buscar un lugar por nombre/dirección y volar el mapa hacia él
+  const buscarLugar = async () => {
+    const q = busqueda.trim();
+    if (q.length < 2 || buscando) return;
+    setBuscando(true);
+    setResultados([]);
+    try {
+      const r = await fetch(`/api/geocodificar?q=${encodeURIComponent(q)}`);
+      const j = (await r.json()) as { resultados?: { nombre: string; lat: number; lon: number }[]; error?: string };
+      if (!r.ok || !j.resultados) throw new Error(j.error ?? "Sin respuesta");
+      if (j.resultados.length === 0) { alert("No se encontró ese lugar. Prueba con «localidad, estado» (p. ej. Delicias, Chihuahua)."); return; }
+      if (j.resultados.length === 1) irAResultado(j.resultados[0]);
+      else setResultados(j.resultados);
+    } catch {
+      alert("El buscador de lugares no respondió. Intenta de nuevo o navega el mapa con el mouse.");
+    } finally {
+      setBuscando(false);
+    }
+  };
+  const irAResultado = (res: { nombre: string; lat: number; lon: number }) => {
+    mapRef.current?.setView([res.lat, res.lon], 13);
+    setResultados([]);
+  };
+
   const deshacer = () => { puntosRef.current = puntosRef.current.slice(0, -1); setCotaUltimo(null); redibujar(); };
   const limpiar = () => { puntosRef.current = []; setCotaUltimo(null); redibujar(); };
   const irAMiUbicacion = () => {
@@ -121,6 +148,27 @@ export default function MapaTrazo({ ocupado, onUsar }: Props) {
 
   return (
     <div className="space-y-2">
+      <div className="flex items-center gap-2 flex-wrap">
+        <input
+          value={busqueda}
+          onChange={(e) => setBusqueda(e.target.value)}
+          onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); void buscarLugar(); } }}
+          placeholder="Buscar lugar: Delicias, Chihuahua…"
+          className="flex-1 min-w-[180px] px-2.5 py-1.5 text-xs border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 dark:text-white"
+        />
+        <button type="button" onClick={() => void buscarLugar()} disabled={buscando} className="text-[10px] font-semibold bg-[#1C3D5A] text-white px-3 py-1.5 rounded-lg hover:bg-[#0F2438] transition-colors disabled:opacity-50">
+          {buscando ? "Buscando…" : "🔎 Buscar"}
+        </button>
+      </div>
+      {resultados.length > 0 && (
+        <div className="border border-gray-200 dark:border-gray-700 rounded-lg divide-y divide-gray-100 dark:divide-gray-700 overflow-hidden">
+          {resultados.map((r, i) => (
+            <button key={i} type="button" onClick={() => irAResultado(r)} className="w-full text-left text-[11px] px-3 py-2 text-gray-700 dark:text-gray-300 hover:bg-[#E9EFF5] dark:hover:bg-gray-700 transition-colors">
+              📍 {r.nombre}
+            </button>
+          ))}
+        </div>
+      )}
       <div className="flex items-center gap-2 flex-wrap">
         <div className="flex rounded-lg border border-gray-300 dark:border-gray-600 overflow-hidden">
           <button type="button" onClick={() => setVista("sat")} className={`text-[10px] px-2.5 py-1 ${vista === "sat" ? "bg-[#1C3D5A] text-white font-semibold" : "bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300"}`}>Satélite</button>
