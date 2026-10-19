@@ -36,6 +36,19 @@ export default function MapaTrazo({ ocupado, onUsar }: Props) {
   const [buscando, setBuscando] = useState(false);
   const [resultados, setResultados] = useState<{ nombre: string; lat: number; lon: number }[]>([]);
 
+  // Cota de un punto, al instante (y queda cacheada para el perfil completo)
+  const consultarCota = (lat: number, lon: number) => {
+    setCotaUltimo(null);
+    fetch("/api/elevacion", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ puntos: [{ lat, lon }] }),
+    })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((j: { cotas?: (number | null)[] } | null) => { if (j?.cotas?.[0] != null) setCotaUltimo(j.cotas[0]); })
+      .catch(() => { /* la cota en vivo es cortesía; el perfil completo se consulta al confirmar */ });
+  };
+
   const redibujar = () => {
     const L = LRef.current, capa = capaTrazo.current;
     if (!L || !capa) return;
@@ -45,13 +58,32 @@ export default function MapaTrazo({ ocupado, onUsar }: Props) {
       L.polyline(pts.map((p) => [p.lat, p.lon] as [number, number]), { color: "#7FC4E8", weight: 4, opacity: 0.95 }).addTo(capa);
       L.polyline(pts.map((p) => [p.lat, p.lon] as [number, number]), { color: "#1C3D5A", weight: 1.5, opacity: 0.9, dashArray: "6 6" }).addTo(capa);
     }
+    // Cada punto es un marcador EDITABLE: arrastrar lo mueve, clic derecho lo borra
     pts.forEach((p, i) => {
-      L.circleMarker([p.lat, p.lon], {
-        radius: i === 0 || i === pts.length - 1 ? 7 : 5,
-        color: "#1C3D5A", weight: 2,
-        fillColor: i === 0 ? "#22c55e" : i === pts.length - 1 ? "#ef4444" : "#7FC4E8",
-        fillOpacity: 1,
-      }).addTo(capa);
+      const esExtremo = i === 0 || i === pts.length - 1;
+      const tam = esExtremo ? 16 : 12;
+      const color = i === 0 ? "#22c55e" : i === pts.length - 1 ? "#ef4444" : "#7FC4E8";
+      const icono = L.divIcon({
+        className: "",
+        html: `<div style="width:${tam}px;height:${tam}px;border-radius:50%;background:${color};border:2px solid #1C3D5A;box-shadow:0 1px 3px rgba(0,0,0,.45);cursor:grab"></div>`,
+        iconSize: [tam, tam],
+        iconAnchor: [tam / 2, tam / 2],
+      });
+      const m = L.marker([p.lat, p.lon], { icon: icono, draggable: true });
+      m.bindTooltip(`Punto ${i + 1} · arrástralo para moverlo · clic derecho para borrarlo`, { direction: "top", opacity: 0.9 });
+      m.on("dragend", () => {
+        const ll = m.getLatLng();
+        puntosRef.current = puntosRef.current.map((q, j) => (j === i ? { lat: ll.lat, lon: ll.lng } : q));
+        redibujar();
+        consultarCota(ll.lat, ll.lng);
+      });
+      m.on("contextmenu", (ev: LT.LeafletMouseEvent) => {
+        ev.originalEvent.preventDefault();
+        puntosRef.current = puntosRef.current.filter((_, j) => j !== i);
+        setCotaUltimo(null);
+        redibujar();
+      });
+      m.addTo(capa);
     });
     let acum = 0;
     for (let i = 1; i < pts.length; i++) acum += haversine(pts[i - 1], pts[i]);
@@ -62,16 +94,7 @@ export default function MapaTrazo({ ocupado, onUsar }: Props) {
   const agregarPunto = (lat: number, lon: number) => {
     puntosRef.current = [...puntosRef.current, { lat, lon }];
     redibujar();
-    // Cota del punto recién puesto, al instante (y queda cacheada para el perfil completo)
-    setCotaUltimo(null);
-    fetch("/api/elevacion", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ puntos: [{ lat, lon }] }),
-    })
-      .then((r) => (r.ok ? r.json() : null))
-      .then((j: { cotas?: (number | null)[] } | null) => { if (j?.cotas?.[0] != null) setCotaUltimo(j.cotas[0]); })
-      .catch(() => { /* la cota en vivo es cortesía; el perfil completo se consulta al confirmar */ });
+    consultarCota(lat, lon);
   };
 
   useEffect(() => {
@@ -198,7 +221,7 @@ export default function MapaTrazo({ ocupado, onUsar }: Props) {
           {ocupado ? "Generando perfil…" : "✓ Usar este trazo → generar perfil"}
         </button>
       </div>
-      <p className="text-[10px] text-gray-400">Verde = inicio · rojo = último punto. Las cotas son satelitales (SRTM ~30 m, ±5–10 m): verificar puntos críticos en campo.</p>
+      <p className="text-[10px] text-gray-400">Verde = inicio · rojo = último punto. ¿Te equivocaste? <strong>Arrastra</strong> cualquier punto para moverlo, <strong>clic derecho</strong> sobre un punto para borrarlo, o «Deshacer» quita el último. Las cotas son satelitales (SRTM ~30 m, ±5–10 m): verificar puntos críticos en campo.</p>
     </div>
   );
 }
