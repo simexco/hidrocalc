@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useCallback, useRef, useState } from "react";
+import { useEffect, useCallback, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useWaterHammerStore, useSinglePipeStore } from "@/store/calculationStore";
 import { InputField } from "@/components/ui/InputField";
@@ -213,6 +213,43 @@ export default function GolpeArietePage() {
     setInput("materialName", name);
     if (mat && name !== "Personalizado") setInput("E", mat.E);
   };
+
+  // Recomendacion de clase AUTO-CONSISTENTE: la pared mas gruesa hace el tubo mas
+  // rigido → la onda viaja mas rapido → el golpe CRECE. Cada clase candidata se
+  // evalua contra el golpe que ELLA MISMA genera (recalculando celeridad, diametro
+  // interior y velocidad con su pared). Antes se evaluaba contra el golpe del tubo
+  // actual y la recomendacion se movia al acatarla (RD 32.5 → luego pedia RD 26).
+  // Solo aplica a clases RD/SDR/DR (OD constante, pared derivable del nombre);
+  // para metrico/HD/acero se usa el golpe del tubo actual como hasta ahora.
+  const recomendacion = useMemo(() => {
+    if (!results || results.Pmax_bar == null) return null;
+    const matClasses = inputs.materialName === "PVC"
+      ? getPVCClasses(pvcSystem, pvcSystem === "c905")
+      : PIPE_CLASSES_BY_MATERIAL[inputs.materialName];
+    if (!matClasses) return null;
+    const porClase: Record<string, number | null> = {};
+    for (const row of matClasses.classes) {
+      const esRD = /^(RD|SDR|DR)\s/.test(row.clase) && computedOD != null;
+      if (!esRD) { porClase[row.clase] = results.Pmax_bar; continue; }
+      const rd = parseFloat(row.clase.replace(/^(RD|SDR|DR)\s/, ""));
+      if (isNaN(rd) || rd <= 2) { porClase[row.clase] = results.Pmax_bar; continue; }
+      const eC = computedOD / rd;
+      const dC = computedOD - 2 * eC;
+      if (dC <= 0) { porClase[row.clase] = null; continue; }
+      let v = inputs.V0;
+      if (velMode === "caudal" && caudalQ != null) {
+        const area = Math.PI * (dC / 1000) ** 2 / 4;
+        v = area > 0 ? caudalQ / 1000 / area : null;
+      }
+      const r = calculateWaterHammer(
+        { ...inputs, D: dC, e: eC, V0: v, P0: inputs.P0 != null ? inputs.P0 * 10 : null },
+        inputs.materialName === "PVC" ? pvcSystem : undefined,
+      );
+      porClase[row.clase] = r?.Pmax_bar ?? null;
+    }
+    const rec = matClasses.classes.find((row) => porClase[row.clase] != null && porClase[row.clase]! <= row.pn) ?? null;
+    return { porClase, clase: rec?.clase ?? null };
+  }, [results, inputs, pvcSystem, computedOD, velMode, caudalQ]);
 
   const handleImportFromMod1 = () => {
     // Velocidad
@@ -580,9 +617,11 @@ export default function GolpeArietePage() {
                     { label: "Presión máxima (Pmax)", value: formatNumber(mcaToKgcm2(results.Pmax ?? 0), 3), unit: "kg/cm²" },
                     { label: "Presión mínima (Pmin)", value: formatNumber(mcaToKgcm2(Math.max(results.Pmin ?? 0, -10.33)), 3), unit: `kg/cm²${results.Pmin != null && results.Pmin < -10.33 ? " (limite de vacio)" : ""}` },
                     { label: "Presión máxima en bar (Pmax)", value: formatNumber(results.Pmax_bar, 1), unit: "bar" },
-                    { label: "Clase recomendada", value: results.pipeClass ?? "—", unit: "" },
+                    { label: "Clase recomendada", value: recomendacion ? (recomendacion.clase ?? "Sin clase suficiente") : (results.pipeClass ?? "—"), unit: "" },
                   ],
-                  alerts: results.alerts.map((a) => ({ level: a.level, message: a.message })),
+                  // La recomendacion del motor se evalua con el tubo actual; se omite del PDF
+                  // para no contradecir la clase auto-consistente de arriba
+                  alerts: results.alerts.filter((a) => !(a.field === "pipeClass" && recomendacion)).map((a) => ({ level: a.level, message: a.message })),
                 };
               }}
             />
@@ -612,7 +651,7 @@ export default function GolpeArietePage() {
                 const pmaxBar = results.Pmax_bar;
                 const pnK = userPN != null ? userPN / 0.9807 : null;
                 const fs = (userPN != null && pmaxBar != null && pmaxBar > 0) ? userPN / pmaxBar : null;
-                const claseExiste = results.pipeClass != null && !results.pipeClass.startsWith("Excede");
+                const claseExiste = recomendacion?.clase != null;
                 // Semáforo: verde = la tubería lo absorbe; amarillo = precaución (cerca del límite); rojo = requiere protección
                 let semaforo: "verde" | "amarillo" | "rojo" | null = null;
                 if (userPN != null && pmaxBar != null) {
@@ -642,7 +681,7 @@ export default function GolpeArietePage() {
                       {pmaxK != null && (
                         <p className="text-xs text-gray-500 mt-2">
                           Con lo capturado, el cierre eleva la presión a <strong>{formatNumber(pmaxK, 1)} kg/cm²</strong>
-                          {results.pipeClass != null && !results.pipeClass.startsWith("Excede") && <> — clase mínima que lo resiste: <strong>{results.pipeClass}</strong> (ver tabla)</>}.
+                          {recomendacion?.clase != null && <> — clase mínima que lo resiste: <strong>{recomendacion.clase}</strong> (ver tabla)</>}.
                         </p>
                       )}
                     </div>
@@ -682,8 +721,8 @@ export default function GolpeArietePage() {
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3">
                         <div className="bg-white/70 dark:bg-gray-800/50 rounded-lg p-3 border border-red-200 dark:border-red-800">
                           <p className="text-[10px] uppercase tracking-wide text-gray-500">Opción A — subir la tubería</p>
-                          <p className="text-base font-bold text-[#1C3D5A] dark:text-blue-200">{claseExiste ? `Clase ${results.pipeClass}` : "Sin clase suficiente"}</p>
-                          <p className="text-[10px] text-gray-500">{claseExiste ? "Clase mínima que resiste el golpe (ver tabla)." : "Considerar hierro dúctil o acero."}</p>
+                          <p className="text-base font-bold text-[#1C3D5A] dark:text-blue-200">{claseExiste ? `Clase ${recomendacion!.clase}` : "Sin clase suficiente"}</p>
+                          <p className="text-[10px] text-gray-500">{claseExiste ? "Clase mínima que resiste su propio golpe — ya considera que la pared más gruesa aumenta el golpe (ver tabla)." : "Considerar hierro dúctil o acero."}</p>
                         </div>
                         <div className="bg-white/70 dark:bg-gray-800/50 rounded-lg p-3 border border-amber-200 dark:border-amber-800">
                           <p className="text-[10px] uppercase tracking-wide text-gray-500">Opción B — válvula de protección</p>
@@ -802,8 +841,8 @@ export default function GolpeArietePage() {
                 <MetricCard label="Presión máxima en bar (Pmax)" value={formatNumber(results.Pmax_bar, 1)} unit="bar" dataStatus={results.dataStatus} />
                 <MetricCard
                   label="Clase recomendada"
-                  value={results.pipeClass ?? "—"}
-                  alertLevel={results.pipeClass?.startsWith("Excede") ? "ERROR" : results.pipeClass == null ? "WARN" : "OK"}
+                  value={recomendacion ? (recomendacion.clase ?? "Sin clase suficiente") : (results.pipeClass ?? "—")}
+                  alertLevel={recomendacion ? (recomendacion.clase == null ? "ERROR" : "OK") : "WARN"}
                   dataStatus={results.dataStatus}
                 />
               </div>
@@ -818,7 +857,7 @@ export default function GolpeArietePage() {
                 <p><strong>Sobrepresión (ΔP):</strong> la misma sobrepresión, expresada en kPa o bar (solo cambia la unidad).</p>
                 <p><strong>Presión máxima (Pmax):</strong> presión de operación + sobrepresión. Es la que tu tubería debe aguantar (se compara con la clase del tubo).</p>
                 <p><strong>Presión mínima (Pmin):</strong> presión de operación − sobrepresión. Si sale negativa, hay riesgo de vacío (cavitación / colapso del tubo).</p>
-                <p><strong>Clase recomendada:</strong> la clase de tubería más económica cuyo PN (presión que resiste) es mayor o igual a la P máxima.</p>
+                <p><strong>Clase recomendada:</strong> la clase más económica que resiste su PROPIO golpe. El golpe se recalcula para cada clase, porque la pared más gruesa hace el tubo más rígido y el golpe crece.</p>
               </div>
 
               {/* Recomendacion de tiempo de cierre — en Tc = 2L/a el golpe sigue completo */}
@@ -855,8 +894,8 @@ export default function GolpeArietePage() {
                     </div>
                     {/* Explanation of the table */}
                     <div className="px-4 py-2 text-[10px] text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700">
-                      <strong>Cumple:</strong> La clase resiste la presión maxima del golpe de ariete.
-                      <strong className="ml-2">REC:</strong> Clase minima suficiente (mas economica).
+                      <strong>Golpe con esa clase:</strong> el golpe se recalcula para cada clase — la pared más gruesa hace el tubo más rígido y el golpe CRECE.
+                      <strong className="ml-2">REC:</strong> clase mínima que resiste su propio golpe (más económica).
                       {computedDR != null && <><br /><strong>Tu seleccion:</strong> DR {computedDR.toFixed(1)} (e={inputs.e} mm). Las clases con pared igual o mas delgada que tu tubo estan marcadas.</>}
                     </div>
                     <table className="w-full text-xs">
@@ -864,15 +903,17 @@ export default function GolpeArietePage() {
                         <tr className="bg-gray-50 dark:bg-gray-700 text-gray-500 dark:text-gray-400">
                           <th className="px-3 py-2 text-left">Clase</th>
                           <th className="px-3 py-2 text-right">Presión que resiste (PN, bar)</th>
+                          <th className="px-3 py-2 text-right">Golpe con esa clase (bar)</th>
                           <th className="px-3 py-2 text-center">Aguanta golpe</th>
                           <th className="px-3 py-2 text-right">Factor de seguridad</th>
                         </tr>
                       </thead>
                       <tbody>
                         {matClasses.classes.map((row) => {
-                          const cumple = results.Pmax_bar != null && results.Pmax_bar <= row.pn;
-                          const fs = results.Pmax_bar != null && results.Pmax_bar > 0 ? row.pn / results.Pmax_bar : 0;
-                          const isRec = row.clase === results.pipeClass;
+                          const pmaxClase = recomendacion?.porClase[row.clase] ?? results.Pmax_bar;
+                          const cumple = pmaxClase != null && pmaxClase <= row.pn;
+                          const fs = pmaxClase != null && pmaxClase > 0 ? row.pn / pmaxClase : 0;
+                          const isRec = recomendacion ? row.clase === recomendacion.clase : row.clase === results.pipeClass;
 
                           // Highlight the class that matches user's selection
                           let isUserClass = false;
@@ -889,6 +930,7 @@ export default function GolpeArietePage() {
                                 {isUserClass && <span className="ml-1 text-[10px] bg-blue-100 text-blue-700 px-1 py-0.5 rounded">TU TUBO</span>}
                               </td>
                               <td className="px-3 py-2 text-right font-mono">{row.pn}</td>
+                              <td className="px-3 py-2 text-right font-mono">{pmaxClase != null ? pmaxClase.toFixed(1) : "—"}</td>
                               <td className="px-3 py-2 text-center">
                                 {cumple ? <span className="text-green-600">{"✓"}</span> : <span className="text-red-500">{"✗"}</span>}
                               </td>
@@ -900,7 +942,7 @@ export default function GolpeArietePage() {
                     </table>
                     {matClasses.note && (
                       <div className="px-3 py-2 text-[10px] text-gray-400 border-t border-gray-100 dark:border-gray-700">
-                        {matClasses.note}. Factor de seguridad = presión que resiste (PN) / presión máxima (Pmax).
+                        {matClasses.note}. Factor de seguridad = presión que resiste (PN) / golpe recalculado con esa clase.
                       </div>
                     )}
                   </div>
