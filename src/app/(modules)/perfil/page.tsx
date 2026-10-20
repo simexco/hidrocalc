@@ -88,6 +88,7 @@ export default function PerfilPage() {
   const kmlRef = useRef<HTMLInputElement>(null);
   const [importandoKML, setImportandoKML] = useState(false);
   const [kmlInfo, setKmlInfo] = useState<string | null>(null);
+  const [kmlAviso, setKmlAviso] = useState<string | null>(null); // mezcla de fuentes de elevación
   const [mostrarMapa, setMostrarMapa] = useState(false);
 
   // Persist
@@ -392,6 +393,7 @@ export default function PerfilPage() {
   const procesarRuta = async (coords: { lat: number; lon: number }[], origen: string) => {
     setImportandoKML(true);
     setKmlInfo(null);
+    setKmlAviso(null);
     try {
       const { muestrearRuta, reducirPerfil } = await import("@/lib/geo/ruta-kml");
       const muestras = muestrearRuta(coords, 30, 400);
@@ -404,7 +406,8 @@ export default function PerfilPage() {
         const err = (await res.json().catch(() => null)) as { error?: string } | null;
         throw new Error(err?.error ?? "No se pudieron consultar las cotas. Intenta de nuevo en un minuto.");
       }
-      const { cotas } = (await res.json()) as { cotas: (number | null)[] };
+      const { cotas, advertencia } = (await res.json()) as { cotas: (number | null)[]; advertencia?: string };
+      if (advertencia) setKmlAviso(advertencia);
       const perfilPts = muestras
         .map((m, i) => ({ dist: m.dist, cota: cotas[i] }))
         .filter((p): p is { dist: number; cota: number } => p.cota != null);
@@ -573,6 +576,11 @@ export default function PerfilPage() {
             {kmlInfo && (
               <div className="bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-300 dark:border-emerald-700 rounded-lg px-3 py-2 text-[11px] text-emerald-800 dark:text-emerald-300">
                 {"🌍"} {kmlInfo}
+              </div>
+            )}
+            {kmlAviso && (
+              <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-300 dark:border-amber-700 rounded-lg px-3 py-2 text-[11px] text-amber-700 dark:text-amber-300">
+                {"⚠"} {kmlAviso}
               </div>
             )}
             {mostrarMapa && (
