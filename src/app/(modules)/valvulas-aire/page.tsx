@@ -75,6 +75,10 @@ export default function ValvulasAirePage() {
       if (proj.dnNominal_mm != null) setDN(proj.dnNominal_mm);
       if (proj.material) setMaterialName(proj.material);
       if (proj.c != null) setC(proj.c);
+      // La presion de entrada tambien viene del proyecto: la P1 calculada en "Linea de
+      // conduccion" (antes se quedaba el default de 3 kg/cm2 y la linea de presion del
+      // modulo contradecia a la del perfil, marcando presion negativa falsa)
+      if (proj.p1 != null && proj.p1 > 0) setP0(Math.round(proj.p1 * 10) / 10);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
