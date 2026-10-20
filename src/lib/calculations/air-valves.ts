@@ -31,6 +31,9 @@ export interface AirValveInputs {
   projectName: string;
   Q: number | null;       // m3/s
   DN_mm: number;
+  // Interior REAL del tubo (material+DN+clase): la hidraulica usa este; el DN nominal
+  // solo dimensiona las valvulas. Sin el, la friccion con el nominal sale ~10% alta.
+  diametroInterior_mm?: number | null;
   C: number;
   P0_kgcm2: number | null;
   pressureMin: number;    // m.c.a.
@@ -109,7 +112,7 @@ export function calculateAirValves(input: AirValveInputs): AirValveOutputs | nul
   if (vertices.length < 2) return null;
 
   const sorted = [...vertices].sort((a, b) => a.dist - b.dist);
-  const D_m = DN_mm / 1000;
+  const D_m = (input.diametroInterior_mm ?? DN_mm) / 1000;
   const pn = getPN(P0_kgcm2);
   const hasHydraulics = Q != null && Q > 0 && P0_kgcm2 != null;
   const alerts: string[] = [];

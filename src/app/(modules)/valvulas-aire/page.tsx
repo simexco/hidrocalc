@@ -9,7 +9,7 @@ import { ExportPDFButton } from "@/components/ui/ExportPDFButton";
 import { validateHydraulicInputs, InputWarnings } from "@/components/ui/InputWarning";
 import { calculateAirValves, type AirValveVertex, type AirValveInputs, type AirValveOutputs } from "@/lib/calculations/air-valves";
 import { flowToM3s, formatNumber } from "@/lib/calculations/conversions";
-import { STANDARD_DNS_LABELED, MATERIALS, getPipeClassesForMaterial, CLASE_RD_HELP } from "@/lib/constants";
+import { STANDARD_DNS_LABELED, MATERIALS, getPipeClassesForMaterial, getRealInternalDiameter, CLASE_RD_HELP } from "@/lib/constants";
 import { saveFormState, loadFormState } from "@/lib/storage/form-persistence";
 import { useProjectStore } from "@/store/projectStore";
 import { ResetButton } from "@/components/ui/ResetButton";
@@ -79,6 +79,12 @@ export default function ValvulasAirePage() {
       // conduccion" (antes se quedaba el default de 3 kg/cm2 y la linea de presion del
       // modulo contradecia a la del perfil, marcando presion negativa falsa)
       if (proj.p1 != null && proj.p1 > 0) setP0(Math.round(proj.p1 * 10) / 10);
+      // La clase tambien se hereda: habilita el chequeo de PN y el Ø interior real
+      if (proj.clase) {
+        setPipeClass(proj.clase);
+        const pn = getPipeClassesForMaterial(proj.material || "PVC Inglés")?.classes.find((c) => c.clase === proj.clase)?.pn;
+        setPNBar(pn ?? null);
+      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -102,10 +108,13 @@ export default function ValvulasAirePage() {
   // Calculate
   const runCalc = useCallback(() => {
     const Q = rawQ != null ? flowToM3s(rawQ, flowUnit) : null;
-    const input: AirValveInputs = { projectName, Q, DN_mm: DN, C, P0_kgcm2: P0, pressureMin, maxSpacing, vertices };
+    // Hidraulica con el Ø interior REAL del tubo (material+DN+clase); el nominal solo
+    // dimensiona las valvulas. Sin clase elegida cae al nominal (comportamiento previo).
+    const diReal = getRealInternalDiameter(materialName, DN, pipeClass);
+    const input: AirValveInputs = { projectName, Q, DN_mm: DN, diametroInterior_mm: diReal, C, P0_kgcm2: P0, pressureMin, maxSpacing, vertices };
     const res = calculateAirValves(input);
     setResults(res);
-  }, [projectName, rawQ, flowUnit, DN, C, P0, pressureMin, maxSpacing, vertices]);
+  }, [projectName, rawQ, flowUnit, DN, materialName, pipeClass, C, P0, pressureMin, maxSpacing, vertices]);
 
   useEffect(() => {
     clearTimeout(debounceRef.current);
@@ -239,6 +248,9 @@ export default function ValvulasAirePage() {
               <select value={DN} onChange={(e) => setDN(parseInt(e.target.value))} className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 dark:text-white">
                 {DN_LIST.map((d) => <option key={d.dn} value={d.dn}>{d.label}</option>)}
               </select>
+              {(() => { const di = getRealInternalDiameter(materialName, DN, pipeClass); return di != null ? (
+                <p className="text-[10px] text-gray-400">El cálculo de presiones usa el Ø interior real del tubo: {di} mm.</p>
+              ) : null; })()}
             </div>
             <div className="space-y-1">
               <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Material y coeficiente de fricción (C)</label>
