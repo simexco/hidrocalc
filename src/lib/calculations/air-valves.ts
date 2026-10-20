@@ -153,15 +153,24 @@ export function calculateAirValves(input: AirValveInputs): AirValveOutputs | nul
     if (peor < 0 || peorAmp >= UMBRAL_EXTREMO_M) break;
     exts.splice(peor, 2);
   }
-  // Verificacion final contra los vecinos conservados (y los bordes de la serie)
+  // Verificacion final contra los vecinos conservados (y los bordes de la serie).
+  // Significativo = sobresale >= UMBRAL completo hacia AL MENOS un lado y >= 1 m
+  // hacia el otro. Asi: (a) una cresta con caida fuerte adelante NO se descarta por
+  // subir poco desde atras (auditoria: pico +2 m atras / -5.7 m adelante quedaba sin
+  // VA-C); (b) lomas/valles de 2.5-4.9 m se tratan como ruido de forma uniforme,
+  // vengan solos, en par o en tren impar (antes el umbral efectivo era 2.5 m solo
+  // para extremos aislados).
   const refs = [0, ...exts.map((e) => e.i), cotas.length - 1];
   const altosSig = new Set<number>();
   const bajosSig = new Set<number>();
   exts.forEach((e) => {
     const pos = refs.indexOf(e.i);
     const izq = cotas[refs[pos - 1]], der = cotas[refs[pos + 1]];
-    if (e.tipo === "alto" && cotas[e.i] - Math.max(izq, der) >= UMBRAL_EXTREMO_M * 0.5) altosSig.add(e.i);
-    if (e.tipo === "bajo" && Math.min(izq, der) - cotas[e.i] >= UMBRAL_EXTREMO_M * 0.5) bajosSig.add(e.i);
+    const d1 = e.tipo === "alto" ? cotas[e.i] - izq : izq - cotas[e.i];
+    const d2 = e.tipo === "alto" ? cotas[e.i] - der : der - cotas[e.i];
+    if (Math.max(d1, d2) >= UMBRAL_EXTREMO_M && Math.min(d1, d2) >= 1) {
+      (e.tipo === "alto" ? altosSig : bajosSig).add(e.i);
+    }
   });
 
   // Step 3: Apply rules — collect candidate valves
@@ -254,23 +263,29 @@ export function calculateAirValves(input: AirValveInputs): AirValveOutputs | nul
     const pr = pressures[k] != null && pressures[k + 1] != null ? pressures[k]! + frac * (pressures[k + 1]! - pressures[k]!) : null;
     return { cota, pr };
   };
-  // Las corridas se miden entre los extremos del ESQUELETO significativo (post-poda):
-  // asi el rizado satelital de 1-3 m no fragmenta una bajada o subida larga en
-  // pedacitos que nunca alcanzan el espaciamiento. El caracter de cada corrida es
-  // su pendiente NETA (cota final - inicial sobre su longitud).
-  const nodos = Array.from(new Set([0, ...exts.map((e) => e.i), last])).sort((a, b) => a - b);
+  // Las corridas se miden SOLO entre extremos SIGNIFICATIVOS (auditoria: un extremo
+  // podable que sobrevive la poda pero no es significativo no genera valvula ni
+  // desague, y aun asi partia la corrida y reiniciaba el conteo — una bajada de 3 km
+  // con terracitas planas quedaba con CERO VA-A). Cada valvula periodica se clasifica
+  // por la pendiente LOCAL del tramo macro (DP) donde cae: una meseta dentro de una
+  // corrida descendente recibe purga (VA-E), no proteccion de vacio (auditoria:
+  // meseta de cumbre recibia VA-A con razon "tramo descendente" sobre pendiente 0%).
+  const nodos = Array.from(new Set([0, ...altosSig, ...bajosSig, last])).sort((a, b) => a - b);
+  const pendienteLocal = (d: number) => {
+    let k = 0;
+    while (k < macro.length - 2 && sorted[macro[k + 1]].dist <= d) k++;
+    const L = sorted[macro[k + 1]].dist - sorted[macro[k]].dist;
+    return L > 0 ? ((sorted[macro[k + 1]].cota - sorted[macro[k]].cota) / L) * 100 : 0;
+  };
   for (let k = 0; k + 1 < nodos.length; k++) {
-    const a = nodos[k], b = nodos[k + 1];
-    const runStart = sorted[a].dist;
-    const runEnd = sorted[b].dist;
-    const Lrun = runEnd - runStart;
-    if (Lrun <= maxSpacing) continue;
-    const pendNeta = ((sorted[b].cota - sorted[a].cota) / Lrun) * 100;
-    const cl: "up" | "down" | "flat" = pendNeta > 1 ? "up" : pendNeta < -1 ? "down" : "flat";
-    const tipo: "VA-A" | "VA-E" = cl === "down" ? "VA-A" : "VA-E";
-    const reason = cl === "up" ? "Tramo ascendente largo — purga de aire" : cl === "flat" ? "Tramo plano largo — purga de aire" : "Tramo descendente largo — proteccion contra vacio";
+    const runStart = sorted[nodos[k]].dist;
+    const runEnd = sorted[nodos[k + 1]].dist;
+    if (runEnd - runStart <= maxSpacing) continue;
     for (let d = runStart + maxSpacing; d < runEnd - 1; d += maxSpacing) {
       const { cota, pr } = interpola(d);
+      const pend = pendienteLocal(d);
+      const tipo: "VA-A" | "VA-E" = pend < -1 ? "VA-A" : "VA-E";
+      const reason = pend > 1 ? "Tramo ascendente largo — purga de aire" : pend < -1 ? "Tramo descendente largo — proteccion contra vacio" : "Tramo plano largo — purga de aire";
       candidates.push({ dist: d, cota, pressure: pr, type: tipo, reason });
     }
   }
@@ -282,6 +297,15 @@ export function calculateAirValves(input: AirValveInputs): AirValveOutputs | nul
   if (iMin > 0 && iMin < last && Math.max(...cotas) - cotas[iMin] >= UMBRAL_EXTREMO_M && !puntosBajos.some((p) => p.dist === sorted[iMin].dist)) {
     puntosBajos.push({ dist: sorted[iMin].dist, cota: sorted[iMin].cota });
     puntosBajos.sort((x, y) => x.dist - y.dist);
+  }
+
+  // El punto MAS ALTO real del perfil siempre merece valvula combinada (espejo del
+  // minimo global; auditoria): una cresta justo antes de la entrega puede caer <1 m
+  // hacia el tanque y perder a la vez la prominencia local y el VA-C de fin de linea,
+  // dejando sin valvula el punto donde mas aire se acumula
+  const iMax = cotas.indexOf(Math.max(...cotas));
+  if (iMax > 0 && iMax < last && cotas[iMax] - Math.min(...cotas) >= UMBRAL_EXTREMO_M && !altosSig.has(iMax)) {
+    candidates.push({ dist: sorted[iMax].dist, cota: sorted[iMax].cota, pressure: pressures[iMax], type: "VA-C", reason: "Punto alto — maximo del perfil" });
   }
 
   // Avisos de diseno (no son valvulas)
