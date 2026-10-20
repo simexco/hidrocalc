@@ -419,7 +419,7 @@ export default function PerfilPage() {
       setVertices(newVerts);
       const maxDist = Math.max(...newVerts.map((v) => v.dist));
       if (tramos.length === 1) setTramos([{ ...tramos[0], distFrom: newVerts[0].dist, distTo: maxDist }]);
-      setKmlInfo(`Ruta de ${origen}: ${(maxDist / 1000).toFixed(2)} km · ${perfilPts.length} puntos muestreados → ${newVerts.length} vértices. Cotas satelitales SRTM ~30 m (precisión típica ±5-10 m): verificar los puntos críticos en campo antes del proyecto ejecutivo.`);
+      setKmlInfo(`Ruta de ${origen}: ${(maxDist / 1000).toFixed(2)} km · ${perfilPts.length} puntos muestreados → ${newVerts.length} vértices. Cotas satelitales SRTM ~30 m: precisión típica ±5 m en terreno abierto; en ciudad densa, bosque cerrado o barrancas angostas el error puede superar ±15 m, y no refleja obras posteriores al año 2000 (presas, rellenos, cortes). Verificar los puntos críticos en campo antes del proyecto ejecutivo.`);
     } catch (err) {
       alert(err instanceof Error ? err.message : "No se pudo generar el perfil.");
     } finally {
