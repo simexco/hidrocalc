@@ -336,22 +336,30 @@ export default function GolpeArietePage() {
   const resiste: boolean | null = (userPN != null && results?.Pmax_bar != null) ? results.Pmax_bar <= userPN : null;
 
   // Válvula de protección recomendada (alivio/anticipadora) — opción B cuando no resiste.
-  // Dimensionamiento: la anticipadora alivia ~25% del caudal de línea y descarga a la
-  // atmósfera (ΔP ≈ presión de ajuste) — así el tamaño queda ~1/3 del DN de línea, no gigante.
+  // Criterio de fabricantes de anticipadoras (Cla-Val / Bermad): en el paro de bomba la
+  // válvula debe poder DESALOJAR EL CAUDAL COMPLETO de la línea — si solo alivia una
+  // fracción, el resto sigue empacando presión. ΔP de dimensionamiento = la presión
+  // máxima ADMISIBLE del tubo (PN): capacidad plena justo en el límite que se defiende.
+  // Además la regla de dedo de los mismos fabricantes: DN de válvula ≥ ~1/3 del DN de
+  // línea (antes se dimensionaba al 25% del caudal y a una línea de 18" le salía 4").
   const protecValvula = (() => {
     if (!results || results.deltaP_bar == null || results.deltaP_bar <= 0 || inputs.D == null || inputs.V0 == null) return null;
-    const dInt_m = inputs.D / 1000;
-    const Q_linea_m3h = inputs.V0 * Math.PI * Math.pow(dInt_m / 2, 2) * 3600;
+    const dInt_mm = inputs.D;
+    const Q_linea_m3h = inputs.V0 * Math.PI * Math.pow(dInt_mm / 2000, 2) * 3600;
     const p0 = inputs.P0 ?? 0;
     const pMax_kgcm2 = results.Pmax != null ? mcaToKgcm2(results.Pmax) : 0;
     const pSet = p0 > 0 ? p0 * 1.10 : pMax_kgcm2 * 0.85;
-    const Q_alivio_m3h = Q_linea_m3h * 0.25;
-    const deltaP_valv_bar = Math.max(0.3, pSet * 0.9807);
+    const deltaP_valv_bar = Math.max(0.5, userPN ?? pSet * 0.9807);
     // Kv metrico (IEC 60534): Q(m³/h)/√(ΔP bar). Tabla compartida con el modulo VRP.
-    const Kv = Q_alivio_m3h / Math.sqrt(deltaP_valv_bar);
+    const Kv = Q_linea_m3h / Math.sqrt(deltaP_valv_bar);
     if (Kv <= 0) return null;
-    const v = KV_VALVULAS_GLOBO.find((x) => x.kv_max * KV_FACTOR_SELECCION >= Kv);
-    return { dn: v?.dn ?? null, kv: Kv, pSet };
+    const minDN_mm = (dInt_mm / 3) * 0.95; // ~1/3 de la línea (5% de tolerancia: 6" vale para 18")
+    const v = KV_VALVULAS_GLOBO.find((x) => x.kv_max * KV_FACTOR_SELECCION >= Kv && x.dn_mm >= minDN_mm) ?? null;
+    return {
+      dn: v?.dn ?? null, kv: Kv, pSet, deltaP: deltaP_valv_bar, Q_linea_m3h, conPN: userPN != null,
+      pctCap: v ? Math.round((Kv / v.kv_max) * 100) : null,
+      pctDN: v ? Math.round((v.dn_mm / dInt_mm) * 100) : null,
+    };
   })();
 
   // Flujo de proyecto: los resultados REALES del módulo viajan al reporte (el PDF ya no
@@ -954,69 +962,51 @@ export default function GolpeArietePage() {
                 <AlertBanner key={i} level={a.level} message={a.message} />
               ))}
 
-              {/* Relief valve recommendation — SOLO cuando la tubería no resiste (semáforo rojo) */}
-              {resiste === false && results.deltaP_bar != null && results.deltaP_bar > 0 && inputs.D != null && inputs.V0 != null && (() => {
-                // Dimensionamiento con Kv metrico (IEC 60534) y la tabla compartida con el modulo VRP
-                const dInt_m = (inputs.D) / 1000;
-                const A_linea = Math.PI * Math.pow(dInt_m / 2, 2);
-                const Q_linea_m3h = inputs.V0 * A_linea * 3600;
-
-                // P0 in kg/cm² (inputs.P0 is already in kg/cm²)
-                const p0 = inputs.P0 ?? 0;
-                const pMax_kgcm2 = results.Pmax != null ? mcaToKgcm2(results.Pmax) : 0;
-                const pSet = p0 > 0 ? p0 * 1.10 : pMax_kgcm2 * 0.85;
-
-                // La anticipadora alivia ~25% del caudal de línea y descarga a la atmósfera (ΔP ≈ Pset)
-                const Q_alivio_m3h = Q_linea_m3h * 0.25;
-                const deltaP_valv_bar = Math.max(0.3, pSet * 0.9807);
-                const Kv_requerido = Q_alivio_m3h / Math.sqrt(deltaP_valv_bar);
-
-                const valv_recomendada = KV_VALVULAS_GLOBO.find(v => v.kv_max * KV_FACTOR_SELECCION >= Kv_requerido);
-                const pct_capacidad = valv_recomendada
-                  ? Math.round((Kv_requerido / valv_recomendada.kv_max) * 100)
-                  : null;
-                const pct_dn = valv_recomendada
-                  ? Math.round((valv_recomendada.dn_mm / (dInt_m * 1000)) * 100)
-                  : null;
-
-                if (Kv_requerido <= 0) return null;
-
-                return (
+              {/* Relief valve recommendation — SOLO cuando la tubería no resiste (semáforo rojo).
+                  Mismo cálculo que la Opción B del semáforo (protecValvula): caudal COMPLETO
+                  de la línea, ΔP = presión admisible (PN), DN ≥ ~1/3 de la línea. */}
+              {resiste === false && protecValvula && (
                   <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl p-5 space-y-3">
                     <h3 className="text-sm font-semibold text-amber-800 dark:text-amber-300">
                       {"⚠"} Proteccion recomendada — Valvula de alivio/anticipacion
                     </h3>
 
-                    {valv_recomendada ? (
+                    {protecValvula.dn ? (
                       <>
                         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                           <div>
                             <div className="text-[11px] text-amber-600 dark:text-amber-400">Diámetro de la válvula (DN)</div>
-                            <div className="text-xl font-semibold text-amber-900 dark:text-amber-200">{valv_recomendada.dn}</div>
+                            <div className="text-xl font-semibold text-amber-900 dark:text-amber-200">{protecValvula.dn}</div>
                           </div>
                           <div>
                             <div className="text-[11px] text-amber-600 dark:text-amber-400">Capacidad de flujo requerida (Kv)</div>
-                            <div className="text-xl font-semibold text-amber-900 dark:text-amber-200">{formatNumber(Kv_requerido, 1)}</div>
+                            <div className="text-xl font-semibold text-amber-900 dark:text-amber-200">{formatNumber(protecValvula.kv, 1)}</div>
                           </div>
                           <div>
                             <div className="text-[11px] text-amber-600 dark:text-amber-400">Capacidad utilizada</div>
-                            <div className="text-xl font-semibold text-amber-900 dark:text-amber-200">{pct_capacidad}%</div>
+                            <div className="text-xl font-semibold text-amber-900 dark:text-amber-200">{protecValvula.pctCap}%</div>
                           </div>
                           <div>
                             <div className="text-[11px] text-amber-600 dark:text-amber-400">Relación de diámetros (DN)</div>
-                            <div className="text-xl font-semibold text-amber-900 dark:text-amber-200">{pct_dn}% de la linea</div>
+                            <div className="text-xl font-semibold text-amber-900 dark:text-amber-200">{protecValvula.pctDN}% de la linea</div>
                           </div>
                         </div>
 
                         <p className="text-xs text-amber-700 dark:text-amber-300">
-                          Presion de ajuste sugerida (Pset): <strong>{formatNumber(pSet, 2)} kg/cm2</strong>
+                          Presion de ajuste sugerida (Pset): <strong>{formatNumber(protecValvula.pSet, 2)} kg/cm2</strong>
                           {" "}{"—"} La valvula debe abrirse cuando P supere este valor
+                        </p>
+                        <p className="text-xs text-amber-700 dark:text-amber-300">
+                          <strong>Criterio de tamaño:</strong> la válvula debe poder desalojar el caudal completo de la línea
+                          ({formatNumber(protecValvula.Q_linea_m3h, 0)} m³/h) con la línea en su presión admisible
+                          ({formatNumber(protecValvula.deltaP, 1)} bar{protecValvula.conPN ? ", el PN de tu tubo" : ", estimada con Pset"}),
+                          y medir al menos ~1/3 del diámetro de la línea (práctica de fabricantes de anticipadoras).
                         </p>
                       </>
                     ) : (
                       <p className="text-xs text-red-600 dark:text-red-400">
-                        El caudal de alivio requerido (Kv={formatNumber(Kv_requerido, 1)}) excede los tamaños estándar de catálogo.
-                        Consultar directamente con el fabricante.
+                        El caudal de alivio requerido (Kv={formatNumber(protecValvula.kv, 1)}) excede los tamaños estándar de catálogo
+                        o la línea exige una válvula mayor a 12{'"'}. Consultar directamente con el fabricante.
                       </p>
                     )}
 
@@ -1026,8 +1016,7 @@ export default function GolpeArietePage() {
                       Valvula piloto-operada tipo alivio/anticipacion (surge relief).
                     </p>
                   </div>
-                );
-              })()}
+              )}
             </>
           )}
         </div>
