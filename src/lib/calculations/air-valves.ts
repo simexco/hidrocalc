@@ -45,6 +45,8 @@ export interface AirValveOutputs {
   totalVAA: number;
   totalVAE: number;
   alerts: string[];
+  // Puntos bajos significativos: ahi NO va valvula de aire, va un desague (se grafican aparte)
+  desagues: { dist: number; cota: number }[];
 }
 
 // ── Sizing tables (ANSI inches) ──
@@ -184,7 +186,7 @@ export function calculateAirValves(input: AirValveInputs): AirValveOutputs | nul
     candidates.push({ dist: sorted[last].dist, cota: sorted[last].cota, pressure: pressures[last], type: "VA-C", reason: "Fin de linea (llegada plana/ascendente)" });
   }
 
-  const puntosBajos: number[] = [];
+  const puntosBajos: { dist: number; cota: number }[] = [];
   for (let i = 1; i < sorted.length - 1; i++) {
     // Solo los extremos SIGNIFICATIVOS (≥ umbral de prominencia) cuentan como alto/bajo
     const isHighPoint = altosSig.has(i);
@@ -197,7 +199,7 @@ export function calculateAirValves(input: AirValveInputs): AirValveOutputs | nul
     }
 
     // Punto bajo → desague recomendado, NO valvula de aire (se agrega a los avisos)
-    if (isLowPoint) puntosBajos.push(sorted[i].dist);
+    if (isLowPoint) puntosBajos.push({ dist: sorted[i].dist, cota: sorted[i].cota });
 
   }
 
@@ -277,9 +279,9 @@ export function calculateAirValves(input: AirValveInputs): AirValveOutputs | nul
   // un tramo plano y la prominencia de dos lados no lo marque), si es interior y
   // el perfil tiene relieve suficiente
   const iMin = cotas.indexOf(Math.min(...cotas));
-  if (iMin > 0 && iMin < last && Math.max(...cotas) - cotas[iMin] >= UMBRAL_EXTREMO_M && !puntosBajos.includes(sorted[iMin].dist)) {
-    puntosBajos.push(sorted[iMin].dist);
-    puntosBajos.sort((x, y) => x - y);
+  if (iMin > 0 && iMin < last && Math.max(...cotas) - cotas[iMin] >= UMBRAL_EXTREMO_M && !puntosBajos.some((p) => p.dist === sorted[iMin].dist)) {
+    puntosBajos.push({ dist: sorted[iMin].dist, cota: sorted[iMin].cota });
+    puntosBajos.sort((x, y) => x.dist - y.dist);
   }
 
   // Avisos de diseno (no son valvulas)
@@ -294,7 +296,7 @@ export function calculateAirValves(input: AirValveInputs): AirValveOutputs | nul
   }
   // Un solo aviso con TODOS los puntos bajos significativos (antes era uno por punto)
   if (puntosBajos.length > 0) {
-    const lista = puntosBajos.slice(0, 6).map((d) => `${d.toFixed(0)} m`).join(" · ");
+    const lista = puntosBajos.slice(0, 6).map((p) => `${p.dist.toFixed(0)} m`).join(" · ");
     const extra = puntosBajos.length > 6 ? ` (y ${puntosBajos.length - 6} más)` : "";
     alerts.push(`Puntos bajos del perfil (cad ${lista}${extra}): no llevan válvula de aire — se recomienda un desagüe (desfogue) para drenado y limpieza en cada uno. Puedes armar esos cruceros en el Generador de cruceros.`);
   }
@@ -368,5 +370,5 @@ export function calculateAirValves(input: AirValveInputs): AirValveOutputs | nul
     alerts.push("No se encontraron ubicaciones para valvulas de aire con el perfil ingresado.");
   }
 
-  return { valves, profilePoints, totalVAC, totalVAA, totalVAE, alerts };
+  return { valves, profilePoints, totalVAC, totalVAA, totalVAE, alerts, desagues: puntosBajos };
 }

@@ -159,6 +159,7 @@ export default function ValvulasAirePage() {
       dist: p.dist, cota: p.cota, presion: p.pressure,
       valveType: null as string | null,
       valveReason: null as string | null,
+      desague: false,
     }));
     // Add valve points that are interpolated (not on a vertex)
     for (const v of results.valves) {
@@ -170,9 +171,16 @@ export default function ValvulasAirePage() {
         // Insert interpolated valve point
         points.push({
           dist: v.dist, cota: v.cota, presion: v.pressure,
-          valveType: v.type, valveReason: v.reason,
+          valveType: v.type, valveReason: v.reason, desague: false,
         });
       }
+    }
+    // Puntos bajos: el desague tambien se dibuja (antes solo salia en el texto de avisos
+    // y el usuario veia el punto bajo "vacio" en la grafica)
+    for (const d of results.desagues) {
+      const exists = points.find(p => Math.abs(p.dist - d.dist) < 1);
+      if (exists) exists.desague = true;
+      else points.push({ dist: d.dist, cota: d.cota, presion: null, valveType: null, valveReason: null, desague: true });
     }
     return points.sort((a, b) => a.dist - b.dist);
   })();
@@ -390,7 +398,16 @@ export default function ValvulasAirePage() {
                   <Legend />
                   <Area type="monotone" dataKey="cota" baseValue="dataMin" stroke="#1C3D5A" fill="#1C3D5A" fillOpacity={0.15} strokeWidth={2} name="Terreno"
                     dot={(props: Record<string, unknown>) => {
-                      const { cx, cy, payload } = props as { cx: number; cy: number; payload: { valveType?: string | null; valveReason?: string | null } };
+                      const { cx, cy, payload } = props as { cx: number; cy: number; payload: { valveType?: string | null; valveReason?: string | null; desague?: boolean } };
+                      if (payload?.desague && !payload?.valveType) {
+                        // Desague en punto bajo: cuadrito gris con D (debajo del terreno, es drenado)
+                        return (
+                          <g key={`des-${cx}-${cy}`}>
+                            <rect x={cx - 6.5} y={cy - 6.5} width={13} height={13} rx={3} fill="#475569" stroke="#fff" strokeWidth={2} />
+                            <text x={cx} y={cy + 16} textAnchor="middle" fontSize={9} fontWeight="bold" fill="#475569">D</text>
+                          </g>
+                        );
+                      }
                       if (!payload?.valveType) return <circle key={`dot-${cx}`} cx={cx} cy={cy} r={0} />;
                       const color = payload.valveType === "VA-C" ? "#3b82f6" : payload.valveType === "VA-A" ? "#f59e0b" : "#22c55e";
                       return (
@@ -414,6 +431,7 @@ export default function ValvulasAirePage() {
                 <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 bg-blue-500 rounded-full" /> Válvula de aire combinada (VA-C)</span>
                 <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 bg-yellow-500 rounded-full" /> Válvula de admisión y expulsión (VA-A)</span>
                 <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 bg-green-500 rounded-full" /> Válvula eliminadora de aire (VA-E)</span>
+                <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 bg-slate-600 rounded-[3px]" /> Desagüe recomendado (punto bajo)</span>
               </div>
             </div>
           )}
