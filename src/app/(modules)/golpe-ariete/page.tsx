@@ -111,29 +111,37 @@ export default function GolpeArietePage() {
   // Estado guardado del modulo: ademas de inputs, el caudal, el modo y la seleccion
   // de catalogo (antes NO se guardaban → al recargar el caudal quedaba vacio y el
   // tipo de tuberia regresaba al default, y el proyecto solo se ligaba la 1a vez).
-  type GolpeExtra = { _caudalQ?: number | null; _velMode?: "velocidad" | "caudal"; _cat?: number; _size?: number; _class?: number; _pvcSystem?: PVCSystem; _entryMode?: "simple" | "advanced" };
+  // Herencia VIVA del proyecto (igual que Equipo de bombeo): tuberia, caudal, presion
+  // y longitud se refrescan del proyecto en CADA visita, salvo los campos que el
+  // usuario edito a mano AQUI. Antes la seleccion guardada (aunque fuera el default
+  // 2") siempre le ganaba al proyecto y el DN de la linea nunca llegaba solo.
+  type GolpeEditados = { pipe?: boolean; q?: boolean; p0?: boolean; l?: boolean };
+  type GolpeExtra = { _caudalQ?: number | null; _velMode?: "velocidad" | "caudal"; _cat?: number; _size?: number; _class?: number; _pvcSystem?: PVCSystem; _entryMode?: "simple" | "advanced"; _edited?: GolpeEditados };
+  const editadosRef = useRef<GolpeEditados>({});
   useEffect(() => {
     const saved = loadFormState<typeof inputs & GolpeExtra>("golpe-ariete");
     const p = useProjectStore.getState().project;
     prefillingRef.current = true;
     if (saved) {
-      const { _caudalQ, _velMode, _cat, _size, _class, _pvcSystem, _entryMode, ...ins } = saved;
+      const { _caudalQ, _velMode, _cat, _size, _class, _pvcSystem, _entryMode, _edited, ...ins } = saved;
+      editadosRef.current = _edited ?? {};
+      const ed = editadosRef.current;
       Object.entries(ins).forEach(([key, value]) => {
         setInput(key as keyof typeof inputs, value as never);
       });
       if (_entryMode) setEntryMode(_entryMode);
       if (_pvcSystem) setPvcSystem(_pvcSystem);
-      if (_cat != null) { setSelectedCatalog(_cat); setSelectedSize(_size ?? 0); setSelectedClass(_class ?? 0); }
-      else {
-        const m = matchGolpeCatalog(p.material || "PVC Inglés", p.dnNominal_mm, p.clase || "RD 26");
-        if (m) { setSelectedCatalog(m.gi); setSelectedSize(m.si); setSelectedClass(m.ci); }
-      }
+      // Tuberia: el proyecto manda salvo edicion manual aqui (el modo avanzado
+      // implica captura manual de D/espesor y tambien se respeta)
+      const m = matchGolpeCatalog(p.material || "PVC Inglés", p.dnNominal_mm, p.clase || "RD 26");
+      const pipeEditado = ed.pipe || _entryMode === "advanced";
+      if (!pipeEditado && m) { setSelectedCatalog(m.gi); setSelectedSize(m.si); setSelectedClass(m.ci); }
+      else if (_cat != null) { setSelectedCatalog(_cat); setSelectedSize(_size ?? 0); setSelectedClass(_class ?? 0); }
       if (_velMode) setVelMode(_velMode);
-      // Huecos se rellenan desde el proyecto activo (lo capturado por el usuario manda)
       if (_caudalQ != null) setCaudalQ(_caudalQ);
-      else if (p.q_ls != null) { setVelMode("caudal"); setCaudalQ(p.q_ls); }
-      if ((ins as typeof inputs).P0 == null && p.presionMaxLinea != null) setInput("P0", Math.round(p.presionMaxLinea * 10) / 10);
-      if ((ins as typeof inputs).L == null && p.longitud != null) setInput("L", p.longitud);
+      if (!ed.q && p.q_ls != null) { setVelMode("caudal"); setCaudalQ(p.q_ls); }
+      if (!ed.p0 && p.presionMaxLinea != null) setInput("P0", Math.round(p.presionMaxLinea * 10) / 10);
+      if (!ed.l && p.longitud != null) setInput("L", p.longitud);
     } else {
       // Sin datos propios: tuberia por defecto PVC Inglés RD 26 (o lo del proyecto si existe),
       // y ligar caudal/presion del proyecto activo.
@@ -153,6 +161,7 @@ export default function GolpeArietePage() {
       ...inputs,
       _caudalQ: caudalQ, _velMode: velMode, _cat: selectedCatalog, _size: selectedSize,
       _class: selectedClass, _pvcSystem: pvcSystem, _entryMode: entryMode,
+      _edited: editadosRef.current,
     }), 1000);
   }, [inputs, caudalQ, velMode, selectedCatalog, selectedSize, selectedClass, pvcSystem, entryMode]);
 
@@ -160,6 +169,7 @@ export default function GolpeArietePage() {
   const importarDelProyecto = () => {
     const p = useProjectStore.getState().project;
     prefillingRef.current = true;
+    editadosRef.current = {}; // re-ligar TODO al proyecto: se olvidan las ediciones manuales
     const m = matchGolpeCatalog(p.material || "PVC Inglés", p.dnNominal_mm, p.clase || "RD 26");
     if (m) { setEntryMode("simple"); setSelectedCatalog(m.gi); setSelectedSize(m.si); setSelectedClass(m.ci); }
     if (p.q_ls != null) { setVelMode("caudal"); setCaudalQ(p.q_ls); }
@@ -192,6 +202,9 @@ export default function GolpeArietePage() {
   }, [velMode, velFromQ, setInput]);
 
   const handleNum = (key: keyof typeof inputs, val: string) => {
+    // Editado a mano aqui → la herencia del proyecto ya no pisa ese campo
+    if (key === "P0") editadosRef.current.p0 = true;
+    if (key === "L") editadosRef.current.l = true;
     setInput(key, (val === "" ? null : parseFloat(val)) as never);
   };
 
@@ -345,7 +358,7 @@ export default function GolpeArietePage() {
                     Importar de Módulo 1
                   </button>
                 )}
-                <ResetButton moduleKey="golpe-ariete" onReset={reset} />
+                <ResetButton moduleKey="golpe-ariete" onReset={() => { editadosRef.current = {}; reset(); }} />
               </div>
             </div>
 
@@ -358,7 +371,7 @@ export default function GolpeArietePage() {
                   <InputField
                     label="Caudal (Q)"
                     value={caudalQ}
-                    onChange={(v) => setCaudalQ(v === "" ? null : parseFloat(v))}
+                    onChange={(v) => { editadosRef.current.q = true; setCaudalQ(v === "" ? null : parseFloat(v)); }}
                     unit="L/s"
                     required
                     tooltip="Caudal de agua que circula por la tubería. La velocidad se calcula sola con el diámetro: V = Q / Área."
@@ -391,7 +404,7 @@ export default function GolpeArietePage() {
                 {/* 1. Tipo de tubería */}
                 <div className="space-y-1">
                   <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Tipo de tuberia</label>
-                  <select value={selectedCatalog} onChange={(e) => setSelectedCatalog(parseInt(e.target.value))} className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 dark:text-white">
+                  <select value={selectedCatalog} onChange={(e) => { editadosRef.current.pipe = true; setSelectedCatalog(parseInt(e.target.value)); }} className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 dark:text-white">
                     {PIPE_CATALOG.map((g, i) => <option key={i} value={i}>{g.label}</option>)}
                   </select>
                 </div>
@@ -399,7 +412,7 @@ export default function GolpeArietePage() {
                 {/* 2. Diámetro */}
                 <div className="space-y-1">
                   <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Diámetro nominal (DN)</label>
-                  <select value={selectedSize} onChange={(e) => setSelectedSize(parseInt(e.target.value))} className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 dark:text-white">
+                  <select value={selectedSize} onChange={(e) => { editadosRef.current.pipe = true; setSelectedSize(parseInt(e.target.value)); }} className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 dark:text-white">
                     {catalog?.sizes.map((s, i) => <option key={i} value={i}>{s.label} (OD {s.od} mm)</option>)}
                   </select>
                 </div>
@@ -407,7 +420,7 @@ export default function GolpeArietePage() {
                 {/* 3. Clase */}
                 <div className="space-y-1">
                   <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Clase / DR</label>
-                  <select value={selectedClass} onChange={(e) => setSelectedClass(parseInt(e.target.value))} className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 dark:text-white">
+                  <select value={selectedClass} onChange={(e) => { editadosRef.current.pipe = true; setSelectedClass(parseInt(e.target.value)); }} className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 dark:text-white">
                     {sizeEntry?.classes.map((c, i) => <option key={i} value={i}>{c.name} (e={c.e} mm)</option>)}
                   </select>
                   <p className="text-[10px] text-gray-400">{CLASE_RD_HELP} (e = espesor de la pared en mm)</p>
