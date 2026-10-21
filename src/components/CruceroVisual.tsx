@@ -94,16 +94,18 @@ export function vizToAccsConex(nodes: VizNode[], opts?: { marcoTapa?: string; co
         if (n.sub === 'largo') return { id: n.id, label: `Carrete Bridado Largo 50 cm ${d} Sigma`, sku: `CN-CAR-50${dn2dig(d)}`, dn: d, bridas: 2, leKey: 'cople', norma: 'AWWA C110', qty: 1 }
         return { id: n.id, label: `Carrete de Desmontaje ${d} Sigma Flow`, sku: CDM[d] ?? '← CONF', dn: d, bridas: 2, leKey: 'cople', norma: 'AWWA', qty: 1 }
       }
-      case 'medidor': return { id: n.id, label: `Medidor de Flujo (Macromedidor) ${d}`, sku: '← CONF', dn: d, bridas: 2, leKey: 'cople', norma: 'AWWA C701', qty: 1 }
+      // Medidores y valvulas de control hidraulico: suministro EXTERNO (no son catalogo
+      // Sigma Flow) — sin SKU, solo la descripcion generica
+      case 'medidor': return { id: n.id, label: `Medidor de Flujo (Macromedidor) ${d}`, sku: '—', dn: d, bridas: 2, leKey: 'cople', norma: 'AWWA C701', qty: 1 }
       case 'vcontrol': {
         const nom = n.sub === 'sost' ? 'Válvula Sostenedora / Alivio de Presión' : n.sub === 'alt' ? 'Válvula de Altitud (control de tanque)' : 'Válvula Reductora de Presión (VRP)'
-        return { id: n.id, label: `${nom} ${d} — control hidráulico`, sku: '← CONF', dn: d, bridas: 2, leKey: 'check', norma: '—', qty: 1 }
+        return { id: n.id, label: `${nom} ${d} — control hidráulico`, sku: '—', dn: d, bridas: 2, leKey: 'check', norma: '—', qty: 1 }
       }
       case 'filtro': return n.sub === 'canasta'
         ? { id: n.id, label: `Filtro tipo Canasta ${d} Sigma`, sku: `DI-FTC-${num(d)}`, dn: d, bridas: 2, leKey: 'filtro-canasta', norma: '—', qty: 1 }
         : { id: n.id, label: `Filtro tipo Y ${d} Sigma`, sku: `DI-FYD-${num(d)}`, dn: d, bridas: 2, leKey: 'filtro-y', norma: '—', qty: 1 }
       case 'desfogue': return { id: n.id, label: `Desfogue (descarga) ${d}`, sku: '—', dn: d, bridas: 1, leKey: 'tapa-ciega', norma: '—', qty: 1 }
-      case 'bomba': return { id: n.id, label: `Equipo de bombeo (bomba) ${d} — especificar modelo`, sku: '← CONF', dn: d, bridas: 2, leKey: 'cople', norma: '—', qty: 1 }
+      case 'bomba': return { id: n.id, label: `Equipo de bombeo (bomba) ${d} — especificar modelo`, sku: '—', dn: d, bridas: 2, leKey: 'cople', norma: '—', qty: 1 }
       case 'check': {
         const bronce = DN_ORDER.indexOf(d) >= DN_ORDER.indexOf('18"')
         return { id: n.id, label: bronce ? `Check Compuerta Bronce ${d} Sigma Flow` : `Check Resilente C508 ${d} Sigma Flow`, sku: bronce ? `VI-CHK-${num(d)}` : `VI-CHK-R${num(d)}`, dn: d, bridas: 2, leKey: 'check', norma: 'AWWA C508', qty: 1 }
@@ -731,7 +733,7 @@ export default function CruceroVisual({ dn, nodes, onChange, onSnapshot }: Props
 
           {subPick === 'vcontrol' && (
             <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-3">
-              <p className="text-[10px] text-gray-500 dark:text-gray-300 mb-1.5">Tipo de válvula de control hidráulica (SKU a confirmar con distribuidor):</p>
+              <p className="text-[10px] text-gray-500 dark:text-gray-300 mb-1.5">Tipo de válvula de control hidráulica (suministro externo — se lista sin clave):</p>
               <div className="flex flex-wrap gap-1.5">
                 <button onClick={() => addNode('vcontrol', 'vrp')} className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[11px] rounded-lg border border-gray-200 dark:border-gray-500 hover:bg-[#1C3D5A] hover:text-white transition-colors">Reductora de presión (VRP)</button>
                 <button onClick={() => addNode('vcontrol', 'sost')} className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[11px] rounded-lg border border-gray-200 dark:border-gray-500 hover:bg-[#1C3D5A] hover:text-white transition-colors">Sostenedora / Alivio</button>
