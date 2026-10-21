@@ -722,7 +722,9 @@ export default function ListaMaterialesSIMEX({
       dn, bridas:1, leKey:'tapa-ciega', norma:'AWWA C110', qty:1 })
   }
   function addCople() {
-    add({ label:`Carrete de Desmontaje ${dn} Sigma Flow`, sku:CDM[dn]??'← CONF',
+    // El carrete de desmontaje se fabrica hasta 24": en 30"/36" no hay modelo (regla
+    // del usuario 2026-10-20), se avisa en vez de fingir una clave pendiente
+    add({ label:`Carrete de Desmontaje ${dn} Sigma Flow${CDM[dn] ? '' : ' — no se fabrica en esta medida (máx 24"): consultar alternativa'}`, sku:CDM[dn]??'—',
       dn, bridas:2, leKey:'cople', norma:'AWWA', qty:1 })
   }
   function addMarco() {

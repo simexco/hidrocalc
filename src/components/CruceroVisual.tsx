@@ -92,7 +92,7 @@ export function vizToAccsConex(nodes: VizNode[], opts?: { marcoTapa?: string; co
       case 'carrete': {
         if (n.sub === 'corto') return { id: n.id, label: `Carrete Bridado Corto 25 cm ${d} Sigma`, sku: `CN-CAR-25${dn2dig(d)}`, dn: d, bridas: 2, leKey: 'cople', norma: 'AWWA C110', qty: 1 }
         if (n.sub === 'largo') return { id: n.id, label: `Carrete Bridado Largo 50 cm ${d} Sigma`, sku: `CN-CAR-50${dn2dig(d)}`, dn: d, bridas: 2, leKey: 'cople', norma: 'AWWA C110', qty: 1 }
-        return { id: n.id, label: `Carrete de Desmontaje ${d} Sigma Flow`, sku: CDM[d] ?? '← CONF', dn: d, bridas: 2, leKey: 'cople', norma: 'AWWA', qty: 1 }
+        return { id: n.id, label: `Carrete de Desmontaje ${d} Sigma Flow${CDM[d] ? '' : ' — no se fabrica en esta medida (máx 24"): consultar alternativa'}`, sku: CDM[d] ?? '—', dn: d, bridas: 2, leKey: 'cople', norma: 'AWWA', qty: 1 }
       }
       // Medidores y valvulas de control hidraulico: suministro EXTERNO (no son catalogo
       // Sigma Flow) — sin SKU, solo la descripcion generica
