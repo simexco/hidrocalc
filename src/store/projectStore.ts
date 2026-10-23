@@ -23,7 +23,7 @@ export const emptyProject: ActiveProject = {
   material: "PVC Inglés", dn: "", clase: "RD 26", dnNominal_mm: null, diametroInterior: null, c: 150,
   presionMaxLinea: null, pnLinea: null, p1: null, presionFinalLinea: null,
   vertices: [], valvulas: [],
-  incluyeBombeo: false, he: null, eficiencia: 70,
+  incluyeBombeo: false, fuenteAgua: null, he: null, eficiencia: 70,
   despiece: [],
   cruceros: [],
   vrpDN: null, golpeValvulaDN: null,

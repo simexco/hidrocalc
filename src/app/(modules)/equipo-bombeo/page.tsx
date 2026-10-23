@@ -41,10 +41,10 @@ interface BombeoState {
   pctLocal: number; efic: number;
   horasBombeo: number; tarifaCFE: number;
   // Campos que el usuario editó a mano AQUÍ: la herencia del proyecto ya no los pisa
-  edited?: Partial<Record<"Q" | "D" | "material" | "L" | "cotaPozo" | "cotaTanque" | "cotaTanqueOrigen" | "cotaEntrega", boolean>>;
+  edited?: Partial<Record<"Q" | "D" | "material" | "L" | "cotaPozo" | "cotaTanque" | "cotaTanqueOrigen" | "cotaEntrega" | "caso", boolean>>;
 }
 
-const CAMPOS_HEREDABLES = ["Q", "D", "material", "L", "cotaPozo", "cotaTanque", "cotaTanqueOrigen", "cotaEntrega"] as const;
+const CAMPOS_HEREDABLES = ["Q", "D", "material", "L", "cotaPozo", "cotaTanque", "cotaTanqueOrigen", "cotaEntrega", "caso"] as const;
 
 const DEFAULTS: BombeoState = {
   caso: "pozo",
@@ -106,6 +106,11 @@ export default function EquipoBombeoPage() {
       }
       if (!ed.material && proj.material) { base.material = proj.material; her.m = true; }
       if (!ed.L && proj.longitud != null && proj.longitud > 0) { base.L = proj.longitud; her.l = true; }
+      // El caso se preselecciona desde lo elegido al trazar en el mapa:
+      // pozo → Caso 1; cárcamo o tanque con bomba (rebombeo) → Caso 2
+      if (!ed.caso && proj.fuenteAgua && proj.fuenteAgua !== "gravedad") {
+        base.caso = proj.fuenteAgua === "pozo" ? "pozo" : "tanque";
+      }
       // Cotas desde el perfil del terreno: inicio = succión/pozo, fin = entrega/tanque
       if (!ed.cotaTanqueOrigen && cotaIni != null) base.cotaTanqueOrigen = cotaIni;
       if (!ed.cotaPozo && cotaIni != null) base.cotaPozo = cotaIni;
@@ -176,6 +181,7 @@ export default function EquipoBombeoPage() {
 
   // Flujo de proyecto: carga estática y eficiencia alimentan la hoja de bombeo del reporte
   const patchProject = useProjectStore((s) => s.patch);
+  const fuenteAgua = useProjectStore((s) => s.project.fuenteAgua);
   useEffect(() => {
     if (!dirtyRef.current) return;
     const t = setTimeout(() => {
@@ -219,6 +225,13 @@ export default function EquipoBombeoPage() {
         <ResetButton moduleKey="equipo-bombeo" onReset={handleReset} />
       </div>
 
+      {/* La línea se marcó por GRAVEDAD al trazarla: este paso no aplica (aviso, no bloqueo) */}
+      {fuenteAgua === "gravedad" && (
+        <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl px-4 py-3 text-xs text-blue-700 dark:text-blue-300">
+          Tu proyecto está marcado como <strong>línea por gravedad desde tanque</strong> (lo elegiste al trazar en el mapa):
+          no necesita equipo de bombeo y puedes saltarte este paso. Si en realidad sí lleva bomba, cámbialo abajo o vuelve a trazar.
+        </div>
+      )}
       {/* Selección de caso */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         {([

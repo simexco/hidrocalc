@@ -47,6 +47,8 @@ export interface ReportData {
   valvulas: ReportValve[];
   // Módulo 3 — Bombeo
   incluyeBombeo: boolean;
+  // De dónde sale el agua (elegido al trazar en el mapa): preselecciona el caso de bombeo
+  fuenteAgua?: "pozo" | "carcamo" | "tanque-bombeo" | "gravedad" | null;
   he: number | null;
   eficiencia: number | null;
   // Despiece (lista consolidada de piezas seleccionadas)

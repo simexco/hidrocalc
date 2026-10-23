@@ -424,7 +424,7 @@ export default function PerfilPage() {
         desc: i === 0 ? descInicio : i === reducidos.length - 1 ? descFin : "",
       }));
       setVertices(newVerts);
-      if (origenAgua) patchProject({ incluyeBombeo: origenAgua !== "gravedad" });
+      if (origenAgua) patchProject({ incluyeBombeo: origenAgua !== "gravedad", fuenteAgua: origenAgua });
       const maxDist = Math.max(...newVerts.map((v) => v.dist));
       if (tramos.length === 1) setTramos([{ ...tramos[0], distFrom: newVerts[0].dist, distTo: maxDist }]);
       const regimen = origenAgua ? (origenAgua === "gravedad" ? "Línea por GRAVEDAD desde tanque · " : `Línea por BOMBEO desde ${origenAgua === "pozo" ? "pozo" : origenAgua === "carcamo" ? "cárcamo" : "tanque (rebombeo)"} · `) : "";
