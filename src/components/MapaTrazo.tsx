@@ -17,7 +17,7 @@ const VISTA_KEY = "hidrocalc_mapa_vista";
 
 // Qué hay en el ARRANQUE del trazo: define si la línea se bombea o va por gravedad
 // (alimenta el paso de bombeo, el golpe de ariete y las etiquetas del perfil)
-export type OrigenAgua = "pozo" | "carcamo" | "gravedad";
+export type OrigenAgua = "pozo" | "carcamo" | "tanque-bombeo" | "gravedad";
 
 interface Props {
   ocupado: boolean; // true mientras el perfil procesa (consultando cotas)
@@ -306,6 +306,7 @@ export default function MapaTrazo({ ocupado, onUsar }: Props) {
         {([
           ["pozo", "Pozo con bomba"],
           ["carcamo", "Cárcamo / planta de bombeo"],
+          ["tanque-bombeo", "Tanque con bomba (rebombeo)"],
           ["gravedad", "Tanque — por gravedad"],
         ] as const).map(([k, lbl]) => (
           <button

@@ -390,7 +390,7 @@ export default function PerfilPage() {
   // Pipeline compartido (KML de Google Earth y trazo sobre el mapa): cadenamientos
   // por haversine, cotas satelitales (SRTM ~30 m) vía /api/elevacion, y reducción
   // del perfil a los vértices que importan (quiebres, puntos altos y bajos).
-  const procesarRuta = async (coords: { lat: number; lon: number }[], origen: string, origenAgua?: "pozo" | "carcamo" | "gravedad") => {
+  const procesarRuta = async (coords: { lat: number; lon: number }[], origen: string, origenAgua?: "pozo" | "carcamo" | "tanque-bombeo" | "gravedad") => {
     setImportandoKML(true);
     setKmlInfo(null);
     setKmlAviso(null);
@@ -415,8 +415,8 @@ export default function PerfilPage() {
       const reducidos = reducirPerfil(perfilPts, 1.0, 40);
       // El origen del agua (elegido en el mapa) etiqueta los extremos del perfil y
       // define si la linea es por bombeo o gravedad para el resto del proyecto
-      const descInicio = origenAgua === "pozo" ? "Pozo (bombeo)" : origenAgua === "carcamo" ? "Cárcamo de bombeo" : origenAgua === "gravedad" ? "Tanque de origen (gravedad)" : `Inicio (${origen})`;
-      const descFin = origenAgua ? (origenAgua === "gravedad" ? "Entrega" : "Tanque de entrega") : `Fin (${origen})`;
+      const descInicio = origenAgua === "pozo" ? "Pozo (bombeo)" : origenAgua === "carcamo" ? "Cárcamo de bombeo" : origenAgua === "tanque-bombeo" ? "Tanque con bomba (rebombeo)" : origenAgua === "gravedad" ? "Tanque de origen (gravedad)" : `Inicio (${origen})`;
+      const descFin = origenAgua ? (origenAgua === "pozo" || origenAgua === "carcamo" ? "Tanque de entrega" : "Entrega") : `Fin (${origen})`;
       const newVerts: ProfileVertex[] = reducidos.map((p, i) => ({
         id: uuid(),
         dist: Math.round(p.dist),
@@ -427,7 +427,7 @@ export default function PerfilPage() {
       if (origenAgua) patchProject({ incluyeBombeo: origenAgua !== "gravedad" });
       const maxDist = Math.max(...newVerts.map((v) => v.dist));
       if (tramos.length === 1) setTramos([{ ...tramos[0], distFrom: newVerts[0].dist, distTo: maxDist }]);
-      const regimen = origenAgua ? (origenAgua === "gravedad" ? "Línea por GRAVEDAD desde tanque · " : `Línea por BOMBEO desde ${origenAgua === "pozo" ? "pozo" : "cárcamo"} · `) : "";
+      const regimen = origenAgua ? (origenAgua === "gravedad" ? "Línea por GRAVEDAD desde tanque · " : `Línea por BOMBEO desde ${origenAgua === "pozo" ? "pozo" : origenAgua === "carcamo" ? "cárcamo" : "tanque (rebombeo)"} · `) : "";
       setKmlInfo(`${regimen}Ruta de ${origen}: ${(maxDist / 1000).toFixed(2)} km · ${perfilPts.length} puntos muestreados → ${newVerts.length} vértices. Cotas satelitales SRTM ~30 m: precisión típica ±5 m en terreno abierto; en ciudad densa, bosque cerrado o barrancas angostas el error puede superar ±15 m, y no refleja obras posteriores al año 2000 (presas, rellenos, cortes). Verificar los puntos críticos en campo antes del proyecto ejecutivo.`);
     } catch (err) {
       alert(err instanceof Error ? err.message : "No se pudo generar el perfil.");
