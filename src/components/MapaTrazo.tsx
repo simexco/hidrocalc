@@ -15,9 +15,13 @@ import { haversine, type PuntoRuta } from "@/lib/geo/ruta-kml";
 
 const VISTA_KEY = "hidrocalc_mapa_vista";
 
+// Qué hay en el ARRANQUE del trazo: define si la línea se bombea o va por gravedad
+// (alimenta el paso de bombeo, el golpe de ariete y las etiquetas del perfil)
+export type OrigenAgua = "pozo" | "carcamo" | "gravedad";
+
 interface Props {
   ocupado: boolean; // true mientras el perfil procesa (consultando cotas)
-  onUsar: (puntos: PuntoRuta[]) => void;
+  onUsar: (puntos: PuntoRuta[], origenAgua: OrigenAgua) => void;
 }
 
 export default function MapaTrazo({ ocupado, onUsar }: Props) {
@@ -40,6 +44,9 @@ export default function MapaTrazo({ ocupado, onUsar }: Props) {
   // selecciona y aparece el botón Borrar; sin clic derecho necesario
   const [seleccionado, setSeleccionado] = useState<number | null>(null);
   const seleccionadoRef = useRef<number | null>(null);
+  // Elección consciente (sin default silencioso, igual que los campos en amarillo):
+  // el perfil no se genera hasta decir de dónde sale el agua
+  const [origenAgua, setOrigenAgua] = useState<OrigenAgua | null>(null);
 
   // Cota de un punto, al instante (y queda cacheada para el perfil completo)
   const consultarCota = (lat: number, lon: number) => {
@@ -283,12 +290,38 @@ export default function MapaTrazo({ ocupado, onUsar }: Props) {
         <span className="flex-1" />
         <button
           type="button"
-          onClick={() => onUsar(puntosRef.current)}
-          disabled={nPuntos < 2 || ocupado}
+          onClick={() => origenAgua && onUsar(puntosRef.current, origenAgua)}
+          disabled={nPuntos < 2 || ocupado || !origenAgua}
+          title={!origenAgua ? "Primero elige de dónde sale el agua" : undefined}
           className="text-xs font-semibold bg-emerald-600 text-white px-4 py-2 rounded-lg hover:bg-emerald-700 transition-colors disabled:opacity-50"
         >
           {ocupado ? "Generando perfil…" : "✓ Usar este trazo → generar perfil"}
         </button>
+      </div>
+      {/* ¿Bombeo o gravedad? El cliente lo decide AQUÍ y viaja a todo el proyecto */}
+      <div className={`flex items-center gap-2 flex-wrap rounded-lg px-2.5 py-2 border ${origenAgua ? "border-gray-200 dark:border-gray-700" : "border-amber-400 bg-amber-50 dark:bg-amber-900/20"}`}>
+        <span className={`text-[11px] ${origenAgua ? "text-gray-500 dark:text-gray-400" : "font-semibold text-amber-700 dark:text-amber-300"}`}>
+          ¿De dónde sale el agua? (el inicio del trazo)
+        </span>
+        {([
+          ["pozo", "Pozo con bomba"],
+          ["carcamo", "Cárcamo / planta de bombeo"],
+          ["gravedad", "Tanque — por gravedad"],
+        ] as const).map(([k, lbl]) => (
+          <button
+            key={k}
+            type="button"
+            onClick={() => setOrigenAgua(k)}
+            className={`text-[11px] px-2.5 py-1.5 rounded-lg border transition-colors ${origenAgua === k ? "bg-[#1C3D5A] text-white border-[#1C3D5A] font-semibold" : "border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-[#E9EFF5] dark:hover:bg-gray-700"}`}
+          >
+            {lbl}
+          </button>
+        ))}
+        {origenAgua && (
+          <span className="text-[10px] text-gray-400">
+            {origenAgua === "gravedad" ? "Línea por gravedad — sin equipo de bombeo" : "Línea por bombeo — el paso de bombeo y el golpe de ariete lo tomarán en cuenta"}
+          </span>
+        )}
       </div>
       <p className="text-[10px] text-gray-400">Verde = inicio · rojo = último punto. ¿Te equivocaste? <strong>Arrastra</strong> cualquier punto para moverlo (con el mouse o el dedo), <strong>tócalo</strong> para seleccionarlo y borrarlo con el botón (en escritorio también sirve el clic derecho), o «Deshacer» quita el último. Las cotas son satelitales (SRTM ~30 m, ±5–10 m): verificar puntos críticos en campo.</p>
     </div>
