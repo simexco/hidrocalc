@@ -412,10 +412,18 @@ export async function generateReportPDF(d: ReportData): Promise<jsPDF> {
   asegura(30);
 
   y = subhead(doc, "1  Entradas capturadas", y);
+  // Tipo de linea derivado de como se alimenta (elegido al trazar): con bomba es
+  // IMPULSION, por gravedad es CONDUCCION por gravedad (terminologia CONAGUA)
+  const tipoLinea = d.fuenteAgua
+    ? (d.fuenteAgua === "gravedad"
+      ? "Linea de CONDUCCION por gravedad (desde tanque)"
+      : `Linea de IMPULSION — bombeo desde ${d.fuenteAgua === "pozo" ? "pozo" : d.fuenteAgua === "carcamo" ? "carcamo" : "tanque (rebombeo)"}`)
+    : null;
   autoTable(doc, {
     startY: y, theme: "grid", styles: { fontSize: 8 }, headStyles: tableBlue,
     head: [["Parametro", "Valor"]],
     body: [
+      ...(tipoLinea ? [["Tipo de linea", tipoLinea]] : []),
       ["Gasto de diseño (Q)", `${n(d.q_ls)} L/s`],
       ["Longitud total de la linea", `${n(d.longitud, 0)} m`],
       ["Desnivel (cota inicio-fin)", `${n(d.desnivel, 1)} m`],

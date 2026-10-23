@@ -129,6 +129,7 @@ export default function PerfilPage() {
   // Flujo de proyecto: la conduccion escribe sus datos al proyecto activo
   // (el perfil topografico viaja al siguiente paso: Valvulas de aire)
   const patchProject = useProjectStore((s) => s.patch);
+  const fuenteAgua = useProjectStore((s) => s.project.fuenteAgua);
   useEffect(() => {
     const t = setTimeout(() => {
       const sorted = [...vertices].filter((v) => v.dist != null && v.cota != null).sort((a, b) => a.dist - b.dist);
@@ -427,7 +428,7 @@ export default function PerfilPage() {
       if (origenAgua) patchProject({ incluyeBombeo: origenAgua !== "gravedad", fuenteAgua: origenAgua });
       const maxDist = Math.max(...newVerts.map((v) => v.dist));
       if (tramos.length === 1) setTramos([{ ...tramos[0], distFrom: newVerts[0].dist, distTo: maxDist }]);
-      const regimen = origenAgua ? (origenAgua === "gravedad" ? "Línea por GRAVEDAD desde tanque · " : `Línea por BOMBEO desde ${origenAgua === "pozo" ? "pozo" : origenAgua === "carcamo" ? "cárcamo" : "tanque (rebombeo)"} · `) : "";
+      const regimen = origenAgua ? (origenAgua === "gravedad" ? "Línea de CONDUCCIÓN por gravedad desde tanque · " : `Línea de IMPULSIÓN — bombeo desde ${origenAgua === "pozo" ? "pozo" : origenAgua === "carcamo" ? "cárcamo" : "tanque (rebombeo)"} · `) : "";
       setKmlInfo(`${regimen}Ruta de ${origen}: ${(maxDist / 1000).toFixed(2)} km · ${perfilPts.length} puntos muestreados → ${newVerts.length} vértices. Cotas satelitales SRTM ~30 m: precisión típica ±5 m en terreno abierto; en ciudad densa, bosque cerrado o barrancas angostas el error puede superar ±15 m, y no refleja obras posteriores al año 2000 (presas, rellenos, cortes). Verificar los puntos críticos en campo antes del proyecto ejecutivo.`);
     } catch (err) {
       alert(err instanceof Error ? err.message : "No se pudo generar el perfil.");
@@ -540,6 +541,17 @@ export default function PerfilPage() {
             </div>
             <ResetButton moduleKey="perfil" onReset={handleReset} />
           </div>
+
+          {/* Tipo de línea derivado de cómo se alimenta (elegido al trazar en el mapa):
+              con bomba es IMPULSIÓN, por gravedad es CONDUCCIÓN (terminología CONAGUA) */}
+          {fuenteAgua && (
+            <div className="flex items-center gap-2 flex-wrap bg-[#E9EFF5] dark:bg-[#1C3D5A]/20 border border-[#1C3D5A]/20 rounded-xl px-4 py-2 text-xs text-[#1C3D5A] dark:text-blue-200">
+              <strong>{fuenteAgua === "gravedad" ? "Línea de conducción por gravedad" : "Línea de impulsión (por bombeo)"}</strong>
+              <span className="text-[11px] opacity-80">
+                — {fuenteAgua === "pozo" ? "desde pozo" : fuenteAgua === "carcamo" ? "desde cárcamo de bombeo" : fuenteAgua === "tanque-bombeo" ? "rebombeo desde tanque" : "desde tanque"} · definido al trazar en el mapa
+              </span>
+            </div>
+          )}
 
           {/* Paso 1: el terreno primero — de aquí salen la longitud y las presiones */}
           <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 space-y-3">
