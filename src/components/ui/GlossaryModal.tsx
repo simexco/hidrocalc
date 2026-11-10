@@ -13,7 +13,7 @@ const GLOSSARY: { cat: string; items: { term: string; def: string }[] }[] = [
     cat: "El terreno",
     items: [
       { term: "Cota", def: "Qué tan alto está un punto del terreno sobre el nivel del mar, en metros (m.s.n.m.). Piensa en el \"piso\" donde está cada punto: la cota 1,550 está 50 m más arriba que la 1,500. El agua siempre tiende a ir de las cotas altas a las bajas — en eso se basa una línea por gravedad." },
-      { term: "Cadenamiento", def: "A cuántos metros del INICIO de la línea está un punto, medidos sobre el trazo — como los kilómetros de una carretera (el \"km 0+500\"). Cada punto del perfil se captura como cadenamiento + cota." },
+      { term: "Cadenamiento", def: "A cuántos metros del INICIO de la línea está un punto, medidos sobre el trazo — por ejemplo, 500 m. En la plataforma se muestra en metros. Cada punto del perfil se captura como cadenamiento + cota." },
       { term: "Perfil topográfico", def: "La \"radiografía\" del terreno por donde va la tubería: la lista de puntos (cadenamiento, cota). Con él, la app detecta dónde hay lomas y barrancas y calcula la presión en cada punto del recorrido." },
       { term: "m.s.n.m.", def: "Metros sobre el nivel del mar. Es la unidad de las cotas. Puedes obtenerlas de un levantamiento topográfico o de Google Earth." },
       { term: "Desnivel", def: "La diferencia de altura entre el inicio y el final de la línea. A favor (bajada) te aporta presión; en contra (subida) te la resta y quizá necesites una bomba." },

@@ -312,10 +312,10 @@ function drawProfile(doc: jsPDF, verts: ReportVertex[], y: number): number {
     doc.setFillColor(...BRAND); doc.circle(sx(p.cad), sy(p.cota), 0.8, "F");
     doc.text(`${p.cota.toFixed(1)}`, sx(p.cad), sy(p.cota) - 2, { align: "center" });
     if (p.desc) doc.text(safe(p.desc), sx(p.cad), yTop + h + 4, { align: "center" });
-    doc.text(`${Math.floor(Math.round(p.cad) / 1000)}+${String(Math.round(p.cad) % 1000).padStart(3, "0")}`, sx(p.cad), yTop + h + 8, { align: "center" });
+    doc.text(`${Math.round(p.cad).toLocaleString("es-MX")}`, sx(p.cad), yTop + h + 8, { align: "center" });
   }
   doc.setTextColor(120, 120, 120); doc.setFontSize(7);
-  doc.text("Cadenamiento (m) - cotas en m.s.n.m.", (x0 + x1) / 2, yTop + h + 13, { align: "center" });
+  doc.text("Distancia desde el inicio (m) - cotas en m.s.n.m.", (x0 + x1) / 2, yTop + h + 13, { align: "center" });
   doc.setTextColor(0, 0, 0);
   return yTop + h + 18;
 }
@@ -470,7 +470,7 @@ export async function generateReportPDF(d: ReportData): Promise<jsPDF> {
     y = subhead(doc, "Valvulas de aire y control sugeridas", y);
     autoTable(doc, {
       startY: y, theme: "grid", styles: { fontSize: 8 }, headStyles: tableBlue,
-      head: [["Cadenamiento", "Valvula / accesorio sugerido"]],
+      head: [["Distancia desde el inicio", "Valvula / accesorio sugerido"]],
       body: valvList.map((v) => [v.cad || "-", safe(v.tipo || "-")]),
       margin: { left: 14, right: 14, top: 30 }, didDrawPage: dibujaHeader,
     });
@@ -482,7 +482,7 @@ export async function generateReportPDF(d: ReportData): Promise<jsPDF> {
   y = subhead(doc, "Recomendaciones de proteccion", y);
   const claseTxt = d.clase ? `${d.material} ${d.clase}` : (d.material || "la clase elegida");
   const pnTxt = d.pnLinea != null ? `${n(d.pnLinea, 1)} kg/cm2` : "PN de la clase";
-  const cadTxt = (c: number) => `${Math.floor(Math.round(c) / 1000)}+${String(Math.round(c) % 1000).padStart(3, "0")}`;
+  const cadTxt = (c: number) => `${Math.round(c).toLocaleString("es-MX")} m del inicio`;
   // Reduccion de presion
   let vrpRec: string; let vrpPor: string;
   if (d.vrpRequerida != null) {
@@ -492,7 +492,7 @@ export async function generateReportPDF(d: ReportData): Promise<jsPDF> {
       vrpRec = "SE REQUIERE";
       vrpPor = `Al menos un tramo del perfil opera por ENCIMA de la clase de su propia tuberia (veredicto por tramo; P. max de la linea ${n(d.presionMaxLinea, 1)} kg/cm2). Opciones: VRP, caja rompedora de presion, o subir la clase del tramo que excede.`;
       const u = d.vrpUbicacion;
-      if (u) vrpPor += ` VRP en cad ${cadTxt(u.cad)} (cota ${n(u.cota, 1)} m), ultimo punto dentro de clase antes de la zona que excede: entrada ${n(u.p1, 1)} kg/cm2, ajuste de salida ${n(u.p2, 1)} kg/cm2. El ajuste se calcula con la linea detenida para que el punto mas bajo aguas abajo (cad ${cadTxt(u.bajoCad)}, cota ${n(u.bajoCota, 1)} m) no rebase su clase.`;
+      if (u) vrpPor += ` VRP a ${cadTxt(u.cad)} (cota ${n(u.cota, 1)} m), ultimo punto dentro de clase antes de la zona que excede: entrada ${n(u.p1, 1)} kg/cm2, ajuste de salida ${n(u.p2, 1)} kg/cm2. El ajuste se calcula con la linea detenida para que el punto mas bajo aguas abajo (a ${cadTxt(u.bajoCad)}, cota ${n(u.bajoCota, 1)} m) no rebase su clase.`;
     }
     else { vrpRec = "No requerida"; vrpPor = `Cada tramo opera dentro de la clase de su propia tuberia (veredicto por tramo del perfil; P. max de la linea ${n(d.presionMaxLinea, 1)} kg/cm2).`; }
   } else if (d.presionMaxLinea != null && d.pnLinea != null) {
@@ -517,9 +517,9 @@ export async function generateReportPDF(d: ReportData): Promise<jsPDF> {
     const g = d.golpeUbicacion;
     if (r.golpeExcedeClase && g) {
       golpePor += g.bombeo
-        ? ` Anticipadora en la descarga de la bomba, despues de la check (cad ${cadTxt(g.cad)}, cota ${n(g.cota, 1)} m): ahi regresa la onda del paro de bomba.`
-        : ` Aliviadora en la llegada, aguas arriba de la valvula que se cierra (cad ${cadTxt(g.cad)}, cota ${n(g.cota, 1)} m): ahi nace la onda${g.ajuste != null ? `; ajuste de apertura ${n(g.ajuste, 1)} kg/cm2` : ""}.`;
-      golpePor += ` La presion maxima se concentra en el punto mas bajo (cad ${cadTxt(g.bajoCad)}, cota ${n(g.bajoCota, 1)} m).`;
+        ? ` Anticipadora en la descarga de la bomba, despues de la check (a ${cadTxt(g.cad)}, cota ${n(g.cota, 1)} m): ahi regresa la onda del paro de bomba.`
+        : ` Aliviadora en la llegada, aguas arriba de la valvula que se cierra (a ${cadTxt(g.cad)}, cota ${n(g.cota, 1)} m): ahi nace la onda${g.ajuste != null ? `; ajuste de apertura ${n(g.ajuste, 1)} kg/cm2` : ""}.`;
+      golpePor += ` La presion maxima se concentra en el punto mas bajo (a ${cadTxt(g.bajoCad)}, cota ${n(g.bajoCota, 1)} m).`;
     }
   } else {
     golpeRec = r.golpeRiesgo === "alto" ? "ANALIZAR / PROTEGER" : r.golpeRiesgo === "medio" ? "Revisar" : "Riesgo bajo";

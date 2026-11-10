@@ -14,7 +14,7 @@ import { formatNumber } from "@/lib/calculations/conversions";
 import { STANDARD_DNS, STANDARD_DNS_LABELED } from "@/lib/constants";
 import { saveFormState, loadFormState } from "@/lib/storage/form-persistence";
 import { useProjectStore, useNombreProyecto } from "@/store/projectStore";
-import { fmtCad } from "@/lib/calculations/protection-location";
+import { fmtPos } from "@/lib/calculations/protection-location";
 import { Desplegable, PiezasEstacionVRP } from "@/components/ui/ProteccionExplicacion";
 import { ResetButton } from "@/components/ui/ResetButton";
 import type { FlowUnit, AssumedValue } from "@/types/hydraulic";
@@ -362,7 +362,7 @@ export default function VRPPage() {
             {vrpUbic ? (
               <>
                 <p className="text-xs font-semibold text-[#1C3D5A] dark:text-blue-300 bg-[#E9EFF5] dark:bg-[#1C3D5A]/20 rounded-lg px-2.5 py-1.5">
-                  {"📍"} Según el perfil del proyecto: cad {fmtCad(vrpUbic.cad)} (cota {formatNumber(vrpUbic.cota, 1)} m).
+                  {"📍"} Según el perfil del proyecto: {fmtPos(vrpUbic.cad)} (cota {formatNumber(vrpUbic.cota, 1)} m).
                   {" "}Entrada {formatNumber(vrpUbic.p1, 1)} kg/cm² → ajuste de salida {formatNumber(vrpUbic.p2, 1)} kg/cm².
                 </p>
                 {(inputs.P1 !== vrpUbic.p1 || inputs.P2 !== vrpUbic.p2) && (
@@ -376,7 +376,7 @@ export default function VRPPage() {
                 )}
                 <p className="text-[11px] text-gray-600 dark:text-gray-400 leading-relaxed">
                   Va en el último punto que todavía está dentro de la clase de la tubería, justo antes de la zona que la rebasa. El ajuste se
-                  calcula con la línea detenida (sin fricción), para que el punto más bajo aguas abajo (cad {fmtCad(vrpUbic.bajoCad)}, cota {formatNumber(vrpUbic.bajoCota, 1)} m)
+                  calcula con la línea detenida (sin fricción), para que el punto más bajo aguas abajo ({fmtPos(vrpUbic.bajoCad)}, cota {formatNumber(vrpUbic.bajoCota, 1)} m)
                   no rebase su clase cuando baja el consumo. El detalle está en «Línea de conducción».
                 </p>
               </>

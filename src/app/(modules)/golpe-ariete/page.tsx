@@ -14,7 +14,7 @@ import { formatNumber, mcaToKgcm2 } from "@/lib/calculations/conversions";
 import { PIPE_ELASTICITY, THICKNESS_BY_MATERIAL, PIPE_CLASSES_BY_MATERIAL, PVC_THICKNESS, getPVCClasses, PVC_SYSTEM_LABELS, type PVCSystem, PIPE_CATALOG, type PipeCatalogGroup, STANDARD_DNS_LABELED, KV_VALVULAS_GLOBO, KV_FACTOR_SELECCION, CLASE_RD_HELP } from "@/lib/constants";
 import { saveFormState, loadFormState } from "@/lib/storage/form-persistence";
 import { useProjectStore, useNombreProyecto } from "@/store/projectStore";
-import { ubicarProteccionGolpe } from "@/lib/calculations/protection-location";
+import { ubicarProteccionGolpe, fmtPos } from "@/lib/calculations/protection-location";
 import { Desplegable, PiezasAliviadora, PorQueVentosasVacio } from "@/components/ui/ProteccionExplicacion";
 
 // Busca en el catalogo del golpe el grupo/tamano/clase que corresponde al material, DN y clase del proyecto
@@ -67,7 +67,6 @@ export default function GolpeArietePage() {
     const altos = vs.filter((v, i) => i > 0 && i < vs.length - 1 && v.cota > vs[i - 1].cota && v.cota >= vs[i + 1].cota);
     return { inicio: vs[0], fin: vs[vs.length - 1], bajo, altos };
   })();
-  const fmtCad = (cad: number) => `${Math.floor(Math.round(cad) / 1000)}+${String(Math.round(cad) % 1000).padStart(3, "0")}`;
 
   // Velocidad calculada a partir del caudal (L/s) y el diametro interno D (mm)
   const velFromQ = caudalQ != null && caudalQ > 0 && inputs.D != null && inputs.D > 0
@@ -756,8 +755,8 @@ export default function GolpeArietePage() {
                           <p className="text-[10px] text-gray-500 mt-1"><strong>Dónde:</strong> {esBombeo ? "en la descarga de la bomba, después de la válvula check." : "aguas arriba de la válvula de cierre rápido (normalmente en la llegada de la línea)."}</p>
                           {ubicacion ? (
                             <p className="text-[10px] font-semibold text-amber-800 dark:text-amber-300 mt-1 bg-amber-100/70 dark:bg-amber-900/30 rounded px-1.5 py-1 leading-relaxed">
-                              {"📍"} Punto recomendado: <strong>cad {esBombeo ? fmtCad(ubicacion.inicio.cad) : fmtCad(ubicacion.fin.cad)}</strong> (cota {esBombeo ? ubicacion.inicio.cota : ubicacion.fin.cota} m{(esBombeo ? ubicacion.inicio.desc : ubicacion.fin.desc) ? ` — ${esBombeo ? ubicacion.inicio.desc : ubicacion.fin.desc}` : ""}), {esBombeo ? "el arranque de la línea" : "la llegada de la línea"}.
-                              {" "}La presión máxima se concentra en el punto más bajo del perfil: cad {fmtCad(ubicacion.bajo.cad)} (cota {ubicacion.bajo.cota} m).
+                              {"📍"} Punto recomendado: <strong>{esBombeo ? fmtPos(ubicacion.inicio.cad) : fmtPos(ubicacion.fin.cad)}</strong> (cota {esBombeo ? ubicacion.inicio.cota : ubicacion.fin.cota} m{(esBombeo ? ubicacion.inicio.desc : ubicacion.fin.desc) ? ` — ${esBombeo ? ubicacion.inicio.desc : ubicacion.fin.desc}` : ""}), {esBombeo ? "el arranque de la línea" : "la llegada de la línea"}.
+                              {" "}La presión máxima se concentra en el punto más bajo del perfil, {fmtPos(ubicacion.bajo.cad)} (cota {ubicacion.bajo.cota} m).
                             </p>
                           ) : (
                             <p className="text-[10px] text-gray-400 mt-1">Captura el perfil (cadenamientos y cotas) en «Línea de conducción» y aquí te marco el punto exacto de instalación.</p>
@@ -774,14 +773,14 @@ export default function GolpeArietePage() {
                             <Desplegable titulo="¿Por qué aquí y para qué sirve cada pieza?">
                               {esBombeo ? (
                                 <>
-                                  <p><strong>Por qué en la descarga de la bomba{planGolpe ? ` (cad ${fmtCad(planGolpe.valvula.cad)})` : ""}:</strong> en una línea por bombeo el golpe más fuerte no lo provoca una válvula, sino el <strong>paro de la bomba</strong> (corte de energía). El agua sigue avanzando por inercia, la presión cae, la columna se frena y regresa hacia la bomba hasta chocar contra la válvula check cerrada. Ese choque es la sobrepresión. La anticipadora va ahí porque es el punto donde llega y rebota la onda.</p>
-                                  <p><strong>Por qué se menciona el punto más bajo{planGolpe ? ` (cad ${fmtCad(planGolpe.bajo.cad)}, cota ${planGolpe.bajo.cota} m)` : ""}:</strong> ahí la presión de operación ya es la más alta, porque tiene más columna de agua encima; al sumarle el golpe, es el primer punto que rebasaría la clase. La válvula no va ahí, pero es el punto que hay que proteger.</p>
+                                  <p><strong>Por qué en la descarga de la bomba{planGolpe ? ` (${fmtPos(planGolpe.valvula.cad)})` : ""}:</strong> en una línea por bombeo el golpe más fuerte no lo provoca una válvula, sino el <strong>paro de la bomba</strong> (corte de energía). El agua sigue avanzando por inercia, la presión cae, la columna se frena y regresa hacia la bomba hasta chocar contra la válvula check cerrada. Ese choque es la sobrepresión. La anticipadora va ahí porque es el punto donde llega y rebota la onda.</p>
+                                  <p><strong>Por qué se menciona el punto más bajo{planGolpe ? ` (${fmtPos(planGolpe.bajo.cad)}, cota ${planGolpe.bajo.cota} m)` : ""}:</strong> ahí la presión de operación ya es la más alta, porque tiene más columna de agua encima; al sumarle el golpe, es el primer punto que rebasaría la clase. La válvula no va ahí, pero es el punto que hay que proteger.</p>
                                   <p><strong>Ajuste:</strong> lo define el fabricante con la presión de operación en la descarga (la apertura por baja presión detecta el paro; la de alta presión, como respaldo, unos 10 % arriba de la operación).</p>
                                 </>
                               ) : (
                                 <>
-                                  <p><strong>Por qué en la llegada{planGolpe ? ` (cad ${fmtCad(planGolpe.valvula.cad)}, cota ${planGolpe.valvula.cota} m)` : ""}:</strong> en una línea por gravedad el golpe nace en la válvula que se cierra, normalmente la de la llegada al tanque o a la red. La onda de sobrepresión sale de ese punto y recorre la línea hacia atrás. Una aliviadora junto a esa válvula abre en el primer instante y descarga agua, recortando el pico en su origen, antes de que viaje por toda la línea.</p>
-                                  <p><strong>Por qué se menciona el punto más bajo{planGolpe ? ` (cad ${fmtCad(planGolpe.bajo.cad)}, cota ${planGolpe.bajo.cota} m)` : ""}:</strong> ahí la presión de operación ya es la más alta, porque tiene más columna de agua encima; al sumarle el golpe es el primer punto que rebasa la clase. La aliviadora no va ahí, pero su ajuste se calcula para protegerlo.</p>
+                                  <p><strong>Por qué en la llegada{planGolpe ? ` (${fmtPos(planGolpe.valvula.cad)}, cota ${planGolpe.valvula.cota} m)` : ""}:</strong> en una línea por gravedad el golpe nace en la válvula que se cierra, normalmente la de la llegada al tanque o a la red. La onda de sobrepresión sale de ese punto y recorre la línea hacia atrás. Una aliviadora junto a esa válvula abre en el primer instante y descarga agua, recortando el pico en su origen, antes de que viaje por toda la línea.</p>
+                                  <p><strong>Por qué se menciona el punto más bajo{planGolpe ? ` (${fmtPos(planGolpe.bajo.cad)}, cota ${planGolpe.bajo.cota} m)` : ""}:</strong> ahí la presión de operación ya es la más alta, porque tiene más columna de agua encima; al sumarle el golpe es el primer punto que rebasa la clase. La aliviadora no va ahí, pero su ajuste se calcula para protegerlo.</p>
                                   {planGolpe?.ajuste ? (
                                     <p><strong>Cómo se calcula el ajuste:</strong> con la válvula cerrada el agua queda detenida y en la llegada hay {formatNumber(planGolpe.ajuste.estaticaEnValvula, 1)} kg/cm². La aliviadora debe abrir arriba de eso (+10 % = {formatNumber(planGolpe.ajuste.minimo, 1)}) para no descargar agua en operación normal, y abajo de la clase menos el desnivel hasta el punto bajo ({planGolpe.valvula.cota} − {planGolpe.bajo.cota} = {formatNumber(planGolpe.valvula.cota - planGolpe.bajo.cota, 1)} m) y un margen de 0.5 = {formatNumber(planGolpe.ajuste.maximo, 1)} kg/cm², para que cuando abra, el punto bajo no rebase la clase.</p>
                                   ) : (
@@ -810,7 +809,7 @@ export default function GolpeArietePage() {
                         <p className="text-sm font-bold text-red-700 dark:text-red-300">Ventosas de admisión de aire en los puntos altos</p>
                         {ubicacion && ubicacion.altos.length > 0 && (
                           <p className="text-[10px] font-semibold text-red-700 dark:text-red-300 mt-0.5">
-                            {"📍"} Puntos altos de tu perfil: {ubicacion.altos.slice(0, 3).map((v) => `cad ${fmtCad(v.cad)} (cota ${v.cota} m)`).join(" · ")}{ubicacion.altos.length > 3 ? " · …" : ""}
+                            {"📍"} Puntos altos de tu perfil: {ubicacion.altos.slice(0, 3).map((v) => `${fmtPos(v.cad)} (cota ${v.cota} m)`).join(" · ")}{ubicacion.altos.length > 3 ? " · …" : ""}
                           </p>
                         )}
                         <p className="text-[10px] text-gray-500">La válvula de alivio NO protege contra vacío. El tamaño y la ubicación fina los da el módulo Válvulas de aire (detalle abajo).</p>
@@ -836,7 +835,7 @@ export default function GolpeArietePage() {
                   </p>
                   {ubicacion && ubicacion.altos.length > 0 && (
                     <p className="text-xs font-semibold text-red-700 dark:text-red-300">
-                      {"📍"} En tu perfil: {ubicacion.altos.slice(0, 3).map((v) => `cad ${fmtCad(v.cad)} (cota ${v.cota} m${v.desc ? ` — ${v.desc}` : ""})`).join(" · ")}{ubicacion.altos.length > 3 ? " · …" : ""}
+                      {"📍"} En tu perfil: {ubicacion.altos.slice(0, 3).map((v) => `${fmtPos(v.cad)} (cota ${v.cota} m${v.desc ? ` — ${v.desc}` : ""})`).join(" · ")}{ubicacion.altos.length > 3 ? " · …" : ""}
                     </p>
                   )}
                   <Link href="/valvulas-aire" className="inline-block text-xs bg-[#1C3D5A] text-white px-3 py-1.5 rounded-lg hover:bg-[#0F2438] transition-colors font-medium">
