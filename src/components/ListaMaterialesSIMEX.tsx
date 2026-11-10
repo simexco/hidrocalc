@@ -728,7 +728,7 @@ export default function ListaMaterialesSIMEX({
       dn, bridas:2, leKey:'cople', norma:'AWWA', qty:1 })
   }
   function addMarco() {
-    add({ label:'Marco con Tapa Dúctil 50×50cm', sku:'AI-MCT-D',
+    add({ label:'Marco con tapa de hierro dúctil 50×50 cm', sku:'AI-MCT-D',
       dn, bridas:0, leKey:'tapa-ciega', norma:'EN-124 D400', isObra:true, qty:1 })
     setSugEnterrada(false)
   }
