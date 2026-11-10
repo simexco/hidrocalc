@@ -12,7 +12,6 @@ export function TablaCoefRegulacion({ horas, inicio, manual = false }: { horas: 
   const iMax = filas.reduce((b, r, i) => (r.acumulado > filas[b].acumulado ? i : b), 0);
   const iMin = filas.reduce((b, r, i) => (r.acumulado < filas[b].acumulado ? i : b), 0);
   const nacionales = REGULATION_COEFFICIENTS.filter((r) => !r.key.startsWith("cdmx"));
-  const cdmx = (hrs: number, ini: number) => REGULATION_COEFFICIENTS.find((r) => r.key.startsWith("cdmx") && r.hours === hrs && r.inicio === ini)?.R;
   const hNorm = Math.min(24, Math.max(1, Math.round(horas)));
   const iniNorm = ((Math.round(inicio) % 24) + 24) % 24;
   const coincide = (hrs: number, ini: number) => hrs === hNorm && (hrs === 24 || ini === iniNorm);
@@ -74,8 +73,7 @@ export function TablaCoefRegulacion({ horas, inicio, manual = false }: { horas: 
             <thead className="bg-[#E9EFF5] dark:bg-gray-900 text-[#1C3D5A] dark:text-blue-300">
               <tr>
                 <th className="px-1.5 py-1 text-left font-semibold">Horario de bombeo</th>
-                <th className="px-1.5 py-1 text-right font-semibold">R nacional (Tabla 1.3)</th>
-                <th className="px-1.5 py-1 text-right font-semibold">R CDMX (Tabla 1.4)</th>
+                <th className="px-1.5 py-1 text-right font-semibold">R (Tabla 1.3)</th>
               </tr>
             </thead>
             <tbody>
@@ -83,7 +81,6 @@ export function TablaCoefRegulacion({ horas, inicio, manual = false }: { horas: 
                 <tr key={r.key} className={coincide(r.hours, r.inicio) ? "bg-[#E9EFF5] dark:bg-[#1C3D5A]/30 font-semibold" : ""}>
                   <td className="px-1.5 py-0.5">{r.label}</td>
                   <td className="px-1.5 py-0.5 text-right">{r.R.toFixed(1)}</td>
-                  <td className="px-1.5 py-0.5 text-right">{cdmx(r.hours, r.inicio)?.toFixed(1) ?? "—"}</td>
                 </tr>
               ))}
             </tbody>
@@ -97,8 +94,8 @@ export function TablaCoefRegulacion({ horas, inicio, manual = false }: { horas: 
 
         <p className="text-[10px] text-gray-500 dark:text-gray-400 leading-relaxed">
           Fuente: CONAGUA, Manual de Agua Potable, Alcantarillado y Saneamiento (MAPAS), <i>Diseño, construcción y operación
-          de tanques de regulación</i>: método de la Tabla 1.1, curva de demanda horaria (Figura 1.1) y coeficientes de las
-          Tablas 1.3 y 1.4.{" "}
+          de tanques de regulación</i>: método de la Tabla 1.1, curva de demanda horaria (Figura 1.1) y coeficientes de la
+          Tabla 1.3.{" "}
           <a href={MAPAS_TANQUES_URL} target="_blank" rel="noreferrer" className="underline decoration-dotted">PDF oficial</a>
         </p>
       </div>

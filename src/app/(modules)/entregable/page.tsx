@@ -87,7 +87,7 @@ export default function EntregablePage() {
           <InputField label="Dotación" value={d.dotacion} onChange={(v) => set("dotacion", num(v))} unit="L/hab/día" />
           <InputField label="Coeficiente del día de más consumo (CVD)" value={d.cmd} onChange={(v) => set("cmd", num(v))} tooltip="También llamado CMD, coeficiente máximo diario (MAPAS: 1.2-1.5)" />
           <InputField label="Coeficiente de la hora pico (CVH)" value={d.cmh} onChange={(v) => set("cmh", num(v))} tooltip="También llamado CMH, coeficiente máximo horario (MAPAS: 1.5-2.0)" />
-          <InputField label="Coeficiente de regulación (R)" value={d.horasTanque} onChange={(v) => set("horasTanque", num(v))} tooltip="Coeficiente R de MAPAS (Tablas 1.3/1.4) según el horario de bombeo: 24 h = 11.0 · 20 h (4-24) = 9.0 · 16 h (5-21) = 19.0 · CDMX: 14.3. V = Qmd × R" />
+          <InputField label="Coeficiente de regulación (R)" value={d.horasTanque} onChange={(v) => set("horasTanque", num(v))} tooltip="Coeficiente R de MAPAS (Tabla 1.3) según el horario de bombeo: 24 h = 11.0 · 20 h (4-24) = 9.0 · 16 h (5-21) = 19.0. V = Qmd × R" />
         </div>
         <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
           <input type="checkbox" checked={d.proyectarCrecimiento} onChange={(e) => set("proyectarCrecimiento", e.target.checked)} className="rounded border-gray-300" />
