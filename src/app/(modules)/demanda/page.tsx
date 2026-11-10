@@ -222,7 +222,7 @@ export default function DemandaPage() {
                     <InputField label="Hora en que arranca" value={inputs.horaInicioBombeo ?? 0} onChange={(v) => setHorarioTanque(inputs.horasBombeoTanque ?? 24, parseInt(v) || 0)} unit="h (0-23)" tooltip="El horario importa: 20 h de las 4 a las 24 da R = 9.0, pero de las 0 a las 20 da R = 12.6 (manual MAPAS)" />
                   </div>
                   <p className="text-xs font-semibold text-[#1C3D5A] dark:text-blue-300">
-                    Coeficiente de regulación (R) calculado = {inputs.coefRegulacion} m³/(L/s) — método oficial MAPAS (curva Fig. 1.1, ec. 1.2)
+                    Coeficiente de regulación (R) calculado = {Number(inputs.coefRegulacion).toFixed(1)} m³/(L/s) — método oficial MAPAS (curva Fig. 1.1, ec. 1.2)
                     {(() => {
                       const h = inputs.horasBombeoTanque ?? 24;
                       const ini = inputs.horaInicioBombeo ?? 0;
