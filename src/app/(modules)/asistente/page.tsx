@@ -96,7 +96,7 @@ export default function AsistentePage() {
         ],
         obtienes: "Si resiste: confirmación con factor de seguridad. Si no: la clase que sí resiste o la protección necesaria. Las ventosas contra vacío que recomiende ya las ubicaste en el paso 4.",
       } },
-    { n: 6, title: "Válvula reductora (VRP)", desc: "Si la presión excede la clase del tubo: reducir presión.", href: "/vrp", done: null, summary: vrpRecomendada ? "Recomendada (presión alta)" : "Revisar si aplica",
+    { n: 6, title: "Válvula reductora (VRP)", desc: "Si la presión excede la clase del tubo: reducir presión.", href: "/vrp", done: null, summary: vrpRecomendada ? "Recomendada (presión alta)" : p.vrpRequerida === false ? "No se requiere" : "Revisar si aplica",
       guia: {
         ten: "Este paso solo aplica si el paso 2 lo marcó “Recomendada” (hay demasiada presión en alguna zona).",
         haz: [

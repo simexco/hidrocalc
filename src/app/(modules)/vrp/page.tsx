@@ -64,10 +64,19 @@ export default function VRPPage() {
 
   // Flujo de proyecto: la VRP recomendada se guarda para el despiece/reporte
   const patchProject = useProjectStore((s) => s.patch);
+  // ¿La línea del proyecto necesita VRP? Lo decide «Línea de conducción» (cada tramo contra su clase).
+  // Si no la necesita, este módulo lo dice y NO la manda al reporte ni a la lista de materiales.
+  const vrpRequerida = useProjectStore((s) => s.project.vrpRequerida);
+  const presionMaxLinea = useProjectStore((s) => s.project.presionMaxLinea);
+  const pnLinea = useProjectStore((s) => s.project.pnLinea);
+  const noRequiere = vrpRequerida === false;
+  const caida = inputs.P1 != null && inputs.P2 != null ? inputs.P1 - inputs.P2 : null;
+  const caidaChica = caida != null && caida > 0 && caida < 0.7; // las piloteadas no regulan estable con tan poca diferencia
+  const soloReferencia = noRequiere || caidaChica;
   useEffect(() => {
-    const t = setTimeout(() => patchProject({ vrpDN: results?.recommendedDN ?? null }), 600);
+    const t = setTimeout(() => patchProject({ vrpDN: noRequiere ? null : (results?.recommendedDN ?? null) }), 600);
     return () => clearTimeout(t);
-  }, [results, patchProject]);
+  }, [results, patchProject, noRequiere]);
 
   const handleNum = (key: keyof typeof inputs, val: string) => {
     setInput(key, (val === "" ? null : parseFloat(val)) as never);
@@ -206,7 +215,11 @@ export default function VRPPage() {
                     { label: "Caída de presión (ΔP)", value: formatNumber(results.deltaP_bar, 2), unit: "bar" },
                     { label: "Velocidad del agua a la salida (V)", value: formatNumber(results.v_aguas_abajo, 2), unit: "m/s" },
                   ],
-                  alerts: results.alerts.map((a) => ({ level: a.level, message: a.message })),
+                  alerts: [
+                    ...(noRequiere ? [{ level: "OK" as const, message: "NO SE REQUIERE VRP: segun Linea de conduccion, todos los tramos trabajan dentro de la clase de su tuberia. El dimensionamiento siguiente es solo de referencia." }] : []),
+                    ...(!noRequiere && caidaChica ? [{ level: "WARN" as const, message: `Caida capturada de ${caida!.toFixed(2)} kg/cm2: demasiado chica para que una VRP piloteada regule estable. Revisar si realmente se requiere.` }] : []),
+                    ...results.alerts.map((a) => ({ level: a.level, message: a.message })),
+                  ],
                   tableData: {
                     head: ["Diámetro nominal (DN)", "Capacidad de flujo máxima (Kv)", "% capacidad a caudal máximo", "% capacidad a caudal mínimo", "Estado"],
                     body: results.selectionTable.map(r => [
@@ -222,15 +235,38 @@ export default function VRPPage() {
             />
           </div>
 
+          {noRequiere && (
+            <div className="rounded-xl border-2 border-green-300 dark:border-green-700 bg-green-50 dark:bg-green-900/20 p-5 space-y-2">
+              <p className="text-base font-bold text-green-800 dark:text-green-300">{"✓"} Esta línea no requiere válvula reductora</p>
+              <p className="text-sm text-green-900/90 dark:text-green-200/90 leading-relaxed">
+                Según «Línea de conducción», todos los tramos trabajan dentro de la clase de su tubería
+                {presionMaxLinea != null ? <> (presión máxima <strong>{formatNumber(presionMaxLinea, 2)} kg/cm²</strong>{pnLinea != null ? <>; la tubería resiste <strong>{formatNumber(pnLinea, 1)} kg/cm²</strong></> : null})</> : null}.
+                {" "}Instalar una VRP solo agregaría costo, mantenimiento y una pérdida de presión innecesaria.
+              </p>
+              <p className="text-xs text-green-800/80 dark:text-green-300/80">
+                No se incluye en el reporte ni en la lista de materiales. Si cambias el trazo, el gasto o la clase en «Línea de conducción», este veredicto se actualiza solo. Los cálculos de abajo quedan solo como referencia.
+              </p>
+            </div>
+          )}
+          {!noRequiere && caidaChica && (
+            <div className="rounded-xl border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/20 p-4 space-y-1">
+              <p className="text-sm font-semibold text-amber-800 dark:text-amber-300">{"⚠"} Probablemente no se requiere: la caída es muy chica</p>
+              <p className="text-xs text-amber-900/90 dark:text-amber-200/90 leading-relaxed">
+                Capturaste una reducción de {formatNumber(caida!, 2)} kg/cm². Una válvula reductora piloteada necesita, por lo general, al menos unos 0.7 kg/cm² (10 psi) de diferencia entre entrada y salida para regular de forma estable; el mínimo exacto lo da el fabricante.
+                {" "}Revisa en «Línea de conducción» si algún tramo realmente rebasa la clase de su tubería.
+              </p>
+            </div>
+          )}
+
           {results && results.alerts.find(a => a.field === "P2" && a.level === "ERROR") ? (
             <AlertBanner level="ERROR" message="P2 debe ser menor que P1 para que la valvula reduzca presion." />
           ) : results && (
             <>
               {/* Main recommendation */}
               {results.recommendedDN ? (
-                <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl p-5">
-                  <h3 className="text-sm font-semibold text-green-800 dark:text-green-300 mb-3">
-                    Valvula reductora recomendada
+                <div className={`rounded-xl p-5 border ${soloReferencia ? "bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700 opacity-80" : "bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800"}`}>
+                  <h3 className={`text-sm font-semibold mb-3 ${soloReferencia ? "text-gray-600 dark:text-gray-300" : "text-green-800 dark:text-green-300"}`}>
+                    {soloReferencia ? "Dimensionamiento de referencia — no se recomienda instalarla" : "Válvula reductora recomendada"}
                   </h3>
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                     <div>
