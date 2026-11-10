@@ -140,7 +140,7 @@ export function vizToAccsConex(nodes: VizNode[], opts?: { marcoTapa?: string; co
       // 'none' = el usuario lo quitó de la lista (se regresa con el selector del recuadro de caja)
       if ((marcoTapa ?? 'D') !== 'none') {
         const marcoSel = MARCOS_TAPA.find(m => m.key === (marcoTapa ?? 'D')) ?? MARCOS_TAPA[0]
-        accs.push({ id: -9003, label: `Marco con tapa ${marcoSel.nombre} (caja tipo ${cj.tipo})`, sku: marcoSel.sku, dn: dnRef, bridas: 0, leKey: 'tapa-ciega', norma: 'EN-124 D400', isObra: true, qty: cd.cant })
+        accs.push({ id: -9003, label: `Marco con tapa ${marcoSel.nombre} (caja tipo ${cj.tipo})`, sku: marcoSel.sku, dn: dnRef, bridas: 0, leKey: 'tapa-ciega', norma: marcoSel.key === 'D' ? 'EN-124 D400' : '', isObra: true, qty: cd.cant })
       }
     }
   }
