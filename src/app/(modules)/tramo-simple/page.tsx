@@ -19,8 +19,10 @@ import { ResetButton } from "@/components/ui/ResetButton";
 import { FormulaDetail, velocityFormula, hazenWilliamsFormula, gradientFormula, pressureFormula } from "@/components/ui/FormulaDetail";
 import { validateHydraulicInputs, InputWarnings } from "@/components/ui/InputWarning";
 import type { CalcMode, FlowUnit, AssumedValue, Alert } from "@/types/hydraulic";
+import { useNombreProyecto } from "@/store/projectStore";
 
 export default function TramoSimplePage() {
+  const { proyecto, setProyecto } = useNombreProyecto();
   const { inputs, results, setInput, setResults, reset } = useSinglePipeStore();
   const [simexAccs, setSimexAccs] = useState<SIMEXAcc[]>([]);
   const [pipeClass, setPipeClass] = useState("");
@@ -233,10 +235,11 @@ export default function TramoSimplePage() {
 
             <InputField
               label="Nombre del proyecto"
-              value={inputs.projectName}
-              onChange={(v) => setInput("projectName", v)}
+              value={proyecto}
+              onChange={setProyecto}
               type="text"
-              placeholder="Tramo sin nombre"
+              tooltip="Es el mismo nombre en todos los pasos y en el reporte"
+              placeholder="Ej. Fraccionamiento Las Lomas"
             />
 
             {/* Q — not shown in Mode B */}
@@ -462,7 +465,7 @@ export default function TramoSimplePage() {
                 return {
                   title: `Análisis de Tramo Simple — Modo ${inputs.mode}`,
                   module: "Tramo Simple",
-                  projectName: inputs.projectName,
+                  projectName: proyecto || inputs.projectName,
                   hasAssumedValues: results.hmEstimated || inputs.P1 == null,
                   inputs: [
                     { label: "Caudal (Q)", value: inputs.rawQ != null ? `${inputs.rawQ} ${inputs.flowUnit}` : "—" },

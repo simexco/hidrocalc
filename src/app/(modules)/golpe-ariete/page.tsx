@@ -13,7 +13,7 @@ import { calculateWaterHammer } from "@/lib/calculations/water-hammer";
 import { formatNumber, mcaToKgcm2 } from "@/lib/calculations/conversions";
 import { PIPE_ELASTICITY, THICKNESS_BY_MATERIAL, PIPE_CLASSES_BY_MATERIAL, PVC_THICKNESS, getPVCClasses, PVC_SYSTEM_LABELS, type PVCSystem, PIPE_CATALOG, type PipeCatalogGroup, STANDARD_DNS_LABELED, KV_VALVULAS_GLOBO, KV_FACTOR_SELECCION, CLASE_RD_HELP } from "@/lib/constants";
 import { saveFormState, loadFormState } from "@/lib/storage/form-persistence";
-import { useProjectStore } from "@/store/projectStore";
+import { useProjectStore, useNombreProyecto } from "@/store/projectStore";
 
 // Busca en el catalogo del golpe el grupo/tamano/clase que corresponde al material, DN y clase del proyecto
 function matchGolpeCatalog(material: string, dnMm: number | null, clase: string) {
@@ -34,6 +34,7 @@ import { ResetButton } from "@/components/ui/ResetButton";
 import type { AssumedValue } from "@/types/hydraulic";
 
 export default function GolpeArietePage() {
+  const { proyecto, setProyecto } = useNombreProyecto();
   const { inputs, results, setInput, setResults, reset } = useWaterHammerStore();
   const singlePipe = useSinglePipeStore();
   const [showThicknessRef, setShowThicknessRef] = useState(false);
@@ -407,7 +408,7 @@ export default function GolpeArietePage() {
               </div>
             </div>
 
-            <InputField label="Nombre del proyecto" value={inputs.projectName} onChange={(v) => setInput("projectName", v)} type="text" />
+            <InputField label="Nombre del proyecto" value={proyecto} onChange={setProyecto} type="text" tooltip="Es el mismo nombre en todos los pasos y en el reporte" placeholder="Ej. Fraccionamiento Las Lomas" />
 
             {/* Caudal (o velocidad) */}
             <div className="space-y-1.5">
@@ -604,7 +605,7 @@ export default function GolpeArietePage() {
                 return {
                   title: "Análisis de Golpe de Ariete",
                   module: "Golpe de Ariete",
-                  projectName: inputs.projectName,
+                  projectName: proyecto || inputs.projectName,
                   hasAssumedValues: inputs.P0 == null,
                   inputs: [
                     { label: "Velocidad del agua (V₀)", value: inputs.V0 != null ? `${inputs.V0} m/s` : "—" },

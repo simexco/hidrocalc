@@ -13,7 +13,7 @@ import { calculateProfile, calculateRequiredP1, type ProfileVertex, type Profile
 import { flowToM3s, formatNumber } from "@/lib/calculations/conversions";
 import { STANDARD_DNS, STANDARD_DNS_LABELED, MATERIALS, getPipeClassesForMaterial, getRealInternalDiameter, CLASE_RD_HELP } from "@/lib/constants";
 import { saveFormState, loadFormState } from "@/lib/storage/form-persistence";
-import { useProjectStore } from "@/store/projectStore";
+import { useProjectStore, useNombreProyecto } from "@/store/projectStore";
 import { ComposedChart, Line, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { NumInput } from "@/components/ui/NumInput";
 import type { FlowUnit } from "@/types/hydraulic";
@@ -47,6 +47,7 @@ const TooltipPerfil = ({ active, payload, label }: any) => {
 const tramoDi = (t: ProfileTramo): number => getRealInternalDiameter(t.materialName, t.DN_mm, t.pipeClass) ?? t.DN_mm;
 
 export default function PerfilPage() {
+  const { proyecto, setProyecto } = useNombreProyecto();
   const [projectName, setProjectName] = useState("Perfil hidraulico");
   const [rawQ, setRawQ] = useState<number | null>(null);
   const [flowUnit, setFlowUnit] = useState<FlowUnit>("L/s");
@@ -537,7 +538,7 @@ export default function PerfilPage() {
           {/* Proyecto + nuevo cálculo — hasta arriba */}
           <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 flex items-end gap-3">
             <div className="flex-1">
-              <InputField label="Nombre del proyecto" value={projectName} onChange={setProjectName} type="text" />
+              <InputField label="Nombre del proyecto" value={proyecto} onChange={setProyecto} type="text" tooltip="Es el mismo nombre en todos los pasos y en el reporte" placeholder="Ej. Fraccionamiento Las Lomas" />
             </div>
             <ResetButton moduleKey="perfil" onReset={handleReset} />
           </div>
@@ -951,7 +952,7 @@ export default function PerfilPage() {
                 return {
                   title: "Analisis de Perfil Hidraulico",
                   module: "Perfil",
-                  projectName,
+                  projectName: proyecto || projectName,
                   hasAssumedValues: false,
                   inputs: [
                     { label: "Caudal (Q)", value: rawQ != null ? `${rawQ} ${flowUnit}` : "--" },

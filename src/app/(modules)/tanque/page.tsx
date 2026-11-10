@@ -11,6 +11,7 @@ import { calculateTankStorage, REGULATION_COEFFICIENTS, type TankStorageInputs, 
 import { TablaCoefRegulacion } from "@/components/ui/TablaCoefRegulacion";
 import { formatNumber } from "@/lib/calculations/conversions";
 import { saveFormState, loadFormState } from "@/lib/storage/form-persistence";
+import { useNombreProyecto } from "@/store/projectStore";
 
 const defaults: TankStorageInputs = {
   projectName: "Tanque de regulacion",
@@ -26,6 +27,7 @@ const defaults: TankStorageInputs = {
 };
 
 export default function TanquePage() {
+  const { proyecto, setProyecto } = useNombreProyecto();
   const [inputs, setInputs] = useState<TankStorageInputs>({ ...defaults });
   const [results, setResults] = useState<ReturnType<typeof calculateTankStorage>>(null);
   const [showAdvanced, setShowAdvanced] = useState(false);
@@ -77,7 +79,7 @@ export default function TanquePage() {
               <ResetButton moduleKey="tanque" onReset={handleReset} />
             </div>
 
-            <InputField label="Nombre del proyecto" value={inputs.projectName} onChange={(v) => set("projectName", v)} type="text" />
+            <InputField label="Nombre del proyecto" value={proyecto} onChange={setProyecto} type="text" tooltip="Es el mismo nombre en todos los pasos y en el reporte" placeholder="Ej. Fraccionamiento Las Lomas" />
 
             <InputField label="Gasto máximo diario (QMD)" value={inputs.Qmd_ls} onChange={(v) => set("Qmd_ls", v === "" ? null : parseFloat(v))} unit="L/s" required tooltip="Gasto MÁXIMO diario (QMD) — obtenlo del módulo Cálculo de gasto. El volumen de regulación de MAPAS se calcula sobre el máximo diario, no sobre el medio." />
 
@@ -185,7 +187,7 @@ export default function TanquePage() {
                 return {
                   title: "Tanque de Regularizacion",
                   module: "Tanque",
-                  projectName: inputs.projectName,
+                  projectName: proyecto || inputs.projectName,
                   hasAssumedValues: false,
                   inputs: [
                     { label: "Gasto máximo diario (QMD)", value: `${inputs.Qmd_ls} L/s` },

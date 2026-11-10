@@ -13,11 +13,12 @@ import { validateHydraulicInputs, InputWarnings } from "@/components/ui/InputWar
 import { formatNumber } from "@/lib/calculations/conversions";
 import { STANDARD_DNS, STANDARD_DNS_LABELED } from "@/lib/constants";
 import { saveFormState, loadFormState } from "@/lib/storage/form-persistence";
-import { useProjectStore } from "@/store/projectStore";
+import { useProjectStore, useNombreProyecto } from "@/store/projectStore";
 import { ResetButton } from "@/components/ui/ResetButton";
 import type { FlowUnit, AssumedValue } from "@/types/hydraulic";
 
 export default function VRPPage() {
+  const { proyecto, setProyecto } = useNombreProyecto();
   const { inputs, results, setInput, setResults, reset } = useVRPStore();
   const [showAdvanced, setShowAdvanced] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
@@ -84,7 +85,7 @@ export default function VRPPage() {
               <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300">Datos del sistema</h2>
               <ResetButton moduleKey="vrp" onReset={reset} />
             </div>
-            <InputField label="Nombre del proyecto" value={inputs.projectName} onChange={(v) => setInput("projectName", v)} type="text" />
+            <InputField label="Nombre del proyecto" value={proyecto} onChange={setProyecto} type="text" tooltip="Es el mismo nombre en todos los pasos y en el reporte" placeholder="Ej. Fraccionamiento Las Lomas" />
 
             {/* Q max */}
             <div className="flex items-end gap-2">
@@ -180,7 +181,7 @@ export default function VRPPage() {
                 return {
                   title: "Seleccion de Valvula Reductora de Presion",
                   module: "VRP",
-                  projectName: inputs.projectName,
+                  projectName: proyecto || inputs.projectName,
                   hasAssumedValues: inputs.rawQMin == null,
                   inputs: [
                     { label: "Caudal máximo (Q)", value: inputs.rawQMax != null ? `${inputs.rawQMax} ${inputs.flowUnit}` : "--" },

@@ -9,7 +9,7 @@ import { ResetButton } from "@/components/ui/ResetButton";
 import { FormulaDetail } from "@/components/ui/FormulaDetail";
 import { InfoBubble, DefinicionCoefRegulacion } from "@/components/ui/InfoBubble";
 import { calculateWaterDemand, DEVELOPMENT_TYPES, CLIMATE_TYPES, DENSITY_CATEGORIES, type PopulationMode, type WaterDemandInputs } from "@/lib/calculations/water-demand";
-import { useProjectStore } from "@/store/projectStore";
+import { useProjectStore, useNombreProyecto } from "@/store/projectStore";
 import { formatNumber } from "@/lib/calculations/conversions";
 import { saveFormState, loadFormState } from "@/lib/storage/form-persistence";
 import { calcularCoefRegulacion } from "@/lib/calculations/tank-storage";
@@ -38,6 +38,7 @@ const defaults: WaterDemandInputs = {
 };
 
 export default function DemandaPage() {
+  const { proyecto, setProyecto } = useNombreProyecto();
   const [inputs, setInputs] = useState<WaterDemandInputs>({ ...defaults });
   const [results, setResults] = useState<ReturnType<typeof calculateWaterDemand>>(null);
   const [showAdvanced, setShowAdvanced] = useState(false);
@@ -130,7 +131,7 @@ export default function DemandaPage() {
               <ResetButton moduleKey="demanda" onReset={handleReset} />
             </div>
 
-            <InputField label="Nombre del proyecto" value={inputs.projectName} onChange={(v) => set("projectName", v)} type="text" />
+            <InputField label="Nombre del proyecto" value={proyecto} onChange={setProyecto} type="text" tooltip="Es el mismo nombre en todos los pasos y en el reporte" placeholder="Ej. Fraccionamiento Las Lomas" />
 
             {/* Population mode */}
             <div className="space-y-1">
@@ -294,7 +295,7 @@ export default function DemandaPage() {
                 return {
                   title: "Calculo de Demanda de Agua",
                   module: "Demanda",
-                  projectName: inputs.projectName,
+                  projectName: proyecto || inputs.projectName,
                   hasAssumedValues: false,
                   inputs: [
                     { label: "Modo", value: inputs.mode === 'habitantes' ? `${results.poblacionActual} hab` : inputs.mode === 'viviendas' ? `${inputs.numViviendas} viviendas × ${inputs.habPorVivienda} hab/viv` : `${inputs.superficieHa} ha × ${inputs.densidadHabHa} viv/ha × ${inputs.habPorVivienda} hab/viv` },

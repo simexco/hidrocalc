@@ -14,8 +14,10 @@ import { MATERIALS, DEFAULTS, getPipeClassesForMaterial, CLASE_RD_HELP } from "@
 import { saveFormState, loadFormState } from "@/lib/storage/form-persistence";
 import { ResetButton } from "@/components/ui/ResetButton";
 import type { FlowUnit, AssumedValue } from "@/types/hydraulic";
+import { useNombreProyecto } from "@/store/projectStore";
 
 export default function DimensionamientoPage() {
+  const { proyecto, setProyecto } = useNombreProyecto();
   const { inputs, results, setInput, setResults, reset } = usePipeSizingStore();
   const [pipeClass, setPipeClass] = useState("");
   const [PNBar, setPNBar] = useState<number | null>(null);
@@ -106,7 +108,7 @@ export default function DimensionamientoPage() {
               <ResetButton moduleKey="dimensionamiento" onReset={() => { reset(); setPipeClass(""); setPNBar(null); }} />
             </div>
 
-            <InputField label="Nombre del proyecto" value={inputs.projectName} onChange={(v) => setInput("projectName", v)} type="text" />
+            <InputField label="Nombre del proyecto" value={proyecto} onChange={setProyecto} type="text" tooltip="Es el mismo nombre en todos los pasos y en el reporte" placeholder="Ej. Fraccionamiento Las Lomas" />
 
             <div className="flex items-end gap-2">
               <div className="flex-1">
@@ -207,7 +209,7 @@ export default function DimensionamientoPage() {
                 return {
                   title: "Dimensionamiento de Tubería",
                   module: "Dimensionamiento",
-                  projectName: inputs.projectName,
+                  projectName: proyecto || inputs.projectName,
                   hasAssumedValues: inputs.P1 == null,
                   inputs: [
                     { label: "Caudal de diseño (Q)", value: inputs.rawQ != null ? `${inputs.rawQ} ${inputs.flowUnit}` : "—" },
