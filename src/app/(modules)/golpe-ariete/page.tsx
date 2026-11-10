@@ -14,6 +14,8 @@ import { formatNumber, mcaToKgcm2 } from "@/lib/calculations/conversions";
 import { PIPE_ELASTICITY, THICKNESS_BY_MATERIAL, PIPE_CLASSES_BY_MATERIAL, PVC_THICKNESS, getPVCClasses, PVC_SYSTEM_LABELS, type PVCSystem, PIPE_CATALOG, type PipeCatalogGroup, STANDARD_DNS_LABELED, KV_VALVULAS_GLOBO, KV_FACTOR_SELECCION, CLASE_RD_HELP } from "@/lib/constants";
 import { saveFormState, loadFormState } from "@/lib/storage/form-persistence";
 import { useProjectStore, useNombreProyecto } from "@/store/projectStore";
+import { ubicarProteccionGolpe } from "@/lib/calculations/protection-location";
+import { Desplegable, PiezasAliviadora, PorQueVentosasVacio } from "@/components/ui/ProteccionExplicacion";
 
 // Busca en el catalogo del golpe el grupo/tamano/clase que corresponde al material, DN y clase del proyecto
 function matchGolpeCatalog(material: string, dnMm: number | null, clase: string) {
@@ -336,6 +338,13 @@ export default function GolpeArietePage() {
   }
   const resiste: boolean | null = (userPN != null && results?.Pmax_bar != null) ? results.Pmax_bar <= userPN : null;
 
+  // Dónde va la protección y con qué ajuste (calculado sobre el perfil del proyecto)
+  const p1Proyecto = useProjectStore((s) => s.project.p1);
+  const planGolpe = ubicarProteccionGolpe(
+    (vertsPerfil ?? []).filter((v) => v.cad != null && v.cota != null).map((v) => ({ cad: v.cad as number, cota: v.cota as number, desc: v.desc ?? "" })),
+    esBombeo, p1Proyecto ?? null, userPN != null ? userPN / 0.9807 : null,
+  );
+
   // Válvula de protección recomendada (alivio/anticipadora) — opción B cuando no resiste.
   // Criterio de fabricantes de anticipadoras (Cla-Val / Bermad): en el paro de bomba la
   // válvula debe poder DESALOJAR EL CAUDAL COMPLETO de la línea — si solo alivia una
@@ -366,6 +375,12 @@ export default function GolpeArietePage() {
   // Flujo de proyecto: los resultados REALES del módulo viajan al reporte (el PDF ya no
   // recalcula el golpe con otra fórmula) y la válvula de protección entra solo si no resiste.
   const patchProjectGolpe = useProjectStore((s) => s.patch);
+  // Ubicación serializada (valor primitivo para el efecto: evita re-guardar en cada render)
+  const gUbic = planGolpe ? JSON.stringify({
+    cad: planGolpe.valvula.cad, cota: planGolpe.valvula.cota,
+    ajuste: !esBombeo && planGolpe.ajuste ? planGolpe.ajuste.recomendado : null,
+    bombeo: esBombeo, bajoCad: planGolpe.bajo.cad, bajoCota: planGolpe.bajo.cota,
+  }) : "";
   useEffect(() => {
     const necesita = resiste === false;
     const dn = necesita ? (protecValvula?.dn ?? null) : null;
@@ -376,9 +391,10 @@ export default function GolpeArietePage() {
       golpePmax: results?.Pmax != null ? mcaToKgcm2(results.Pmax) : null,
       golpePN: userPN != null ? userPN / 0.9807 : null, // bar → kg/cm²: el PN contra el que comparó el módulo
       golpeResiste: resiste,
+      golpeUbicacion: gUbic ? JSON.parse(gUbic) : null,
     }), 600);
     return () => clearTimeout(t);
-  }, [resiste, protecValvula, results, userPN, patchProjectGolpe]);
+  }, [resiste, protecValvula, results, userPN, patchProjectGolpe, gUbic]);
 
   return (
     <div className="max-w-6xl mx-auto space-y-6">
@@ -746,7 +762,37 @@ export default function GolpeArietePage() {
                           ) : (
                             <p className="text-[10px] text-gray-400 mt-1">Captura el perfil (cadenamientos y cotas) en «Línea de conducción» y aquí te marco el punto exacto de instalación.</p>
                           )}
+                          {!esBombeo && planGolpe?.ajuste && (
+                            <p className={`text-[10px] mt-1 rounded px-1.5 py-1 leading-relaxed ${planGolpe.ajuste.alcanza ? "text-amber-800 dark:text-amber-300 bg-amber-50 dark:bg-amber-900/20" : "text-red-700 dark:text-red-300 bg-red-50 dark:bg-red-900/20"}`}>
+                              <strong>Ajuste de apertura:</strong> {formatNumber(planGolpe.ajuste.recomendado, 1)} kg/cm² en la llegada
+                              {" "}(rango {formatNumber(planGolpe.ajuste.minimo, 1)} – {formatNumber(planGolpe.ajuste.maximo, 1)}).
+                              {!planGolpe.ajuste.alcanza && " La aliviadora en la llegada no alcanza a proteger el punto bajo: usa la opción A o una protección adicional."}
+                            </p>
+                          )}
                           <p className="text-[10px] font-mono text-amber-700 dark:text-amber-400 mt-1">SKU: ← CONF — confírmalo con tu asesor SIMEX</p>
+                          <div className="mt-2">
+                            <Desplegable titulo="¿Por qué aquí y para qué sirve cada pieza?">
+                              {esBombeo ? (
+                                <>
+                                  <p><strong>Por qué en la descarga de la bomba{planGolpe ? ` (cad ${fmtCad(planGolpe.valvula.cad)})` : ""}:</strong> en una línea por bombeo el golpe más fuerte no lo provoca una válvula, sino el <strong>paro de la bomba</strong> (corte de energía). El agua sigue avanzando por inercia, la presión cae, la columna se frena y regresa hacia la bomba hasta chocar contra la válvula check cerrada. Ese choque es la sobrepresión. La anticipadora va ahí porque es el punto donde llega y rebota la onda.</p>
+                                  <p><strong>Por qué se menciona el punto más bajo{planGolpe ? ` (cad ${fmtCad(planGolpe.bajo.cad)}, cota ${planGolpe.bajo.cota} m)` : ""}:</strong> ahí la presión de operación ya es la más alta, porque tiene más columna de agua encima; al sumarle el golpe, es el primer punto que rebasaría la clase. La válvula no va ahí, pero es el punto que hay que proteger.</p>
+                                  <p><strong>Ajuste:</strong> lo define el fabricante con la presión de operación en la descarga (la apertura por baja presión detecta el paro; la de alta presión, como respaldo, unos 10 % arriba de la operación).</p>
+                                </>
+                              ) : (
+                                <>
+                                  <p><strong>Por qué en la llegada{planGolpe ? ` (cad ${fmtCad(planGolpe.valvula.cad)}, cota ${planGolpe.valvula.cota} m)` : ""}:</strong> en una línea por gravedad el golpe nace en la válvula que se cierra, normalmente la de la llegada al tanque o a la red. La onda de sobrepresión sale de ese punto y recorre la línea hacia atrás. Una aliviadora junto a esa válvula abre en el primer instante y descarga agua, recortando el pico en su origen, antes de que viaje por toda la línea.</p>
+                                  <p><strong>Por qué se menciona el punto más bajo{planGolpe ? ` (cad ${fmtCad(planGolpe.bajo.cad)}, cota ${planGolpe.bajo.cota} m)` : ""}:</strong> ahí la presión de operación ya es la más alta, porque tiene más columna de agua encima; al sumarle el golpe es el primer punto que rebasa la clase. La aliviadora no va ahí, pero su ajuste se calcula para protegerlo.</p>
+                                  {planGolpe?.ajuste ? (
+                                    <p><strong>Cómo se calcula el ajuste:</strong> con la válvula cerrada el agua queda detenida y en la llegada hay {formatNumber(planGolpe.ajuste.estaticaEnValvula, 1)} kg/cm². La aliviadora debe abrir arriba de eso (+10 % = {formatNumber(planGolpe.ajuste.minimo, 1)}) para no descargar agua en operación normal, y abajo de la clase menos el desnivel hasta el punto bajo ({planGolpe.valvula.cota} − {planGolpe.bajo.cota} = {formatNumber(planGolpe.valvula.cota - planGolpe.bajo.cota, 1)} m) y un margen de 0.5 = {formatNumber(planGolpe.ajuste.maximo, 1)} kg/cm², para que cuando abra, el punto bajo no rebase la clase.</p>
+                                  ) : (
+                                    <p><strong>Ajuste:</strong> captura la presión inicial (P1) y el perfil en «Línea de conducción» para calcular el ajuste de apertura.</p>
+                                  )}
+                                </>
+                              )}
+                              <p className="font-semibold pt-1">Piezas del arreglo y para qué sirve cada una:</p>
+                              <PiezasAliviadora bombeo={esBombeo} />
+                            </Desplegable>
+                          </div>
                         </div>
                       </div>
                     )}
@@ -768,6 +814,7 @@ export default function GolpeArietePage() {
                           </p>
                         )}
                         <p className="text-[10px] text-gray-500">La válvula de alivio NO protege contra vacío. El tamaño y la ubicación fina los da el módulo Válvulas de aire (detalle abajo).</p>
+                        <div className="mt-2"><Desplegable titulo="¿Por qué en los puntos altos?"><PorQueVentosasVacio /></Desplegable></div>
                       </div>
                     )}
                   </div>
@@ -994,8 +1041,8 @@ export default function GolpeArietePage() {
                         </div>
 
                         <p className="text-xs text-amber-700 dark:text-amber-300">
-                          Presion de ajuste sugerida (Pset): <strong>{formatNumber(protecValvula.pSet, 2)} kg/cm2</strong>
-                          {" "}{"—"} La valvula debe abrirse cuando P supere este valor
+                          Presion de ajuste sugerida (Pset): <strong>{formatNumber(!esBombeo && planGolpe?.ajuste ? planGolpe.ajuste.recomendado : protecValvula.pSet, 2)} kg/cm2</strong>
+                          {" "}{"—"} {!esBombeo && planGolpe?.ajuste ? "medida en la llegada, donde va la válvula (calculada con el perfil del proyecto)" : "la valvula debe abrirse cuando P supere este valor"}
                         </p>
                         <p className="text-xs text-amber-700 dark:text-amber-300">
                           <strong>Criterio de tamaño:</strong> la válvula debe poder desalojar el caudal completo de la línea

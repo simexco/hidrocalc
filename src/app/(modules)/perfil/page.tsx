@@ -14,6 +14,8 @@ import { flowToM3s, formatNumber } from "@/lib/calculations/conversions";
 import { STANDARD_DNS, STANDARD_DNS_LABELED, MATERIALS, getPipeClassesForMaterial, getRealInternalDiameter, CLASE_RD_HELP } from "@/lib/constants";
 import { saveFormState, loadFormState } from "@/lib/storage/form-persistence";
 import { useProjectStore, useNombreProyecto } from "@/store/projectStore";
+import { ubicarVRP, fmtCad } from "@/lib/calculations/protection-location";
+import { Desplegable, PiezasEstacionVRP } from "@/components/ui/ProteccionExplicacion";
 import { ComposedChart, Line, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { NumInput } from "@/components/ui/NumInput";
 import type { FlowUnit } from "@/types/hydraulic";
@@ -131,6 +133,14 @@ export default function PerfilPage() {
   // (el perfil topografico viaja al siguiente paso: Valvulas de aire)
   const patchProject = useProjectStore((s) => s.patch);
   const fuenteAgua = useProjectStore((s) => s.project.fuenteAgua);
+  // Dónde va la VRP y con qué ajuste: cada punto contra la clase de SU tramo
+  const planVRP = (res: ProfileResults | null) => res ? ubicarVRP(
+    res.points.map((p) => ({
+      dist: p.dist, cota: p.cota, desc: p.desc, pressure_kgcm2: p.pressure_kgcm2,
+      pn_kgcm2: tramos[p.tramoIndex]?.PN_bar != null ? tramos[p.tramoIndex].PN_bar! / 0.9807 : null,
+    })),
+    Pmin,
+  ) : null;
   useEffect(() => {
     const t = setTimeout(() => {
       const sorted = [...vertices].filter((v) => v.dist != null && v.cota != null).sort((a, b) => a.dist - b.dist);
@@ -155,13 +165,17 @@ export default function PerfilPage() {
         // Veredicto de VRP POR TRAMO: cada tramo contra su propia clase (evita el falso
         // "excede" al cruzar la presion de un tramo con el PN de otro)
         vrpRequerida: sums.length ? sums.some((s) => s.exceedsPN === true) : null,
+        vrpUbicacion: (() => {
+          const pl = planVRP(results ?? null);
+          return pl?.viable ? { cad: pl.cad, cota: pl.cota, p1: pl.p1, p2: pl.p2, bajoCad: pl.puntoBajo.cad, bajoCota: pl.puntoBajo.cota } : null;
+        })(),
         coefAccesorios: coefAccesorios / 100,
         p1: calcMode === "calcularP1" ? computedP1 : P1,
         presionFinalLinea: results?.finalPressure_kgcm2 ?? null,
       });
     }, 700);
     return () => clearTimeout(t);
-  }, [vertices, tramos, results, P1, computedP1, calcMode, patchProject]);
+  }, [vertices, tramos, results, P1, computedP1, calcMode, patchProject, Pmin]);
 
   // Calculate
   const runCalc = useCallback(() => {
@@ -796,23 +810,38 @@ export default function PerfilPage() {
                   // ¿Una REDUCTORA resuelve el exceso sin cambiar la tuberia? El exceso suele ser
                   // una zona baja del trazo: se corta la presion aguas arriba del primer punto que
                   // excede. Viable si tras el corte TODOS los puntos aguas abajo siguen >= Pmin.
-                  const pnKgNum = ts.PN_bar / 0.9807;
-                  const corteVRP = ts.maxPressure_kgcm2 - pnKgNum + 0.5; // margen 0.5 kg/cm2
-                  const ptsP = (results?.points ?? []).filter((p) => p.pressure_kgcm2 != null);
-                  const iExc = ptsP.findIndex((p) => p.pressure_kgcm2! > pnKgNum);
-                  const vrpViable = iExc > 0 && ptsP.slice(iExc).every((p) => p.pressure_kgcm2! - corteVRP >= Pmin);
+                  // Ubicación y ajuste: último punto dentro de clase antes de la zona que excede;
+                  // el ajuste de salida se calcula con la línea detenida (ver protection-location.ts)
+                  const vrp = planVRP(results ?? null);
+                  const vrpViable = !!vrp?.viable;
                   return (
                     <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 rounded-lg px-3 py-2 text-xs text-red-700 dark:text-red-400 space-y-1">
                       <p className="font-semibold">{"⚠"} Presion excede capacidad de la tuberia</p>
                       <p>Presión máxima (Pmax) en este tramo: <strong>{ts.maxPressure_kgcm2.toFixed(1)} kg/cm2</strong> — Capacidad {t.pipeClass}: <strong>{pnKg} kg/cm2</strong></p>
-                      {vrpViable && (
-                        <div className="bg-white/70 dark:bg-gray-900/40 border border-red-200/60 rounded px-2 py-1.5">
+                      {vrp && vrpViable && (
+                        <div className="bg-white/70 dark:bg-gray-900/40 border border-red-200/60 rounded px-2 py-1.5 space-y-1">
                           <p>
-                            <strong>Opcion sin cambiar la tuberia:</strong> una <strong>reductora de presion</strong> en la bajada, antes del punto critico,
-                            que corte {"~"}{corteVRP.toFixed(1)} kg/cm2 — la linea queda dentro de clase y aguas abajo se mantiene {"≥"} {Pmin} kg/cm2.{" "}
+                            <strong>Opción sin cambiar la tubería:</strong> una <strong>válvula reductora de presión (VRP)</strong>.{" "}
                             <a href="/vrp" className="underline font-semibold">Dimensionarla {"→"}</a>
                           </p>
+                          <p className="font-semibold bg-red-100/70 dark:bg-red-900/30 rounded px-1.5 py-1">
+                            {"📍"} Instalar en cad {fmtCad(vrp.cad)} (cota {formatNumber(vrp.cota, 1)} m{vrp.desc ? ` — ${vrp.desc}` : ""}).
+                            {" "}Entrada {formatNumber(vrp.p1, 1)} kg/cm² → ajuste de salida <strong>{formatNumber(vrp.p2, 1)} kg/cm²</strong> (corta {formatNumber(vrp.corte, 1)}).
+                          </p>
+                          <Desplegable titulo="¿Por qué aquí, por qué ese ajuste y qué piezas lleva?">
+                            <p><strong>Por qué en cad {fmtCad(vrp.cad)}:</strong> es el último punto del perfil que todavía está dentro de la clase de la tubería; a partir de cad {fmtCad(vrp.zonaDesde)} la presión ya la rebasa{vrp.zonaHasta > vrp.zonaDesde ? ` (hasta cad ${fmtCad(vrp.zonaHasta)})` : ""}. La VRP corta la presión justo antes de entrar a esa zona. Si se instala más abajo, el tramo antes de la válvula ya estaría fuera de clase; si se instala más arriba, también funciona, pero deja con menos presión todo lo que sigue. En campo se ajusta al punto accesible más cercano (camino, banqueta) aguas arriba de cad {fmtCad(vrp.zonaDesde)}.</p>
+                            <p><strong>Por qué ese ajuste ({formatNumber(vrp.p2, 1)} kg/cm²):</strong> se calcula con la línea DETENIDA, no con el agua fluyendo. De noche, cuando el consumo baja, desaparece la fricción y la presión aguas abajo sube a su valor estático: la VRP sostiene {formatNumber(vrp.p2, 1)} kg/cm² a su salida, pero el desnivel hasta el punto más bajo se suma. Ese punto (cad {fmtCad(vrp.puntoBajo.cad)}, cota {formatNumber(vrp.puntoBajo.cota, 1)} m) está {formatNumber(vrp.cota - vrp.puntoBajo.cota, 1)} m abajo de la válvula; por eso el ajuste es la clase menos {formatNumber((vrp.cota - vrp.puntoBajo.cota) / 10, 1)} kg/cm² de desnivel y menos 0.5 de margen. Con la línea detenida, la presión máxima aguas abajo queda en {formatNumber(vrp.pEstaticaMaxAbajo, 1)} kg/cm², dentro de clase.</p>
+                            <p><strong>Verificación con el gasto de diseño:</strong> con el agua fluyendo, el punto con menos presión aguas abajo queda en {formatNumber(vrp.pMinAbajo, 1)} kg/cm², arriba del mínimo de {Pmin} kg/cm².</p>
+                            <p className="text-gray-500">Revisa también la tubería ANTES de la VRP con la línea detenida: si la fuente es un tanque, su presión estática puede ser mayor que la de operación.</p>
+                            <p className="font-semibold pt-1">Piezas de la estación reductora y para qué sirve cada una:</p>
+                            <PiezasEstacionVRP />
+                          </Desplegable>
                         </div>
+                      )}
+                      {vrp && !vrpViable && vrp.motivo && (
+                        <p className="bg-white/70 dark:bg-gray-900/40 border border-red-200/60 rounded px-2 py-1.5">
+                          <strong>Una sola VRP no resuelve este perfil:</strong> {vrp.motivo}
+                        </p>
                       )}
                       {recommended && (
                         <div className="flex items-center justify-between gap-2 flex-wrap">

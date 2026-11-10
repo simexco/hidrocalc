@@ -14,12 +14,15 @@ import { formatNumber } from "@/lib/calculations/conversions";
 import { STANDARD_DNS, STANDARD_DNS_LABELED } from "@/lib/constants";
 import { saveFormState, loadFormState } from "@/lib/storage/form-persistence";
 import { useProjectStore, useNombreProyecto } from "@/store/projectStore";
+import { fmtCad } from "@/lib/calculations/protection-location";
+import { Desplegable, PiezasEstacionVRP } from "@/components/ui/ProteccionExplicacion";
 import { ResetButton } from "@/components/ui/ResetButton";
 import type { FlowUnit, AssumedValue } from "@/types/hydraulic";
 
 export default function VRPPage() {
   const { proyecto, setProyecto } = useNombreProyecto();
   const { inputs, results, setInput, setResults, reset } = useVRPStore();
+  const vrpUbic = useProjectStore((s) => s.project.vrpUbicacion);
   const [showAdvanced, setShowAdvanced] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
   const persistRef = useRef<ReturnType<typeof setTimeout>>(undefined);
@@ -35,7 +38,10 @@ export default function VRPPage() {
     // Sin datos propios: ligar caudal, presión y diámetro del proyecto activo
     const p = useProjectStore.getState().project;
     if (p.q_ls != null) { setInput("rawQMax", p.q_ls as never); setInput("flowUnit", "L/s" as never); }
-    if (p.presionMaxLinea != null) setInput("P1", (Math.round(p.presionMaxLinea * 10) / 10) as never);
+    // Con la ubicación calculada en el perfil, la entrada y el ajuste son los de ESE punto
+    // (antes se usaba la presión máxima de la línea, que está en la zona baja, aguas abajo de la VRP)
+    if (p.vrpUbicacion) { setInput("P1", p.vrpUbicacion.p1 as never); setInput("P2", p.vrpUbicacion.p2 as never); }
+    else if (p.presionMaxLinea != null) setInput("P1", (Math.round(p.presionMaxLinea * 10) / 10) as never);
     if (p.dnNominal_mm != null) setInput("DN", p.dnNominal_mm as never);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -349,6 +355,40 @@ export default function VRPPage() {
               </div>
             </>
           )}
+
+          {/* Dónde va la VRP y cómo se arma la estación */}
+          <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 space-y-2">
+            <p className="text-sm font-semibold text-gray-700 dark:text-gray-300">Dónde instalarla y cómo se arma</p>
+            {vrpUbic ? (
+              <>
+                <p className="text-xs font-semibold text-[#1C3D5A] dark:text-blue-300 bg-[#E9EFF5] dark:bg-[#1C3D5A]/20 rounded-lg px-2.5 py-1.5">
+                  {"📍"} Según el perfil del proyecto: cad {fmtCad(vrpUbic.cad)} (cota {formatNumber(vrpUbic.cota, 1)} m).
+                  {" "}Entrada {formatNumber(vrpUbic.p1, 1)} kg/cm² → ajuste de salida {formatNumber(vrpUbic.p2, 1)} kg/cm².
+                </p>
+                {(inputs.P1 !== vrpUbic.p1 || inputs.P2 !== vrpUbic.p2) && (
+                  <button
+                    type="button"
+                    onClick={() => { setInput("P1", vrpUbic.p1 as never); setInput("P2", vrpUbic.p2 as never); }}
+                    className="text-xs bg-[#1C3D5A] text-white px-3 py-1.5 rounded-lg hover:bg-[#0F2438] transition-colors font-medium"
+                  >
+                    Usar estas presiones para dimensionarla
+                  </button>
+                )}
+                <p className="text-[11px] text-gray-600 dark:text-gray-400 leading-relaxed">
+                  Va en el último punto que todavía está dentro de la clase de la tubería, justo antes de la zona que la rebasa. El ajuste se
+                  calcula con la línea detenida (sin fricción), para que el punto más bajo aguas abajo (cad {fmtCad(vrpUbic.bajoCad)}, cota {formatNumber(vrpUbic.bajoCota, 1)} m)
+                  no rebase su clase cuando baja el consumo. El detalle está en «Línea de conducción».
+                </p>
+              </>
+            ) : (
+              <p className="text-[11px] text-gray-500 dark:text-gray-400">
+                Captura el perfil y las clases en «Línea de conducción»: si algún tramo rebasa su clase, la plataforma marca ahí el punto exacto de instalación y el ajuste de salida.
+              </p>
+            )}
+            <Desplegable titulo="Piezas de la estación reductora y para qué sirve cada una">
+              <PiezasEstacionVRP />
+            </Desplegable>
+          </div>
         </div>
       </div>
     </div>

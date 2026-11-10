@@ -66,6 +66,10 @@ export interface ReportData {
   golpeResiste?: boolean | null; // veredicto del módulo: la clase elegida resiste el golpe
   // Veredicto de VRP por tramo (del perfil: cada tramo comparado contra SU propia clase)
   vrpRequerida?: boolean | null;
+  // Dónde va la VRP y con qué ajuste (calculado en el perfil). Null si no se requiere o no es viable.
+  vrpUbicacion?: { cad: number; cota: number; p1: number; p2: number; bajoCad: number; bajoCota: number } | null;
+  // Dónde va la protección contra golpe (aliviadora en la llegada o anticipadora en la descarga)
+  golpeUbicacion?: { cad: number; cota: number; ajuste: number | null; bombeo: boolean; bajoCad: number; bajoCota: number } | null;
   // Coeficiente de pérdida por accesorios usado en el perfil (fracción de hf, p.ej. 0.05)
   coefAccesorios?: number | null;
 }
@@ -478,12 +482,18 @@ export async function generateReportPDF(d: ReportData): Promise<jsPDF> {
   y = subhead(doc, "Recomendaciones de proteccion", y);
   const claseTxt = d.clase ? `${d.material} ${d.clase}` : (d.material || "la clase elegida");
   const pnTxt = d.pnLinea != null ? `${n(d.pnLinea, 1)} kg/cm2` : "PN de la clase";
+  const cadTxt = (c: number) => `${Math.floor(Math.round(c) / 1000)}+${String(Math.round(c) % 1000).padStart(3, "0")}`;
   // Reduccion de presion
   let vrpRec: string; let vrpPor: string;
   if (d.vrpRequerida != null) {
     // Veredicto por tramo del perfil: NO imprimir el cruce global max(P) vs min(PN),
     // que con clases mixtas contradice al propio perfil
-    if (r.vrpRecomendada) { vrpRec = "SE REQUIERE"; vrpPor = `Al menos un tramo del perfil opera por ENCIMA de la clase de su propia tuberia (veredicto por tramo; P. max de la linea ${n(d.presionMaxLinea, 1)} kg/cm2). Opciones: VRP, caja rompedora de presion, o subir la clase del tramo que excede.`; }
+    if (r.vrpRecomendada) {
+      vrpRec = "SE REQUIERE";
+      vrpPor = `Al menos un tramo del perfil opera por ENCIMA de la clase de su propia tuberia (veredicto por tramo; P. max de la linea ${n(d.presionMaxLinea, 1)} kg/cm2). Opciones: VRP, caja rompedora de presion, o subir la clase del tramo que excede.`;
+      const u = d.vrpUbicacion;
+      if (u) vrpPor += ` VRP en cad ${cadTxt(u.cad)} (cota ${n(u.cota, 1)} m), ultimo punto dentro de clase antes de la zona que excede: entrada ${n(u.p1, 1)} kg/cm2, ajuste de salida ${n(u.p2, 1)} kg/cm2. El ajuste se calcula con la linea detenida para que el punto mas bajo aguas abajo (cad ${cadTxt(u.bajoCad)}, cota ${n(u.bajoCota, 1)} m) no rebase su clase.`;
+    }
     else { vrpRec = "No requerida"; vrpPor = `Cada tramo opera dentro de la clase de su propia tuberia (veredicto por tramo del perfil; P. max de la linea ${n(d.presionMaxLinea, 1)} kg/cm2).`; }
   } else if (d.presionMaxLinea != null && d.pnLinea != null) {
     if (r.vrpRecomendada) { vrpRec = "SE REQUIERE"; vrpPor = `P. operacion ${n(d.presionMaxLinea, 1)} kg/cm2 EXCEDE la clase (${pnTxt}). Opciones: VRP, caja rompedora de presion, o subir la clase del tubo.`; }
@@ -504,6 +514,13 @@ export async function generateReportPDF(d: ReportData): Promise<jsPDF> {
     const pnGolpeTxt = d.golpePmax != null && d.golpePN != null ? `${n(d.golpePN, 1)} kg/cm2` : pnTxt;
     golpeRec = r.golpeExcedeClase ? "SE REQUIERE PROTECCION" : "Clase resiste el golpe";
     golpePor = `P. maxima con golpe ~${n(r.pmaxConGolpe, 1)} kg/cm2 vs clase ${pnGolpeTxt} — ${fuente}. ${r.golpeExcedeClase ? "Subir clase o instalar valvula de alivio/anticipadora." : "Margen suficiente."}${d.incluyeBombeo ? " Linea por bombeo: analizar el paro de bomba." : ""}`;
+    const g = d.golpeUbicacion;
+    if (r.golpeExcedeClase && g) {
+      golpePor += g.bombeo
+        ? ` Anticipadora en la descarga de la bomba, despues de la check (cad ${cadTxt(g.cad)}, cota ${n(g.cota, 1)} m): ahi regresa la onda del paro de bomba.`
+        : ` Aliviadora en la llegada, aguas arriba de la valvula que se cierra (cad ${cadTxt(g.cad)}, cota ${n(g.cota, 1)} m): ahi nace la onda${g.ajuste != null ? `; ajuste de apertura ${n(g.ajuste, 1)} kg/cm2` : ""}.`;
+      golpePor += ` La presion maxima se concentra en el punto mas bajo (cad ${cadTxt(g.bajoCad)}, cota ${n(g.bajoCota, 1)} m).`;
+    }
   } else {
     golpeRec = r.golpeRiesgo === "alto" ? "ANALIZAR / PROTEGER" : r.golpeRiesgo === "medio" ? "Revisar" : "Riesgo bajo";
     golpePor = d.incluyeBombeo
