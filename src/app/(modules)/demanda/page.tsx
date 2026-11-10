@@ -7,6 +7,7 @@ import { AlertBanner } from "@/components/ui/AlertBanner";
 import { ExportPDFButton } from "@/components/ui/ExportPDFButton";
 import { ResetButton } from "@/components/ui/ResetButton";
 import { FormulaDetail } from "@/components/ui/FormulaDetail";
+import { InfoBubble, DefinicionCoefRegulacion } from "@/components/ui/InfoBubble";
 import { calculateWaterDemand, DEVELOPMENT_TYPES, CLIMATE_TYPES, DENSITY_CATEGORIES, type PopulationMode, type WaterDemandInputs } from "@/lib/calculations/water-demand";
 import { useProjectStore } from "@/store/projectStore";
 import { formatNumber } from "@/lib/calculations/conversions";
@@ -220,6 +221,17 @@ export default function DemandaPage() {
                   </div>
                   <p className="text-xs font-semibold text-[#1C3D5A] dark:text-blue-300">
                     Coeficiente de regulación (R) calculado = {inputs.coefRegulacion} m³/(L/s) — método oficial MAPAS (curva Fig. 1.1, ec. 1.2)
+                    {(() => {
+                      const h = inputs.horasBombeoTanque ?? 24;
+                      const ini = inputs.horaInicioBombeo ?? 0;
+                      const c = calcularCoefRegulacion(h, ini);
+                      return (
+                        <InfoBubble label="Qué es el coeficiente de regulación">
+                          <DefinicionCoefRegulacion R={c.R} maxExcedente={c.maxExcedente} maxFaltante={c.maxFaltante}
+                            horario={h >= 24 ? "24 h continuas" : `${h} h desde las ${ini}:00`} />
+                        </InfoBubble>
+                      );
+                    })()}
                   </p>
                 </>
               )}

@@ -6,6 +6,7 @@ import { AlertBanner } from "@/components/ui/AlertBanner";
 import { ExportPDFButton } from "@/components/ui/ExportPDFButton";
 import { ResetButton } from "@/components/ui/ResetButton";
 import { FormulaDetail } from "@/components/ui/FormulaDetail";
+import { InfoBubble, DefinicionCoefRegulacion } from "@/components/ui/InfoBubble";
 import { calculateTankStorage, REGULATION_COEFFICIENTS, MAPAS_TANQUES_URL, type TankStorageInputs, type TankShape } from "@/lib/calculations/tank-storage";
 import { formatNumber } from "@/lib/calculations/conversions";
 import { saveFormState, loadFormState } from "@/lib/storage/form-persistence";
@@ -105,6 +106,10 @@ export default function TanquePage() {
                   {results && !results.rEsManual && (
                     <p className="text-xs font-semibold text-[#1C3D5A] dark:text-blue-300 bg-[#E9EFF5] dark:bg-[#1C3D5A]/20 rounded-lg px-2.5 py-1.5">
                       Coeficiente de regulación (R) calculado = {results.R} m³/(L/s) — {results.regimenLabel}
+                      <InfoBubble label="Qué es el coeficiente de regulación">
+                        <DefinicionCoefRegulacion R={results.R} maxExcedente={results.maxExcedente} maxFaltante={results.maxFaltante}
+                          horario={results.regimenLabel} />
+                      </InfoBubble>
                     </p>
                   )}
                   <label className="flex items-center gap-2 text-xs text-gray-700 dark:text-gray-300">
