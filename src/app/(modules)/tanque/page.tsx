@@ -6,9 +6,12 @@ import { AlertBanner } from "@/components/ui/AlertBanner";
 import { ExportPDFButton } from "@/components/ui/ExportPDFButton";
 import { ResetButton } from "@/components/ui/ResetButton";
 import { FormulaDetail } from "@/components/ui/FormulaDetail";
-import { calculateTankStorage, REGULATION_COEFFICIENTS, MAPAS_TANQUES_URL, type TankStorageInputs, type TankShape } from "@/lib/calculations/tank-storage";
+import { InfoBubble, DefinicionCoefRegulacion } from "@/components/ui/InfoBubble";
+import { calculateTankStorage, REGULATION_COEFFICIENTS, type TankStorageInputs, type TankShape } from "@/lib/calculations/tank-storage";
+import { TablaCoefRegulacion } from "@/components/ui/TablaCoefRegulacion";
 import { formatNumber } from "@/lib/calculations/conversions";
 import { saveFormState, loadFormState } from "@/lib/storage/form-persistence";
+import { useNombreProyecto } from "@/store/projectStore";
 
 const defaults: TankStorageInputs = {
   projectName: "Tanque de regulacion",
@@ -24,6 +27,7 @@ const defaults: TankStorageInputs = {
 };
 
 export default function TanquePage() {
+  const { proyecto, setProyecto } = useNombreProyecto();
   const [inputs, setInputs] = useState<TankStorageInputs>({ ...defaults });
   const [results, setResults] = useState<ReturnType<typeof calculateTankStorage>>(null);
   const [showAdvanced, setShowAdvanced] = useState(false);
@@ -75,7 +79,7 @@ export default function TanquePage() {
               <ResetButton moduleKey="tanque" onReset={handleReset} />
             </div>
 
-            <InputField label="Nombre del proyecto" value={inputs.projectName} onChange={(v) => set("projectName", v)} type="text" />
+            <InputField label="Nombre del proyecto" value={proyecto} onChange={setProyecto} type="text" tooltip="Es el mismo nombre en todos los pasos y en el reporte" placeholder="Ej. Fraccionamiento Las Lomas" />
 
             <InputField label="Gasto máximo diario (QMD)" value={inputs.Qmd_ls} onChange={(v) => set("Qmd_ls", v === "" ? null : parseFloat(v))} unit="L/s" required tooltip="Gasto MÁXIMO diario (QMD) — obtenlo del módulo Cálculo de gasto. El volumen de regulación de MAPAS se calcula sobre el máximo diario, no sobre el medio." />
 
@@ -105,6 +109,10 @@ export default function TanquePage() {
                   {results && !results.rEsManual && (
                     <p className="text-xs font-semibold text-[#1C3D5A] dark:text-blue-300 bg-[#E9EFF5] dark:bg-[#1C3D5A]/20 rounded-lg px-2.5 py-1.5">
                       Coeficiente de regulación (R) calculado = {results.R} m³/(L/s) — {results.regimenLabel}
+                      <InfoBubble label="Qué es el coeficiente de regulación">
+                        <DefinicionCoefRegulacion R={results.R} maxExcedente={results.maxExcedente} maxFaltante={results.maxFaltante}
+                          horario={results.regimenLabel} />
+                      </InfoBubble>
                     </p>
                   )}
                   <label className="flex items-center gap-2 text-xs text-gray-700 dark:text-gray-300">
@@ -125,10 +133,8 @@ export default function TanquePage() {
                       Reproduce exacto la Tabla 1.3: 24 h → 11.0 · 20 h (4-24) → 9.0 · 16 h (5-21) → 19.0.
                       Para CDMX usa la casilla de R manual (su curva es distinta — Tabla 1.4).
                     </p>
-                    <a href={MAPAS_TANQUES_URL} target="_blank" rel="noreferrer" className="inline-block text-[10px] font-semibold text-[#1C3D5A] dark:text-blue-300 underline">
-                      Ver el manual MAPAS de tanques (PDF oficial de CONAGUA) →
-                    </a>
                   </div>
+                  <TablaCoefRegulacion horas={inputs.horasAportacion} inicio={inputs.horaInicio ?? 0} manual={inputs.rManual != null} />
                 </div>
 
                 {/* Reserva */}
@@ -181,7 +187,7 @@ export default function TanquePage() {
                 return {
                   title: "Tanque de Regularizacion",
                   module: "Tanque",
-                  projectName: inputs.projectName,
+                  projectName: proyecto || inputs.projectName,
                   hasAssumedValues: false,
                   inputs: [
                     { label: "Gasto máximo diario (QMD)", value: `${inputs.Qmd_ls} L/s` },

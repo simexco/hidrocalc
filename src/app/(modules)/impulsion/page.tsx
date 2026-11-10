@@ -13,7 +13,7 @@ import { calculatePumpLine, PUMPING_REGIMES, type PumpLineInputs } from "@/lib/c
 import { formatNumber } from "@/lib/calculations/conversions";
 import { STANDARD_DNS_LABELED, MATERIALS, getRealInternalDiameter } from "@/lib/constants";
 import { saveFormState, loadFormState } from "@/lib/storage/form-persistence";
-import { useProjectStore } from "@/store/projectStore";
+import { useProjectStore, useNombreProyecto } from "@/store/projectStore";
 
 const defaults: PumpLineInputs = {
   Qmd_ls: null,
@@ -32,6 +32,7 @@ const defaults: PumpLineInputs = {
 };
 
 export default function ImpulsionPage() {
+  const { proyecto, setProyecto } = useNombreProyecto();
   const [inputs, setInputs] = useState<PumpLineInputs>({ ...defaults });
   const [results, setResults] = useState<ReturnType<typeof calculatePumpLine>>(null);
   const [useEconomic, setUseEconomic] = useState(true);
@@ -230,7 +231,7 @@ export default function ImpulsionPage() {
                 return {
                   title: "Linea de Impulsion — Bomba a Tanque",
                   module: "Impulsion",
-                  projectName: "Linea de impulsion",
+                  projectName: proyecto || "Linea de impulsion",
                   hasAssumedValues: false,
                   inputs: [
                     { label: "Gasto de diseño a bombear (QMD)", value: `${inputs.Qmd_ls} L/s` },

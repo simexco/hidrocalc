@@ -7,11 +7,13 @@ import { AlertBanner } from "@/components/ui/AlertBanner";
 import { ExportPDFButton } from "@/components/ui/ExportPDFButton";
 import { ResetButton } from "@/components/ui/ResetButton";
 import { FormulaDetail } from "@/components/ui/FormulaDetail";
+import { InfoBubble, DefinicionCoefRegulacion } from "@/components/ui/InfoBubble";
 import { calculateWaterDemand, DEVELOPMENT_TYPES, CLIMATE_TYPES, DENSITY_CATEGORIES, type PopulationMode, type WaterDemandInputs } from "@/lib/calculations/water-demand";
-import { useProjectStore } from "@/store/projectStore";
+import { useProjectStore, useNombreProyecto } from "@/store/projectStore";
 import { formatNumber } from "@/lib/calculations/conversions";
 import { saveFormState, loadFormState } from "@/lib/storage/form-persistence";
-import { calcularCoefRegulacion, MAPAS_TANQUES_URL } from "@/lib/calculations/tank-storage";
+import { calcularCoefRegulacion } from "@/lib/calculations/tank-storage";
+import { TablaCoefRegulacion } from "@/components/ui/TablaCoefRegulacion";
 
 const defaults: WaterDemandInputs = {
   projectName: "Demanda de agua",
@@ -36,6 +38,7 @@ const defaults: WaterDemandInputs = {
 };
 
 export default function DemandaPage() {
+  const { proyecto, setProyecto } = useNombreProyecto();
   const [inputs, setInputs] = useState<WaterDemandInputs>({ ...defaults });
   const [results, setResults] = useState<ReturnType<typeof calculateWaterDemand>>(null);
   const [showAdvanced, setShowAdvanced] = useState(false);
@@ -128,7 +131,7 @@ export default function DemandaPage() {
               <ResetButton moduleKey="demanda" onReset={handleReset} />
             </div>
 
-            <InputField label="Nombre del proyecto" value={inputs.projectName} onChange={(v) => set("projectName", v)} type="text" />
+            <InputField label="Nombre del proyecto" value={proyecto} onChange={setProyecto} type="text" tooltip="Es el mismo nombre en todos los pasos y en el reporte" placeholder="Ej. Fraccionamiento Las Lomas" />
 
             {/* Population mode */}
             <div className="space-y-1">
@@ -220,6 +223,17 @@ export default function DemandaPage() {
                   </div>
                   <p className="text-xs font-semibold text-[#1C3D5A] dark:text-blue-300">
                     Coeficiente de regulación (R) calculado = {inputs.coefRegulacion} m³/(L/s) — método oficial MAPAS (curva Fig. 1.1, ec. 1.2)
+                    {(() => {
+                      const h = inputs.horasBombeoTanque ?? 24;
+                      const ini = inputs.horaInicioBombeo ?? 0;
+                      const c = calcularCoefRegulacion(h, ini);
+                      return (
+                        <InfoBubble label="Qué es el coeficiente de regulación">
+                          <DefinicionCoefRegulacion R={c.R} maxExcedente={c.maxExcedente} maxFaltante={c.maxFaltante}
+                            horario={h >= 24 ? "24 h continuas" : `${h} h desde las ${ini}:00`} />
+                        </InfoBubble>
+                      );
+                    })()}
                   </p>
                 </>
               )}
@@ -238,13 +252,7 @@ export default function DemandaPage() {
                 />
                 Capturar coeficiente de regulación (R) manual (p. ej. CDMX: 14.3)
               </label>
-              <a
-                href={MAPAS_TANQUES_URL}
-                target="_blank" rel="noreferrer"
-                className="inline-block text-[10px] text-[#1C3D5A] dark:text-blue-300 underline decoration-dotted"
-              >
-                Tabla oficial de R por horario de bombeo — manual MAPAS de tanques (CONAGUA) →
-              </a>
+              <TablaCoefRegulacion horas={inputs.horasBombeoTanque ?? 24} inicio={inputs.horaInicioBombeo ?? 0} manual={!!inputs.rManualTanque} />
             </div>
             <button onClick={() => setShowAdvanced(!showAdvanced)} className="text-[10px] text-[#1C3D5A] underline decoration-dotted">
               {showAdvanced ? 'Ocultar' : 'Mostrar'} parametros avanzados
@@ -287,7 +295,7 @@ export default function DemandaPage() {
                 return {
                   title: "Calculo de Demanda de Agua",
                   module: "Demanda",
-                  projectName: inputs.projectName,
+                  projectName: proyecto || inputs.projectName,
                   hasAssumedValues: false,
                   inputs: [
                     { label: "Modo", value: inputs.mode === 'habitantes' ? `${results.poblacionActual} hab` : inputs.mode === 'viviendas' ? `${inputs.numViviendas} viviendas × ${inputs.habPorVivienda} hab/viv` : `${inputs.superficieHa} ha × ${inputs.densidadHabHa} viv/ha × ${inputs.habPorVivienda} hab/viv` },
@@ -420,13 +428,31 @@ export default function DemandaPage() {
                   title="Tanque de regulacion"
                   value={formatNumber(results.volTanque_m3, 0)}
                   unit="m3"
-                  formula="Vr = QMD × Coeficiente de regulacion"
-                  steps={[
-                    { substitution: `Vr = ${formatNumber(results.QMD_ls, 2)} L/s × ${inputs.coefRegulacion}` },
-                    { result: `Vr = ${formatNumber(results.volTanque_m3, 0)} m3` },
-                  ]}
-                  reference="Volumen de regulacion"
-                  norm="CONAGUA Tabla 1.3: 24h=11.0, 20h=9.0, 16h=19.0 (CDMX Tabla 1.4: 24h=14.3)"
+                  formula="Vr = R × QMD  ·  R = (máx excedente − máx faltante) × 3.6 / 100  (ecs. 1.2 y 1.3)"
+                  steps={(() => {
+                    const h = Math.min(24, Math.max(1, Math.round(inputs.horasBombeoTanque ?? 24)));
+                    const ini = ((Math.round(inputs.horaInicioBombeo ?? 0) % 24) + 24) % 24;
+                    const fin = (ini + h) % 24;
+                    const horario = h >= 24 ? "24 h (suministro continuo)" : `${h} h, de las ${ini} a las ${fin === 0 ? 24 : fin}`;
+                    const vr = [
+                      { substitution: `Vr = ${inputs.coefRegulacion} × ${formatNumber(results.QMD_ls, 2)} L/s` },
+                      { result: `Vr = ${formatNumber(results.volTanque_m3, 0)} m3` },
+                    ];
+                    if (inputs.rManualTanque) {
+                      return [{ label: `R = ${inputs.coefRegulacion} m³/(L/s) — capturado manual` }, ...vr];
+                    }
+                    const c = calcularCoefRegulacion(h, ini);
+                    return [
+                      { label: `1. Horario de bombeo: ${horario}` },
+                      { label: "2. Entrada al tanque en cada hora de bombeo (% del QMD):", substitution: `100 × 24 / ${h} = ${c.suministroPct}%` },
+                      { label: "3. Diferencias acumuladas (entrada − demanda) contra la curva de demanda horaria (Fig. 1.1):", substitution: `máx excedente = ${c.maxExcedente}%  ·  máx faltante = ${c.maxFaltante}%` },
+                      { label: "4. Coeficiente de regulación:", substitution: `R = (${c.maxExcedente} − (${c.maxFaltante})) × 3.6 / 100`, result: `R = ${c.R} m³/(L/s)` },
+                      { label: "5. Volumen de regulación:", ...vr[0] },
+                      vr[1],
+                    ];
+                  })()}
+                  reference="Metodo de la Tabla 1.1 (curva de demanda nacional); detalle hora por hora en el desplegable del tanque de regulacion"
+                  norm="CONAGUA MAPAS — Tanques de regulacion (Tablas 1.3 y 1.4)"
                 />
               </div>
 

@@ -11,7 +11,7 @@ import { calculateAirValves, type AirValveVertex, type AirValveInputs, type AirV
 import { flowToM3s, formatNumber } from "@/lib/calculations/conversions";
 import { STANDARD_DNS_LABELED, MATERIALS, getPipeClassesForMaterial, getRealInternalDiameter, CLASE_RD_HELP } from "@/lib/constants";
 import { saveFormState, loadFormState } from "@/lib/storage/form-persistence";
-import { useProjectStore } from "@/store/projectStore";
+import { useProjectStore, useNombreProyecto } from "@/store/projectStore";
 import { ResetButton } from "@/components/ui/ResetButton";
 import { ComposedChart, Line, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine } from "recharts";
 import { NumInput } from "@/components/ui/NumInput";
@@ -20,6 +20,7 @@ import type { FlowUnit } from "@/types/hydraulic";
 const DN_LIST = STANDARD_DNS_LABELED;
 
 export default function ValvulasAirePage() {
+  const { proyecto, setProyecto } = useNombreProyecto();
   const [projectName, setProjectName] = useState("Línea de conducción");
   const [rawQ, setRawQ] = useState<number | null>(null);
   const [flowUnit, setFlowUnit] = useState<FlowUnit>("L/s");
@@ -233,7 +234,7 @@ export default function ValvulasAirePage() {
               <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300">Datos globales</h2>
               <ResetButton moduleKey="valvulas-aire" onReset={handleReset} />
             </div>
-            <InputField label="Nombre del proyecto" value={projectName} onChange={setProjectName} type="text" />
+            <InputField label="Nombre del proyecto" value={proyecto} onChange={setProyecto} type="text" tooltip="Es el mismo nombre en todos los pasos y en el reporte" placeholder="Ej. Fraccionamiento Las Lomas" />
             <div className="flex items-end gap-2">
               <div className="flex-1">
                 <InputField label="Caudal (Q)" value={rawQ} onChange={(v) => setRawQ(v === "" ? null : parseFloat(v))} tooltip="Volumen de agua por unidad de tiempo. Si no lo conoces, se calculará solo ubicación geométrica." />
@@ -344,9 +345,9 @@ export default function ValvulasAirePage() {
               getData={() => {
                 if (!results) return null;
                 return {
-                  title: "Válvulas de Aire — " + projectName,
+                  title: "Válvulas de Aire — " + (proyecto || projectName),
                   module: "Válvulas de Aire",
-                  projectName,
+                  projectName: proyecto || projectName,
                   hasAssumedValues: P0 == null || rawQ == null,
                   inputs: [
                     { label: "Caudal (Q)", value: rawQ != null ? `${rawQ} ${flowUnit}` : "No ingresado" },

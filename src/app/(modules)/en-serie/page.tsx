@@ -16,8 +16,10 @@ import { saveFormState, loadFormState } from "@/lib/storage/form-persistence";
 import { ResetButton } from "@/components/ui/ResetButton";
 import ListaMaterialesSIMEX, { type SIMEXAcc } from "@/components/ListaMaterialesSIMEX";
 import type { FlowUnit, SeriesTramo, AssumedValue } from "@/types/hydraulic";
+import { useNombreProyecto } from "@/store/projectStore";
 
 export default function EnSeriePage() {
+  const { proyecto, setProyecto } = useNombreProyecto();
   const { inputs, results, setInput, setResults, addTramo, removeTramo, updateTramo, reset } = useSeriesPipeStore();
   const [simexPorTramo, setSimexPorTramo] = useState<Record<string, SIMEXAcc[]>>({});
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
@@ -120,7 +122,7 @@ export default function EnSeriePage() {
               <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300">Datos globales</h2>
               <ResetButton moduleKey="en-serie" onReset={() => { reset(); setSimexPorTramo({}); }} />
             </div>
-            <InputField label="Nombre del proyecto" value={inputs.projectName} onChange={(v) => setInput("projectName", v)} type="text" />
+            <InputField label="Nombre del proyecto" value={proyecto} onChange={setProyecto} type="text" tooltip="Es el mismo nombre en todos los pasos y en el reporte" placeholder="Ej. Fraccionamiento Las Lomas" />
 
             <div className="flex items-end gap-2">
               <div className="flex-1">
@@ -268,7 +270,7 @@ export default function EnSeriePage() {
                 return {
                   title: "Análisis de Tuberías en Serie",
                   module: "En Serie",
-                  projectName: inputs.projectName,
+                  projectName: proyecto || inputs.projectName,
                   hasAssumedValues: inputs.P1 == null,
                   inputs: [
                     { label: "Caudal (Q)", value: inputs.rawQ != null ? `${inputs.rawQ} ${inputs.flowUnit}` : "—" },

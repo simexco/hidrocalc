@@ -6,7 +6,7 @@ import { InputField } from "@/components/ui/InputField";
 import { ResetButton } from "@/components/ui/ResetButton";
 import { saveFormState, loadFormState } from "@/lib/storage/form-persistence";
 import { STANDARD_DNS_LABELED, MATERIALS } from "@/lib/constants";
-import { useProjectStore } from "@/store/projectStore";
+import { useProjectStore, useNombreProyecto } from "@/store/projectStore";
 import ListaMaterialesSIMEX, { type SIMEXAcc, type SIMEXConex, dnStrFromMM, SIMEX_CAT } from "@/components/ListaMaterialesSIMEX";
 import CruceroVisual, { vizToAccsConex, cajaRecomendada, CAJAS_TIPO, MARCOS_TAPA, ICO, type VizNode } from "@/components/CruceroVisual";
 
@@ -31,6 +31,7 @@ interface ContramarcoRow {
 }
 
 export default function DespiecePage() {
+  const { proyecto, setProyecto } = useNombreProyecto();
   const [projectName, setProjectName] = useState("");
   const [jGrad, setJGrad] = useState("");  // gradiente hidráulico opcional (m/km) para convertir ΣLe a pérdida
   const [tramos, setTramos] = useState<DespieceTramo[]>([]);
@@ -251,7 +252,7 @@ export default function DespiecePage() {
 
       {/* Proyecto */}
       <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
-        <InputField label="Proyecto / Obra" value={projectName} onChange={setProjectName} type="text" placeholder="Ej. Línea conducción El Roble" />
+        <InputField label="Proyecto / Obra" value={proyecto} onChange={setProyecto} type="text" tooltip="Es el mismo nombre en todos los pasos y en el reporte" placeholder="Ej. Línea conducción El Roble" />
       </div>
 
       {/* Cruceros */}
@@ -479,7 +480,7 @@ export default function DespiecePage() {
         <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden shadow-sm">
           <div className="bg-gradient-to-r from-[#1C3D5A] to-[#2A5A7A] px-5 py-3 flex items-center justify-between gap-3">
             <div>
-              <h3 className="text-sm font-semibold text-white tracking-wide">Lista de materiales consolidada{projectName ? ` — ${projectName}` : ""}</h3>
+              <h3 className="text-sm font-semibold text-white tracking-wide">Lista de materiales consolidada{(proyecto || projectName) ? ` — ${proyecto || projectName}` : ""}</h3>
               <p className="text-[10px] text-white/50 mt-0.5">{crucerosConPiezas.length} crucero(s) distinto(s) · {totalCruceros} en total con repeticiones · {totalPiezas} pieza(s) · acoplamiento incluido</p>
             </div>
             <button onClick={copiarConsolidada} className="shrink-0 text-[11px] bg-white/10 hover:bg-white/20 text-white px-3 py-1.5 rounded-lg transition-colors">Copiar SKUs</button>

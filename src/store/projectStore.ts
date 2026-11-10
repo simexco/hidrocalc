@@ -6,6 +6,7 @@
    y alimentan el reporte (Entregable). Persistencia automatica.
    ════════════════════════════════════════ */
 
+import { useCallback } from "react";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import type { ReportData } from "@/lib/export/report-generator";
@@ -65,6 +66,15 @@ export const useProjectStore = create<ProjectState>()(
     }
   )
 );
+
+// Nombre del proyecto: UNO solo para todos los pasos y el reporte. Cualquier módulo que lo
+// muestre lo lee y lo escribe aquí (antes cada módulo guardaba el suyo y no viajaba).
+export function useNombreProyecto() {
+  const proyecto = useProjectStore((s) => s.project.proyecto);
+  const patch = useProjectStore((s) => s.patch);
+  const setProyecto = useCallback((v: string) => patch({ proyecto: v }), [patch]);
+  return { proyecto: proyecto ?? "", setProyecto };
+}
 
 // ── Estado de cada paso del flujo guiado ──
 export interface StepStatus {

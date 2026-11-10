@@ -15,8 +15,10 @@ import { STANDARD_DNS, STANDARD_DNS_LABELED, MATERIALS, getPipeClassesForMateria
 import { saveFormState, loadFormState } from "@/lib/storage/form-persistence";
 import { ResetButton } from "@/components/ui/ResetButton";
 import type { PumpInputMethod, PumpPoint } from "@/types/hydraulic";
+import { useNombreProyecto } from "@/store/projectStore";
 
 export default function BombeoPage() {
+  const { proyecto, setProyecto } = useNombreProyecto();
   const { inputs, results, setInput, setResults, addPumpPoint, removePumpPoint, updatePumpPoint, reset } = usePumpOperationStore();
   const [p2Req, setP2Req] = useState<number>(0); // kg/cm² — pressure required at delivery
   const [showAdvanced, setShowAdvanced] = useState(false);
@@ -87,7 +89,7 @@ export default function BombeoPage() {
               <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300">Sistema</h2>
               <ResetButton moduleKey="bombeo" onReset={() => { reset(); setMaterialName(MATERIALS[0].name); setPipeClass(""); setPNBar(null); }} />
             </div>
-            <InputField label="Nombre del proyecto" value={inputs.projectName} onChange={(v) => setInput("projectName", v)} type="text" />
+            <InputField label="Nombre del proyecto" value={proyecto} onChange={setProyecto} type="text" tooltip="Es el mismo nombre en todos los pasos y en el reporte" placeholder="Ej. Fraccionamiento Las Lomas" />
             <InputField label="Desnivel a vencer (Hg)" value={inputs.Hg} onChange={(v) => handleNum("Hg", v)} unit="m" required tooltip="Diferencia de elevacion entre la succion y la descarga de la bomba (z2 - z1)" />
             <InputField label="Longitud de la tubería (L)" value={inputs.L} onChange={(v) => handleNum("L", v)} unit="m" required tooltip="Longitud total de la tubería desde la bomba hasta el punto de descarga" />
 
@@ -223,7 +225,7 @@ export default function BombeoPage() {
                 return {
                   title: "Punto de Operación de Bomba",
                   module: "Bombeo",
-                  projectName: inputs.projectName,
+                  projectName: proyecto || inputs.projectName,
                   hasAssumedValues: false,
                   inputs: [
                     { label: "Desnivel a vencer (Hg)", value: inputs.Hg != null ? `${inputs.Hg} m` : "—" },

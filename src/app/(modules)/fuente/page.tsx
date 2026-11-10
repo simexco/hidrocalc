@@ -10,6 +10,7 @@ import { FormulaDetail } from "@/components/ui/FormulaDetail";
 import { calculateWellYield, type WellYieldInputs } from "@/lib/calculations/well-yield";
 import { formatNumber } from "@/lib/calculations/conversions";
 import { saveFormState, loadFormState } from "@/lib/storage/form-persistence";
+import { useNombreProyecto } from "@/store/projectStore";
 
 const defaults: WellYieldInputs = {
   projectName: "Aforo de pozo",
@@ -23,6 +24,7 @@ const defaults: WellYieldInputs = {
 };
 
 export default function FuentePage() {
+  const { proyecto, setProyecto } = useNombreProyecto();
   const [inputs, setInputs] = useState<WellYieldInputs>({ ...defaults });
   const [results, setResults] = useState<ReturnType<typeof calculateWellYield>>(null);
   const [showAdvanced, setShowAdvanced] = useState(false);
@@ -65,7 +67,7 @@ export default function FuentePage() {
               <ResetButton moduleKey="fuente" onReset={handleReset} />
             </div>
 
-            <InputField label="Nombre del proyecto" value={inputs.projectName} onChange={(v) => set("projectName", v)} type="text" />
+            <InputField label="Nombre del proyecto" value={proyecto} onChange={setProyecto} type="text" tooltip="Es el mismo nombre en todos los pasos y en el reporte" placeholder="Ej. Fraccionamiento Las Lomas" />
 
             <div className="grid grid-cols-2 gap-3">
               <InputField label="Nivel estatico" value={inputs.nivelEstatico} onChange={(v) => set("nivelEstatico", v === "" ? null : parseFloat(v))} unit="m" required tooltip="Profundidad al agua sin bombear, medida desde la superficie" />
@@ -101,7 +103,7 @@ export default function FuentePage() {
                 return {
                   title: "Fuente de Abastecimiento — Aforo de Pozo",
                   module: "Fuente",
-                  projectName: inputs.projectName,
+                  projectName: proyecto || inputs.projectName,
                   hasAssumedValues: false,
                   inputs: [
                     { label: "Nivel estatico", value: `${inputs.nivelEstatico} m` },
