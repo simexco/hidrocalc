@@ -119,19 +119,18 @@ export default function TanquePage() {
                     <input
                       type="checkbox"
                       checked={inputs.rManual != null}
-                      onChange={(e) => set("rManual", e.target.checked ? (REGULATION_COEFFICIENTS.find((c) => c.key === "cdmx-24")?.R ?? 14.3) : null)}
+                      onChange={(e) => set("rManual", e.target.checked ? (results?.R ?? 11.0) : null)}
                       className="rounded border-gray-300"
                     />
-                    Capturar coeficiente de regulación (R) manual (p. ej. CDMX — Tabla 1.4: 14.3 / 9.6 / 17.3)
+                    Capturar R de una curva local (organismo operador)
                   </label>
                   {inputs.rManual != null && (
-                    <InputField label="Coeficiente de regulación (R) manual" value={inputs.rManual} onChange={(v) => set("rManual", parseFloat(v) || null)} unit="m³/(L/s)" tooltip="Coeficiente de otra curva local (CDMX u organismo). Anula el calculado con la curva nacional." />
+                    <InputField label="Coeficiente de regulación (R) manual" value={inputs.rManual} onChange={(v) => set("rManual", parseFloat(v) || null)} unit="m³/(L/s)" tooltip="R de la curva de demanda propia del organismo operador, si la tiene. Sustituye al calculado con la curva nacional." />
                   )}
                   <div className="bg-[#E9EFF5] dark:bg-[#1C3D5A]/20 border border-[#1C3D5A]/15 rounded-lg px-2.5 py-2 space-y-1">
                     <p className="text-[10px] text-[#1C3D5A] dark:text-blue-300 leading-relaxed">
                       R se calcula con el <strong>método oficial del manual MAPAS</strong> (curva de demanda horaria nacional de la Figura 1.1 + diferencias acumuladas, ec. 1.2).
                       Reproduce exacto la Tabla 1.3: 24 h → 11.0 · 20 h (4-24) → 9.0 · 16 h (5-21) → 19.0.
-                      Para CDMX usa la casilla de R manual (su curva es distinta — Tabla 1.4).
                     </p>
                   </div>
                   <TablaCoefRegulacion horas={inputs.horasAportacion} inicio={inputs.horaInicio ?? 0} manual={inputs.rManual != null} />
@@ -291,8 +290,8 @@ export default function TanquePage() {
               {/* Reference */}
               <div className="bg-gray-50 dark:bg-gray-800 rounded-xl px-4 py-3 text-[11px] text-gray-500 leading-relaxed space-y-1">
                 <p className="font-semibold">Referencias</p>
-                <p>Volumen de regulacion: C = R × QMd (ec. 1.3) — Tablas 1.3 y 1.4 del manual MAPAS de tanques</p>
-                <p>R oficial: 24 h = 11.0 · 20 h (4-24) = 9.0 · 16 h (5-21) = 19.0 · CDMX: 14.3 / 9.6 / 17.3</p>
+                <p>Volumen de regulacion: C = R × QMd (ec. 1.3) — Tabla 1.3 del manual MAPAS de tanques</p>
+                <p>R oficial: 24 h = 11.0 · 20 h (4-24) = 9.0 · 16 h (5-21) = 19.0</p>
                 <p>Volumen diario de referencia: Vol = QMd × 86.4 (L/s a m3/dia)</p>
               </div>
             </>

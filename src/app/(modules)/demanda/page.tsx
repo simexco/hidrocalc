@@ -238,7 +238,7 @@ export default function DemandaPage() {
                 </>
               )}
               {inputs.rManualTanque && (
-                <InputField label="Coeficiente de regulación (R) manual" value={inputs.coefRegulacion} onChange={(v) => set("coefRegulacion", parseFloat(v) || 11)} unit="m³/(L/s)" tooltip="Coeficiente de otra curva local. CDMX (Tabla 1.4): 24 h = 14.3 · 20 h (4-24) = 9.6 · 16 h (5-21) = 17.3" />
+                <InputField label="Coeficiente de regulación (R) manual" value={inputs.coefRegulacion} onChange={(v) => set("coefRegulacion", parseFloat(v) || 11)} unit="m³/(L/s)" tooltip="R de la curva de demanda propia del organismo operador, si la tiene. Sustituye al calculado con la curva nacional." />
               )}
               <label className="flex items-center gap-2 text-xs text-gray-700 dark:text-gray-300">
                 <input
@@ -250,7 +250,7 @@ export default function DemandaPage() {
                   }}
                   className="rounded border-gray-300"
                 />
-                Capturar coeficiente de regulación (R) manual (p. ej. CDMX: 14.3)
+                Capturar R de una curva local (organismo operador)
               </label>
               <TablaCoefRegulacion horas={inputs.horasBombeoTanque ?? 24} inicio={inputs.horaInicioBombeo ?? 0} manual={!!inputs.rManualTanque} />
             </div>
@@ -452,7 +452,7 @@ export default function DemandaPage() {
                     ];
                   })()}
                   reference="Metodo de la Tabla 1.1 (curva de demanda nacional); detalle hora por hora en el desplegable del tanque de regulacion"
-                  norm="CONAGUA MAPAS — Tanques de regulacion (Tablas 1.3 y 1.4)"
+                  norm="CONAGUA MAPAS — Tanques de regulacion (Tabla 1.3)"
                 />
               </div>
 
