@@ -8,8 +8,10 @@
 
 export interface PuntoPerfil { cad: number; cota: number; desc?: string }
 
-export const fmtCad = (cad: number) =>
-  `${Math.floor(Math.round(cad) / 1000)}+${String(Math.round(cad) % 1000).padStart(3, "0")}`;
+// Distancias en metros reales (no en notación de cadenamiento 0+000)
+export const fmtM = (m: number) => `${Math.round(m).toLocaleString("es-MX")} m`;
+export const fmtPos = (m: number) => (Math.round(m) <= 0 ? "al inicio de la línea" : `a los ${fmtM(m)} del inicio`);
+export const fmtCad = fmtM;
 
 const r1 = (n: number) => Math.round(n * 10) / 10;
 

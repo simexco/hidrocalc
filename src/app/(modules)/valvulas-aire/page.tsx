@@ -98,7 +98,7 @@ export default function ValvulasAirePage() {
     const t = setTimeout(() => {
       patchProject({
         valvulas: results.valves.map((v) => ({
-          cad: `0+${String(Math.round(v.dist)).padStart(3, "0")}`,
+          cad: `${Math.round(v.dist).toLocaleString("es-MX")} m`,
           tipo: `${fullName(v.type)} ${v.bodySize} - ${v.reason}`,
         })),
       });

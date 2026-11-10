@@ -315,7 +315,7 @@ export function calculateAirValves(input: AirValveInputs): AirValveOutputs | nul
   if (hasHydraulics) {
     const negativos = sorted.map((v, i) => ({ v, p: pressures[i] })).filter((x) => x.p != null && x.p < 0);
     if (negativos.length > 0) {
-      alerts.push(`Presion NEGATIVA en operacion en ${negativos.length} punto(s) del perfil (desde cad ${negativos[0].v.dist.toFixed(0)} m). Las valvulas de aire NO corrigen esto: revisa el diametro, el trazo o si la linea requiere bombeo.`);
+      alerts.push(`Presion NEGATIVA en operacion en ${negativos.length} punto(s) del perfil (desde los ${Math.round(negativos[0].v.dist).toLocaleString("es-MX")} m). Las valvulas de aire NO corrigen esto: revisa el diametro, el trazo o si la linea requiere bombeo.`);
     } else {
       const bajos = sorted.filter((v, i) => pressures[i] != null && pressures[i]! < pressureMin);
       if (bajos.length > 0) alerts.push(`Presion por debajo de ${pressureMin} m.c.a. en ${bajos.length} punto(s): verifica con el fabricante que la valvula de aire selle a baja presion.`);
@@ -323,9 +323,9 @@ export function calculateAirValves(input: AirValveInputs): AirValveOutputs | nul
   }
   // Un solo aviso con TODOS los puntos bajos significativos (antes era uno por punto)
   if (puntosBajos.length > 0) {
-    const lista = puntosBajos.slice(0, 6).map((p) => `${p.dist.toFixed(0)} m`).join(" · ");
+    const lista = puntosBajos.slice(0, 6).map((p) => `${Math.round(p.dist).toLocaleString("es-MX")} m`).join(" · ");
     const extra = puntosBajos.length > 6 ? ` (y ${puntosBajos.length - 6} más)` : "";
-    alerts.push(`Puntos bajos del perfil (cad ${lista}${extra}): no llevan válvula de aire — se recomienda un desagüe (desfogue) para drenado y limpieza en cada uno. Puedes armar esos cruceros en el Generador de cruceros.`);
+    alerts.push(`Puntos bajos del perfil (a los ${lista}${extra} del inicio): no llevan válvula de aire — se recomienda un desagüe (desfogue) para drenado y limpieza en cada uno. Puedes armar esos cruceros en el Generador de cruceros.`);
   }
 
   // Step 4: Deduplicate — within 30m, keep each type's highest priority

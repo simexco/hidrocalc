@@ -169,7 +169,7 @@ export default function EntregablePage() {
           </div>
           {d.valvulas.map((v, i) => (
             <div key={i} className="flex gap-2 items-center">
-              <input type="text" value={v.cad} onChange={(e) => updValve(i, { cad: e.target.value })} placeholder="Km 0+450" className="w-28 px-2 py-1 text-xs border border-gray-200 dark:border-gray-600 rounded bg-white dark:bg-gray-800 dark:text-white" />
+              <input type="text" value={v.cad} onChange={(e) => updValve(i, { cad: e.target.value })} placeholder="450 m" className="w-28 px-2 py-1 text-xs border border-gray-200 dark:border-gray-600 rounded bg-white dark:bg-gray-800 dark:text-white" />
               <input type="text" value={v.tipo} onChange={(e) => updValve(i, { tipo: e.target.value })} placeholder="VAEA (punto alto)" className="flex-1 px-2 py-1 text-xs border border-gray-200 dark:border-gray-600 rounded bg-white dark:bg-gray-800 dark:text-white" />
               <button onClick={() => delValve(i)} className="text-red-400 hover:text-red-600 text-xs">✕</button>
             </div>
