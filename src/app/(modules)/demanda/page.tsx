@@ -427,13 +427,31 @@ export default function DemandaPage() {
                   title="Tanque de regulacion"
                   value={formatNumber(results.volTanque_m3, 0)}
                   unit="m3"
-                  formula="Vr = QMD × Coeficiente de regulacion"
-                  steps={[
-                    { substitution: `Vr = ${formatNumber(results.QMD_ls, 2)} L/s × ${inputs.coefRegulacion}` },
-                    { result: `Vr = ${formatNumber(results.volTanque_m3, 0)} m3` },
-                  ]}
-                  reference="Volumen de regulacion"
-                  norm="CONAGUA Tabla 1.3: 24h=11.0, 20h=9.0, 16h=19.0 (CDMX Tabla 1.4: 24h=14.3)"
+                  formula="Vr = R × QMD  ·  R = (máx excedente − máx faltante) × 3.6 / 100  (ecs. 1.2 y 1.3)"
+                  steps={(() => {
+                    const h = Math.min(24, Math.max(1, Math.round(inputs.horasBombeoTanque ?? 24)));
+                    const ini = ((Math.round(inputs.horaInicioBombeo ?? 0) % 24) + 24) % 24;
+                    const fin = (ini + h) % 24;
+                    const horario = h >= 24 ? "24 h (suministro continuo)" : `${h} h, de las ${ini} a las ${fin === 0 ? 24 : fin}`;
+                    const vr = [
+                      { substitution: `Vr = ${inputs.coefRegulacion} × ${formatNumber(results.QMD_ls, 2)} L/s` },
+                      { result: `Vr = ${formatNumber(results.volTanque_m3, 0)} m3` },
+                    ];
+                    if (inputs.rManualTanque) {
+                      return [{ label: `R = ${inputs.coefRegulacion} m³/(L/s) — capturado manual` }, ...vr];
+                    }
+                    const c = calcularCoefRegulacion(h, ini);
+                    return [
+                      { label: `1. Horario de bombeo: ${horario}` },
+                      { label: "2. Entrada al tanque en cada hora de bombeo (% del QMD):", substitution: `100 × 24 / ${h} = ${c.suministroPct}%` },
+                      { label: "3. Diferencias acumuladas (entrada − demanda) contra la curva de demanda horaria (Fig. 1.1):", substitution: `máx excedente = ${c.maxExcedente}%  ·  máx faltante = ${c.maxFaltante}%` },
+                      { label: "4. Coeficiente de regulación:", substitution: `R = (${c.maxExcedente} − (${c.maxFaltante})) × 3.6 / 100`, result: `R = ${c.R} m³/(L/s)` },
+                      { label: "5. Volumen de regulación:", ...vr[0] },
+                      vr[1],
+                    ];
+                  })()}
+                  reference="Metodo de la Tabla 1.1 (curva de demanda nacional); detalle hora por hora en el desplegable del tanque de regulacion"
+                  norm="CONAGUA MAPAS — Tanques de regulacion (Tablas 1.3 y 1.4)"
                 />
               </div>
 
