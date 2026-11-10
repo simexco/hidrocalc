@@ -12,7 +12,8 @@ import { calculateWaterDemand, DEVELOPMENT_TYPES, CLIMATE_TYPES, DENSITY_CATEGOR
 import { useProjectStore } from "@/store/projectStore";
 import { formatNumber } from "@/lib/calculations/conversions";
 import { saveFormState, loadFormState } from "@/lib/storage/form-persistence";
-import { calcularCoefRegulacion, MAPAS_TANQUES_URL } from "@/lib/calculations/tank-storage";
+import { calcularCoefRegulacion } from "@/lib/calculations/tank-storage";
+import { TablaCoefRegulacion } from "@/components/ui/TablaCoefRegulacion";
 
 const defaults: WaterDemandInputs = {
   projectName: "Demanda de agua",
@@ -250,13 +251,7 @@ export default function DemandaPage() {
                 />
                 Capturar coeficiente de regulación (R) manual (p. ej. CDMX: 14.3)
               </label>
-              <a
-                href={MAPAS_TANQUES_URL}
-                target="_blank" rel="noreferrer"
-                className="inline-block text-[10px] text-[#1C3D5A] dark:text-blue-300 underline decoration-dotted"
-              >
-                Tabla oficial de R por horario de bombeo — manual MAPAS de tanques (CONAGUA) →
-              </a>
+              <TablaCoefRegulacion horas={inputs.horasBombeoTanque ?? 24} inicio={inputs.horaInicioBombeo ?? 0} manual={!!inputs.rManualTanque} />
             </div>
             <button onClick={() => setShowAdvanced(!showAdvanced)} className="text-[10px] text-[#1C3D5A] underline decoration-dotted">
               {showAdvanced ? 'Ocultar' : 'Mostrar'} parametros avanzados

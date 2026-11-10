@@ -52,6 +52,22 @@ export function calcularCoefRegulacion(horasBombeo: number, horaInicio: number):
   return { R, maxExcedente: Math.round(maxExc * 10) / 10, maxFaltante: Math.round(maxFal * 10) / 10, suministroPct: Math.round(suministroPct * 100) / 100 };
 }
 
+// Hoja de cálculo hora por hora del método (equivalente a la Tabla 1.1 del manual), para
+// mostrarla al usuario: entrada por bombeo, demanda, diferencia y diferencia acumulada.
+export interface FilaRegulacion { hora: number; suministro: number; demanda: number; diferencia: number; acumulado: number }
+export function tablaRegulacion(horasBombeo: number, horaInicio: number): FilaRegulacion[] {
+  const h = Math.min(24, Math.max(1, Math.round(horasBombeo)));
+  const ini = ((Math.round(horaInicio) % 24) + 24) % 24;
+  const suministroPct = 2400 / h;
+  let acum = 0;
+  return CURVA_DEMANDA_HORARIA.map((demanda, hora) => {
+    const suministro = ((hora - ini + 24) % 24) < h ? suministroPct : 0;
+    const diferencia = suministro - demanda;
+    acum += diferencia;
+    return { hora, suministro, demanda, diferencia, acumulado: acum };
+  });
+}
+
 export type TankShape = "rectangular" | "circular";
 
 export interface TankStorageInputs {

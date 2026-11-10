@@ -7,7 +7,8 @@ import { ExportPDFButton } from "@/components/ui/ExportPDFButton";
 import { ResetButton } from "@/components/ui/ResetButton";
 import { FormulaDetail } from "@/components/ui/FormulaDetail";
 import { InfoBubble, DefinicionCoefRegulacion } from "@/components/ui/InfoBubble";
-import { calculateTankStorage, REGULATION_COEFFICIENTS, MAPAS_TANQUES_URL, type TankStorageInputs, type TankShape } from "@/lib/calculations/tank-storage";
+import { calculateTankStorage, REGULATION_COEFFICIENTS, type TankStorageInputs, type TankShape } from "@/lib/calculations/tank-storage";
+import { TablaCoefRegulacion } from "@/components/ui/TablaCoefRegulacion";
 import { formatNumber } from "@/lib/calculations/conversions";
 import { saveFormState, loadFormState } from "@/lib/storage/form-persistence";
 
@@ -130,10 +131,8 @@ export default function TanquePage() {
                       Reproduce exacto la Tabla 1.3: 24 h → 11.0 · 20 h (4-24) → 9.0 · 16 h (5-21) → 19.0.
                       Para CDMX usa la casilla de R manual (su curva es distinta — Tabla 1.4).
                     </p>
-                    <a href={MAPAS_TANQUES_URL} target="_blank" rel="noreferrer" className="inline-block text-[10px] font-semibold text-[#1C3D5A] dark:text-blue-300 underline">
-                      Ver el manual MAPAS de tanques (PDF oficial de CONAGUA) →
-                    </a>
                   </div>
+                  <TablaCoefRegulacion horas={inputs.horasAportacion} inicio={inputs.horaInicio ?? 0} manual={inputs.rManual != null} />
                 </div>
 
                 {/* Reserva */}
