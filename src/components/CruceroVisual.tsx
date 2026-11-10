@@ -60,12 +60,12 @@ export function puertos(n: VizNode): { dn: string }[] {
 
 // Marcos con tapa disponibles: hierro dúctil como default + variantes por peso
 // (el peso identifica la clase de tráfico; el cliente elige la que maneja su organismo)
-export const MARCOS_TAPA: { key: string; sku: string; label: string }[] = [
-  { key: 'D', sku: 'AI-MCT-D', label: 'Hierro dúctil' },
-  { key: '67', sku: 'AI-MCT-67', label: 'FoFo 67 kg' },
-  { key: '80', sku: 'AI-MCT-80', label: 'FoFo 80 kg' },
-  { key: '110', sku: 'AI-MCT-110', label: 'FoFo 110 kg' },
-  { key: '130', sku: 'AI-MCT-130', label: 'FoFo 130 kg' },
+export const MARCOS_TAPA: { key: string; sku: string; label: string; nombre: string }[] = [
+  { key: 'D', sku: 'AI-MCT-D', label: 'Hierro dúctil', nombre: 'de hierro dúctil' },
+  { key: '67', sku: 'AI-MCT-67', label: 'FoFo 67 kg', nombre: 'de FoFo 67 kg' },
+  { key: '80', sku: 'AI-MCT-80', label: 'FoFo 80 kg', nombre: 'de FoFo 80 kg' },
+  { key: '110', sku: 'AI-MCT-110', label: 'FoFo 110 kg', nombre: 'de FoFo 110 kg' },
+  { key: '130', sku: 'AI-MCT-130', label: 'FoFo 130 kg', nombre: 'de FoFo 130 kg' },
 ]
 
 // ─── Derivación: grafo → piezas + uniones (motor existente) ────
@@ -140,7 +140,7 @@ export function vizToAccsConex(nodes: VizNode[], opts?: { marcoTapa?: string; co
       // 'none' = el usuario lo quitó de la lista (se regresa con el selector del recuadro de caja)
       if ((marcoTapa ?? 'D') !== 'none') {
         const marcoSel = MARCOS_TAPA.find(m => m.key === (marcoTapa ?? 'D')) ?? MARCOS_TAPA[0]
-        accs.push({ id: -9003, label: `Marco con Tapa tipo pesado — ${marcoSel.label} (caja tipo ${cj.tipo})`, sku: marcoSel.sku, dn: dnRef, bridas: 0, leKey: 'tapa-ciega', norma: 'EN-124 D400', isObra: true, qty: cd.cant })
+        accs.push({ id: -9003, label: `Marco con tapa ${marcoSel.nombre} (caja tipo ${cj.tipo})`, sku: marcoSel.sku, dn: dnRef, bridas: 0, leKey: 'tapa-ciega', norma: 'EN-124 D400', isObra: true, qty: cd.cant })
       }
     }
   }
