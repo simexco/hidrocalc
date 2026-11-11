@@ -88,7 +88,7 @@ const CRITERIO_AWWA: [string, string, string, string][] = [
   ["Aumenta la pendiente de subida / disminuye la de bajada", "Ninguna", "Ahí el aire no se detiene: sigue de largo con el agua.", "Fig. 3-1 (p. 18)"],
   ["Punto bajo", "Ninguna: desfogue", "Ahí no hay aire; se pone un desfogue para vaciar la línea y sacar sedimentos.", "Fig. 3-1 (p. 18), «drain valve»; MAPAS §3.1.4"],
   ["Llegada al tanque", "Descarga libre: ninguna. Ahogada: combinada", "Con descarga libre el extremo está abierto. Ahogada o con válvula de llenado, la llegada funciona como punto alto.", "Fig. 3-1 (p. 18): la línea entra libre al tanque sin válvula"],
-  ["Donde el golpe de ariete hace vacío", "Combinada con dispositivo de cierre lento", "Deja entrar aire y lo saca despacio, para no provocar un segundo golpe. Se confirma con análisis de transitorios.", "p. 19, 34 y 37-38"],
+  ["Donde el golpe de ariete hace vacío", "Combinada con dispositivo de cierre lento", "Deja entrar aire y lo saca despacio, para no provocar un segundo golpe. Se confirma con un estudio de golpe de ariete hecho con software.", "p. 19, 34 y 37-38"],
 ];
 
 const CRITERIO_TAMANO: [string, string][] = [
