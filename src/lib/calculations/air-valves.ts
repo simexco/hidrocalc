@@ -27,6 +27,7 @@ export interface AirValveResult {
   note: string;
   // Detalle del tamaño por AWWA M51 (aire por ruptura y por llenado)
   sizing?: string;
+  tamanoM51?: string;   // tamano que pide M51 en este punto (antes de igualar la linea)
   // Zona de vacio por golpe de ariete: lleva dispositivo de cierre lento (M51 p. 19, 37-38)
   cierreLento?: boolean;
 }
@@ -550,10 +551,27 @@ export function calculateAirValves(input: AirValveInputs): AirValveOutputs | nul
     };
   }).sort((a, b) => a.dist - b.dist);
 
-  // Avisos de tamaño, sello y vacio (AWWA M51)
+  // Un solo tamano por linea: el mayor que pide M51 entre las combinadas y las de admision
+  // y expulsion. Cualquier valvula igual o mayor a la calculada cumple el metodo de M51
+  // (cap. 4: capacidad minima), asi se cubren todos los puntos con un solo modelo.
   const grandes = valves.filter((v) => v.type !== "VA-E");
+  const idxT = (b: string) => TAMANOS.findIndex(([, t]) => t === b);
+  const mayor = grandes.reduce((m, v) => (idxT(v.bodySize) > idxT(m) ? v.bodySize : m), grandes[0]?.bodySize ?? '1/2"');
+  let igualadas = 0;
+  for (const v of grandes) {
+    v.tamanoM51 = v.bodySize;
+    if (v.bodySize !== mayor) {
+      igualadas++;
+      v.sizing = `${v.sizing} → aquí basta ${v.bodySize}; se pone ${mayor}, el mayor de la línea`;
+      v.bodySize = mayor;
+    } else {
+      v.sizing = `${v.sizing} → ${mayor}`;
+    }
+  }
+
+  // Avisos de tamaño, sello y vacio (AWWA M51)
   if (grandes.length > 0) {
-    alerts.push(`Tamaño por el método de AWWA M51 (cap. 4): la válvula debe sacar el aire al llenar la línea a 0.3 m/s y dejar entrar el aire si la línea se rompe y se vacía por gravedad.${maxPorRuptura > 0 ? ` En ${maxPorRuptura} válvula(s) manda la ruptura: depende de la pendiente del tubo.` : ""} Confirma con las curvas del fabricante.`);
+    alerts.push(`Tamaño por el método de AWWA M51 (cap. 4): la válvula debe sacar el aire al llenar la línea a 0.3 m/s y dejar entrar el aire si la línea se rompe y se vacía por gravedad.${maxPorRuptura > 0 ? ` En ${maxPorRuptura} válvula(s) manda la ruptura: depende de la pendiente del tubo.` : ""}${igualadas > 0 ? ` El cálculo da tamaños distintos en cada punto; se pone ${mayor} en todas, el mayor que pide M51 en la línea, porque una válvula más grande que la calculada también cumple y así se compra un solo modelo.` : ""} Confirma con las curvas del fabricante.`);
   }
   const bajos = valves.filter((v) => v.alert === "low").length;
   if (bajos > 0) {
