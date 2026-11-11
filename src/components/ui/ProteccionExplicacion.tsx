@@ -74,7 +74,7 @@ export function PorQueVentosasVacio() {
 // fabricantes en su diagrama de ubicación). La plataforma aplica exactamente estas reglas.
 const CRITERIO_AWWA: [string, string, string][] = [
   ["Descarga de bomba (antes de la check)", "Admisión y expulsión", "Al arrancar la bomba sale de golpe el aire de la columna; al parar, entra aire para que no se haga vacío."],
-  ["Inicio de la línea por gravedad", "Combinada", "Llenado y vaciado de la línea, y el aire que entra con el agua al arrancar."],
+  ["Inicio de la línea por gravedad, si baja desde el tanque o arranca plana", "Combinada", "Ahí el inicio es un punto alto: por ahí sale el aire al llenar y entra al vaciar. Si la línea sube desde el tanque, no lleva."],
   ["Punto alto", "Combinada", "Ahí se junta el aire durante la operación y ahí se forma el vacío al vaciar."],
   ["Inicio de tramo horizontal (la subida termina)", "Combinada", "El aire que sube con el agua se detiene donde la pendiente se acaba."],
   ["Fin de tramo horizontal", "Combinada", "El aire que avanzó por el tramo plano se acumula donde vuelve a cambiar la pendiente."],
@@ -112,6 +112,7 @@ export function CriterioValvulasAire() {
           </tbody>
         </table>
       </div>
+      <p className="text-gray-500">Con cotas satelitales (mapa o KML) las lomas de menos de 5 m no cuentan: el SRTM tiene 16 m de precisión vertical (90 %, USGS) y una loma menor no se distingue del error. Es criterio de la plataforma. Con topografía de campo (CSV o Excel) se toman en cuenta desde 1 m.</p>
       <p className="text-gray-500">Combinada = admite y expulsa mucho aire (llenado y vaciado) y además purga burbujas con la línea en presión. Admisión y expulsión = solo grandes volúmenes (llenado y vaciado). Eliminadora = solo purga burbujas con la línea en presión.</p>
     </div>
   );

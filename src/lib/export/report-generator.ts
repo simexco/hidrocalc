@@ -72,6 +72,8 @@ export interface ReportData {
   golpeUbicacion?: { cad: number; cota: number; ajuste: number | null; bombeo: boolean; bajoCad: number; bajoCota: number } | null;
   // Coeficiente de pérdida por accesorios usado en el perfil (fracción de hf, p.ej. 0.05)
   coefAccesorios?: number | null;
+  // Origen de las cotas del perfil: true = satelitales (mapa/KML), false = topografía (CSV/Excel)
+  cotasSatelitales?: boolean | null;
 }
 
 export interface ReportResults {
@@ -522,7 +524,7 @@ export async function generateReportPDF(d: ReportData): Promise<jsPDF> {
     if (r.golpeExcedeClase && g) {
       golpePor += g.bombeo
         ? ` Anticipadora en la descarga de la bomba, despues de la check (a ${cadTxt(g.cad)}, cota ${n(g.cota, 1)} m): ahi regresa la onda del paro de bomba.`
-        : ` Aliviadora en la llegada, aguas arriba de la valvula que se cierra (a ${cadTxt(g.cad)}, cota ${n(g.cota, 1)} m): ahi nace la onda${g.ajuste != null ? `; ajuste de apertura ${n(g.ajuste, 1)} kg/cm2` : ""}.`;
+        : ` Aliviadora en la llegada, aguas arriba de la valvula que se cierra (a ${cadTxt(g.cad)}, cota ${n(g.cota, 1)} m): ahi nace la onda${g.ajuste != null ? `; ajuste de apertura preliminar ${n(g.ajuste, 1)} kg/cm2 (confirmar con el fabricante)` : ""}.`;
       golpePor += ` La presion maxima se concentra en el punto mas bajo (a ${cadTxt(g.bajoCad)}, cota ${n(g.bajoCota, 1)} m).`;
     }
   } else {

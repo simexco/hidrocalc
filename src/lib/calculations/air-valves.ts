@@ -41,6 +41,8 @@ export interface AirValveInputs {
   vertices: AirValveVertex[];
   // Linea por bombeo: la primera valvula va en la descarga de la bomba (admision y expulsion)
   esBombeo?: boolean;
+  // false = cotas de topografia de campo (CSV/Excel): no se aplica el filtro de 5 m de las satelitales
+  cotasSatelitales?: boolean | null;
 }
 
 export interface AirValveOutputs {
@@ -138,8 +140,11 @@ export function calculateAirValves(input: AirValveInputs): AirValveOutputs | nul
   // Extremos SIGNIFICATIVOS del perfil (poda por amplitud): los perfiles satelitales
   // traen 30-40 vertices y cada ondulacion de 1-2 m marcaba punto alto/bajo, inundando
   // de valvulas y desagues. Solo cuentan los que sobresalen >= UMBRAL de su entorno.
-  // (Umbral preliminar de 5 m ≈ 0.5 kg/cm2 — validar con el ing.)
-  const UMBRAL_EXTREMO_M = 5;
+  // Cotas satelitales (SRTM, precision vertical 16 m al 90 %, USGS): una loma de menos de
+  // 5 m no se distingue del error y se ignora (criterio de la plataforma, sin fuente
+  // normativa). Con topografia de campo NO se filtra: todo punto alto real lleva valvula
+  // (AWWA M51); se deja 1 m para no reaccionar al redondeo de la nivelacion.
+  const UMBRAL_EXTREMO_M = input.cotasSatelitales === false ? 1 : 5;
   const cotas = sorted.map((v) => v.cota);
   type Ext = { i: number; tipo: "alto" | "bajo" };
   const exts: Ext[] = [];
@@ -198,12 +203,10 @@ export function calculateAirValves(input: AirValveInputs): AirValveOutputs | nul
   type Candidate = { dist: number; cota: number; pressure: number | null; type: "VA-C" | "VA-A" | "VA-E"; reason: string };
   const candidates: Candidate[] = [];
 
-  // Inicio — en bombeo, admision y expulsion en la descarga de la bomba (antes de la check);
-  // por gravedad, combinada (llenado/vaciado y arranque)
+  // Inicio por bombeo — admision y expulsion en la descarga de la bomba (antes de la check),
+  // AWWA M51. El inicio por gravedad se decide mas abajo, con la pendiente del primer tramo.
   if (input.esBombeo) {
     candidates.push({ dist: sorted[0].dist, cota: sorted[0].cota, pressure: pressures[0], type: "VA-A", reason: "Descarga de bomba (antes de la valvula check)" });
-  } else {
-    candidates.push({ dist: sorted[0].dist, cota: sorted[0].cota, pressure: pressures[0], type: "VA-C", reason: "Inicio de linea" });
   }
   // Fin — SOLO si la llegada NO es descendente: en un punto bajo el aire no se acumula
   // (una linea que baja uniformemente no necesita valvula al final)
@@ -247,6 +250,20 @@ export function calculateAirValves(input: AirValveInputs): AirValveOutputs | nul
     if (peor >= 0 && peorDesv > UMBRAL_EXTREMO_M) { dpKeep.add(peor); dp(i0, peor); dp(peor, i1); }
   })(0, last);
   const macro = Array.from(dpKeep).sort((a, b) => a - b);
+  // Inicio de una linea por gravedad: AWWA M51 no lo lista por si mismo. Lleva combinada
+  // solo si es punto alto (la linea baja desde el tanque) o arranca un tramo horizontal;
+  // si la linea sube desde el tanque, el aire sale por el siguiente punto alto.
+  if (!input.esBombeo && macro.length >= 2) {
+    const b0 = macro[1];
+    const pend0 = ((sorted[b0].cota - sorted[0].cota) / ((sorted[b0].dist - sorted[0].dist) || 1)) * 100;
+    if (pend0 < -1) {
+      candidates.push({ dist: sorted[0].dist, cota: sorted[0].cota, pressure: pressures[0], type: "VA-C", reason: "Inicio de linea — punto alto (la linea baja desde el tanque)" });
+    } else if (Math.abs(pend0) <= 1) {
+      candidates.push({ dist: sorted[0].dist, cota: sorted[0].cota, pressure: pressures[0], type: "VA-C", reason: "Inicio de linea — inicio de tramo horizontal" });
+    } else {
+      alerts.push("La línea sube desde el inicio: AWWA M51 no pide válvula de aire ahí; el aire sale por el siguiente punto alto.");
+    }
+  }
   for (let k = 1; k <= macro.length - 2; k++) {
     const j = macro[k];
     if (altosSig.has(j) || bajosSig.has(j)) continue; // los extremos ya tienen su propio tratamiento

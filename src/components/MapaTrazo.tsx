@@ -324,7 +324,7 @@ export default function MapaTrazo({ ocupado, onUsar }: Props) {
           </span>
         )}
       </div>
-      <p className="text-[10px] text-gray-400">Verde = inicio · rojo = último punto. ¿Te equivocaste? <strong>Arrastra</strong> cualquier punto para moverlo (con el mouse o el dedo), <strong>tócalo</strong> para seleccionarlo y borrarlo con el botón (en escritorio también sirve el clic derecho), o «Deshacer» quita el último. Las cotas son satelitales (SRTM ~30 m, ±5–10 m): verificar puntos críticos en campo.</p>
+      <p className="text-[10px] text-gray-400">Verde = inicio · rojo = último punto. ¿Te equivocaste? <strong>Arrastra</strong> cualquier punto para moverlo (con el mouse o el dedo), <strong>tócalo</strong> para seleccionarlo y borrarlo con el botón (en escritorio también sirve el clic derecho), o «Deshacer» quita el último. Las cotas son satelitales (SRTM ~30 m; precisión vertical oficial 16 m al 90 %, USGS): verificar puntos críticos en campo.</p>
     </div>
   );
 }
