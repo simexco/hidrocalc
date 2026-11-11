@@ -220,7 +220,7 @@ export function calculateAirValves(input: AirValveInputs): AirValveOutputs | nul
   //   Punto alto, inicio y fin de tramo horizontal,
   //   aumenta la pendiente de bajada ............... combinada
   //   Disminuye la pendiente de subida, ascenso largo  combinada (sencilla: admision y expulsion)
-  //   Tramo horizontal y descenso largos ........... combinada (sencilla: eliminadora; combinada si hay vacio)
+  //   Tramo horizontal y descenso largos ........... combinada (sencilla: eliminadora; combinada si el golpe hace vacio)
   //   Aumenta la pendiente de subida, disminuye la
   //   pendiente de bajada .......................... ninguna
   //   Punto bajo ................................... ninguna: desfogue (drain valve en la figura 3-1)
@@ -388,10 +388,10 @@ export function calculateAirValves(input: AirValveInputs): AirValveOutputs | nul
       } else if (pend < -1) {
         if (vacio === false) { tipo = "VA-E"; reason = "Descenso largo — purga de aire (sin vacío con el golpe de ariete)"; }
         else if (vacio === true) { tipo = "VA-C"; reason = "Descenso largo — combinada: con el golpe de ariete se forma vacío"; vacioCambia++; }
-        else { tipo = "VA-C"; reason = "Descenso largo — combinada (falta revisar el vacío con el golpe de ariete)"; sinGolpeDesc++; }
+        else { tipo = "VA-E"; reason = "Descenso largo — purga de aire"; sinGolpeDesc++; }
       } else {
         if (vacio === true) { tipo = "VA-C"; reason = "Tramo horizontal largo — combinada: con el golpe de ariete se forma vacío"; vacioCambia++; }
-        else { tipo = "VA-E"; reason = "Tramo horizontal largo — purga de aire (o combinada)"; if (vacio == null) sinGolpeHor++; }
+        else { tipo = "VA-E"; reason = "Tramo horizontal largo — purga de aire"; if (vacio == null) sinGolpeHor++; }
       }
       candidates.push({ dist: d, cota, pressure: pr, type: tipo, reason });
     }
@@ -421,10 +421,7 @@ export function calculateAirValves(input: AirValveInputs): AirValveOutputs | nul
   }
   if (sinGolpeDesc + sinGolpeHor > 0) {
     const falta = dH == null ? "Falta calcular el golpe de ariete (módulo Golpe de ariete)" : "Falta el caudal o la presión de operación";
-    const partes: string[] = [];
-    if (sinGolpeDesc > 0) partes.push("los descensos largos llevan combinada por seguridad; si no hay vacío, AWWA M51 permite eliminadora, que es más sencilla");
-    if (sinGolpeHor > 0) partes.push("los tramos planos largos llevan eliminadora; si hay vacío, deben llevar combinada");
-    alerts.push(`${falta} para revisar el vacío en los tramos largos: ${partes.join("; ")}.`);
+    alerts.push(`${falta} para revisar el vacío: en ${sinGolpeDesc + sinGolpeHor} punto(s) de tramos planos o descensos largos se puso válvula eliminadora de aire. Si el golpe de ariete hace vacío ahí, la plataforma la cambia a válvula combinada con dispositivo de cierre lento.`);
   }
   if (input.cotasSatelitales === true) {
     alerts.push("Las válvulas se ubicaron con cotas del mapa (satelitales): confirma los puntos altos, bajos y cambios de pendiente con topografía de campo antes del proyecto ejecutivo.");
