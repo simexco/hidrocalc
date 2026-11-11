@@ -71,19 +71,20 @@ export function PorQueVentosasVacio() {
 }
 
 // Criterio de ubicación de válvulas de aire: AWWA M51 (2a. ed.), figura 3-1 (p. 18) y lista de
-// ubicaciones (p. 19). Donde la tabla da dos opciones va combinada: M51 recomienda usar combinadas
-// siempre que sea posible (p. 44). Columnas: lugar, válvula, por qué, dónde lo dice M51.
+// ubicaciones (p. 19). Donde la tabla da dos opciones, la plataforma pone la más sencilla y combinada
+// si el golpe de ariete hace vacío; se puede pedir combinada en todos (M51 p. 44).
+// Columnas: lugar, válvula, por qué, dónde lo dice M51.
 const CRITERIO_AWWA: [string, string, string, string][] = [
-  ["Descarga de bomba (antes de la check)", "Combinada (o admisión y expulsión). Pozo: combinada con cierre lento", "Al arrancar la bomba sale de golpe el aire de la columna; al parar, entra aire para que no se haga vacío.", "Fig. 3-1 (p. 18); pozos: p. 19 y 42"],
+  ["Descarga de bomba (antes de la check)", "Admisión y expulsión (M51 permite combinada). Pozo: combinada con cierre lento", "Al arrancar la bomba sale de golpe el aire de la columna; al parar, entra aire para que no se haga vacío.", "Fig. 3-1 (p. 18); pozos: p. 19 y 42"],
   ["Inicio de la línea por gravedad, si baja desde el tanque o arranca plana", "Combinada", "Ahí el inicio es un punto alto o un inicio de tramo horizontal. Si la línea sube desde el tanque, no lleva.", "Punto alto e inicio de horizontal: fig. 3-1 y p. 19"],
   ["Punto alto", "Combinada", "Ahí se junta el aire durante la operación y ahí se forma el vacío al vaciar.", "Fig. 3-1 (p. 18) y p. 19"],
   ["Inicio de tramo horizontal (la subida termina)", "Combinada", "El aire que sube con el agua se detiene donde la pendiente se acaba.", "Fig. 3-1 (p. 18) y p. 19"],
   ["Fin de tramo horizontal", "Combinada", "El aire que avanzó por el tramo plano se acumula donde vuelve a cambiar la pendiente.", "Fig. 3-1 (p. 18) y p. 19"],
-  ["Disminuye la pendiente de subida", "Combinada (o admisión y expulsión)", "El aire se frena donde la subida se suaviza; al vaciar, entra aire por ahí.", "Fig. 3-1 (p. 18) y p. 19"],
+  ["Disminuye la pendiente de subida", "Admisión y expulsión (M51 permite combinada)", "El aire se frena donde la subida se suaviza; al vaciar, entra aire por ahí.", "Fig. 3-1 (p. 18) y p. 19"],
   ["Aumenta la pendiente de bajada", "Combinada", "El agua se separa del tubo donde la bajada se empina: riesgo de vacío y de bolsas de aire.", "Fig. 3-1 (p. 18) y p. 19"],
-  ["Tramo horizontal largo, cada 400 a 800 m", "Combinada (o eliminadora)", "Purga las burbujas que se juntan en operación; la combinada además deja entrar aire si hay vacío.", "Fig. 3-1 (p. 18) y p. 19"],
-  ["Ascenso largo, cada 400 a 800 m", "Combinada (o admisión y expulsión)", "Mucho volumen de aire que sacar al llenar y meter al vaciar.", "Fig. 3-1 (p. 18) y p. 19"],
-  ["Descenso largo, cada 400 a 800 m", "Combinada (o eliminadora)", "En las bajadas se forma el vacío al vaciar; la combinada además purga en operación.", "Fig. 3-1 (p. 18) y p. 19"],
+  ["Tramo horizontal largo, cada 400 a 800 m", "Eliminadora; combinada si el golpe hace vacío", "Purga las burbujas que se juntan en operación. Si hay vacío, la eliminadora no deja entrar aire suficiente.", "Fig. 3-1 (p. 18) y p. 19"],
+  ["Ascenso largo, cada 400 a 800 m", "Admisión y expulsión (M51 permite combinada)", "Mucho volumen de aire que sacar al llenar y meter al vaciar.", "Fig. 3-1 (p. 18) y p. 19"],
+  ["Descenso largo, cada 400 a 800 m", "Eliminadora; combinada si el golpe hace vacío", "Purga el aire en operación. Si el golpe hace vacío, la combinada deja entrar aire. Mientras no se calcule el golpe, va combinada.", "Fig. 3-1 (p. 18) y p. 19"],
   ["Aumenta la pendiente de subida / disminuye la de bajada", "Ninguna", "Ahí el aire no se detiene: sigue de largo con el agua.", "Fig. 3-1 (p. 18)"],
   ["Punto bajo", "Ninguna: desfogue", "Ahí no hay aire; se pone un desfogue para vaciar la línea y sacar sedimentos.", "Fig. 3-1 (p. 18), «drain valve»; MAPAS §3.1.4"],
   ["Llegada al tanque", "Descarga libre: ninguna. Ahogada: combinada", "Con descarga libre el extremo está abierto. Ahogada o con válvula de llenado, la llegada funciona como punto alto.", "Fig. 3-1 (p. 18): la línea entra libre al tanque sin válvula"],
@@ -100,7 +101,7 @@ const CRITERIO_TAMANO: [string, string][] = [
 export function CriterioValvulasAire() {
   return (
     <div className="space-y-2">
-      <p>La plataforma coloca cada válvula con la tabla de ubicación del <strong>Manual AWWA M51</strong> (2a. edición, reafirmado en 2025). Donde la tabla permite dos opciones pone combinada, como recomienda el manual (p. 44); se puede pedir la opción sencilla.</p>
+      <p>La plataforma coloca cada válvula con la tabla de ubicación del <strong>Manual AWWA M51</strong> (2a. edición, reafirmado en 2025). Donde la tabla permite dos opciones pone la más sencilla, y combinada donde el golpe de ariete hace vacío. Se puede pedir combinada en todos, como recomienda el manual siempre que sea posible (p. 44).</p>
       <div className="overflow-x-auto">
         <table className="w-full text-[11px]">
           <thead>

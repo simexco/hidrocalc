@@ -25,6 +25,10 @@ export interface AirValveResult {
   reason: string;
   alert: "critical" | "low" | null;
   note: string;
+  // Detalle del tamaño por AWWA M51 (aire por ruptura y por llenado)
+  sizing?: string;
+  // Zona de vacio por golpe de ariete: lleva dispositivo de cierre lento (M51 p. 19, 37-38)
+  cierreLento?: boolean;
 }
 
 export interface AirValveInputs {
@@ -52,8 +56,8 @@ export interface AirValveInputs {
   // Bombeo desde pozo o bomba vertical: AWWA M51 (p. 19 y 42) pide combinada con dispositivo
   // de cierre lento entre la bomba y la check
   esPozo?: boolean;
-  // false (default) = combinada donde la tabla de M51 da opcion (M51 p. 44: "usar combinadas
-  // siempre que sea posible"); true = la opcion mas sencilla que permite la tabla (fig. 3-1)
+  // true = la opcion mas sencilla que permite la figura 3-1 (default en la pagina; combinada si
+  // hay vacio por golpe); false = combinada donde M51 da opcion (M51 p. 44)
   opcionSencilla?: boolean;
   // Coeficiente de Chezy del tubo para el tamaño por ruptura de linea (M51 ec. 4-6, p. 31):
   // 190 PVC, 110 hierro, 130 acero, 120 concreto
@@ -208,8 +212,9 @@ export function calculateAirValves(input: AirValveInputs): AirValveOutputs | nul
 
   // Step 3: Apply rules — collect candidate valves
   // Criterio AWWA M51, figura 3-1 (p. 18) y lista de ubicaciones (p. 19). Donde la tabla da
-  // dos opciones se usa combinada (M51 p. 44: combinadas siempre que sea posible), salvo que el
-  // usuario pida la opcion sencilla (opcionSencilla):
+  // dos opciones, la plataforma (pagina) usa la opcion sencilla por defecto y combinada si el
+  // golpe de ariete hace vacio; el usuario puede pedir combinada en todos (opcionSencilla=false,
+  // M51 p. 44: combinadas siempre que sea posible):
   //   Descarga de bomba ............................ combinada (sencilla: admision y expulsion);
   //                                                  pozo: combinada con cierre lento (p. 19, 42)
   //   Punto alto, inicio y fin de tramo horizontal,
@@ -234,7 +239,7 @@ export function calculateAirValves(input: AirValveInputs): AirValveOutputs | nul
     if (input.esPozo) {
       candidates.push({ dist: sorted[0].dist, cota: sorted[0].cota, pressure: pressures[0], type: "VA-C", reason: "Descarga de bomba de pozo — combinada con dispositivo de cierre lento, entre la bomba y la check" });
     } else {
-      candidates.push({ dist: sorted[0].dist, cota: sorted[0].cota, pressure: pressures[0], type: opcion("VA-A"), reason: "Descarga de bomba (antes de la valvula check)" });
+      candidates.push({ dist: sorted[0].dist, cota: sorted[0].cota, pressure: pressures[0], type: opcion("VA-A"), reason: "Descarga de bomba (antes de la válvula check)" });
     }
   }
   // Fin — SOLO si la llegada NO es descendente: en un punto bajo el aire no se acumula
@@ -248,7 +253,7 @@ export function calculateAirValves(input: AirValveInputs): AirValveOutputs | nul
       // M51 fig. 3-1: la linea entra libre al tanque y ahi no lleva valvula (el extremo esta abierto)
       alerts.push("Llegada al tanque con descarga libre: ahí no va válvula de aire, el extremo está abierto a la atmósfera (AWWA M51, figura 3-1, p. 18).");
     } else {
-      candidates.push({ dist: sorted[last].dist, cota: sorted[last].cota, pressure: pressures[last], type: "VA-C", reason: input.llegadaLibre === false ? "Llegada al tanque ahogada o con valvula de llenado (el aire se junta al final)" : "Fin de linea (llegada plana/ascendente)" });
+      candidates.push({ dist: sorted[last].dist, cota: sorted[last].cota, pressure: pressures[last], type: "VA-C", reason: input.llegadaLibre === false ? "Llegada al tanque ahogada o con válvula de llenado (el aire se junta al final)" : "Fin de línea (llegada plana/ascendente)" });
       if (input.llegadaLibre == null) {
         alerts.push("Indica cómo llega el agua al tanque. Si cae libre, la llegada no lleva válvula de aire (AWWA M51, figura 3-1); se dejó combinada mientras no se indique.");
       }
@@ -264,7 +269,7 @@ export function calculateAirValves(input: AirValveInputs): AirValveOutputs | nul
 
     // Punto alto → VA-C (el aire se acumula y hay riesgo de vacio al vaciar la linea)
     if (isHighPoint) {
-      candidates.push({ dist: sorted[i].dist, cota: sorted[i].cota, pressure: p, type: "VA-C", reason: "Punto alto — acumulacion de aire" });
+      candidates.push({ dist: sorted[i].dist, cota: sorted[i].cota, pressure: p, type: "VA-C", reason: "Punto alto — acumulación de aire" });
     }
 
     // Punto bajo → desague recomendado, NO valvula de aire (se agrega a los avisos)
@@ -296,9 +301,9 @@ export function calculateAirValves(input: AirValveInputs): AirValveOutputs | nul
     const b0 = macro[1];
     const pend0 = ((sorted[b0].cota - sorted[0].cota) / ((sorted[b0].dist - sorted[0].dist) || 1)) * 100;
     if (pend0 < -1) {
-      candidates.push({ dist: sorted[0].dist, cota: sorted[0].cota, pressure: pressures[0], type: "VA-C", reason: "Inicio de linea — punto alto (la linea baja desde el tanque)" });
+      candidates.push({ dist: sorted[0].dist, cota: sorted[0].cota, pressure: pressures[0], type: "VA-C", reason: "Inicio de línea — punto alto (la línea baja desde el tanque)" });
     } else if (Math.abs(pend0) <= 1) {
-      candidates.push({ dist: sorted[0].dist, cota: sorted[0].cota, pressure: pressures[0], type: "VA-C", reason: "Inicio de linea — inicio de tramo horizontal" });
+      candidates.push({ dist: sorted[0].dist, cota: sorted[0].cota, pressure: pressures[0], type: "VA-C", reason: "Inicio de línea — inicio de tramo horizontal" });
     } else {
       alerts.push("La línea sube desde el inicio: AWWA M51 no pide válvula de aire ahí; el aire sale por el siguiente punto alto.");
     }
@@ -381,11 +386,11 @@ export function calculateAirValves(input: AirValveInputs): AirValveOutputs | nul
       } else if (!simple) {
         tipo = "VA-C"; reason = pend < -1 ? "Descenso largo" : "Tramo horizontal largo";
       } else if (pend < -1) {
-        if (vacio === false) { tipo = "VA-E"; reason = "Descenso largo — purga de aire (sin vacio con el golpe de ariete)"; }
-        else if (vacio === true) { tipo = "VA-C"; reason = "Descenso largo — combinada: con el golpe de ariete se forma vacio"; vacioCambia++; }
-        else { tipo = "VA-C"; reason = "Descenso largo — combinada (falta revisar el vacio con el golpe de ariete)"; sinGolpeDesc++; }
+        if (vacio === false) { tipo = "VA-E"; reason = "Descenso largo — purga de aire (sin vacío con el golpe de ariete)"; }
+        else if (vacio === true) { tipo = "VA-C"; reason = "Descenso largo — combinada: con el golpe de ariete se forma vacío"; vacioCambia++; }
+        else { tipo = "VA-C"; reason = "Descenso largo — combinada (falta revisar el vacío con el golpe de ariete)"; sinGolpeDesc++; }
       } else {
-        if (vacio === true) { tipo = "VA-C"; reason = "Tramo horizontal largo — combinada: con el golpe de ariete se forma vacio"; vacioCambia++; }
+        if (vacio === true) { tipo = "VA-C"; reason = "Tramo horizontal largo — combinada: con el golpe de ariete se forma vacío"; vacioCambia++; }
         else { tipo = "VA-E"; reason = "Tramo horizontal largo — purga de aire (o combinada)"; if (vacio == null) sinGolpeHor++; }
       }
       candidates.push({ dist: d, cota, pressure: pr, type: tipo, reason });
@@ -407,7 +412,7 @@ export function calculateAirValves(input: AirValveInputs): AirValveOutputs | nul
   // dejando sin valvula el punto donde mas aire se acumula
   const iMax = cotas.indexOf(Math.max(...cotas));
   if (iMax > 0 && iMax < last && cotas[iMax] - Math.min(...cotas) >= UMBRAL_EXTREMO_M && !altosSig.has(iMax)) {
-    candidates.push({ dist: sorted[iMax].dist, cota: sorted[iMax].cota, pressure: pressures[iMax], type: "VA-C", reason: "Punto alto — maximo del perfil" });
+    candidates.push({ dist: sorted[iMax].dist, cota: sorted[iMax].cota, pressure: pressures[iMax], type: "VA-C", reason: "Punto alto — máximo del perfil" });
   }
 
   // Avisos del criterio de los tramos largos (descensos y horizontales)
@@ -505,6 +510,7 @@ export function calculateAirValves(input: AirValveInputs): AirValveOutputs | nul
     let bodySize: string;
     let orificeSize: string;
     let nota = getNote(c.type, DN_mm);
+    let sizing: string | undefined;
 
     if (c.type === "VA-E") {
       bodySize = getSize(VAE_SIZE, DN_mm);
@@ -518,11 +524,10 @@ export function calculateAirValves(input: AirValveInputs): AirValveOutputs | nul
       if (qr / CAP_VACIO_5PSI >= qLlenado / CAP_LLENADO_2PSI) maxPorRuptura++;
       orificeSize = c.type === "VA-C" ? getSize(VAC_ORIFICE, DN_mm) : bodySize;
       const ls = (x: number) => Math.round(x * 0.4719);
-      const det = `M51: aire si se rompe la línea ${ls(qr)} L/s, llenado ${ls(qLlenado)} L/s`;
-      nota = nota ? `${nota}; ${det}` : det;
+      sizing = `AWWA M51: aire que debe entrar si se rompe la línea ${ls(qr)} L/s; aire que debe salir al llenar ${ls(qLlenado)} L/s`;
     }
     // Vacio por golpe de ariete: M51 (p. 19, 37-38) pide dispositivo de cierre lento
-    if (c.type !== "VA-E" && vacioEn(c.pressure) === true) nota = `Con dispositivo de cierre lento (vacío por golpe); ${nota}`;
+    const cierreLento = c.type !== "VA-E" && vacioEn(c.pressure) === true;
 
     // Alerta por presion: critica si es negativa, baja si esta bajo el minimo de sello
     const alert: "critical" | "low" | null = c.pressure != null && c.pressure < 0 ? "critical" : c.pressure != null && c.pressure < SELLO_MIN_M ? "low" : null;
@@ -538,6 +543,8 @@ export function calculateAirValves(input: AirValveInputs): AirValveOutputs | nul
       reason: c.reason,
       alert,
       note: nota,
+      sizing,
+      cierreLento,
     };
   }).sort((a, b) => a.dist - b.dist);
 
