@@ -784,7 +784,7 @@ export default function GolpeArietePage() {
                                   {planGolpe?.ajuste ? (
                                     <>
                                     <p><strong>Cómo se calcula el ajuste:</strong> con la válvula cerrada el agua queda detenida y en la llegada hay {formatNumber(planGolpe.ajuste.estaticaEnValvula, 1)} kg/cm². La aliviadora debe abrir arriba de eso (+10 % = {formatNumber(planGolpe.ajuste.minimo, 1)}) para no descargar agua en operación normal, y abajo de la clase menos el desnivel hasta el punto bajo ({planGolpe.valvula.cota} − {planGolpe.bajo.cota} = {formatNumber(planGolpe.valvula.cota - planGolpe.bajo.cota, 1)} m) y un margen de 0.5 = {formatNumber(planGolpe.ajuste.maximo, 1)} kg/cm², para que cuando abra, el punto bajo no rebase la clase.</p>
-                                    <p><strong>Es un valor preliminar.</strong> El +10 % y el margen de 0.5 son criterio de la plataforma, sin fuente publicada. MAPAS (Conducciones, §7.3.1) pide definir la operación de la aliviadora con un análisis de transitorios, y el ajuste final lo da el fabricante.</p>
+                                    <p><strong>Es un valor preliminar.</strong> El +10 % y el margen de 0.5 son criterio de la plataforma, sin fuente publicada. MAPAS (Conducciones, §7.3.1) pide definir la operación de la aliviadora con un estudio de golpe de ariete hecho con software (análisis de transitorios), y el ajuste final lo da el fabricante.</p>
                                     </>
                                   ) : (
                                     <p><strong>Ajuste:</strong> captura la presión inicial (P1) y el perfil en «Línea de conducción» para calcular el ajuste de apertura.</p>

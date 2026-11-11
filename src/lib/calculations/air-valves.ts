@@ -559,7 +559,7 @@ export function calculateAirValves(input: AirValveInputs): AirValveOutputs | nul
   }
   const conVacio = valves.filter((v) => v.type !== "VA-E" && vacioEn(v.pressure) === true).length;
   if (conVacio > 0) {
-    alerts.push(`Con el golpe de ariete calculado, ${conVacio} válvula(s) quedan en zona de vacío: deben llevar dispositivo de cierre lento para no provocar un segundo golpe al expulsar el aire (AWWA M51, p. 19 y 37-38). Confirma ubicación y tamaño con un análisis de transitorios.`);
+    alerts.push(`Con el golpe de ariete calculado, ${conVacio} válvula(s) quedan en zona de vacío: deben llevar dispositivo de cierre lento para no provocar un segundo golpe al expulsar el aire (AWWA M51, p. 19 y 37-38). Confirma dónde van y de qué tamaño con un estudio de golpe de ariete hecho con software.`);
   }
   // Instalacion (M51 p. 46-47)
   if (valves.some((v) => v.type !== "VA-A") && DN_mm <= 300) {
