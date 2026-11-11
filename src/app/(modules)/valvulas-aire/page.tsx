@@ -97,6 +97,10 @@ export default function ValvulasAirePage() {
   const esBombeo = useProjectStore((s) => s.project.incluyeBombeo || ["pozo", "carcamo", "tanque-bombeo"].includes(s.project.fuenteAgua ?? ""));
   // Origen de las cotas del perfil: satelitales (mapa/KML) o de topografía (CSV/Excel)
   const cotasSatelitales = useProjectStore((s) => s.project.cotasSatelitales ?? null);
+  // Sobrepresion del modulo Golpe de ariete: decide eliminadora o combinada en los tramos largos
+  const golpeDeltaH = useProjectStore((s) => s.project.golpeDeltaH ?? null);
+  // Como llega el agua al tanque: decide admision y expulsion o combinada en la llegada
+  const llegadaLibre = useProjectStore((s) => s.project.llegadaLibre ?? null);
   useEffect(() => {
     if (!results) return;
     const fullName = (type: string) => type === "VA-C" ? "Valvula de aire combinada" : type === "VA-A" ? "Valvula de admision y expulsion (VAEA)" : "Valvula eliminadora de aire";
@@ -117,10 +121,10 @@ export default function ValvulasAirePage() {
     // Hidraulica con el Ø interior REAL del tubo (material+DN+clase); el nominal solo
     // dimensiona las valvulas. Sin clase elegida cae al nominal (comportamiento previo).
     const diReal = getRealInternalDiameter(materialName, DN, pipeClass);
-    const input: AirValveInputs = { projectName, Q, DN_mm: DN, diametroInterior_mm: diReal, C, P0_kgcm2: P0, pressureMin, maxSpacing, vertices, esBombeo, cotasSatelitales };
+    const input: AirValveInputs = { projectName, Q, DN_mm: DN, diametroInterior_mm: diReal, C, P0_kgcm2: P0, pressureMin, maxSpacing, vertices, esBombeo, cotasSatelitales, golpeDeltaH, llegadaLibre };
     const res = calculateAirValves(input);
     setResults(res);
-  }, [projectName, rawQ, flowUnit, DN, materialName, pipeClass, C, P0, pressureMin, maxSpacing, vertices, esBombeo, cotasSatelitales]);
+  }, [projectName, rawQ, flowUnit, DN, materialName, pipeClass, C, P0, pressureMin, maxSpacing, vertices, esBombeo, cotasSatelitales, golpeDeltaH, llegadaLibre]);
 
   useEffect(() => {
     clearTimeout(debounceRef.current);
@@ -293,6 +297,20 @@ export default function ValvulasAirePage() {
                 </div>
               );
             })()}
+
+            <div className="space-y-1">
+              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">¿Cómo llega el agua al tanque?</label>
+              <select
+                value={llegadaLibre == null ? "" : llegadaLibre ? "libre" : "ahogada"}
+                onChange={(e) => patchProject({ llegadaLibre: e.target.value === "" ? null : e.target.value === "libre" })}
+                className={`w-full px-3 py-2 text-sm border rounded-lg bg-white dark:bg-gray-800 dark:text-white ${llegadaLibre == null ? "border-yellow-300 bg-yellow-50" : "border-gray-300 dark:border-gray-600"}`}
+              >
+                <option value="">-- Seleccionar --</option>
+                <option value="libre">Cae libre al tanque (descarga libre)</option>
+                <option value="ahogada">Ahogada o con válvula de llenado (flotador, altitud)</option>
+              </select>
+              <p className="text-[10px] text-gray-400">Con descarga libre, en la llegada basta una válvula de admisión y expulsión; si llega ahogada o con válvula de llenado, va combinada (AWWA M51).</p>
+            </div>
 
             <InputWarnings warnings={validateHydraulicInputs({ Q_ls: rawQ, DN_mm: DN, P1_kgcm2: P0 })} />
 

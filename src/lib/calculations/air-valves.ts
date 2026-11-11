@@ -43,6 +43,12 @@ export interface AirValveInputs {
   esBombeo?: boolean;
   // false = cotas de topografia de campo (CSV/Excel): no se aplica el filtro de 5 m de las satelitales
   cotasSatelitales?: boolean | null;
+  // Sobrepresion del modulo Golpe de ariete (m). Con ella se revisa si la onda de baja
+  // presion hace vacio en cada punto: presion de operacion - ΔH < 0
+  golpeDeltaH?: number | null;
+  // Como llega el agua al final de la linea: true = cae libre al tanque, false = ahogada
+  // o con valvula de llenado (flotador, altitud), null = no indicado
+  llegadaLibre?: boolean | null;
 }
 
 export interface AirValveOutputs {
@@ -191,13 +197,15 @@ export function calculateAirValves(input: AirValveInputs): AirValveOutputs | nul
   //   inicio y fin de tramo horizontal,
   //   aumenta la pendiente de bajada ............... combinada (VA-C)
   //   Disminuye la pendiente de subida ............. admision y expulsion (o combinada)
-  //   Tramo horizontal largo ....................... eliminadora (o combinada)
+  //   Tramo horizontal largo ....................... eliminadora; combinada si el golpe hace vacio
   //   Ascenso largo, cada maxSpacing ............... admision y expulsion (o combinada)
-  //   Descenso largo, cada maxSpacing .............. combinada (M51 admite eliminadora)
+  //   Descenso largo, cada maxSpacing .............. eliminadora; combinada si el golpe hace vacio
+  //                                                  o si aun no se calcula el golpe (lado seguro)
   //   Aumenta la pendiente de subida, disminuye la
   //   pendiente de bajada .......................... ninguna
   //   Punto bajo ................................... ninguna: desfogue
-  //   Llegada a tanque (si no llega bajando) ....... combinada
+  //   Llegada a tanque (si no llega bajando) ....... admision y expulsion con descarga libre;
+  //                                                  combinada si llega ahogada o no se indica
   //   Los puntos bajos NO llevan valvula de aire: llevan desfogue (se avisa).
   //   La presion baja o negativa NO se corrige con valvulas de aire: se avisa como problema de diseno.
   type Candidate = { dist: number; cota: number; pressure: number | null; type: "VA-C" | "VA-A" | "VA-E"; reason: string };
@@ -212,8 +220,17 @@ export function calculateAirValves(input: AirValveInputs): AirValveOutputs | nul
   // (una linea que baja uniformemente no necesita valvula al final)
   const last = sorted.length - 1;
   const llegadaDescendente = sorted[last].cota < sorted[last - 1].cota;
+  // AWWA M51 admite admision y expulsion o combinada en la llegada. Con descarga libre el
+  // aire que llega en operacion sale con el agua: no hace falta la purga de la combinada.
   if (!llegadaDescendente) {
-    candidates.push({ dist: sorted[last].dist, cota: sorted[last].cota, pressure: pressures[last], type: "VA-C", reason: "Fin de linea (llegada plana/ascendente)" });
+    if (input.llegadaLibre === true) {
+      candidates.push({ dist: sorted[last].dist, cota: sorted[last].cota, pressure: pressures[last], type: "VA-A", reason: "Llegada al tanque con descarga libre (el aire en operacion sale con el agua)" });
+    } else {
+      candidates.push({ dist: sorted[last].dist, cota: sorted[last].cota, pressure: pressures[last], type: "VA-C", reason: input.llegadaLibre === false ? "Llegada al tanque ahogada o con valvula de llenado (el aire se junta al final)" : "Fin de linea (llegada plana/ascendente)" });
+      if (input.llegadaLibre == null) {
+        alerts.push("Indica cómo llega el agua al tanque. Si cae libre, AWWA M51 permite en la llegada una válvula de admisión y expulsión, más sencilla que la combinada que se puso.");
+      }
+    }
   }
 
   const puntosBajos: { dist: number; cota: number }[] = [];
@@ -295,7 +312,7 @@ export function calculateAirValves(input: AirValveInputs): AirValveOutputs | nul
   // Corridas largas (AWWA M51), cada maxSpacing:
   //   ascendente → VA-A admision y expulsion (o combinada)
   //   plana → VA-E eliminadora (o combinada)
-  //   descendente → VA-C combinada (M51: eliminadora o combinada; en bajada hay riesgo de vacio)
+  //   descendente → VA-E eliminadora, o VA-C si el golpe de ariete hace vacio (M51 admite ambas)
   const interpola = (d: number) => {
     let k = 0;
     while (k < sorted.length - 2 && sorted[k + 1].dist <= d) k++;
@@ -319,6 +336,9 @@ export function calculateAirValves(input: AirValveInputs): AirValveOutputs | nul
     const L = sorted[macro[k + 1]].dist - sorted[macro[k]].dist;
     return L > 0 ? ((sorted[macro[k + 1]].cota - sorted[macro[k]].cota) / L) * 100 : 0;
   };
+  const dH = input.golpeDeltaH != null && input.golpeDeltaH > 0 ? input.golpeDeltaH : null;
+  const vacioEn = (pr: number | null): boolean | null => dH != null && pr != null ? pr - dH < 0 : null;
+  let vacioCambia = 0, sinGolpeDesc = 0, sinGolpeHor = 0;
   for (let k = 0; k + 1 < nodos.length; k++) {
     const runStart = sorted[nodos[k]].dist;
     const runEnd = sorted[nodos[k + 1]].dist;
@@ -328,10 +348,22 @@ export function calculateAirValves(input: AirValveInputs): AirValveOutputs | nul
       if (candidates.some((c) => Math.abs(c.dist - d) < 0.4 * maxSpacing)) continue;
       const { cota, pr } = interpola(d);
       const pend = pendienteLocal(d);
-      // Descenso largo: combinada (AWWA M51 admite eliminadora o combinada; se elige la
-      // combinada porque en las bajadas es donde se forma el vacio al vaciar la linea)
-      const tipo: "VA-A" | "VA-E" | "VA-C" = pend > 1 ? "VA-A" : pend < -1 ? "VA-C" : "VA-E";
-      const reason = pend > 1 ? "Ascenso largo (o combinada)" : pend < -1 ? "Descenso largo — purga de aire y proteccion contra vacio" : "Tramo horizontal largo — purga de aire (o combinada)";
+      // AWWA M51 admite eliminadora o combinada en descensos y tramos horizontales largos.
+      // La eliminadora (orificio chico) no deja entrar aire suficiente si se forma vacio:
+      // se revisa con el golpe de ariete (presion de operacion - ΔH < 0 = vacio).
+      const vacio = vacioEn(pr);
+      let tipo: "VA-A" | "VA-E" | "VA-C";
+      let reason: string;
+      if (pend > 1) {
+        tipo = "VA-A"; reason = "Ascenso largo (o combinada)";
+      } else if (pend < -1) {
+        if (vacio === false) { tipo = "VA-E"; reason = "Descenso largo — purga de aire (sin vacio con el golpe de ariete)"; }
+        else if (vacio === true) { tipo = "VA-C"; reason = "Descenso largo — combinada: con el golpe de ariete se forma vacio"; vacioCambia++; }
+        else { tipo = "VA-C"; reason = "Descenso largo — combinada (falta revisar el vacio con el golpe de ariete)"; sinGolpeDesc++; }
+      } else {
+        if (vacio === true) { tipo = "VA-C"; reason = "Tramo horizontal largo — combinada: con el golpe de ariete se forma vacio"; vacioCambia++; }
+        else { tipo = "VA-E"; reason = "Tramo horizontal largo — purga de aire (o combinada)"; if (vacio == null) sinGolpeHor++; }
+      }
       candidates.push({ dist: d, cota, pressure: pr, type: tipo, reason });
     }
   }
@@ -352,6 +384,21 @@ export function calculateAirValves(input: AirValveInputs): AirValveOutputs | nul
   const iMax = cotas.indexOf(Math.max(...cotas));
   if (iMax > 0 && iMax < last && cotas[iMax] - Math.min(...cotas) >= UMBRAL_EXTREMO_M && !altosSig.has(iMax)) {
     candidates.push({ dist: sorted[iMax].dist, cota: sorted[iMax].cota, pressure: pressures[iMax], type: "VA-C", reason: "Punto alto — maximo del perfil" });
+  }
+
+  // Avisos del criterio de los tramos largos (descensos y horizontales)
+  if (vacioCambia > 0) {
+    alerts.push(`Con el golpe de ariete calculado (sobrepresión de ${Math.round(dH!)} m) la presión cae a vacío en ${vacioCambia} punto(s) de tramos largos: ahí va combinada y no eliminadora, porque la eliminadora no deja entrar aire suficiente.`);
+  }
+  if (sinGolpeDesc + sinGolpeHor > 0) {
+    const falta = dH == null ? "Falta calcular el golpe de ariete (módulo Golpe de ariete)" : "Falta el caudal o la presión de operación";
+    const partes: string[] = [];
+    if (sinGolpeDesc > 0) partes.push("los descensos largos llevan combinada por seguridad; si no hay vacío, AWWA M51 permite eliminadora, que es más sencilla");
+    if (sinGolpeHor > 0) partes.push("los tramos planos largos llevan eliminadora; si hay vacío, deben llevar combinada");
+    alerts.push(`${falta} para revisar el vacío en los tramos largos: ${partes.join("; ")}.`);
+  }
+  if (input.cotasSatelitales === true) {
+    alerts.push("Las válvulas se ubicaron con cotas del mapa (satelitales): confirma los puntos altos, bajos y cambios de pendiente con topografía de campo antes del proyecto ejecutivo.");
   }
 
   // Avisos de diseno (no son valvulas)
