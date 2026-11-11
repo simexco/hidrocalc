@@ -16,6 +16,7 @@ import { ResetButton } from "@/components/ui/ResetButton";
 import { ComposedChart, Line, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine } from "recharts";
 import { NumInput } from "@/components/ui/NumInput";
 import type { FlowUnit } from "@/types/hydraulic";
+import { Desplegable, CriterioValvulasAire } from "@/components/ui/ProteccionExplicacion";
 
 const DN_LIST = STANDARD_DNS_LABELED;
 
@@ -495,6 +496,9 @@ export default function ValvulasAirePage() {
               </div>
               <div className="px-3 py-2 text-[10px] text-gray-400 border-t border-gray-100 dark:border-gray-700">
                 Tamaños en pulgadas ANSI/AWWA. Criterios: AWWA M51 / ISO 10802 / NMX-E-255-ONNCCE. Para selección definitiva consultar curvas del fabricante.
+              </div>
+              <div className="px-3 pb-3">
+                <Desplegable titulo="¿Por qué va cada válvula ahí? Criterio de ubicación AWWA M51"><CriterioValvulasAire /></Desplegable>
               </div>
             </div>
           )}
