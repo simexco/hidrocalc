@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { Fragment, useState, useEffect, useCallback, useRef } from "react";
 import { v4 as uuid } from "uuid";
 import { InputField } from "@/components/ui/InputField";
 import { MetricCard } from "@/components/ui/MetricCard";
@@ -508,34 +508,42 @@ export default function ValvulasAirePage() {
                 <table className="w-full text-xs">
                   <thead>
                     <tr className="bg-gray-50 dark:bg-gray-700 text-gray-500">
-                      <th className="px-2 py-2 text-left">N°</th>
-                      <th className="px-2 py-2 text-right">Distancia (m)</th>
-                      <th className="px-2 py-2 text-right">Cota</th>
-                      <th className="px-2 py-2 text-right">Presión (m.c.a.)</th>
-                      <th className="px-2 py-2 text-center">Tipo</th>
-                      <th className="px-2 py-2 text-center">Tamaño</th>
-                      <th className="px-2 py-2 text-center">Presión nominal (PN)</th>
-                      <th className="px-2 py-2 text-left">Razón</th>
+                      <th className="px-1 sm:px-2 py-2 text-left">N°</th>
+                      <th className="px-1 sm:px-2 py-2 text-right">Distancia (m)</th>
+                      <th className="px-1 sm:px-2 py-2 text-right">Cota (m)</th>
+                      <th className="px-1 sm:px-2 py-2 text-right">Presión (m.c.a.)</th>
+                      <th className="px-1 sm:px-2 py-2 text-center">Tipo</th>
+                      <th className="px-1 sm:px-2 py-2 text-center">Tamaño</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {results.valves.map((v, i) => (
-                      <tr key={i} className={`border-b border-gray-100 dark:border-gray-700 ${v.alert === "critical" ? "bg-red-50 dark:bg-red-900/10" : v.alert === "low" ? "bg-yellow-50 dark:bg-yellow-900/10" : ""}`}>
-                        <td className="px-2 py-1.5 text-gray-400">{i + 1}</td>
-                        <td className="px-2 py-1.5 text-right font-mono">{formatNumber(v.dist, 0)}</td>
-                        <td className="px-2 py-1.5 text-right font-mono">{formatNumber(v.cota, 1)}</td>
-                        <td className="px-2 py-1.5 text-right font-mono">{v.pressure != null ? formatNumber(v.pressure, 1) : "—"}</td>
-                        <td className="px-2 py-1.5 text-center"><span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${typeBadge(v.type)}`}>{v.type}</span></td>
-                        <td className="px-2 py-1.5 text-center font-mono" title={v.sizing}>{v.bodySize}</td>
-                        <td className="px-2 py-1.5 text-center">{v.pn}</td>
-                        <td className="px-2 py-1.5 text-gray-600 dark:text-gray-400">{v.reason}{v.cierreLento && <span className="ml-1 text-[10px] px-1.5 py-0.5 rounded bg-orange-100 text-orange-700">con cierre lento</span>}{v.note && <span className="text-[10px] text-gray-400 ml-1">({v.note})</span>}</td>
+                    {results.valves.map((v, i) => {
+                      const fondo = v.alert === "critical" ? "bg-red-50 dark:bg-red-900/10" : v.alert === "low" ? "bg-yellow-50 dark:bg-yellow-900/10" : "";
+                      return (
+                      <Fragment key={i}>
+                      <tr className={fondo}>
+                        <td className="px-1 sm:px-2 py-1.5 text-gray-400">{i + 1}</td>
+                        <td className="px-1 sm:px-2 py-1.5 text-right font-mono">{formatNumber(v.dist, 0)}</td>
+                        <td className="px-1 sm:px-2 py-1.5 text-right font-mono">{formatNumber(v.cota, 1)}</td>
+                        <td className="px-1 sm:px-2 py-1.5 text-right font-mono">{v.pressure != null ? formatNumber(v.pressure, 1) : "—"}</td>
+                        <td className="px-1 sm:px-2 py-1.5 text-center"><span className={`text-[10px] px-1.5 py-0.5 rounded font-medium whitespace-nowrap ${typeBadge(v.type)}`}>{v.type}</span></td>
+                        <td className="px-1 sm:px-2 py-1.5 text-center font-mono whitespace-nowrap">{v.bodySize}</td>
                       </tr>
-                    ))}
+                      <tr className={`border-b border-gray-100 dark:border-gray-700 ${fondo}`}>
+                        <td />
+                        <td colSpan={5} className="px-1 sm:px-2 pb-2 text-[11px] leading-snug text-gray-600 dark:text-gray-400">
+                          {v.reason}. {v.pn}.{v.cierreLento && <span className="ml-1 text-[10px] px-1.5 py-0.5 rounded bg-orange-100 text-orange-700">con cierre lento</span>}{v.note && <span className="text-gray-400"> ({v.note})</span>}
+                          {v.sizing && <div className="text-[10px] text-gray-400">Tamaño — {v.sizing}</div>}
+                        </td>
+                      </tr>
+                      </Fragment>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
               <div className="px-3 py-2 text-[10px] text-gray-400 border-t border-gray-100 dark:border-gray-700">
-                Ubicación y tamaño según AWWA M51 (2a. ed.) y MAPAS. Pasa el cursor sobre el tamaño para ver el cálculo. Selección definitiva con las curvas del fabricante.
+                Ubicación y tamaño según AWWA M51 (2a. ed.) y MAPAS. Abajo de cada válvula va por qué va ahí y el cálculo del tamaño. Selección definitiva con las curvas del fabricante.
               </div>
               <div className="px-3 pb-3">
                 <Desplegable titulo="¿Por qué va cada válvula ahí? Criterio de ubicación AWWA M51"><CriterioValvulasAire /></Desplegable>
