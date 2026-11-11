@@ -217,7 +217,8 @@ export function calculateAirValves(input: AirValveInputs): AirValveOutputs | nul
   // M51 p. 44: combinadas siempre que sea posible):
   //   Descarga de bomba ............................ combinada (sencilla: admision y expulsion);
   //                                                  pozo: combinada con cierre lento (p. 19, 42)
-  //   Punto alto, inicio y fin de tramo horizontal,
+  //   Punto alto, inicio de tramo horizontal, fin de
+  //   tramo horizontal (si sigue subida, solo si es largo),
   //   aumenta la pendiente de bajada ............... combinada
   //   Disminuye la pendiente de subida, ascenso largo  combinada (sencilla: admision y expulsion)
   //   Tramo horizontal y descenso largos ........... combinada (sencilla: eliminadora; combinada si el golpe hace vacio)
@@ -320,9 +321,13 @@ export function calculateAirValves(input: AirValveInputs): AirValveOutputs | nul
     if (pendA > 1 && plano(pendB)) {
       candidates.push({ dist: sorted[j].dist, cota: sorted[j].cota, pressure: p, type: "VA-C", reason: "Inicio de tramo horizontal" });
     }
-    // Tramo horizontal que termina en subida o en bajada → combinada (fin de horizontal)
-    else if (plano(pendA) && (pendB > 1 || pendB < -1)) {
-      candidates.push({ dist: sorted[j].dist, cota: sorted[j].cota, pressure: p, type: "VA-C", reason: pendB > 1 ? "Fin de tramo horizontal" : "Fin de tramo horizontal — inicia la bajada" });
+    // Fin de tramo horizontal → combinada. Si sigue bajada: M51 fig. 3-1, punto 8. Si sigue
+    // SUBIDA, M51 (p. 19) solo lo pide al final de tramos horizontales LARGOS (se toma 400 m,
+    // el intervalo minimo que da M51 para tramos horizontales); uno corto que sube es
+    // "aumenta la pendiente de subida" (puntos 4 y 12: no requiere valvula). Nunca en un
+    // vertice mas bajo que sus vecinos: es punto bajo (desfogue, fig. 3-1), ahi no se junta aire.
+    else if (plano(pendA) && (pendB < -1 || (pendB > 1 && sorted[j].dist - sorted[a].dist >= 400)) && !(cotas[j] < cotas[j - 1] && cotas[j] < cotas[j + 1])) {
+      candidates.push({ dist: sorted[j].dist, cota: sorted[j].cota, pressure: p, type: "VA-C", reason: pendB > 1 ? "Fin de tramo horizontal largo" : "Fin de tramo horizontal — inicia la bajada" });
     }
     // La subida se aplana (sigue subiendo, con menos pendiente): el aire se junta ahi y al
     // vaciar entra aire → admision y expulsion (o combinada)

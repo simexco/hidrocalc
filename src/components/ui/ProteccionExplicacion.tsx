@@ -79,7 +79,7 @@ const CRITERIO_AWWA: [string, string, string, string][] = [
   ["Inicio de la línea por gravedad, si baja desde el tanque o arranca plana", "Combinada", "Ahí el inicio es un punto alto o un inicio de tramo horizontal. Si la línea sube desde el tanque, no lleva.", "Punto alto e inicio de horizontal: fig. 3-1 y p. 19"],
   ["Punto alto", "Combinada", "Ahí se junta el aire durante la operación y ahí se forma el vacío al vaciar.", "Fig. 3-1 (p. 18) y p. 19"],
   ["Inicio de tramo horizontal (la subida termina)", "Combinada", "El aire que sube con el agua se detiene donde la pendiente se acaba.", "Fig. 3-1 (p. 18) y p. 19"],
-  ["Fin de tramo horizontal", "Combinada", "El aire que avanzó por el tramo plano se acumula donde vuelve a cambiar la pendiente.", "Fig. 3-1 (p. 18) y p. 19"],
+  ["Fin de tramo horizontal", "Combinada", "El aire que avanzó por el tramo plano se junta donde cambia la pendiente. Si después sube y el tramo plano es corto (menos de 400 m), no lleva: el aire sigue hasta el punto alto.", "Fig. 3-1 (p. 18) y p. 19"],
   ["Disminuye la pendiente de subida", "Admisión y expulsión (M51 permite combinada)", "El aire se frena donde la subida se suaviza; al vaciar, entra aire por ahí.", "Fig. 3-1 (p. 18) y p. 19"],
   ["Aumenta la pendiente de bajada", "Combinada", "El agua se separa del tubo donde la bajada se empina: riesgo de vacío y de bolsas de aire.", "Fig. 3-1 (p. 18) y p. 19"],
   ["Tramo horizontal largo, cada 400 a 800 m", "Eliminadora; combinada si el golpe hace vacío", "Purga las burbujas que se juntan en operación. Si hay vacío, la eliminadora no deja entrar aire suficiente.", "Fig. 3-1 (p. 18) y p. 19"],
