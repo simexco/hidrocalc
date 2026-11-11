@@ -321,6 +321,7 @@ export default function PerfilPage() {
       }
       if (newVerts.length >= 2) {
         setVertices(newVerts);
+        patchProject({ cotasSatelitales: false }); // cotas capturadas por el usuario (topografía)
         // Auto-adjust first tramo to cover full profile
         const maxDist = Math.max(...newVerts.map(v => v.dist));
         if (tramos.length === 1) {
@@ -393,6 +394,7 @@ export default function PerfilPage() {
     });
     if (newVerts.length >= 2) {
       setVertices(newVerts);
+      patchProject({ cotasSatelitales: false }); // cotas capturadas por el usuario (topografía)
       const maxDist = Math.max(...newVerts.map(v => v.dist));
       if (tramos.length === 1) {
         setTramos([{ ...tramos[0], distFrom: newVerts[0].dist, distTo: maxDist }]);
@@ -440,11 +442,12 @@ export default function PerfilPage() {
         desc: i === 0 ? descInicio : i === reducidos.length - 1 ? descFin : "",
       }));
       setVertices(newVerts);
+      patchProject({ cotasSatelitales: true });
       if (origenAgua) patchProject({ incluyeBombeo: origenAgua !== "gravedad", fuenteAgua: origenAgua });
       const maxDist = Math.max(...newVerts.map((v) => v.dist));
       if (tramos.length === 1) setTramos([{ ...tramos[0], distFrom: newVerts[0].dist, distTo: maxDist }]);
       const regimen = origenAgua ? (origenAgua === "gravedad" ? "Línea de CONDUCCIÓN por gravedad desde tanque · " : `Línea de IMPULSIÓN — bombeo desde ${origenAgua === "pozo" ? "pozo" : origenAgua === "carcamo" ? "cárcamo" : "tanque (rebombeo)"} · `) : "";
-      setKmlInfo(`${regimen}Ruta de ${origen}: ${(maxDist / 1000).toFixed(2)} km · ${perfilPts.length} puntos muestreados → ${newVerts.length} vértices. Cotas satelitales SRTM ~30 m: precisión típica ±5 m en terreno abierto; en ciudad densa, bosque cerrado o barrancas angostas el error puede superar ±15 m, y no refleja obras posteriores al año 2000 (presas, rellenos, cortes). Verificar los puntos críticos en campo antes del proyecto ejecutivo.`);
+      setKmlInfo(`${regimen}Ruta de ${origen}: ${(maxDist / 1000).toFixed(2)} km · ${perfilPts.length} puntos muestreados → ${newVerts.length} vértices. Cotas satelitales SRTM ~30 m: precisión vertical oficial de 16 m (90 %, USGS), típica ±5 m en terreno abierto; en ciudad densa, bosque cerrado o barrancas angostas el error puede superar ±15 m, y no refleja obras posteriores al año 2000 (presas, rellenos, cortes). Verificar los puntos críticos en campo antes del proyecto ejecutivo.`);
     } catch (err) {
       alert(err instanceof Error ? err.message : "No se pudo generar el perfil.");
     } finally {

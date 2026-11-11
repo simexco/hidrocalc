@@ -763,7 +763,7 @@ export default function GolpeArietePage() {
                           )}
                           {!esBombeo && planGolpe?.ajuste && (
                             <p className={`text-[10px] mt-1 rounded px-1.5 py-1 leading-relaxed ${planGolpe.ajuste.alcanza ? "text-amber-800 dark:text-amber-300 bg-amber-50 dark:bg-amber-900/20" : "text-red-700 dark:text-red-300 bg-red-50 dark:bg-red-900/20"}`}>
-                              <strong>Ajuste de apertura:</strong> {formatNumber(planGolpe.ajuste.recomendado, 1)} kg/cm² en la llegada
+                              <strong>Ajuste de apertura preliminar:</strong> {formatNumber(planGolpe.ajuste.recomendado, 1)} kg/cm² en la llegada
                               {" "}(rango {formatNumber(planGolpe.ajuste.minimo, 1)} – {formatNumber(planGolpe.ajuste.maximo, 1)}).
                               {!planGolpe.ajuste.alcanza && " La aliviadora en la llegada no alcanza a proteger el punto bajo: usa la opción A o una protección adicional."}
                             </p>
@@ -782,7 +782,10 @@ export default function GolpeArietePage() {
                                   <p><strong>Por qué en la llegada{planGolpe ? ` (${fmtPos(planGolpe.valvula.cad)}, cota ${planGolpe.valvula.cota} m)` : ""}:</strong> en una línea por gravedad el golpe nace en la válvula que se cierra, normalmente la de la llegada al tanque o a la red. La onda de sobrepresión sale de ese punto y recorre la línea hacia atrás. Una aliviadora junto a esa válvula abre en el primer instante y descarga agua, recortando el pico en su origen, antes de que viaje por toda la línea.</p>
                                   <p><strong>Por qué se menciona el punto más bajo{planGolpe ? ` (${fmtPos(planGolpe.bajo.cad)}, cota ${planGolpe.bajo.cota} m)` : ""}:</strong> ahí la presión de operación ya es la más alta, porque tiene más columna de agua encima; al sumarle el golpe es el primer punto que rebasa la clase. La aliviadora no va ahí, pero su ajuste se calcula para protegerlo.</p>
                                   {planGolpe?.ajuste ? (
+                                    <>
                                     <p><strong>Cómo se calcula el ajuste:</strong> con la válvula cerrada el agua queda detenida y en la llegada hay {formatNumber(planGolpe.ajuste.estaticaEnValvula, 1)} kg/cm². La aliviadora debe abrir arriba de eso (+10 % = {formatNumber(planGolpe.ajuste.minimo, 1)}) para no descargar agua en operación normal, y abajo de la clase menos el desnivel hasta el punto bajo ({planGolpe.valvula.cota} − {planGolpe.bajo.cota} = {formatNumber(planGolpe.valvula.cota - planGolpe.bajo.cota, 1)} m) y un margen de 0.5 = {formatNumber(planGolpe.ajuste.maximo, 1)} kg/cm², para que cuando abra, el punto bajo no rebase la clase.</p>
+                                    <p><strong>Es un valor preliminar.</strong> El +10 % y el margen de 0.5 son criterio de la plataforma, sin fuente publicada. MAPAS (Conducciones, §7.3.1) pide definir la operación de la aliviadora con un análisis de transitorios, y el ajuste final lo da el fabricante.</p>
+                                    </>
                                   ) : (
                                     <p><strong>Ajuste:</strong> captura la presión inicial (P1) y el perfil en «Línea de conducción» para calcular el ajuste de apertura.</p>
                                   )}
@@ -1040,7 +1043,7 @@ export default function GolpeArietePage() {
                         </div>
 
                         <p className="text-xs text-amber-700 dark:text-amber-300">
-                          Presion de ajuste sugerida (Pset): <strong>{formatNumber(!esBombeo && planGolpe?.ajuste ? planGolpe.ajuste.recomendado : protecValvula.pSet, 2)} kg/cm2</strong>
+                          Presión de ajuste preliminar (Pset, confirmar con el fabricante): <strong>{formatNumber(!esBombeo && planGolpe?.ajuste ? planGolpe.ajuste.recomendado : protecValvula.pSet, 2)} kg/cm2</strong>
                           {" "}{"—"} {!esBombeo && planGolpe?.ajuste ? "medida en la llegada, donde va la válvula (calculada con el perfil del proyecto)" : "la valvula debe abrirse cuando P supere este valor"}
                         </p>
                         <p className="text-xs text-amber-700 dark:text-amber-300">

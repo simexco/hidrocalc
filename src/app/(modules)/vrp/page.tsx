@@ -174,7 +174,7 @@ export default function VRPPage() {
             <p className="text-[11px] leading-relaxed opacity-80">
               Se calcula el coeficiente de flujo métrico Kv necesario para reducir la presión de P1 a P2 al caudal
               de diseño (Kv = Q/√ΔP, IEC 60534; el Cv americano = 1.156×Kv). Luego se recomienda la válvula más
-              pequeña que opere usando como máximo el 70% de su capacidad a Q máximo.
+              pequeña cuyo Kv cubra el requerido y cuya velocidad a Q máximo no pase de 6 m/s (criterio de fabricante: Singer y Cla-Val).
             </p>
           </div>
         </div>
@@ -227,7 +227,7 @@ export default function VRPPage() {
                       `${r.kv_max}`,
                       r.status === "insuficiente" ? "--" : `${r.pct_max}%`,
                       r.status === "insuficiente" ? "--" : `${r.pct_min}%`,
-                      r.status === "optimo" ? "Optimo" : r.status === "funcional" ? "Funcional" : r.status === "sobredimensionada" ? "Sobredimensionada" : r.status === "limite" ? "Limite" : "Insuficiente",
+                      r.status === "optimo" ? "Optimo" : r.status === "funcional" ? "Funcional" : r.status === "sobredimensionada" ? "Sobredimensionada" : r.status === "limite" ? "Pasa de 6 m/s" : "Insuficiente",
                     ]),
                   },
                 };
@@ -363,7 +363,7 @@ export default function VRPPage() {
                             {row.status === "optimo" && <span className="text-green-600 font-medium">{"✅"} Optimo</span>}
                             {row.status === "funcional" && <span className="text-blue-600">{"✓"} Funcional</span>}
                             {row.status === "sobredimensionada" && <span className="text-amber-600">{"⚠"} Sobredimensionada</span>}
-                            {row.status === "limite" && <span className="text-yellow-600">{"⚠"} Limite sup.</span>}
+                            {row.status === "limite" && <span className="text-yellow-600">{"⚠"} Pasa de 6 m/s</span>}
                             {row.status === "insuficiente" && <span className="text-red-500">{"✗"} Insuficiente</span>}
                           </td>
                         </tr>
@@ -373,7 +373,7 @@ export default function VRPPage() {
                 </table>
                 <div className="px-3 py-2 text-[10px] text-gray-400 border-t border-gray-100 dark:border-gray-700">
                   Kv = Q(m3/h) / raiz(DeltaP en bar) — IEC 60534, agua a 20 grados C (Cv americano = 1.156 x Kv).
-                  Seleccion: la valvula mas chica que use como maximo 70% de su capacidad a Q max.
+                  Selección: la válvula más chica cuyo Kv cubra el requerido a Q máx y cuya velocidad no pase de 6 m/s en operación continua (Singer, Cla-Val). Confirmar con la curva del fabricante.
                   Tabla Kv base: valvula globo piloto-operada tipo Cla-Val 100-01 / Bermad 700.
                 </div>
               </div>

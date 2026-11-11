@@ -95,6 +95,8 @@ export default function ValvulasAirePage() {
   const patchProject = useProjectStore((s) => s.patch);
   // Línea por bombeo: la primera válvula va en la descarga de la bomba (AWWA M51: admisión y expulsión)
   const esBombeo = useProjectStore((s) => s.project.incluyeBombeo || ["pozo", "carcamo", "tanque-bombeo"].includes(s.project.fuenteAgua ?? ""));
+  // Origen de las cotas del perfil: satelitales (mapa/KML) o de topografía (CSV/Excel)
+  const cotasSatelitales = useProjectStore((s) => s.project.cotasSatelitales ?? null);
   useEffect(() => {
     if (!results) return;
     const fullName = (type: string) => type === "VA-C" ? "Valvula de aire combinada" : type === "VA-A" ? "Valvula de admision y expulsion (VAEA)" : "Valvula eliminadora de aire";
@@ -115,10 +117,10 @@ export default function ValvulasAirePage() {
     // Hidraulica con el Ø interior REAL del tubo (material+DN+clase); el nominal solo
     // dimensiona las valvulas. Sin clase elegida cae al nominal (comportamiento previo).
     const diReal = getRealInternalDiameter(materialName, DN, pipeClass);
-    const input: AirValveInputs = { projectName, Q, DN_mm: DN, diametroInterior_mm: diReal, C, P0_kgcm2: P0, pressureMin, maxSpacing, vertices, esBombeo };
+    const input: AirValveInputs = { projectName, Q, DN_mm: DN, diametroInterior_mm: diReal, C, P0_kgcm2: P0, pressureMin, maxSpacing, vertices, esBombeo, cotasSatelitales };
     const res = calculateAirValves(input);
     setResults(res);
-  }, [projectName, rawQ, flowUnit, DN, materialName, pipeClass, C, P0, pressureMin, maxSpacing, vertices, esBombeo]);
+  }, [projectName, rawQ, flowUnit, DN, materialName, pipeClass, C, P0, pressureMin, maxSpacing, vertices, esBombeo, cotasSatelitales]);
 
   useEffect(() => {
     clearTimeout(debounceRef.current);

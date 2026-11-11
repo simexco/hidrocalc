@@ -5,7 +5,9 @@
    Tabla Kv base: válvula globo piloto-operada (Cla-Val 100-01 / Bermad 700).
    ════════════════════════════════════════ */
 
-import { KV_VALVULAS_GLOBO, KV_FACTOR_SELECCION } from "@/lib/constants";
+import { KV_VALVULAS_GLOBO } from "@/lib/constants";
+
+const V_MAX_CONTINUA = 6.0; // m/s a través de la válvula en operación continua (Cla-Val)
 import type { VRPInputs, VRPResults, VRPSelectionRow, Alert } from "@/types/hydraulic";
 
 const P_ATM_BAR = 1.013;   // presión atmosférica a nivel del mar
@@ -52,8 +54,11 @@ export function calculateVRP(inputs: VRPInputs): VRPResults | null {
   const Kv_max_req = Q_max_m3h / Math.sqrt(deltaP_bar);
   const Kv_min_req = Q_min_m3h / Math.sqrt(deltaP_bar);
 
-  // 2. Selección: válvula más chica donde Kv_req ≤ 70% de su Kv máximo
-  const vrp_seleccionada = KV_VALVULAS_GLOBO.find(v => v.kv_max * KV_FACTOR_SELECCION >= Kv_max_req);
+  // 2. Selección con criterio de fabricante: la válvula más chica cuyo Kv cubra el requerido
+  //    a gasto máximo y mínima diferencia de presión (Singer) y cuya velocidad a gasto
+  //    máximo no pase de 6 m/s en operación continua (Cla-Val).
+  const vValv = (dn_mm: number) => (Q_max_m3h / 3600) / (Math.PI * Math.pow(dn_mm / 2000, 2));
+  const vrp_seleccionada = KV_VALVULAS_GLOBO.find(v => v.kv_max >= Kv_max_req && vValv(v.dn_mm) <= V_MAX_CONTINUA);
 
   // 3. % de la capacidad Kv utilizada (NO es % de carrera/apertura: la curva Kv-apertura
   //    de una válvula globo no es lineal — verificar con la curva del fabricante)
@@ -92,9 +97,7 @@ export function calculateVRP(inputs: VRPInputs): VRPResults | null {
 
     let status: VRPSelectionRow["status"];
     if (insuf) status = "insuficiente";
-    else if (pct_max > 70) status = "limite"; // mismo umbral que el algoritmo de seleccion (KV_FACTOR_SELECCION)
-    else if (pct_max >= 35 && pct_max <= 65) status = "optimo";
-    else if (pct_max < 20) status = "sobredimensionada";
+    else if (vValv(v.dn_mm) > V_MAX_CONTINUA) status = "limite"; // pasa de 6 m/s (Cla-Val)
     else status = "funcional";
 
     return {
@@ -124,13 +127,7 @@ export function calculateVRP(inputs: VRPInputs): VRPResults | null {
   if (pct_capacidad_min != null && pct_capacidad_min < 10) {
     alerts.push({
       level: "WARN", field: "apertura",
-      message: `A caudal minimo la valvula usaria ${pct_capacidad_min}% de su capacidad (<10%) — verificar el caudal minimo controlable con el fabricante (posible inestabilidad)`,
-    });
-  }
-  if (pct_capacidad_max != null && pct_capacidad_max < 30) {
-    alerts.push({
-      level: "WARN", field: "apertura",
-      message: `A caudal maximo la valvula usaria solo ${pct_capacidad_max}% de su capacidad — posible sobredimension; verificar con el fabricante o considerar un DN menor`,
+      message: `A caudal minimo la valvula usaria ${pct_capacidad_min}% de su capacidad — con gastos muy bajos la reductora puede oscilar: considerar un by-pass de gasto bajo dimensionado para ~20 % del gasto pico (Cla-Val) y verificar el caudal minimo controlable con el fabricante`,
     });
   }
   if (v_aguas_abajo > 3.0) {
@@ -139,7 +136,7 @@ export function calculateVRP(inputs: VRPInputs): VRPResults | null {
       message: `Velocidad aguas abajo elevada (${v_aguas_abajo.toFixed(1)} m/s) — Considerar DN mayor`,
     });
   }
-  if (v_valvula != null && v_valvula > 6.0) {
+  if (v_valvula != null && v_valvula > V_MAX_CONTINUA) {
     alerts.push({
       level: "WARN", field: "velocidad",
       message: `Velocidad a traves de la valvula ${v_valvula.toFixed(1)} m/s > 6 m/s (limite continuo tipico) — considerar un DN de valvula mayor`,
