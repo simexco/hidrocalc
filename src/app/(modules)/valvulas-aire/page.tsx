@@ -92,6 +92,8 @@ export default function ValvulasAirePage() {
 
   // Flujo de proyecto: las valvulas calculadas se escriben al proyecto (salen en el reporte)
   const patchProject = useProjectStore((s) => s.patch);
+  // Línea por bombeo: la primera válvula va en la descarga de la bomba (AWWA M51: admisión y expulsión)
+  const esBombeo = useProjectStore((s) => s.project.incluyeBombeo || ["pozo", "carcamo", "tanque-bombeo"].includes(s.project.fuenteAgua ?? ""));
   useEffect(() => {
     if (!results) return;
     const fullName = (type: string) => type === "VA-C" ? "Valvula de aire combinada" : type === "VA-A" ? "Valvula de admision y expulsion (VAEA)" : "Valvula eliminadora de aire";
@@ -112,10 +114,10 @@ export default function ValvulasAirePage() {
     // Hidraulica con el Ø interior REAL del tubo (material+DN+clase); el nominal solo
     // dimensiona las valvulas. Sin clase elegida cae al nominal (comportamiento previo).
     const diReal = getRealInternalDiameter(materialName, DN, pipeClass);
-    const input: AirValveInputs = { projectName, Q, DN_mm: DN, diametroInterior_mm: diReal, C, P0_kgcm2: P0, pressureMin, maxSpacing, vertices };
+    const input: AirValveInputs = { projectName, Q, DN_mm: DN, diametroInterior_mm: diReal, C, P0_kgcm2: P0, pressureMin, maxSpacing, vertices, esBombeo };
     const res = calculateAirValves(input);
     setResults(res);
-  }, [projectName, rawQ, flowUnit, DN, materialName, pipeClass, C, P0, pressureMin, maxSpacing, vertices]);
+  }, [projectName, rawQ, flowUnit, DN, materialName, pipeClass, C, P0, pressureMin, maxSpacing, vertices, esBombeo]);
 
   useEffect(() => {
     clearTimeout(debounceRef.current);
@@ -448,7 +450,7 @@ export default function ValvulasAirePage() {
                 <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 bg-blue-500 rounded-full" /> Válvula de aire combinada (VA-C)</span>
                 <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 bg-yellow-500 rounded-full" /> Válvula de admisión y expulsión (VA-A)</span>
                 <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 bg-green-500 rounded-full" /> Válvula eliminadora de aire (VA-E)</span>
-                <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 bg-slate-600 rounded-[3px]" /> Desagüe recomendado (punto bajo)</span>
+                <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 bg-slate-600 rounded-[3px]" /> Desfogue recomendado (punto bajo)</span>
               </div>
             </div>
           )}

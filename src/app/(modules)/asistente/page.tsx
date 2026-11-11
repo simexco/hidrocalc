@@ -85,7 +85,7 @@ export default function AsistentePage() {
           "Revisa que el perfil esté completo (que no falte ningún punto alto o bajo del trazo).",
           "Ajusta el espaciamiento máximo solo si tu normativa pide otro (típico 500 m).",
         ],
-        obtienes: "Dónde va cada válvula de aire (en los puntos altos) y dónde conviene un desagüe (puntos bajos). Pasan solas al reporte.",
+        obtienes: "Dónde va cada válvula de aire (en los puntos altos) y dónde conviene un desfogue (puntos bajos). Pasan solas al reporte.",
       } },
     { n: 5, title: "Golpe de ariete", desc: "¿La tubería resiste el golpe? Si no, válvula de protección.", href: "/golpe-ariete", done: null, summary: "Protección contra sobrepresión / vacío",
       guia: {
