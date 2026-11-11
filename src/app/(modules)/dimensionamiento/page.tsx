@@ -52,9 +52,9 @@ export default function DimensionamientoPage() {
     // Convert kg/cm² inputs to m.c.a. for engine
     const P1_mca = inputs.P1 != null ? inputs.P1 * 10 : null;
     const P2min_mca = inputs.P2min * 10;
-    const res = calculatePipeSizing({ ...inputs, Q, P1: P1_mca, P2min: P2min_mca });
+    const res = calculatePipeSizing({ ...inputs, Q, P1: P1_mca, P2min: P2min_mca, pipeClass });
     setResults(res);
-  }, [inputs, setResults]);
+  }, [inputs, pipeClass, setResults]);
 
   useEffect(() => {
     clearTimeout(debounceRef.current);
@@ -166,7 +166,7 @@ export default function DimensionamientoPage() {
                       <option key={c.clase} value={c.clase}>{c.clase} — {(c.pn / 0.9807).toFixed(1)} kg/cm²</option>
                     ))}
                   </select>
-                  {!pipeClass && <p className="text-[10px] text-yellow-600">Selecciona la clase para verificar resistencia</p>}
+                  {!pipeClass && <p className="text-[10px] text-yellow-600">Selecciona la clase para verificar resistencia y usar el diámetro interior real de cada DN (sin clase se calcula con el DN nominal)</p>}
                   <p className="text-[10px] text-gray-400">{CLASE_RD_HELP}</p>
                 </div>
               );

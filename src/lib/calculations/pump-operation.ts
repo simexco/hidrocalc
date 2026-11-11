@@ -146,12 +146,13 @@ function generateRecommendation(Qop: number, Hop: number, Hg: number): PumpRecom
   };
 }
 
-export function calculatePumpOperation(input: PumpOperationInputs): PumpOperationResults | null {
+export function calculatePumpOperation(input: PumpOperationInputs & { Di?: number | null }): PumpOperationResults | null {
   const { Hg, L, DN, C, kTotal, pumpMethod, pumpPoints, H0, Kbomba } = input;
 
   if (Hg == null || L == null || DN == null) return null;
 
-  const D = DN / 1000;
+  // Diametro INTERIOR real si se conoce (material + clase); si no, el DN nominal
+  const D = (input.Di ?? DN) / 1000;
   const alerts: Alert[] = [];
 
   // Generate system curve — el barrido se adapta a la bomba capturada (antes el tope

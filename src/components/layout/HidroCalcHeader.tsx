@@ -140,24 +140,24 @@ export function HidroCalcHeader() {
 
   return (
     <header className="bg-white/85 backdrop-blur-md border-b border-gray-200/80 shadow-[0_1px_3px_rgba(15,36,56,0.05)]" style={{ height: 56 }}>
-      <div className="h-full px-6 flex items-center justify-between">
-        <div className="flex items-center gap-2.5">
-          <Link href="/" className="text-[11px] font-bold text-[#1C3D5A]/45 hover:text-[#1C3D5A] transition-colors tracking-[0.14em] uppercase">
+      <div className="h-full px-3 sm:px-6 flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <Link href="/" className="hidden sm:inline text-[11px] font-bold text-[#1C3D5A]/45 hover:text-[#1C3D5A] transition-colors tracking-[0.14em] uppercase">
             Sigma Flow
           </Link>
           {moduleName && (
             <>
-              <span className="text-gray-300 text-xs">›</span>
-              <h1 className="text-[15px] font-bold text-[#0F2438] dark:text-white tracking-tight">{moduleName}</h1>
+              <span className="hidden sm:inline text-gray-300 text-xs">›</span>
+              <h1 className="truncate text-[14px] sm:text-[15px] font-bold text-[#0F2438] dark:text-white tracking-tight">{moduleName}</h1>
             </>
           )}
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
           {help && <HelpButton moduleTitle={help.title} sections={help.sections} />}
           <GlossaryButton variant="header" />
-          <Link href="/cuenta" className="flex items-center gap-1.5 text-[11px] font-semibold text-[#1C3D5A] border border-[#1C3D5A]/25 rounded-full px-3 py-1 hover:bg-[#1C3D5A] hover:text-white transition-colors">
+          <Link href="/cuenta" className="flex items-center gap-1.5 text-[11px] font-semibold text-[#1C3D5A] border border-[#1C3D5A]/25 rounded-full px-2 sm:px-3 py-1 hover:bg-[#1C3D5A] hover:text-white transition-colors" title="Cuenta">
             <svg viewBox="0 0 24 24" className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z" /></svg>
-            Cuenta
+            <span className="hidden sm:inline">Cuenta</span>
           </Link>
           <span className="text-[9px] text-gray-400 tracking-[0.12em] uppercase font-semibold hidden sm:inline-block border border-gray-200 rounded-full px-2.5 py-1 bg-gray-50/60">Uso técnico</span>
         </div>

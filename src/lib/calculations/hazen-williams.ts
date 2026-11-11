@@ -216,10 +216,12 @@ export function compareDiameters(
   P1: number | null, P2min: number,
   z1: number, z2: number,
   maxVelocity: number,
-  dns: number[]
+  dns: number[],
+  diOf?: (dn: number) => number | null
 ): { rows: DiameterComparisonRow[]; recommendedDN: number | null } {
   const rows = dns.map((dn) => {
-    const D = dn / 1000; // mm → m
+    // Diametro INTERIOR real del catalogo (material + clase); sin dato, el DN nominal
+    const D = (diOf?.(dn) ?? dn) / 1000; // mm → m
     const result = calculateHazenWilliams({ Q, D, L, C, P1, z1, z2, useEstimatedHm: true });
 
     const meetsVmin = result.V >= 0.3;

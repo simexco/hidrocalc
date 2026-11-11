@@ -192,7 +192,7 @@ export default function ConversorPage() {
           <select
             value={esTemp ? tempFrom : esPerim ? perimUnit : fromUnit}
             onChange={(e) => (esTemp ? setTempFrom(e.target.value) : esPerim ? setPerimUnit(e.target.value) : setFromUnit(e.target.value))}
-            className="flex-1 px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 dark:text-white"
+            className="flex-1 min-w-0 px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 dark:text-white"
           >
             {(esTemp ? TEMP_UNITS : esPerim ? PERIM_UNITS : (cat?.units.map((u) => u.u) ?? [])).map((u) => <option key={u} value={u}>{u}</option>)}
           </select>

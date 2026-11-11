@@ -119,13 +119,13 @@ export function GlossaryButton({ variant = "footer" }: { variant?: "footer" | "h
       {variant === "header" ? (
         <button
           onClick={() => setOpen(true)}
-          className="flex items-center gap-2 text-sm font-semibold text-[#1C3D5A] dark:text-blue-300 bg-[#1C3D5A]/10 dark:bg-blue-900/30 border border-[#1C3D5A]/30 rounded-lg px-4 py-2 hover:bg-[#1C3D5A] hover:text-white transition-colors whitespace-nowrap"
+          className="flex items-center gap-2 text-sm font-semibold text-[#1C3D5A] dark:text-blue-300 bg-[#1C3D5A]/10 dark:bg-blue-900/30 border border-[#1C3D5A]/30 rounded-lg px-2 sm:px-4 py-2 hover:bg-[#1C3D5A] hover:text-white transition-colors whitespace-nowrap"
           title="¿Qué significa cada término? Explicado en lenguaje sencillo"
         >
           <svg viewBox="0 0 24 24" className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
             <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20M4 19.5A2.5 2.5 0 0 0 6.5 22H20V2H6.5A2.5 2.5 0 0 0 4 4.5v15z" />
           </svg>
-          Diccionario
+          <span className="hidden sm:inline">Diccionario</span>
         </button>
       ) : (
         <button onClick={() => setOpen(true)} className="text-[10px] text-gray-400 hover:text-[#1C3D5A] transition-colors">
