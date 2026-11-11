@@ -65,8 +65,12 @@ export function calculateWellYield(input: WellYieldInputs): WellYieldResults | n
     ? abatimientoMaximo * fs
     : abatimiento * 1.2; // if no depth data, allow 20% more than test drawdown (conservative)
 
-  // Exploitation flow = specific capacity × permissible drawdown
-  const Qexplotacion_ls = caudalEspecifico * abatimientoPermisible;
+  // Exploitation flow = specific capacity × permissible drawdown, pero nunca mas que el
+  // caudal de la prueba: el caudal especifico baja al bombear mas (perdidas del pozo), asi
+  // que extrapolar en linea recta sobreestima. Mas alla del probado se pide prueba escalonada.
+  const Qextrapolado_ls = caudalEspecifico * abatimientoPermisible;
+  const limitadoPorPrueba = Qextrapolado_ls > Qprueba_ls;
+  const Qexplotacion_ls = Math.min(Qextrapolado_ls, Qprueba_ls);
   const Qexplotacion_m3h = Qexplotacion_ls * 3.6;
 
   // Daily volume the well provides (pumping horasBombeo)
@@ -89,6 +93,9 @@ export function calculateWellYield(input: WellYieldInputs): WellYieldResults | n
   if (abatimiento > 30) alerts.push({ level: "WARN", message: `Abatimiento alto (${abatimiento.toFixed(1)}m) — verificar bomba sumergible y profundidad` });
   if (abatimientoMaximo != null && abatimiento > abatimientoMaximo * 0.8) {
     alerts.push({ level: "WARN", message: "El abatimiento de prueba ya está cerca del fondo del pozo — riesgo de bombear en seco" });
+  }
+  if (limitadoPorPrueba) {
+    alerts.push({ level: "WARN", message: `Se limitó al caudal de la prueba (${Qprueba_ls} L/s). Con el abatimiento disponible el cálculo en línea recta daría ${Qextrapolado_ls.toFixed(1)} L/s, pero el pozo no rinde igual al bombear más. Para explotar más se necesita una prueba de bombeo escalonada.` });
   }
   if (cubreDemanda === false && numPozos != null) {
     alerts.push({ level: "ERROR", message: `Un solo pozo NO cubre la demanda — se requieren ${numPozos} pozos similares` });

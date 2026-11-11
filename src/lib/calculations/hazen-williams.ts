@@ -98,7 +98,7 @@ export function calculateHazenWilliams(input: HWInput): HWResult {
  * Mode B: Find practical maximum flow.
  * Returns the minimum of three limits:
  *   1. By pressure: P2 >= P2min
- *   2. By gradient: J <= 10 m/km (NOM-001-CONAGUA)
+ *   2. By gradient: J <= 10 m/km (criterio de práctica)
  *   3. By velocity: V <= 2.5 m/s
  * The practical Qmax is the most restrictive (smallest).
  */
@@ -228,7 +228,7 @@ export function compareDiameters(
     const meetsVmax = result.V <= maxVelocity;
     const meetsVelocity = meetsVmin && meetsVmax;
     const meetsPressure = result.P2 != null ? result.P2 >= P2min : null;
-    const meetsGradient = result.J_km <= 10; // NOM-001-CONAGUA: max 10 m/km
+    const meetsGradient = result.J_km <= 10; // criterio de práctica (MAPAS no fija limite)
 
     return {
       dn,

@@ -544,7 +544,7 @@ export const PRESSURE_LIMITS = {
   excessive: 100,     // 100 m.c.a. = 10.0 kg/cm²
 };
 
-// ── Gradient limits (m/km) — NOM-001-CONAGUA ──
+// ── Gradient limits (m/km) — criterio de práctica (MAPAS no fija un límite) ──
 export const GRADIENT_LIMITS = {
   low: 1,          // < 1 m/km — possibly oversized
   optimalMax: 5,   // ≤ 5 m/km — optimal range

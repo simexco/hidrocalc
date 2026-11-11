@@ -140,11 +140,11 @@ export default function FuentePage() {
                 <p className="text-3xl font-bold text-green-800 dark:text-green-200">{formatNumber(results.Qexplotacion_ls, 2)} <span className="text-sm font-normal">L/s</span> <span className="text-sm text-green-600/60 ml-2">({formatNumber(results.Qexplotacion_m3h, 1)} m3/h)</span></p>
                 <FormulaDetail
                   title="Caudal de explotación (Q)" value={formatNumber(results.Qexplotacion_ls, 2)} unit="L/s"
-                  formula="Q_explotacion = Caudal_especifico × Abatimiento_permisible"
+                  formula="Q_explotacion = el menor de (Caudal_especifico × Abatimiento_permisible) y Q_prueba"
                   steps={[
                     { label: `Caudal especifico = ${formatNumber(results.caudalEspecifico, 3)} L/s/m` },
                     { label: `Abatimiento permisible = ${results.abatimientoPermisible != null ? formatNumber(results.abatimientoPermisible, 2) : "N/D"} m` },
-                    { substitution: `Q = ${formatNumber(results.caudalEspecifico, 3)} × ${results.abatimientoPermisible != null ? formatNumber(results.abatimientoPermisible, 2) : "?"}` },
+                    { substitution: `Q = el menor de (${formatNumber(results.caudalEspecifico, 3)} × ${results.abatimientoPermisible != null ? formatNumber(results.abatimientoPermisible, 2) : "?"}) y ${formatNumber(inputs.Qprueba_ls, 2)} L/s de la prueba` },
                     { result: `Q = ${formatNumber(results.Qexplotacion_ls, 2)} L/s` },
                   ]}
                   reference="Aforo de pozo"
@@ -180,7 +180,7 @@ export default function FuentePage() {
                 <p className="font-semibold">Referencias</p>
                 <p>Abatimiento: s = Nivel dinamico - Nivel estatico</p>
                 <p>Caudal especifico: Cs = Q_prueba / s (L/s por metro)</p>
-                <p>Q explotacion = Cs × abatimiento permisible (CONAGUA MAPAS — Estudios de fuentes)</p>
+                <p>Q explotación = Cs × abatimiento permisible, sin pasar del caudal de la prueba (más allá se necesita prueba escalonada)</p>
               </div>
             </>
           )}

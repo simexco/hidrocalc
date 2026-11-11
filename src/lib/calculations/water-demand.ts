@@ -1,6 +1,6 @@
 /* ════════════════════════════════════════
    Demanda de Agua — Caudal de diseño
-   CONAGUA MAPAS / NOM-001-CONAGUA
+   CONAGUA MAPAS
    ════════════════════════════════════════ */
 
 // ── Tipos de desarrollo con dotación sugerida (L/hab/día) ──

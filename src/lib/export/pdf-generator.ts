@@ -305,7 +305,7 @@ export async function generateHidroCalcPDF(data: PDFExportData): Promise<jsPDF> 
     "1. Cálculos basados en formula de Hazen-Williams. Valida para agua limpia a 20 C y flujo turbulento (V > 0.3 m/s).",
     "2. Pérdidas menores estimadas. Verificar con accesorios reales del proyecto.",
     "3. Analisis de golpe de ariete basado en Joukowsky/Michaud. No sustituye analisis de transitorio completo.",
-    "4. Validar resultados con normativa local aplicable (NOM-001-CONAGUA, MAPAS, etc.).",
+    "4. Validar resultados con normativa local aplicable (MAPAS de CONAGUA y la normativa local).",
     "5. Este cálculo es de referencia tecnica. No sustituye proyecto ejecutivo firmado por ingeniero responsable.",
   ];
   for (const d of disclaimers) {
