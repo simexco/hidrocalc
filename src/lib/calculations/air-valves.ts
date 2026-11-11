@@ -115,8 +115,6 @@ function getNote(type: string, dn: number): string {
 }
 
 // ── Tamaño por AWWA M51, capitulo 4 ──
-// Sello: las valvulas se prueban a 20 psi minimo (M51 p. 35-36) = 14.06 m
-const SELLO_MIN_M = 14.06;
 // Capacidad de un orificio de d pulgadas (Cd 0.6), proporcional al area (d²):
 //   entrada de aire a 5 psi de vacio (tabla 4-3, p. 30: 1" = 125 SCFM, 2" = 502 SCFM)
 //   salida de aire al llenar a 2 psi (tabla 4-2, p. 27: 1" = 95 SCFM, 2" = 379 SCFM)
@@ -532,8 +530,9 @@ export function calculateAirValves(input: AirValveInputs): AirValveOutputs | nul
     // Vacio por golpe de ariete: M51 (p. 19, 37-38) pide dispositivo de cierre lento
     const cierreLento = c.type !== "VA-E" && vacioEn(c.pressure) === true;
 
-    // Alerta por presion: critica si es negativa, baja si esta bajo el minimo de sello
-    const alert: "critical" | "low" | null = c.pressure != null && c.pressure < 0 ? "critical" : c.pressure != null && c.pressure < SELLO_MIN_M ? "low" : null;
+    // Alerta por presion: critica si es negativa. El sello a baja presion lo cubre la ficha
+    // de la valvula Sigma Flow (M51 p. 35-36: se especifica la presion minima de operacion).
+    const alert: "critical" | "low" | null = c.pressure != null && c.pressure < 0 ? "critical" : null;
 
     return {
       dist: c.dist,
@@ -572,10 +571,6 @@ export function calculateAirValves(input: AirValveInputs): AirValveOutputs | nul
   // Avisos de tamaño, sello y vacio (AWWA M51)
   if (grandes.length > 0) {
     alerts.push(`Tamaño por el método de AWWA M51 (cap. 4): la válvula debe sacar el aire al llenar la línea a 0.3 m/s y dejar entrar el aire si la línea se rompe y se vacía por gravedad.${maxPorRuptura > 0 ? ` En ${maxPorRuptura} válvula(s) manda la ruptura: depende de la pendiente del tubo.` : ""}${igualadas > 0 ? ` El cálculo da tamaños distintos en cada punto; se pone ${mayor} en todas, el mayor que pide M51 en la línea, porque una válvula más grande que la calculada también cumple y así se compra un solo modelo.` : ""} Confirma con las curvas del fabricante.`);
-  }
-  const bajos = valves.filter((v) => v.alert === "low").length;
-  if (bajos > 0) {
-    alerts.push(`${bajos} válvula(s) operan con menos de 14 m (20 psi): especifica al fabricante que la válvula selle a esa presión. AWWA M51 (p. 35-36) indica que se prueban a 20 psi como mínimo.`);
   }
   const conVacio = valves.filter((v) => v.type !== "VA-E" && vacioEn(v.pressure) === true).length;
   if (conVacio > 0) {
