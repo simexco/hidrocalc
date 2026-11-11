@@ -114,8 +114,9 @@ export default function ValvulasAirePage() {
   const llegadaLibre = useProjectStore((s) => s.project.llegadaLibre ?? null);
   // Bombeo desde pozo: combinada con cierre lento en la descarga (AWWA M51 p. 19 y 42)
   const esPozo = useProjectStore((s) => s.project.fuenteAgua === "pozo");
-  // Donde AWWA M51 da dos opciones: combinada (default, M51 p. 44) o la opción sencilla
-  const opcionSencilla = useProjectStore((s) => s.project.aireOpcionSencilla === true);
+  // Donde AWWA M51 da dos opciones: la más sencilla por defecto (combinada si el golpe hace
+  // vacío); el usuario puede pedir combinada en todos (M51 p. 44)
+  const opcionSencilla = useProjectStore((s) => s.project.aireOpcionSencilla !== false);
   useEffect(() => {
     if (!results) return;
     const fullName = (type: string) => type === "VA-C" ? "Valvula de aire combinada" : type === "VA-A" ? "Valvula de admision y expulsion (VAEA)" : "Valvula eliminadora de aire";
@@ -123,7 +124,7 @@ export default function ValvulasAirePage() {
       patchProject({
         valvulas: results.valves.map((v) => ({
           cad: `${Math.round(v.dist).toLocaleString("es-MX")} m`,
-          tipo: `${fullName(v.type)} ${v.bodySize} - ${v.reason}`,
+          tipo: `${fullName(v.type)} ${v.bodySize}${v.cierreLento ? " con dispositivo de cierre lento" : ""} - ${v.reason}`,
         })),
       });
     }, 700);
@@ -328,8 +329,8 @@ export default function ValvulasAirePage() {
             </div>
 
             <label className="flex items-start gap-2 text-[11px] text-gray-600 dark:text-gray-400">
-              <input type="checkbox" className="mt-0.5" checked={opcionSencilla} onChange={(e) => patchProject({ aireOpcionSencilla: e.target.checked })} />
-              <span>Usar la opción más sencilla donde AWWA M51 da dos (admisión y expulsión o eliminadora en lugar de combinada). Por defecto va combinada: M51 recomienda usar combinadas siempre que sea posible (p. 44).</span>
+              <input type="checkbox" className="mt-0.5" checked={!opcionSencilla} onChange={(e) => patchProject({ aireOpcionSencilla: !e.target.checked })} />
+              <span>Poner combinada también donde AWWA M51 permite una más sencilla. Da más protección y cuesta más; M51 la recomienda siempre que sea posible (p. 44). Sin marcar, la plataforma pone la más sencilla que permite el manual y combinada donde el golpe de ariete hace vacío.</span>
             </label>
 
             <InputWarnings warnings={validateHydraulicInputs({ Q_ls: rawQ, DN_mm: DN, P1_kgcm2: P0 })} />
@@ -525,30 +526,81 @@ export default function ValvulasAirePage() {
                         <td className="px-2 py-1.5 text-right font-mono">{formatNumber(v.cota, 1)}</td>
                         <td className="px-2 py-1.5 text-right font-mono">{v.pressure != null ? formatNumber(v.pressure, 1) : "—"}</td>
                         <td className="px-2 py-1.5 text-center"><span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${typeBadge(v.type)}`}>{v.type}</span></td>
-                        <td className="px-2 py-1.5 text-center font-mono">{v.bodySize}</td>
+                        <td className="px-2 py-1.5 text-center font-mono" title={v.sizing}>{v.bodySize}</td>
                         <td className="px-2 py-1.5 text-center font-mono">{v.orificeSize}</td>
                         <td className="px-2 py-1.5 text-center">{v.pn}</td>
-                        <td className="px-2 py-1.5 text-gray-600 dark:text-gray-400">{v.reason}{v.note && <span className="text-[10px] text-gray-400 ml-1">({v.note})</span>}</td>
+                        <td className="px-2 py-1.5 text-gray-600 dark:text-gray-400">{v.reason}{v.cierreLento && <span className="ml-1 text-[10px] px-1.5 py-0.5 rounded bg-orange-100 text-orange-700">con cierre lento</span>}{v.note && <span className="text-[10px] text-gray-400 ml-1">({v.note})</span>}</td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
               </div>
               <div className="px-3 py-2 text-[10px] text-gray-400 border-t border-gray-100 dark:border-gray-700">
-                Tamaños en pulgadas ANSI/AWWA. Criterios: AWWA M51 / ISO 10802 / NMX-E-255-ONNCCE. Para selección definitiva consultar curvas del fabricante.
+                Ubicación y tamaño según AWWA M51 (2a. ed.) y MAPAS. Pasa el cursor sobre el tamaño para ver el cálculo. Selección definitiva con las curvas del fabricante.
               </div>
               <div className="px-3 pb-3">
                 <Desplegable titulo="¿Por qué va cada válvula ahí? Criterio de ubicación AWWA M51"><CriterioValvulasAire /></Desplegable>
               </div>
             </div>
           )}
+          {/* Resumen: qué válvulas, cuántas, de qué tamaño y dónde */}
+          {results && results.valves.length > 0 && (() => {
+            const corto = (r: string) => {
+              const t = r.split(" — ")[0].replace(/\s*\(.*\)\s*$/, "").trim();
+              return t.charAt(0).toLowerCase() + t.slice(1);
+            };
+            const filas = (["VA-C", "VA-A", "VA-E"] as const).map((t) => {
+              const vs = results.valves.filter((v) => v.type === t);
+              const tam = Array.from(new Set(vs.map((v) => v.bodySize))).map((b) => `${vs.filter((v) => v.bodySize === b).length} de ${b}`).join(", ");
+              const donde = Array.from(new Set(vs.map((v) => corto(v.reason)))).join("; ");
+              const lentas = vs.filter((v) => v.cierreLento).length;
+              return { t, n: vs.length, tam, donde, lentas };
+            }).filter((f) => f.n > 0);
+            const nombre: Record<string, string> = { "VA-C": "Combinada", "VA-A": "Admisión y expulsión", "VA-E": "Eliminadora" };
+            return (
+              <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 space-y-3">
+                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200">
+                  Resumen: {results.valves.length} válvula{results.valves.length === 1 ? "" : "s"} de aire{results.desagues.length > 0 ? ` y ${results.desagues.length} desfogue${results.desagues.length === 1 ? "" : "s"}` : ""}
+                </h3>
+                <table className="w-full text-xs">
+                  <thead>
+                    <tr className="text-left text-gray-500 border-b border-gray-200 dark:border-gray-700">
+                      <th className="py-1 pr-2">Válvula</th><th className="py-1 pr-2 text-center">Cantidad</th><th className="py-1 pr-2">Tamaño</th><th className="py-1">Dónde va</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filas.map((f) => (
+                      <tr key={f.t} className="border-b border-gray-100 dark:border-gray-700 align-top">
+                        <td className="py-1.5 pr-2 font-medium"><span className={`text-[10px] px-1.5 py-0.5 rounded mr-1 ${typeBadge(f.t)}`}>{f.t}</span>{nombre[f.t]}</td>
+                        <td className="py-1.5 pr-2 text-center font-mono">{f.n}</td>
+                        <td className="py-1.5 pr-2 whitespace-nowrap">{f.tam}</td>
+                        <td className="py-1.5 text-gray-600 dark:text-gray-400">{f.donde}{f.lentas > 0 && <span className="block text-[10px] text-orange-700">{f.lentas} con dispositivo de cierre lento (zona de vacío por golpe)</span>}</td>
+                      </tr>
+                    ))}
+                    {results.desagues.length > 0 && (
+                      <tr className="align-top">
+                        <td className="py-1.5 pr-2 font-medium">Desfogue</td>
+                        <td className="py-1.5 pr-2 text-center font-mono">{results.desagues.length}</td>
+                        <td className="py-1.5 pr-2">—</td>
+                        <td className="py-1.5 text-gray-600 dark:text-gray-400">puntos bajos ({results.desagues.map((d) => `${Math.round(d.dist).toLocaleString("es-MX")} m`).join(", ")})</td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+                <p className="text-[10px] text-gray-500">{opcionSencilla
+                  ? "Se puso la válvula más sencilla que permite AWWA M51 en cada punto; combinada solo donde el manual la pide o donde el golpe de ariete hace vacío."
+                  : "Se puso combinada en todos los puntos donde AWWA M51 permite elegir (M51 p. 44)."}</p>
+              </div>
+            );
+          })()}
+
           {/* SIMEX Air Valve Products */}
           {results && results.valves.length > 0 && (
             <div className="bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-200 dark:border-blue-800 p-4 space-y-2">
               <h3 className="text-sm font-semibold text-blue-800 dark:text-blue-300">Productos SIMEX recomendados</h3>
               {results.valves.filter((v, i, arr) => arr.findIndex((x) => x.type === v.type && x.bodySize === v.bodySize) === i).map((v, i) => (
                 <div key={i} className="text-xs text-blue-700 dark:text-blue-400">
-                  <span className="font-medium">{typeFullName(v.type)} de {v.bodySize} Sigma Flow</span>
+                  <span className="font-medium">{results.valves.filter((x) => x.type === v.type && x.bodySize === v.bodySize).length} × {typeFullName(v.type)} de {v.bodySize} Sigma Flow</span>
                   <span className="block text-[10px] text-blue-500 dark:text-blue-400/70 mt-0.5">
                     <span className="font-mono">{v.type === "VA-C" ? `VI-VAC-${v.bodySize.replace(/"/g, "")}` : v.type === "VA-A" ? `VI-VAE-${v.bodySize.replace(/"/g, "")}` : `VI-VEA-${v.bodySize.replace(/"/g, "")}`}</span>
                     {" — "}{v.type} — Conexión roscada NTP | HD A536
