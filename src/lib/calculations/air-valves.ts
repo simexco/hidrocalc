@@ -188,7 +188,7 @@ export function calculateAirValves(input: AirValveInputs): AirValveOutputs | nul
   //   Disminuye la pendiente de subida ............. admision y expulsion (o combinada)
   //   Tramo horizontal largo ....................... eliminadora (o combinada)
   //   Ascenso largo, cada maxSpacing ............... admision y expulsion (o combinada)
-  //   Descenso largo, cada maxSpacing .............. eliminadora (o combinada)
+  //   Descenso largo, cada maxSpacing .............. combinada (M51 admite eliminadora)
   //   Aumenta la pendiente de subida, disminuye la
   //   pendiente de bajada .......................... ninguna
   //   Punto bajo ................................... ninguna: desfogue
@@ -278,7 +278,7 @@ export function calculateAirValves(input: AirValveInputs): AirValveOutputs | nul
   // Corridas largas (AWWA M51), cada maxSpacing:
   //   ascendente → VA-A admision y expulsion (o combinada)
   //   plana → VA-E eliminadora (o combinada)
-  //   descendente → VA-E eliminadora (o combinada)
+  //   descendente → VA-C combinada (M51: eliminadora o combinada; en bajada hay riesgo de vacio)
   const interpola = (d: number) => {
     let k = 0;
     while (k < sorted.length - 2 && sorted[k + 1].dist <= d) k++;
@@ -311,8 +311,10 @@ export function calculateAirValves(input: AirValveInputs): AirValveOutputs | nul
       if (candidates.some((c) => Math.abs(c.dist - d) < 0.4 * maxSpacing)) continue;
       const { cota, pr } = interpola(d);
       const pend = pendienteLocal(d);
-      const tipo: "VA-A" | "VA-E" = pend > 1 ? "VA-A" : "VA-E";
-      const reason = pend > 1 ? "Ascenso largo (o combinada)" : pend < -1 ? "Descenso largo — purga de aire (o combinada)" : "Tramo horizontal largo — purga de aire (o combinada)";
+      // Descenso largo: combinada (AWWA M51 admite eliminadora o combinada; se elige la
+      // combinada porque en las bajadas es donde se forma el vacio al vaciar la linea)
+      const tipo: "VA-A" | "VA-E" | "VA-C" = pend > 1 ? "VA-A" : pend < -1 ? "VA-C" : "VA-E";
+      const reason = pend > 1 ? "Ascenso largo (o combinada)" : pend < -1 ? "Descenso largo — purga de aire y proteccion contra vacio" : "Tramo horizontal largo — purga de aire (o combinada)";
       candidates.push({ dist: d, cota, pressure: pr, type: tipo, reason });
     }
   }
