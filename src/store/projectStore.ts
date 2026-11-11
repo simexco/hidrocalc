@@ -29,7 +29,7 @@ export const emptyProject: ActiveProject = {
   cruceros: [],
   vrpDN: null, golpeValvulaDN: null,
   golpeA: null, golpeDeltaH: null, golpePmax: null, golpePN: null, golpeResiste: null,
-  vrpRequerida: null, coefAccesorios: null, cotasSatelitales: null,
+  vrpRequerida: null, coefAccesorios: null, cotasSatelitales: null, llegadaLibre: null,
 };
 
 interface ProjectState {

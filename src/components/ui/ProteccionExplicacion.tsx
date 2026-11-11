@@ -80,12 +80,12 @@ const CRITERIO_AWWA: [string, string, string][] = [
   ["Fin de tramo horizontal", "Combinada", "El aire que avanzó por el tramo plano se acumula donde vuelve a cambiar la pendiente."],
   ["Disminuye la pendiente de subida", "Admisión y expulsión (o combinada)", "El aire se frena donde la subida se suaviza; al vaciar, entra aire por ahí."],
   ["Aumenta la pendiente de bajada", "Combinada", "El agua se separa del tubo donde la bajada se empina: riesgo de vacío y de bolsas de aire."],
-  ["Tramo horizontal largo (cada 500 m aprox.)", "Eliminadora (o combinada)", "Purga las burbujas que se juntan en operación a lo largo del tramo."],
+  ["Tramo horizontal largo (cada 500 m aprox.)", "Eliminadora; combinada si el golpe de ariete hace vacío", "Purga las burbujas que se juntan en operación. Si hay vacío, la eliminadora no deja entrar aire suficiente."],
   ["Ascenso largo (cada 500 m aprox.)", "Admisión y expulsión (o combinada)", "Mucho volumen de aire que sacar al llenar y meter al vaciar."],
-  ["Descenso largo (cada 500 m aprox.)", "Combinada (M51 admite eliminadora)", "En las bajadas se forma el vacío al vaciar; la combinada además purga en operación."],
+  ["Descenso largo (cada 500 m aprox.)", "Eliminadora; combinada si el golpe de ariete hace vacío o si aún no se calcula", "M51 admite las dos. La eliminadora purga el aire en operación; si el golpe hace vacío, hace falta la combinada para dejar entrar aire."],
   ["Aumenta la pendiente de subida / disminuye la de bajada", "Ninguna", "Ahí el aire no se detiene: sigue de largo con el agua."],
   ["Punto bajo", "Ninguna: desfogue", "Ahí no hay aire; se pone un desfogue para vaciar la línea y sacar sedimentos."],
-  ["Llegada al tanque (si no llega bajando)", "Combinada", "Sale el aire que trae la línea y entra aire cuando el tanque se vacía."],
+  ["Llegada al tanque (si no llega bajando)", "Admisión y expulsión con descarga libre; combinada si llega ahogada", "M51 admite las dos. Con descarga libre el aire sale con el agua; si llega ahogada o con válvula de llenado, el aire se junta al final y hace falta la purga."],
 ];
 
 export function CriterioValvulasAire() {
