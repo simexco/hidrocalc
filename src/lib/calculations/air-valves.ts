@@ -49,6 +49,15 @@ export interface AirValveInputs {
   // Como llega el agua al final de la linea: true = cae libre al tanque, false = ahogada
   // o con valvula de llenado (flotador, altitud), null = no indicado
   llegadaLibre?: boolean | null;
+  // Bombeo desde pozo o bomba vertical: AWWA M51 (p. 19 y 42) pide combinada con dispositivo
+  // de cierre lento entre la bomba y la check
+  esPozo?: boolean;
+  // false (default) = combinada donde la tabla de M51 da opcion (M51 p. 44: "usar combinadas
+  // siempre que sea posible"); true = la opcion mas sencilla que permite la tabla (fig. 3-1)
+  opcionSencilla?: boolean;
+  // Coeficiente de Chezy del tubo para el tamaño por ruptura de linea (M51 ec. 4-6, p. 31):
+  // 190 PVC, 110 hierro, 130 acero, 120 concreto
+  chezyC?: number | null;
 }
 
 export interface AirValveOutputs {
@@ -71,16 +80,6 @@ const VAE_SIZE: Record<number, string> = {
   250: '3/4"', 300: '3/4"', 350: '3/4"',
   400: '1"', 450: '1"', 500: '1"',
   600: '2"', 750: '2"', 900: '2"',
-};
-
-const VAA_SIZE: Record<number, string> = {
-  50: '1/2"', 75: '1/2"', 100: '3/4"', 150: '1"', 200: '2"', 250: '2"', 300: '2"',
-  350: '3"', 400: '3"', 450: '4"', 500: '4"', 600: '6"', 750: '6"', 900: '8"',
-};
-
-const VAC_BODY: Record<number, string> = {
-  50: '1/2"', 75: '1/2"', 100: '3/4"', 150: '1"', 200: '2"', 250: '2"', 300: '2"',
-  350: '3"', 400: '3"', 450: '4"', 500: '4"', 600: '6"', 750: '6"', 900: '8"',
 };
 
 // Orificio chico de la combinada: misma progresion que la eliminadora
@@ -110,6 +109,24 @@ function getNote(type: string, dn: number): string {
   return "";
 }
 
+// ── Tamaño por AWWA M51, capitulo 4 ──
+// Sello: las valvulas se prueban a 20 psi minimo (M51 p. 35-36) = 14.06 m
+const SELLO_MIN_M = 14.06;
+// Capacidad de un orificio de d pulgadas (Cd 0.6), proporcional al area (d²):
+//   entrada de aire a 5 psi de vacio (tabla 4-3, p. 30: 1" = 125 SCFM, 2" = 502 SCFM)
+//   salida de aire al llenar a 2 psi (tabla 4-2, p. 27: 1" = 95 SCFM, 2" = 379 SCFM)
+const CAP_VACIO_5PSI = 125.4;
+const CAP_LLENADO_2PSI = 94.8;
+const M3S_A_SCFM = 2118.88;
+// Tamaños comerciales de valvula de aire (pulgadas)
+const TAMANOS: [number, string][] = [[0.5, '1/2"'], [0.75, '3/4"'], [1, '1"'], [2, '2"'], [3, '3"'], [4, '4"'], [6, '6"'], [8, '8"']];
+
+// Flujo por gravedad si la linea se rompe (M51 ec. 4-6, p. 31): Q = 0.0472 C √(S·ID⁵), SCFM
+function flujoRuptura(S: number, idIn: number, chezy: number): number {
+  if (S <= 0) return 0;
+  return 0.0472 * chezy * Math.sqrt(Math.min(S, 1) * Math.pow(idIn, 5));
+}
+
 // ── Hazen-Williams friction loss for a segment ──
 function hfSegment(Q: number, D_m: number, C: number, L: number): number {
   if (Q <= 0 || D_m <= 0 || L <= 0) return 0;
@@ -118,7 +135,7 @@ function hfSegment(Q: number, D_m: number, C: number, L: number): number {
 
 // ── Main calculation ──
 export function calculateAirValves(input: AirValveInputs): AirValveOutputs | null {
-  const { Q, DN_mm, C, P0_kgcm2, pressureMin, maxSpacing, vertices } = input;
+  const { Q, DN_mm, C, P0_kgcm2, maxSpacing, vertices } = input;
   if (vertices.length < 2) return null;
 
   const sorted = [...vertices].sort((a, b) => a.dist - b.dist);
@@ -190,31 +207,35 @@ export function calculateAirValves(input: AirValveInputs): AirValveOutputs | nul
   });
 
   // Step 3: Apply rules — collect candidate valves
-  // Criterio AWWA M51 (tabla de ubicacion de valvulas de aire), el mismo del diagrama
-  // de fabricante que usan los proyectistas:
-  //   Descarga de bomba ............................ admision y expulsion (VA-A)
-  //   Inicio de linea por gravedad, punto alto,
-  //   inicio y fin de tramo horizontal,
-  //   aumenta la pendiente de bajada ............... combinada (VA-C)
-  //   Disminuye la pendiente de subida ............. admision y expulsion (o combinada)
-  //   Tramo horizontal largo ....................... eliminadora; combinada si el golpe hace vacio
-  //   Ascenso largo, cada maxSpacing ............... admision y expulsion (o combinada)
-  //   Descenso largo, cada maxSpacing .............. eliminadora; combinada si el golpe hace vacio
-  //                                                  o si aun no se calcula el golpe (lado seguro)
+  // Criterio AWWA M51, figura 3-1 (p. 18) y lista de ubicaciones (p. 19). Donde la tabla da
+  // dos opciones se usa combinada (M51 p. 44: combinadas siempre que sea posible), salvo que el
+  // usuario pida la opcion sencilla (opcionSencilla):
+  //   Descarga de bomba ............................ combinada (sencilla: admision y expulsion);
+  //                                                  pozo: combinada con cierre lento (p. 19, 42)
+  //   Punto alto, inicio y fin de tramo horizontal,
+  //   aumenta la pendiente de bajada ............... combinada
+  //   Disminuye la pendiente de subida, ascenso largo  combinada (sencilla: admision y expulsion)
+  //   Tramo horizontal y descenso largos ........... combinada (sencilla: eliminadora; combinada si hay vacio)
   //   Aumenta la pendiente de subida, disminuye la
   //   pendiente de bajada .......................... ninguna
-  //   Punto bajo ................................... ninguna: desfogue
-  //   Llegada a tanque (si no llega bajando) ....... admision y expulsion con descarga libre;
-  //                                                  combinada si llega ahogada o no se indica
-  //   Los puntos bajos NO llevan valvula de aire: llevan desfogue (se avisa).
+  //   Punto bajo ................................... ninguna: desfogue (drain valve en la figura 3-1)
+  //   Llegada a tanque ............................. descarga libre: ninguna (figura 3-1);
+  //                                                  ahogada o sin indicar: combinada
   //   La presion baja o negativa NO se corrige con valvulas de aire: se avisa como problema de diseno.
   type Candidate = { dist: number; cota: number; pressure: number | null; type: "VA-C" | "VA-A" | "VA-E"; reason: string };
   const candidates: Candidate[] = [];
 
   // Inicio por bombeo — admision y expulsion en la descarga de la bomba (antes de la check),
   // AWWA M51. El inicio por gravedad se decide mas abajo, con la pendiente del primer tramo.
+  // M51 fig. 3-1 (p. 18): descarga de bomba, admision y expulsion o combinada
+  const simple = input.opcionSencilla === true;
+  const opcion = (t: "VA-A" | "VA-E"): "VA-C" | "VA-A" | "VA-E" => (simple ? t : "VA-C");
   if (input.esBombeo) {
-    candidates.push({ dist: sorted[0].dist, cota: sorted[0].cota, pressure: pressures[0], type: "VA-A", reason: "Descarga de bomba (antes de la valvula check)" });
+    if (input.esPozo) {
+      candidates.push({ dist: sorted[0].dist, cota: sorted[0].cota, pressure: pressures[0], type: "VA-C", reason: "Descarga de bomba de pozo — combinada con dispositivo de cierre lento, entre la bomba y la check" });
+    } else {
+      candidates.push({ dist: sorted[0].dist, cota: sorted[0].cota, pressure: pressures[0], type: opcion("VA-A"), reason: "Descarga de bomba (antes de la valvula check)" });
+    }
   }
   // Fin — SOLO si la llegada NO es descendente: en un punto bajo el aire no se acumula
   // (una linea que baja uniformemente no necesita valvula al final)
@@ -224,11 +245,12 @@ export function calculateAirValves(input: AirValveInputs): AirValveOutputs | nul
   // aire que llega en operacion sale con el agua: no hace falta la purga de la combinada.
   if (!llegadaDescendente) {
     if (input.llegadaLibre === true) {
-      candidates.push({ dist: sorted[last].dist, cota: sorted[last].cota, pressure: pressures[last], type: "VA-A", reason: "Llegada al tanque con descarga libre (el aire en operacion sale con el agua)" });
+      // M51 fig. 3-1: la linea entra libre al tanque y ahi no lleva valvula (el extremo esta abierto)
+      alerts.push("Llegada al tanque con descarga libre: ahí no va válvula de aire, el extremo está abierto a la atmósfera (AWWA M51, figura 3-1, p. 18).");
     } else {
       candidates.push({ dist: sorted[last].dist, cota: sorted[last].cota, pressure: pressures[last], type: "VA-C", reason: input.llegadaLibre === false ? "Llegada al tanque ahogada o con valvula de llenado (el aire se junta al final)" : "Fin de linea (llegada plana/ascendente)" });
       if (input.llegadaLibre == null) {
-        alerts.push("Indica cómo llega el agua al tanque. Si cae libre, AWWA M51 permite en la llegada una válvula de admisión y expulsión, más sencilla que la combinada que se puso.");
+        alerts.push("Indica cómo llega el agua al tanque. Si cae libre, la llegada no lleva válvula de aire (AWWA M51, figura 3-1); se dejó combinada mientras no se indique.");
       }
     }
   }
@@ -300,7 +322,7 @@ export function calculateAirValves(input: AirValveInputs): AirValveOutputs | nul
     // La subida se aplana (sigue subiendo, con menos pendiente): el aire se junta ahi y al
     // vaciar entra aire → admision y expulsion (o combinada)
     else if (pendA > 1 && pendB > 1 && pendB < pendA - 2) {
-      candidates.push({ dist: sorted[j].dist, cota: sorted[j].cota, pressure: p, type: "VA-A", reason: "Disminuye la pendiente de subida (o combinada)" });
+      candidates.push({ dist: sorted[j].dist, cota: sorted[j].cota, pressure: p, type: opcion("VA-A"), reason: "Disminuye la pendiente de subida" });
     }
     // La bajada se hace mas pronunciada → combinada (riesgo de vacio y aire en operacion)
     else if (pendA < -1 && pendB < pendA - 3) {
@@ -355,7 +377,9 @@ export function calculateAirValves(input: AirValveInputs): AirValveOutputs | nul
       let tipo: "VA-A" | "VA-E" | "VA-C";
       let reason: string;
       if (pend > 1) {
-        tipo = "VA-A"; reason = "Ascenso largo (o combinada)";
+        tipo = opcion("VA-A"); reason = "Ascenso largo";
+      } else if (!simple) {
+        tipo = "VA-C"; reason = pend < -1 ? "Descenso largo" : "Tramo horizontal largo";
       } else if (pend < -1) {
         if (vacio === false) { tipo = "VA-E"; reason = "Descenso largo — purga de aire (sin vacio con el golpe de ariete)"; }
         else if (vacio === true) { tipo = "VA-C"; reason = "Descenso largo — combinada: con el golpe de ariete se forma vacio"; vacioCambia++; }
@@ -406,9 +430,6 @@ export function calculateAirValves(input: AirValveInputs): AirValveOutputs | nul
     const negativos = sorted.map((v, i) => ({ v, p: pressures[i] })).filter((x) => x.p != null && x.p < 0);
     if (negativos.length > 0) {
       alerts.push(`Presion NEGATIVA en operacion en ${negativos.length} punto(s) del perfil (desde los ${Math.round(negativos[0].v.dist).toLocaleString("es-MX")} m). Las valvulas de aire NO corrigen esto: revisa el diametro, el trazo o si la linea requiere bombeo.`);
-    } else {
-      const bajos = sorted.filter((v, i) => pressures[i] != null && pressures[i]! < pressureMin);
-      if (bajos.length > 0) alerts.push(`Presion por debajo de ${pressureMin} m.c.a. en ${bajos.length} punto(s): verifica con el fabricante que la valvula de aire selle a baja presion.`);
     }
   }
   // Un solo aviso con TODOS los puntos bajos significativos (antes era uno por punto)
@@ -445,24 +466,66 @@ export function calculateAirValves(input: AirValveInputs): AirValveOutputs | nul
     }
   }
 
-  // Step 5: Convert to results with sizing
+  // Step 5: tamaño. Combinada y admision/expulsion por el metodo de AWWA M51 (cap. 4):
+  // el orificio grande debe sacar el aire al llenar a 0.3 m/s (p. 26-28) y dejar entrar el
+  // aire si la linea se rompe y se vacia por gravedad (p. 28-31), a 5 psi de vacio (tubo
+  // enterrado, no sujeto a colapso, p. 31). La eliminadora purga en operacion: con el 2 %
+  // del gasto (p. 23-26) basta el orificio mas chico, se usa la tabla por diametro.
+  const idIn = (input.diametroInterior_mm ?? DN_mm) / 25.4;
+  const areaM2 = Math.PI * Math.pow((input.diametroInterior_mm ?? DN_mm) / 1000, 2) / 4;
+  const chezy = input.chezyC ?? 190;
+  const qLlenado = 0.3 * areaM2 * M3S_A_SCFM * (16.7 / 14.7); // SCFM a 2 psi
+  const pendMacro = (k: number) => {
+    const a = macro[k], b = macro[k + 1];
+    return (sorted[b].cota - sorted[a].cota) / ((sorted[b].dist - sorted[a].dist) || 1);
+  };
+  const pendientesEn = (d: number): { antes: number | null; despues: number | null; enVertice: boolean } => {
+    const kv = macro.findIndex((m) => Math.abs(sorted[m].dist - d) < 1);
+    if (kv >= 0) return { antes: kv > 0 ? pendMacro(kv - 1) : null, despues: kv < macro.length - 1 ? pendMacro(kv) : null, enVertice: true };
+    let k = 0;
+    while (k < macro.length - 2 && sorted[macro[k + 1]].dist <= d) k++;
+    const sk = pendMacro(k);
+    return { antes: sk, despues: sk, enVertice: false };
+  };
+  const aireRuptura = (d: number): number => {
+    const { antes, despues, enVertice } = pendientesEn(d);
+    const Qg = (S: number | null) => flujoRuptura(Math.abs(S ?? 0), idIn, chezy);
+    if (!enVertice) return Qg(antes);
+    // Cambio de pendiente sin cambiar de sentido: la diferencia entre el flujo del tramo de
+    // abajo y el de arriba (M51 p. 29-31)
+    if (antes != null && despues != null && antes < 0 && despues < 0) return Math.max(0, Qg(despues) - Qg(antes));
+    if (antes != null && despues != null && antes > 0 && despues > 0) return Math.max(0, Qg(antes) - Qg(despues));
+    // Punto alto, inicio/fin de tramo horizontal o extremo: el tramo que baja alejandose de la valvula
+    const bajaAtras = antes != null && antes > 0 ? Qg(antes) : 0;
+    const bajaAdelante = despues != null && despues < 0 ? Qg(despues) : 0;
+    return Math.max(bajaAtras, bajaAdelante);
+  };
+  let maxPorRuptura = 0;
   const valves: AirValveResult[] = deduped.map((c) => {
     let bodySize: string;
     let orificeSize: string;
+    let nota = getNote(c.type, DN_mm);
 
-    if (c.type === "VA-C") {
-      bodySize = getSize(VAC_BODY, DN_mm);
-      orificeSize = getSize(VAC_ORIFICE, DN_mm);
-    } else if (c.type === "VA-A") {
-      bodySize = getSize(VAA_SIZE, DN_mm);
-      orificeSize = bodySize;
-    } else {
+    if (c.type === "VA-E") {
       bodySize = getSize(VAE_SIZE, DN_mm);
       orificeSize = bodySize;
+    } else {
+      const qr = aireRuptura(c.dist);
+      const dReq = Math.sqrt(Math.max(qr / CAP_VACIO_5PSI, qLlenado / CAP_LLENADO_2PSI));
+      const sel = TAMANOS.find(([d]) => d >= dReq - 1e-6);
+      bodySize = sel ? sel[1] : '8"';
+      if (!sel) nota = "Requiere más de 8\": varias válvulas en grupo o rompedor de vacío (AWWA M51, p. 34-36)";
+      if (qr / CAP_VACIO_5PSI >= qLlenado / CAP_LLENADO_2PSI) maxPorRuptura++;
+      orificeSize = c.type === "VA-C" ? getSize(VAC_ORIFICE, DN_mm) : bodySize;
+      const ls = (x: number) => Math.round(x * 0.4719);
+      const det = `M51: aire si se rompe la línea ${ls(qr)} L/s, llenado ${ls(qLlenado)} L/s`;
+      nota = nota ? `${nota}; ${det}` : det;
     }
+    // Vacio por golpe de ariete: M51 (p. 19, 37-38) pide dispositivo de cierre lento
+    if (c.type !== "VA-E" && vacioEn(c.pressure) === true) nota = `Con dispositivo de cierre lento (vacío por golpe); ${nota}`;
 
     // Alerta por presion: critica si es negativa, baja si esta bajo el minimo de sello
-    const alert: "critical" | "low" | null = c.pressure != null && c.pressure < 0 ? "critical" : c.pressure != null && c.pressure < pressureMin ? "low" : null;
+    const alert: "critical" | "low" | null = c.pressure != null && c.pressure < 0 ? "critical" : c.pressure != null && c.pressure < SELLO_MIN_M ? "low" : null;
 
     return {
       dist: c.dist,
@@ -474,9 +537,27 @@ export function calculateAirValves(input: AirValveInputs): AirValveOutputs | nul
       pn,
       reason: c.reason,
       alert,
-      note: getNote(c.type, DN_mm),
+      note: nota,
     };
   }).sort((a, b) => a.dist - b.dist);
+
+  // Avisos de tamaño, sello y vacio (AWWA M51)
+  const grandes = valves.filter((v) => v.type !== "VA-E");
+  if (grandes.length > 0) {
+    alerts.push(`Tamaño por el método de AWWA M51 (cap. 4): la válvula debe sacar el aire al llenar la línea a 0.3 m/s y dejar entrar el aire si la línea se rompe y se vacía por gravedad.${maxPorRuptura > 0 ? ` En ${maxPorRuptura} válvula(s) manda la ruptura: depende de la pendiente del tubo.` : ""} Confirma con las curvas del fabricante.`);
+  }
+  const bajos = valves.filter((v) => v.alert === "low").length;
+  if (bajos > 0) {
+    alerts.push(`${bajos} válvula(s) operan con menos de 14 m (20 psi): especifica al fabricante que la válvula selle a esa presión. AWWA M51 (p. 35-36) indica que se prueban a 20 psi como mínimo.`);
+  }
+  const conVacio = valves.filter((v) => v.type !== "VA-E" && vacioEn(v.pressure) === true).length;
+  if (conVacio > 0) {
+    alerts.push(`Con el golpe de ariete calculado, ${conVacio} válvula(s) quedan en zona de vacío: deben llevar dispositivo de cierre lento para no provocar un segundo golpe al expulsar el aire (AWWA M51, p. 19 y 37-38). Confirma ubicación y tamaño con un análisis de transitorios.`);
+  }
+  // Instalacion (M51 p. 46-47)
+  if (valves.some((v) => v.type !== "VA-A") && DN_mm <= 300) {
+    alerts.push("Instalación: monta la combinada y la eliminadora sobre una tee del mismo diámetro de la línea (por ejemplo 6\"×6\") con reducción a la válvula, y válvula de seccionamiento abajo. Ese tramo vertical junta el aire para que la válvula lo saque (AWWA M51, p. 46-47).");
+  }
 
   // Count
   const totalVAC = valves.filter((v) => v.type === "VA-C").length;

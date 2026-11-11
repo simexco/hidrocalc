@@ -76,6 +76,8 @@ export interface ReportData {
   cotasSatelitales?: boolean | null;
   // Llegada al tanque: true = descarga libre, false = ahogada o con valvula de llenado
   llegadaLibre?: boolean | null;
+  // Valvulas de aire: true = opcion sencilla donde AWWA M51 da dos opciones (default: combinada)
+  aireOpcionSencilla?: boolean | null;
 }
 
 export interface ReportResults {
@@ -480,9 +482,10 @@ export async function generateReportPDF(d: ReportData): Promise<jsPDF> {
     });
     y = finalY(doc) + 4;
     doc.setFontSize(7.5); doc.setTextColor(90, 90, 90);
-    doc.text(safe("Ubicacion segun la tabla del Manual AWWA M51: combinada en puntos altos, inicio y fin de tramos horizontales, donde la bajada se hace mas pronunciada y en la llegada ahogada; admision y expulsion en la descarga de bomba, donde la subida pierde pendiente, en ascensos largos y en la llegada con descarga libre; eliminadora en tramos horizontales y descensos largos, o combinada si el golpe de ariete hace vacio; en los puntos bajos, desfogue. Seleccion final con las curvas del fabricante."), 14, y, { maxWidth: doc.internal.pageSize.getWidth() - 28 });
+    const notaM51 = doc.splitTextToSize(safe("Ubicacion segun el Manual AWWA M51 (figura 3-1, p. 18): combinada en puntos altos, inicio y fin de tramos horizontales y donde la bajada se hace mas pronunciada; " + (d.aireOpcionSencilla ? "donde el manual da opcion se uso la valvula mas sencilla (admision y expulsion o eliminadora);" : "donde el manual da opcion, combinada (M51 recomienda combinadas siempre que sea posible, p. 44);") + " en los puntos bajos, desfogue; con descarga libre al tanque, sin valvula en la llegada. Tamano por el metodo de M51 (cap. 4): llenado a 0.3 m/s y entrada de aire si la linea se rompe. Seleccion final con las curvas del fabricante.")), doc.internal.pageSize.getWidth() - 28);
+    doc.text(notaM51, 14, y);
     doc.setTextColor(0, 0, 0);
-    y += 12;
+    y += notaM51.length * 3.3 + 3;
   }
 
   // ── Recomendaciones de proteccion (VRP y golpe de ariete) ──
