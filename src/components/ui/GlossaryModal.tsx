@@ -94,7 +94,7 @@ const GLOSSARY: { cat: string; items: { term: string; def: string }[] }[] = [
       { term: "VRP (válvula reductora de presión)", def: "Una válvula que reduce la presión: recibe una presión alta y entrega aguas abajo una presión fija menor. Se usa cuando el desnivel genera más presión de la que la tubería o la zona soportan." },
       { term: "Tanque rompedor", def: "Un tanque intermedio abierto que corta la presión a cero y \"reinicia\" la línea desde esa cota. Alternativa a la VRP en líneas por gravedad con mucho desnivel." },
       { term: "Válvulas de aire", def: "Van en los puntos ALTOS del trazo. Eliminadora (VA-E): expulsa el aire que se acumula durante la operación. Admisión-expulsión (VAEA): expulsa el aire al llenar y admite aire al vaciar, para que el tubo no se colapse. Combinada (VA-C): cumple ambas funciones." },
-      { term: "Desagüe (desfogue)", def: "Válvula en los puntos BAJOS del trazo para drenar la línea en mantenimiento y sacar sedimentos." },
+      { term: "Desfogue", def: "Válvula en los puntos BAJOS del trazo para drenar la línea en mantenimiento y sacar sedimentos." },
       { term: "Crucero", def: "El \"nudo\" de piezas en un punto de la red: codos, tees, válvulas, bridas y transiciones. El Generador de cruceros arma el despiece pieza por pieza para cotizarlo." },
     ],
   },

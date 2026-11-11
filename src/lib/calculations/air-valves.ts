@@ -39,6 +39,8 @@ export interface AirValveInputs {
   pressureMin: number;    // m.c.a.
   maxSpacing: number;     // m
   vertices: AirValveVertex[];
+  // Linea por bombeo: la primera valvula va en la descarga de la bomba (admision y expulsion)
+  esBombeo?: boolean;
 }
 
 export interface AirValveOutputs {
@@ -48,7 +50,7 @@ export interface AirValveOutputs {
   totalVAA: number;
   totalVAE: number;
   alerts: string[];
-  // Puntos bajos significativos: ahi NO va valvula de aire, va un desague (se grafican aparte)
+  // Puntos bajos significativos: ahi NO va valvula de aire, va un desfogue (se grafican aparte)
   desagues: { dist: number; cota: number }[];
 }
 
@@ -177,19 +179,32 @@ export function calculateAirValves(input: AirValveInputs): AirValveOutputs | nul
   });
 
   // Step 3: Apply rules — collect candidate valves
-  // Criterio (CONAGUA MAPAS / AWWA M51):
-  //   VA-C en inicio, fin (si no llega bajando) y puntos altos SIGNIFICATIVOS.
-  //   VA-E donde el aire se acumula en operacion (la subida se aplana, arranca un ascenso)
-  //        y cada maxSpacing en corridas largas ascendentes o planas.
-  //   VA-A donde hay riesgo de vacio (la bajada se hace mas pronunciada)
-  //        y cada maxSpacing en corridas largas descendentes.
-  //   Los puntos bajos NO llevan valvula de aire: llevan desague (se avisa).
+  // Criterio AWWA M51 (tabla de ubicacion de valvulas de aire), el mismo del diagrama
+  // de fabricante que usan los proyectistas:
+  //   Descarga de bomba ............................ admision y expulsion (VA-A)
+  //   Inicio de linea por gravedad, punto alto,
+  //   inicio y fin de tramo horizontal,
+  //   aumenta la pendiente de bajada ............... combinada (VA-C)
+  //   Disminuye la pendiente de subida ............. admision y expulsion (o combinada)
+  //   Tramo horizontal largo ....................... eliminadora (o combinada)
+  //   Ascenso largo, cada maxSpacing ............... admision y expulsion (o combinada)
+  //   Descenso largo, cada maxSpacing .............. eliminadora (o combinada)
+  //   Aumenta la pendiente de subida, disminuye la
+  //   pendiente de bajada .......................... ninguna
+  //   Punto bajo ................................... ninguna: desfogue
+  //   Llegada a tanque (si no llega bajando) ....... combinada
+  //   Los puntos bajos NO llevan valvula de aire: llevan desfogue (se avisa).
   //   La presion baja o negativa NO se corrige con valvulas de aire: se avisa como problema de diseno.
   type Candidate = { dist: number; cota: number; pressure: number | null; type: "VA-C" | "VA-A" | "VA-E"; reason: string };
   const candidates: Candidate[] = [];
 
-  // Inicio — VA-C siempre (llenado/vaciado y arranque)
-  candidates.push({ dist: sorted[0].dist, cota: sorted[0].cota, pressure: pressures[0], type: "VA-C", reason: "Inicio de linea" });
+  // Inicio — en bombeo, admision y expulsion en la descarga de la bomba (antes de la check);
+  // por gravedad, combinada (llenado/vaciado y arranque)
+  if (input.esBombeo) {
+    candidates.push({ dist: sorted[0].dist, cota: sorted[0].cota, pressure: pressures[0], type: "VA-A", reason: "Descarga de bomba (antes de la valvula check)" });
+  } else {
+    candidates.push({ dist: sorted[0].dist, cota: sorted[0].cota, pressure: pressures[0], type: "VA-C", reason: "Inicio de linea" });
+  }
   // Fin — SOLO si la llegada NO es descendente: en un punto bajo el aire no se acumula
   // (una linea que baja uniformemente no necesita valvula al final)
   const last = sorted.length - 1;
@@ -239,24 +254,31 @@ export function calculateAirValves(input: AirValveInputs): AirValveOutputs | nul
     const pendA = ((sorted[j].cota - sorted[a].cota) / ((sorted[j].dist - sorted[a].dist) || 1)) * 100;
     const pendB = ((sorted[b].cota - sorted[j].cota) / ((sorted[b].dist - sorted[j].dist) || 1)) * 100;
     const p = pressures[j];
-    // La subida se aplana: el aire arrastrado se junta ahi → VA-E
-    if (pendA > 3 && pendB >= -1 && pendB < pendA - 2) {
-      candidates.push({ dist: sorted[j].dist, cota: sorted[j].cota, pressure: p, type: "VA-E", reason: "Reduccion de pendiente ascendente — acumulacion de aire" });
+    const plano = (x: number) => Math.abs(x) <= 1;
+    // Subida que llega a tramo horizontal → combinada (AWWA M51: inicio de horizontal)
+    if (pendA > 1 && plano(pendB)) {
+      candidates.push({ dist: sorted[j].dist, cota: sorted[j].cota, pressure: p, type: "VA-C", reason: "Inicio de tramo horizontal" });
     }
-    // Arranca un ascenso fuerte desde plano/descenso suave: el aire migra hacia arriba → VA-E
-    else if (pendA <= 1 && pendB > 3) {
-      candidates.push({ dist: sorted[j].dist, cota: sorted[j].cota, pressure: p, type: "VA-E", reason: "Inicio de ascenso — aire migra hacia arriba" });
+    // Tramo horizontal que termina en subida o en bajada → combinada (fin de horizontal)
+    else if (plano(pendA) && (pendB > 1 || pendB < -1)) {
+      candidates.push({ dist: sorted[j].dist, cota: sorted[j].cota, pressure: p, type: "VA-C", reason: pendB > 1 ? "Fin de tramo horizontal" : "Fin de tramo horizontal — inicia la bajada" });
     }
-    // La bajada se hace mas pronunciada → VA-A (riesgo de vacio / separacion de columna)
+    // La subida se aplana (sigue subiendo, con menos pendiente): el aire se junta ahi y al
+    // vaciar entra aire → admision y expulsion (o combinada)
+    else if (pendA > 1 && pendB > 1 && pendB < pendA - 2) {
+      candidates.push({ dist: sorted[j].dist, cota: sorted[j].cota, pressure: p, type: "VA-A", reason: "Disminuye la pendiente de subida (o combinada)" });
+    }
+    // La bajada se hace mas pronunciada → combinada (riesgo de vacio y aire en operacion)
     else if (pendA < -1 && pendB < pendA - 3) {
-      candidates.push({ dist: sorted[j].dist, cota: sorted[j].cota, pressure: p, type: "VA-A", reason: "La bajada se hace mas pronunciada — riesgo de vacio" });
+      candidates.push({ dist: sorted[j].dist, cota: sorted[j].cota, pressure: p, type: "VA-C", reason: "Aumenta la pendiente de bajada" });
     }
+    // Aumenta la pendiente de subida o disminuye la de bajada → ninguna (AWWA M51)
   }
 
-  // Corridas largas — el caracter del tramo se mide agrupando segmentos consecutivos
-  // del mismo tipo, aunque el perfil se haya capturado con varios vertices intermedios:
-  //   ascendente o plana → VA-E de purga cada maxSpacing
-  //   descendente → VA-A de proteccion de vacio cada maxSpacing
+  // Corridas largas (AWWA M51), cada maxSpacing:
+  //   ascendente → VA-A admision y expulsion (o combinada)
+  //   plana → VA-E eliminadora (o combinada)
+  //   descendente → VA-E eliminadora (o combinada)
   const interpola = (d: number) => {
     let k = 0;
     while (k < sorted.length - 2 && sorted[k + 1].dist <= d) k++;
@@ -285,15 +307,17 @@ export function calculateAirValves(input: AirValveInputs): AirValveOutputs | nul
     const runEnd = sorted[nodos[k + 1]].dist;
     if (runEnd - runStart <= maxSpacing) continue;
     for (let d = runStart + maxSpacing; d < runEnd - 1; d += maxSpacing) {
+      // Si ya hay una valvula cerca (quiebre, punto alto, inicio/fin), esa cubre este tramo
+      if (candidates.some((c) => Math.abs(c.dist - d) < 0.4 * maxSpacing)) continue;
       const { cota, pr } = interpola(d);
       const pend = pendienteLocal(d);
-      const tipo: "VA-A" | "VA-E" = pend < -1 ? "VA-A" : "VA-E";
-      const reason = pend > 1 ? "Tramo ascendente largo — purga de aire" : pend < -1 ? "Tramo descendente largo — proteccion contra vacio" : "Tramo plano largo — purga de aire";
+      const tipo: "VA-A" | "VA-E" = pend > 1 ? "VA-A" : "VA-E";
+      const reason = pend > 1 ? "Ascenso largo (o combinada)" : pend < -1 ? "Descenso largo — purga de aire (o combinada)" : "Tramo horizontal largo — purga de aire (o combinada)";
       candidates.push({ dist: d, cota, pressure: pr, type: tipo, reason });
     }
   }
 
-  // El punto MAS BAJO real del perfil siempre merece desagüe (aunque desemboque en
+  // El punto MAS BAJO real del perfil siempre merece desfogue (aunque desemboque en
   // un tramo plano y la prominencia de dos lados no lo marque), si es interior y
   // el perfil tiene relieve suficiente
   const iMin = cotas.indexOf(Math.min(...cotas));
@@ -325,7 +349,7 @@ export function calculateAirValves(input: AirValveInputs): AirValveOutputs | nul
   if (puntosBajos.length > 0) {
     const lista = puntosBajos.slice(0, 6).map((p) => `${Math.round(p.dist).toLocaleString("es-MX")} m`).join(" · ");
     const extra = puntosBajos.length > 6 ? ` (y ${puntosBajos.length - 6} más)` : "";
-    alerts.push(`Puntos bajos del perfil (a los ${lista}${extra} del inicio): no llevan válvula de aire — se recomienda un desagüe (desfogue) para drenado y limpieza en cada uno. Puedes armar esos cruceros en el Generador de cruceros.`);
+    alerts.push(`Puntos bajos del perfil (a los ${lista}${extra} del inicio): no llevan válvula de aire — se recomienda un desfogue para drenado y limpieza en cada uno. Puedes armar esos cruceros en el Generador de cruceros.`);
   }
 
   // Step 4: Deduplicate — within 30m, keep each type's highest priority
