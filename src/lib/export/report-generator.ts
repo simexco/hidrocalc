@@ -474,7 +474,11 @@ export async function generateReportPDF(d: ReportData): Promise<jsPDF> {
       body: valvList.map((v) => [v.cad || "-", safe(v.tipo || "-")]),
       margin: { left: 14, right: 14, top: 30 }, didDrawPage: dibujaHeader,
     });
-    y = finalY(doc) + 6;
+    y = finalY(doc) + 4;
+    doc.setFontSize(7.5); doc.setTextColor(90, 90, 90);
+    doc.text(safe("Ubicacion segun la tabla del Manual AWWA M51: combinada en puntos altos, inicio y fin de tramos horizontales, donde la bajada se hace mas pronunciada, en descensos largos y en la llegada; admision y expulsion en la descarga de bomba, donde la subida pierde pendiente y en ascensos largos; eliminadora en tramos horizontales largos; en los puntos bajos, desfogue. Seleccion final con las curvas del fabricante."), 14, y, { maxWidth: doc.internal.pageSize.getWidth() - 28 });
+    doc.setTextColor(0, 0, 0);
+    y += 12;
   }
 
   // ── Recomendaciones de proteccion (VRP y golpe de ariete) ──

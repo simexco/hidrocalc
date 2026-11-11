@@ -69,3 +69,50 @@ export function PorQueVentosasVacio() {
     </p>
   );
 }
+
+// Criterio de ubicación de válvulas de aire: tabla AWWA M51 (la misma que publican los
+// fabricantes en su diagrama de ubicación). La plataforma aplica exactamente estas reglas.
+const CRITERIO_AWWA: [string, string, string][] = [
+  ["Descarga de bomba (antes de la check)", "Admisión y expulsión", "Al arrancar la bomba sale de golpe el aire de la columna; al parar, entra aire para que no se haga vacío."],
+  ["Inicio de la línea por gravedad", "Combinada", "Llenado y vaciado de la línea, y el aire que entra con el agua al arrancar."],
+  ["Punto alto", "Combinada", "Ahí se junta el aire durante la operación y ahí se forma el vacío al vaciar."],
+  ["Inicio de tramo horizontal (la subida termina)", "Combinada", "El aire que sube con el agua se detiene donde la pendiente se acaba."],
+  ["Fin de tramo horizontal", "Combinada", "El aire que avanzó por el tramo plano se acumula donde vuelve a cambiar la pendiente."],
+  ["Disminuye la pendiente de subida", "Admisión y expulsión (o combinada)", "El aire se frena donde la subida se suaviza; al vaciar, entra aire por ahí."],
+  ["Aumenta la pendiente de bajada", "Combinada", "El agua se separa del tubo donde la bajada se empina: riesgo de vacío y de bolsas de aire."],
+  ["Tramo horizontal largo (cada 500 m aprox.)", "Eliminadora (o combinada)", "Purga las burbujas que se juntan en operación a lo largo del tramo."],
+  ["Ascenso largo (cada 500 m aprox.)", "Admisión y expulsión (o combinada)", "Mucho volumen de aire que sacar al llenar y meter al vaciar."],
+  ["Descenso largo (cada 500 m aprox.)", "Combinada (M51 admite eliminadora)", "En las bajadas se forma el vacío al vaciar; la combinada además purga en operación."],
+  ["Aumenta la pendiente de subida / disminuye la de bajada", "Ninguna", "Ahí el aire no se detiene: sigue de largo con el agua."],
+  ["Punto bajo", "Ninguna: desfogue", "Ahí no hay aire; se pone un desfogue para vaciar la línea y sacar sedimentos."],
+  ["Llegada al tanque (si no llega bajando)", "Combinada", "Sale el aire que trae la línea y entra aire cuando el tanque se vacía."],
+];
+
+export function CriterioValvulasAire() {
+  return (
+    <div className="space-y-2">
+      <p>La plataforma coloca cada válvula con la tabla de ubicación del <strong>Manual AWWA M51</strong> (la misma que traen los diagramas de los fabricantes). Donde la tabla permite dos opciones, la columna «Razón» de las válvulas recomendadas dice cuál se eligió.</p>
+      <div className="overflow-x-auto">
+        <table className="w-full text-[11px]">
+          <thead>
+            <tr className="bg-gray-50 dark:bg-gray-700 text-gray-500">
+              <th className="px-2 py-1 text-left">Lugar del perfil</th>
+              <th className="px-2 py-1 text-left">Válvula</th>
+              <th className="px-2 py-1 text-left">Por qué</th>
+            </tr>
+          </thead>
+          <tbody>
+            {CRITERIO_AWWA.map(([lugar, valvula, porque]) => (
+              <tr key={lugar} className="border-b border-gray-100 dark:border-gray-700 align-top">
+                <td className="px-2 py-1 font-medium">{lugar}</td>
+                <td className="px-2 py-1 whitespace-nowrap">{valvula}</td>
+                <td className="px-2 py-1 text-gray-600 dark:text-gray-400">{porque}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <p className="text-gray-500">Combinada = admite y expulsa mucho aire (llenado y vaciado) y además purga burbujas con la línea en presión. Admisión y expulsión = solo grandes volúmenes (llenado y vaciado). Eliminadora = solo purga burbujas con la línea en presión.</p>
+    </div>
+  );
+}
