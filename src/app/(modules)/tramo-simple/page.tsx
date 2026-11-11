@@ -160,7 +160,7 @@ export default function TramoSimplePage() {
           const a: { level: "OK" | "WARN" | "ERROR"; field: string; message: string }[] = [];
           if (recommendedDN && recRow) {
             a.push({ level: "OK", field: "DN", message: `DN recomendado: ${recommendedDN} mm — cumple V >= 0.3 m/s y P2 >= P2 mínima` });
-            if (recRow.V < 0.5) a.push({ level: "WARN", field: "V_rec", message: `AVISO: El DN ${recommendedDN} tiene V=${recRow.V.toFixed(2)} m/s (< 0.5). Cumple el mínimo absoluto (0.3) pero está por debajo del óptimo NOM (0.5-2.5). Considerar aumentar el caudal o reducir el diámetro si la presión lo permite.` });
+            if (recRow.V < 0.5) a.push({ level: "WARN", field: "V_rec", message: `AVISO: El DN ${recommendedDN} tiene V=${recRow.V.toFixed(2)} m/s (< 0.5). Cumple el mínimo absoluto (0.3) pero queda abajo del rango recomendado por MAPAS (0.5 a 2.5 m/s). Considerar aumentar el caudal o reducir el diámetro si la presión lo permite.` });
           } else {
             a.push({ level: "ERROR", field: "DN", message: "Ningún DN estándar cumple las restricciones" });
           }
@@ -382,7 +382,7 @@ export default function TramoSimplePage() {
                 value={inputs.P2min}
                 onChange={(v) => setInput("P2min", parseFloat(v) || DEFAULTS.P2min)}
                 unit="kg/cm²"
-                tooltip="Presión mínima requerida al final del tramo (CONAGUA: 1.0 kg/cm² = 10 m.c.a.)"
+                tooltip="Presión mínima requerida al final del tramo (MAPAS, Diseño de redes §3.4.2: del orden de 1.0 kg/cm² = 10 m.c.a.)"
               />
             )}
 

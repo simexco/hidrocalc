@@ -342,7 +342,7 @@ export default function ValvulasAirePage() {
             {showAdvanced && (
               <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-3 space-y-3">
                 <InputField label="Presión de operación (P₀)" value={P0} onChange={(v) => setP0(v === "" ? null : parseFloat(v))} unit="kg/cm²" tooltip="Presión al inicio de la línea. Si no la conoces, se calculará solo geometría." />
-                <InputField label="Presión mínima normativa (Pmin)" value={pressureMin} onChange={(v) => setPressureMin(parseFloat(v) || 5)} unit="m.c.a." tooltip="NOM-001-CONAGUA: mínimo absoluto 5 m.c.a. (0.5 kg/cm²), recomendado 10 m.c.a." />
+                <InputField label="Presión mínima de referencia (Pmin)" value={pressureMin} onChange={(v) => setPressureMin(parseFloat(v) || 5)} unit="m.c.a." tooltip="Línea de referencia en la gráfica. MAPAS (Diseño de redes §3.4.2) pide del orden de 10 m.c.a. en la red." />
                 <InputField label="Espaciado máximo entre válvulas (VA-E)" value={maxSpacing} onChange={(v) => setMaxSpacing(parseFloat(v) || 500)} unit="m" tooltip="Distancia entre válvulas en ascensos, descensos y tramos horizontales largos. AWWA M51 (p. 19): cada 400 a 800 m; MAPAS: 500 a 1,000 m." />
               </div>
             )}

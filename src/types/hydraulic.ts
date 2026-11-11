@@ -109,6 +109,8 @@ export interface SeriesTramo {
   DN: number | null;
   C: number;
   zEnd: number;
+  materialName?: string;  // para derivar el diametro interior real
+  pipeClass?: string;     // clase/RD del tubo
   // Minor losses
   lossMode: "accesorios" | "K" | "Le" | "percent";
   kTotal: number;

@@ -31,7 +31,7 @@ export function calculatePipeSizing(input: PipeSizingInputs & { pipeClass?: stri
       alerts.push({
         level: "WARN" as const,
         field: "V_rec",
-        message: `AVISO: DN ${recommendedDN} tiene V=${rec.V.toFixed(2)} m/s (< 0.5). Cumple mínimo absoluto (0.3) pero está por debajo del óptimo NOM (0.5-2.5). Considerar si el caudal de diseño es correcto.`,
+        message: `AVISO: DN ${recommendedDN} tiene V=${rec.V.toFixed(2)} m/s (< 0.5). Cumple mínimo absoluto (0.3) pero queda abajo del rango recomendado por MAPAS (0.5 a 2.5 m/s). Considerar si el caudal de diseño es correcto.`,
       });
     }
   } else {

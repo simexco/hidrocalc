@@ -102,8 +102,8 @@ export function DiameterComparisonTable({ rows, showPressure }: DiameterComparis
         </tbody>
       </table>
       <div className="px-3 py-2 text-[10px] text-gray-400 border-t border-gray-100 dark:border-gray-700 space-y-0.5">
-        <p><strong>V min:</strong> V {"≥"} 0.3 m/s. <strong>V max:</strong> V {"≤"} vel. maxima. <strong>J:</strong> Gradiente {"≤"} 10 m/km (NOM-001-CONAGUA).</p>
-        <p><span className="text-yellow-600">*</span> Velocidad entre 0.3 y 0.5 m/s — cumple minimo pero debajo del optimo (0.5-2.5 m/s).</p>
+        <p><strong>V min:</strong> V {"≥"} 0.3 m/s. <strong>V max:</strong> V {"≤"} vel. maxima. <strong>J:</strong> Gradiente {"≤"} 10 m/km.</p>
+        <p><span className="text-yellow-600">*</span> Velocidad entre 0.3 y 0.5 m/s — cumple el mínimo pero queda abajo del rango recomendado (0.5 a 2.5 m/s, MAPAS).</p>
       </div>
     </div>
   );

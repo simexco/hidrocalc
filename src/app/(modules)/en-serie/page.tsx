@@ -11,7 +11,7 @@ import { HydraulicProfileChart } from "@/components/hydraulic/HydraulicProfileCh
 import { ExportPDFButton } from "@/components/ui/ExportPDFButton";
 import { calculateSeriesPipes } from "@/lib/calculations/series-pipes";
 import { flowToM3s, m3sToFlow, formatNumber, mcaToKgcm2 } from "@/lib/calculations/conversions";
-import { STANDARD_DNS, STANDARD_DNS_LABELED, MATERIALS } from "@/lib/constants";
+import { STANDARD_DNS, STANDARD_DNS_LABELED, MATERIALS, getPipeClassesForMaterial, getRealInternalDiameter } from "@/lib/constants";
 import { saveFormState, loadFormState } from "@/lib/storage/form-persistence";
 import { ResetButton } from "@/components/ui/ResetButton";
 import ListaMaterialesSIMEX, { type SIMEXAcc } from "@/components/ListaMaterialesSIMEX";
@@ -79,7 +79,8 @@ export default function EnSeriePage() {
       name: `Tramo ${inputs.tramos.length + 1}`,
       L: null,
       DN: 150,
-      C: 140,
+      C: 150,
+      materialName: "PVC Inglés",
       zEnd: 0,
       lossMode: "accesorios",
       kTotal: 0,
@@ -219,16 +220,36 @@ export default function EnSeriePage() {
                   <div className="space-y-1">
                     <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Material</label>
                     <select
-                      value={MATERIALS.find(m => m.c === t.C)?.name || "Personalizado"}
+                      value={t.materialName ?? MATERIALS.find(m => m.c === t.C)?.name ?? "Personalizado"}
                       onChange={(e) => {
                         const mat = MATERIALS.find(m => m.name === e.target.value);
-                        if (mat) updateTramo(t.id, { C: mat.c });
+                        if (mat) updateTramo(t.id, { C: mat.c, materialName: mat.name, pipeClass: undefined });
                       }}
                       className="w-full px-2 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 dark:text-white"
                     >
                       {MATERIALS.map((m) => <option key={m.name} value={m.name}>{m.name}</option>)}
                     </select>
                   </div>
+                  {(() => {
+                    const mat = t.materialName ?? MATERIALS.find(m => m.c === t.C)?.name ?? "";
+                    const clases = getPipeClassesForMaterial(mat);
+                    if (!clases) return null;
+                    const di = t.DN != null ? getRealInternalDiameter(mat, t.DN, t.pipeClass) : null;
+                    return (
+                      <div className="space-y-1">
+                        <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Clase</label>
+                        <select
+                          value={t.pipeClass ?? ""}
+                          onChange={(e) => updateTramo(t.id, { materialName: mat, pipeClass: e.target.value || undefined })}
+                          className="w-full px-2 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 dark:text-white"
+                        >
+                          <option value="">Selecciona la clase</option>
+                          {clases.classes.map((c) => <option key={c.clase} value={c.clase}>{c.clase}</option>)}
+                        </select>
+                        <p className="text-[10px] text-gray-400">{di != null ? `Se calcula con el Ø interior real: ${di} mm` : "Sin clase se calcula con el DN nominal"}</p>
+                      </div>
+                    );
+                  })()}
                   <InputField label="Cota final" value={t.zEnd} onChange={(v) => updateTramo(t.id, { zEnd: parseFloat(v) || 0 })} unit="m" tooltip="Elevacion al final de este tramo (m.s.n.m.)" />
                   {inputs.variableFlow && (
                     <InputField label={`Caudal (Q, ${inputs.flowUnit})`} value={t.Q != null ? Math.round(m3sToFlow(t.Q, inputs.flowUnit) * 10000) / 10000 : null} onChange={(v) => updateTramo(t.id, { Q: v === "" ? null : flowToM3s(parseFloat(v), inputs.flowUnit) })} tooltip="Caudal de este tramo, en la misma unidad seleccionada arriba" />
@@ -241,7 +262,7 @@ export default function EnSeriePage() {
                     <ListaMaterialesSIMEX
                       mode="selector"
                       dnMM={t.DN}
-                      materialRaw={MATERIALS.find(m => m.c === t.C)?.name}
+                      materialRaw={t.materialName ?? MATERIALS.find(m => m.c === t.C)?.name}
                       externalAccs={simexPorTramo[t.id] || []}
                       onAccsChange={(accs) => setSimexPorTramo(prev => ({...prev, [t.id]: accs}))}
                     />
@@ -371,7 +392,7 @@ export default function EnSeriePage() {
                     {inputs.tramos.map((t, i) => {
                       if (!t.DN || (simexPorTramo[t.id]?.length ?? 0) === 0) return null;
                       const r = results?.tramoResults[i];
-                      const matName = MATERIALS.find(m => m.c === t.C)?.name;
+                      const matName = t.materialName ?? MATERIALS.find(m => m.c === t.C)?.name;
                       return (
                         <div key={`simex-table-${t.id}`} className="p-4">
                           <div className="flex items-center gap-2 mb-3">

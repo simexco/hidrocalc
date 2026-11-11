@@ -15,7 +15,7 @@ interface FormulaDetailProps {
   formula: string;      // "V = Q / A = Q / (pi * D^2 / 4)"
   steps: FormulaStep[];
   reference: string;    // "Ecuacion de continuidad"
-  norm?: string;        // "NOM-001-CONAGUA-2011"
+  norm?: string;        // fuente normativa, p. ej. "MAPAS, Conducciones §3.2"
 }
 
 export function FormulaDetail({ title, value, unit, formula, steps, reference, norm }: FormulaDetailProps) {
@@ -85,7 +85,7 @@ export function hazenWilliamsFormula(Q_m3s: number, D_mm: number, L: number, C: 
       { result: `hf = ${hf.toFixed(3)} m` },
     ],
     reference: "Formula de Hazen-Williams",
-    norm: "NOM-001-CONAGUA-2011 / AWWA M11",
+    norm: "AWWA M11",
   };
 }
 
@@ -100,7 +100,6 @@ export function gradientFormula(hf: number, L: number, J_km: number) {
       { label: J_km <= 5 ? "Optimo (< 5 m/km)" : J_km <= 10 ? "Aceptable (< 10 m/km)" : "Alto (> 10 m/km) — revisar diametro" },
     ],
     reference: "Gradiente hidraulico",
-    norm: "NOM-001-CONAGUA-2011: J optimo < 5, max 10 m/km",
   };
 }
 
@@ -119,7 +118,7 @@ export function pressureFormula(P1_kgcm2: number, z1: number, z2: number, hf: nu
       { label: "Conversion: 1 kg/cm² = 10 m.c.a." },
     ],
     reference: "Ecuacion de Bernoulli simplificada",
-    norm: "NOM-001-CONAGUA-2011: P min = 1.0 kg/cm²",
+    norm: "MAPAS, Diseño de redes §3.4.2: presión mínima del orden de 10 m (1.0 kg/cm²)",
   };
 }
 

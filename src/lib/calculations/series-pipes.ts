@@ -5,7 +5,7 @@
 
 import { calculateHazenWilliams } from "./hazen-williams";
 import type { SeriesTramo, SeriesTramoResult, SeriesPipeResults, Alert } from "@/types/hydraulic";
-import { G } from "@/lib/constants";
+import { G, getRealInternalDiameter } from "@/lib/constants";
 
 /**
  * Calculate minor losses based on the selected mode.
@@ -80,7 +80,8 @@ export function calculateSeriesPipes(
       continue;
     }
 
-    const D = tramo.DN / 1000;
+    // Diametro INTERIOR real (material + clase); sin clase, el DN nominal
+    const D = (getRealInternalDiameter(tramo.materialName ?? "", tramo.DN, tramo.pipeClass) ?? tramo.DN) / 1000;
     const zEnd = tramo.zEnd;
 
     const result = calculateHazenWilliams({
