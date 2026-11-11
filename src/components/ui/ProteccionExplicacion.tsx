@@ -70,28 +70,37 @@ export function PorQueVentosasVacio() {
   );
 }
 
-// Criterio de ubicación de válvulas de aire: tabla AWWA M51 (la misma que publican los
-// fabricantes en su diagrama de ubicación). La plataforma aplica exactamente estas reglas.
-const CRITERIO_AWWA: [string, string, string][] = [
-  ["Descarga de bomba (antes de la check)", "Admisión y expulsión", "Al arrancar la bomba sale de golpe el aire de la columna; al parar, entra aire para que no se haga vacío."],
-  ["Inicio de la línea por gravedad, si baja desde el tanque o arranca plana", "Combinada", "Ahí el inicio es un punto alto: por ahí sale el aire al llenar y entra al vaciar. Si la línea sube desde el tanque, no lleva."],
-  ["Punto alto", "Combinada", "Ahí se junta el aire durante la operación y ahí se forma el vacío al vaciar."],
-  ["Inicio de tramo horizontal (la subida termina)", "Combinada", "El aire que sube con el agua se detiene donde la pendiente se acaba."],
-  ["Fin de tramo horizontal", "Combinada", "El aire que avanzó por el tramo plano se acumula donde vuelve a cambiar la pendiente."],
-  ["Disminuye la pendiente de subida", "Admisión y expulsión (o combinada)", "El aire se frena donde la subida se suaviza; al vaciar, entra aire por ahí."],
-  ["Aumenta la pendiente de bajada", "Combinada", "El agua se separa del tubo donde la bajada se empina: riesgo de vacío y de bolsas de aire."],
-  ["Tramo horizontal largo (cada 500 m aprox.)", "Eliminadora; combinada si el golpe de ariete hace vacío", "Purga las burbujas que se juntan en operación. Si hay vacío, la eliminadora no deja entrar aire suficiente."],
-  ["Ascenso largo (cada 500 m aprox.)", "Admisión y expulsión (o combinada)", "Mucho volumen de aire que sacar al llenar y meter al vaciar."],
-  ["Descenso largo (cada 500 m aprox.)", "Eliminadora; combinada si el golpe de ariete hace vacío o si aún no se calcula", "M51 admite las dos. La eliminadora purga el aire en operación; si el golpe hace vacío, hace falta la combinada para dejar entrar aire."],
-  ["Aumenta la pendiente de subida / disminuye la de bajada", "Ninguna", "Ahí el aire no se detiene: sigue de largo con el agua."],
-  ["Punto bajo", "Ninguna: desfogue", "Ahí no hay aire; se pone un desfogue para vaciar la línea y sacar sedimentos."],
-  ["Llegada al tanque (si no llega bajando)", "Admisión y expulsión con descarga libre; combinada si llega ahogada", "M51 admite las dos. Con descarga libre el aire sale con el agua; si llega ahogada o con válvula de llenado, el aire se junta al final y hace falta la purga."],
+// Criterio de ubicación de válvulas de aire: AWWA M51 (2a. ed.), figura 3-1 (p. 18) y lista de
+// ubicaciones (p. 19). Donde la tabla da dos opciones va combinada: M51 recomienda usar combinadas
+// siempre que sea posible (p. 44). Columnas: lugar, válvula, por qué, dónde lo dice M51.
+const CRITERIO_AWWA: [string, string, string, string][] = [
+  ["Descarga de bomba (antes de la check)", "Combinada (o admisión y expulsión). Pozo: combinada con cierre lento", "Al arrancar la bomba sale de golpe el aire de la columna; al parar, entra aire para que no se haga vacío.", "Fig. 3-1 (p. 18); pozos: p. 19 y 42"],
+  ["Inicio de la línea por gravedad, si baja desde el tanque o arranca plana", "Combinada", "Ahí el inicio es un punto alto o un inicio de tramo horizontal. Si la línea sube desde el tanque, no lleva.", "Punto alto e inicio de horizontal: fig. 3-1 y p. 19"],
+  ["Punto alto", "Combinada", "Ahí se junta el aire durante la operación y ahí se forma el vacío al vaciar.", "Fig. 3-1 (p. 18) y p. 19"],
+  ["Inicio de tramo horizontal (la subida termina)", "Combinada", "El aire que sube con el agua se detiene donde la pendiente se acaba.", "Fig. 3-1 (p. 18) y p. 19"],
+  ["Fin de tramo horizontal", "Combinada", "El aire que avanzó por el tramo plano se acumula donde vuelve a cambiar la pendiente.", "Fig. 3-1 (p. 18) y p. 19"],
+  ["Disminuye la pendiente de subida", "Combinada (o admisión y expulsión)", "El aire se frena donde la subida se suaviza; al vaciar, entra aire por ahí.", "Fig. 3-1 (p. 18) y p. 19"],
+  ["Aumenta la pendiente de bajada", "Combinada", "El agua se separa del tubo donde la bajada se empina: riesgo de vacío y de bolsas de aire.", "Fig. 3-1 (p. 18) y p. 19"],
+  ["Tramo horizontal largo, cada 400 a 800 m", "Combinada (o eliminadora)", "Purga las burbujas que se juntan en operación; la combinada además deja entrar aire si hay vacío.", "Fig. 3-1 (p. 18) y p. 19"],
+  ["Ascenso largo, cada 400 a 800 m", "Combinada (o admisión y expulsión)", "Mucho volumen de aire que sacar al llenar y meter al vaciar.", "Fig. 3-1 (p. 18) y p. 19"],
+  ["Descenso largo, cada 400 a 800 m", "Combinada (o eliminadora)", "En las bajadas se forma el vacío al vaciar; la combinada además purga en operación.", "Fig. 3-1 (p. 18) y p. 19"],
+  ["Aumenta la pendiente de subida / disminuye la de bajada", "Ninguna", "Ahí el aire no se detiene: sigue de largo con el agua.", "Fig. 3-1 (p. 18)"],
+  ["Punto bajo", "Ninguna: desfogue", "Ahí no hay aire; se pone un desfogue para vaciar la línea y sacar sedimentos.", "Fig. 3-1 (p. 18), «drain valve»; MAPAS §3.1.4"],
+  ["Llegada al tanque", "Descarga libre: ninguna. Ahogada: combinada", "Con descarga libre el extremo está abierto. Ahogada o con válvula de llenado, la llegada funciona como punto alto.", "Fig. 3-1 (p. 18): la línea entra libre al tanque sin válvula"],
+  ["Donde el golpe de ariete hace vacío", "Combinada con dispositivo de cierre lento", "Deja entrar aire y lo saca despacio, para no provocar un segundo golpe. Se confirma con análisis de transitorios.", "p. 19, 34 y 37-38"],
+];
+
+const CRITERIO_TAMANO: [string, string][] = [
+  ["Tamaño de combinada y de admisión y expulsión", "El orificio grande debe sacar el aire al llenar la línea a 0.3 m/s y dejar entrar el aire si la línea se rompe y se vacía por gravedad, a 5 psi de vacío. Manda el mayor de los dos. AWWA M51, cap. 4: llenado p. 26-28, ruptura p. 28-31, tablas 4-2 y 4-3."],
+  ["Tamaño de la eliminadora", "Purga el aire que trae el agua en operación (M51 toma el 2 % del gasto, p. 23-26): basta el orificio chico."],
+  ["Presión de sello", "Las válvulas se prueban a 20 psi (14 m) como mínimo; si operan abajo, se especifica al fabricante (M51 p. 35-36)."],
+  ["Instalación", "En líneas de 12\" o menos, sobre una tee del diámetro de la línea con reducción a la válvula y válvula de seccionamiento abajo (M51 p. 46-47, figura 6-1)."],
 ];
 
 export function CriterioValvulasAire() {
   return (
     <div className="space-y-2">
-      <p>La plataforma coloca cada válvula con la tabla de ubicación del <strong>Manual AWWA M51</strong> (la misma que traen los diagramas de los fabricantes). Donde la tabla permite dos opciones, la columna «Razón» de las válvulas recomendadas dice cuál se eligió.</p>
+      <p>La plataforma coloca cada válvula con la tabla de ubicación del <strong>Manual AWWA M51</strong> (2a. edición, reafirmado en 2025). Donde la tabla permite dos opciones pone combinada, como recomienda el manual (p. 44); se puede pedir la opción sencilla.</p>
       <div className="overflow-x-auto">
         <table className="w-full text-[11px]">
           <thead>
@@ -99,19 +108,26 @@ export function CriterioValvulasAire() {
               <th className="px-2 py-1 text-left">Lugar del perfil</th>
               <th className="px-2 py-1 text-left">Válvula</th>
               <th className="px-2 py-1 text-left">Por qué</th>
+              <th className="px-2 py-1 text-left">Dónde lo dice M51</th>
             </tr>
           </thead>
           <tbody>
-            {CRITERIO_AWWA.map(([lugar, valvula, porque]) => (
+            {CRITERIO_AWWA.map(([lugar, valvula, porque, cita]) => (
               <tr key={lugar} className="border-b border-gray-100 dark:border-gray-700 align-top">
                 <td className="px-2 py-1 font-medium">{lugar}</td>
-                <td className="px-2 py-1 whitespace-nowrap">{valvula}</td>
+                <td className="px-2 py-1">{valvula}</td>
                 <td className="px-2 py-1 text-gray-600 dark:text-gray-400">{porque}</td>
+                <td className="px-2 py-1 text-gray-500">{cita}</td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
+      <ul className="space-y-1">
+        {CRITERIO_TAMANO.map(([t, d]) => (
+          <li key={t}><strong>{t}:</strong> <span className="text-gray-600 dark:text-gray-400">{d}</span></li>
+        ))}
+      </ul>
       <p className="text-gray-500">Con cotas satelitales (mapa o KML) las lomas de menos de 5 m no cuentan: el SRTM tiene 16 m de precisión vertical (90 %, USGS) y una loma menor no se distingue del error. Es criterio de la plataforma. Con topografía de campo (CSV o Excel) se toman en cuenta desde 1 m.</p>
       <p className="text-gray-500">Combinada = admite y expulsa mucho aire (llenado y vaciado) y además purga burbujas con la línea en presión. Admisión y expulsión = solo grandes volúmenes (llenado y vaciado). Eliminadora = solo purga burbujas con la línea en presión.</p>
     </div>

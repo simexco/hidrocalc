@@ -20,6 +20,17 @@ import { Desplegable, CriterioValvulasAire } from "@/components/ui/ProteccionExp
 
 const DN_LIST = STANDARD_DNS_LABELED;
 
+// Coeficiente de Chezy para el tamaño por ruptura de línea (AWWA M51, ec. 4-6, p. 31):
+// 190 PVC, 110 hierro, 130 acero, 120 concreto. Plásticos no listados (PEAD): 190, el más
+// liso, que da el mayor flujo y por tanto la válvula más grande (lado seguro).
+function chezyDeMaterial(nombre: string): number {
+  const n = nombre.toLowerCase();
+  if (n.includes("hierro") || n.includes("fierro") || n.includes("fundido") || n.includes("dúctil") || n.includes("ductil")) return 110;
+  if (n.includes("acero")) return 130;
+  if (n.includes("concreto")) return 120;
+  return 190;
+}
+
 export default function ValvulasAirePage() {
   const { proyecto, setProyecto } = useNombreProyecto();
   const [projectName, setProjectName] = useState("Línea de conducción");
@@ -101,6 +112,10 @@ export default function ValvulasAirePage() {
   const golpeDeltaH = useProjectStore((s) => s.project.golpeDeltaH ?? null);
   // Como llega el agua al tanque: decide admision y expulsion o combinada en la llegada
   const llegadaLibre = useProjectStore((s) => s.project.llegadaLibre ?? null);
+  // Bombeo desde pozo: combinada con cierre lento en la descarga (AWWA M51 p. 19 y 42)
+  const esPozo = useProjectStore((s) => s.project.fuenteAgua === "pozo");
+  // Donde AWWA M51 da dos opciones: combinada (default, M51 p. 44) o la opción sencilla
+  const opcionSencilla = useProjectStore((s) => s.project.aireOpcionSencilla === true);
   useEffect(() => {
     if (!results) return;
     const fullName = (type: string) => type === "VA-C" ? "Valvula de aire combinada" : type === "VA-A" ? "Valvula de admision y expulsion (VAEA)" : "Valvula eliminadora de aire";
@@ -121,10 +136,10 @@ export default function ValvulasAirePage() {
     // Hidraulica con el Ø interior REAL del tubo (material+DN+clase); el nominal solo
     // dimensiona las valvulas. Sin clase elegida cae al nominal (comportamiento previo).
     const diReal = getRealInternalDiameter(materialName, DN, pipeClass);
-    const input: AirValveInputs = { projectName, Q, DN_mm: DN, diametroInterior_mm: diReal, C, P0_kgcm2: P0, pressureMin, maxSpacing, vertices, esBombeo, cotasSatelitales, golpeDeltaH, llegadaLibre };
+    const input: AirValveInputs = { projectName, Q, DN_mm: DN, diametroInterior_mm: diReal, C, P0_kgcm2: P0, pressureMin, maxSpacing, vertices, esBombeo, cotasSatelitales, golpeDeltaH, llegadaLibre, esPozo, opcionSencilla, chezyC: chezyDeMaterial(materialName) };
     const res = calculateAirValves(input);
     setResults(res);
-  }, [projectName, rawQ, flowUnit, DN, materialName, pipeClass, C, P0, pressureMin, maxSpacing, vertices, esBombeo, cotasSatelitales, golpeDeltaH, llegadaLibre]);
+  }, [projectName, rawQ, flowUnit, DN, materialName, pipeClass, C, P0, pressureMin, maxSpacing, vertices, esBombeo, cotasSatelitales, golpeDeltaH, llegadaLibre, esPozo, opcionSencilla]);
 
   useEffect(() => {
     clearTimeout(debounceRef.current);
@@ -309,8 +324,13 @@ export default function ValvulasAirePage() {
                 <option value="libre">Cae libre al tanque (descarga libre)</option>
                 <option value="ahogada">Ahogada o con válvula de llenado (flotador, altitud)</option>
               </select>
-              <p className="text-[10px] text-gray-400">Con descarga libre, en la llegada basta una válvula de admisión y expulsión; si llega ahogada o con válvula de llenado, va combinada (AWWA M51).</p>
+              <p className="text-[10px] text-gray-400">Con descarga libre la llegada no lleva válvula de aire (AWWA M51, figura 3-1); si llega ahogada o con válvula de llenado, va combinada.</p>
             </div>
+
+            <label className="flex items-start gap-2 text-[11px] text-gray-600 dark:text-gray-400">
+              <input type="checkbox" className="mt-0.5" checked={opcionSencilla} onChange={(e) => patchProject({ aireOpcionSencilla: e.target.checked })} />
+              <span>Usar la opción más sencilla donde AWWA M51 da dos (admisión y expulsión o eliminadora en lugar de combinada). Por defecto va combinada: M51 recomienda usar combinadas siempre que sea posible (p. 44).</span>
+            </label>
 
             <InputWarnings warnings={validateHydraulicInputs({ Q_ls: rawQ, DN_mm: DN, P1_kgcm2: P0 })} />
 
@@ -321,7 +341,7 @@ export default function ValvulasAirePage() {
               <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-3 space-y-3">
                 <InputField label="Presión de operación (P₀)" value={P0} onChange={(v) => setP0(v === "" ? null : parseFloat(v))} unit="kg/cm²" tooltip="Presión al inicio de la línea. Si no la conoces, se calculará solo geometría." />
                 <InputField label="Presión mínima normativa (Pmin)" value={pressureMin} onChange={(v) => setPressureMin(parseFloat(v) || 5)} unit="m.c.a." tooltip="NOM-001-CONAGUA: mínimo absoluto 5 m.c.a. (0.5 kg/cm²), recomendado 10 m.c.a." />
-                <InputField label="Espaciado máximo entre válvulas (VA-E)" value={maxSpacing} onChange={(v) => setMaxSpacing(parseFloat(v) || 500)} unit="m" tooltip="Distancia máxima entre válvulas eliminadoras en tramos rectos. Práctica usual: cada 500 m (AWWA M51: 500-800 m)." />
+                <InputField label="Espaciado máximo entre válvulas (VA-E)" value={maxSpacing} onChange={(v) => setMaxSpacing(parseFloat(v) || 500)} unit="m" tooltip="Distancia entre válvulas en ascensos, descensos y tramos horizontales largos. AWWA M51 (p. 19): cada 400 a 800 m; MAPAS: 500 a 1,000 m." />
               </div>
             )}
           </div>
