@@ -84,7 +84,7 @@ const CRITERIO_AWWA: [string, string, string, string][] = [
   ["Aumenta la pendiente de bajada", "Combinada", "El agua se separa del tubo donde la bajada se empina: riesgo de vacío y de bolsas de aire.", "Fig. 3-1 (p. 18) y p. 19"],
   ["Tramo horizontal largo, cada 400 a 800 m", "Eliminadora; combinada si el golpe hace vacío", "Purga las burbujas que se juntan en operación. Si hay vacío, la eliminadora no deja entrar aire suficiente.", "Fig. 3-1 (p. 18) y p. 19"],
   ["Ascenso largo, cada 400 a 800 m", "Admisión y expulsión (M51 permite combinada)", "Mucho volumen de aire que sacar al llenar y meter al vaciar.", "Fig. 3-1 (p. 18) y p. 19"],
-  ["Descenso largo, cada 400 a 800 m", "Eliminadora; combinada si el golpe hace vacío", "Purga el aire en operación. Si el golpe hace vacío, la combinada deja entrar aire. Mientras no se calcule el golpe, va combinada.", "Fig. 3-1 (p. 18) y p. 19"],
+  ["Descenso largo, cada 400 a 800 m", "Eliminadora; combinada si el golpe hace vacío", "Purga el aire en operación. Si el golpe hace vacío, la combinada deja entrar aire.", "Fig. 3-1 (p. 18) y p. 19"],
   ["Aumenta la pendiente de subida / disminuye la de bajada", "Ninguna", "Ahí el aire no se detiene: sigue de largo con el agua.", "Fig. 3-1 (p. 18)"],
   ["Punto bajo", "Ninguna: desfogue", "Ahí no hay aire; se pone un desfogue para vaciar la línea y sacar sedimentos.", "Fig. 3-1 (p. 18), «drain valve»; MAPAS §3.1.4"],
   ["Llegada al tanque", "Descarga libre: ninguna. Ahogada: combinada", "Con descarga libre el extremo está abierto. Ahogada o con válvula de llenado, la llegada funciona como punto alto.", "Fig. 3-1 (p. 18): la línea entra libre al tanque sin válvula"],
