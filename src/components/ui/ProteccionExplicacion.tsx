@@ -95,7 +95,6 @@ const CRITERIO_TAMANO: [string, string][] = [
   ["Tamaño de combinada y de admisión y expulsión", "El orificio grande debe sacar el aire al llenar la línea a 0.3 m/s y dejar entrar el aire si la línea se rompe y se vacía por gravedad, a 5 psi de vacío. Manda el mayor de los dos. AWWA M51, cap. 4: llenado p. 26-28, ruptura p. 28-31, tablas 4-2 y 4-3."],
   ["Un solo tamaño por línea", "El cálculo da un tamaño en cada punto, porque depende de la pendiente del tubo. Se pone en todas el mayor de la línea: una válvula más grande que la calculada también cumple con M51, y así se compra un solo modelo."],
   ["Tamaño de la eliminadora", "Purga el aire que trae el agua en operación (M51 toma el 2 % del gasto, p. 23-26): basta el orificio chico."],
-  ["Presión de sello", "Las válvulas se prueban a 20 psi (14 m) como mínimo; si operan abajo, se especifica al fabricante (M51 p. 35-36)."],
   ["Instalación", "En líneas de 12\" o menos, sobre una tee del diámetro de la línea con reducción a la válvula y válvula de seccionamiento abajo (M51 p. 46-47, figura 6-1)."],
 ];
 
