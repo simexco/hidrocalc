@@ -226,6 +226,7 @@ export default function ValvulasAirePage() {
 
   // Dominio Y relativo: se ajusta a la variacion real del terreno para que
   // los desniveles pequenos se vean claros (no escalado al valor absoluto de la cota).
+  const hayPresion = chartData.some((d) => d.presion != null);
   const yDomain = (() => {
     if (chartData.length < 2) return [0, 100] as [number, number];
     const cotas = chartData.map((d) => d.cota);
@@ -410,10 +411,10 @@ export default function ValvulasAirePage() {
                   ],
                   alerts: results.alerts.map((a) => ({ level: "WARN", message: a })),
                   tableData: {
-                    head: ["Distancia (m)", "Cota (m)", "Presión (m.c.a.)", "Tipo", "Cuerpo", "Orificio", "Presión nominal (PN)", "Razón"],
+                    head: ["Distancia (m)", "Cota (m)", "Presión (m.c.a.)", "Tipo", "Tamaño", "Presión nominal (PN)", "Razón"],
                     body: results.valves.map((v) => [
                       formatNumber(v.dist, 0), formatNumber(v.cota, 1), v.pressure != null ? formatNumber(v.pressure, 1) : "—",
-                      v.type, v.bodySize, v.orificeSize, v.pn, v.reason,
+                      v.type, v.bodySize, v.pn, v.reason,
                     ]),
                   },
                 };
@@ -446,18 +447,19 @@ export default function ValvulasAirePage() {
             <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
               <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">Perfil y ubicación de válvulas</h3>
               <ResponsiveContainer width="100%" height={320}>
-                <ComposedChart data={chartData} margin={{ top: 5, right: 20, bottom: 20, left: 10 }}>
+                <ComposedChart data={chartData} margin={{ top: 5, right: 10, bottom: 20, left: 10 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                  <XAxis dataKey="dist" label={{ value: "Distancia (m)", position: "insideBottom", offset: -10, style: { fontSize: 11 } }} tick={{ fontSize: 10 }} />
+                  <XAxis dataKey="dist" type="number" domain={["dataMin", "dataMax"]} label={{ value: "Distancia (m)", position: "insideBottom", offset: -10, style: { fontSize: 11 } }} tick={{ fontSize: 10 }} />
                   <YAxis
+                    yAxisId="e"
                     domain={yDomain}
                     allowDataOverflow
                     label={{ value: "Elevación (m)", angle: -90, position: "insideLeft", style: { fontSize: 11 } }}
                     tick={{ fontSize: 10 }}
                   />
                   <Tooltip />
-                  <Legend />
-                  <Area type="monotone" dataKey="cota" baseValue="dataMin" stroke="#1C3D5A" fill="#1C3D5A" fillOpacity={0.15} strokeWidth={2} name="Terreno"
+                  <Legend verticalAlign="top" height={28} />
+                  <Area yAxisId="e" type="linear" dataKey="cota" baseValue="dataMin" stroke="#1C3D5A" fill="#1C3D5A" fillOpacity={0.15} strokeWidth={2} name="Terreno"
                     dot={(props: Record<string, unknown>) => {
                       const { cx, cy, payload } = props as { cx: number; cy: number; payload: { valveType?: string | null; valveReason?: string | null; desague?: boolean } };
                       if (payload?.desague && !payload?.valveType) {
@@ -481,10 +483,9 @@ export default function ValvulasAirePage() {
                       );
                     }}
                   />
-                  {chartData.some((d) => d.presion != null) && (
-                    <Line type="monotone" dataKey="presion" stroke="#60a5fa" strokeWidth={1.5} strokeDasharray="5 3" dot={false} name="Presion (m.c.a.)" />
-                  )}
-                  <ReferenceLine y={pressureMin} stroke="#f59e0b" strokeDasharray="3 3" label={{ value: `Presión mínima (Pmin) ${pressureMin}`, position: "right", style: { fontSize: 9 } }} />
+                  {hayPresion && <YAxis yAxisId="p" orientation="right" domain={[0, "auto"]} tick={{ fontSize: 10 }} label={{ value: "Presión (m.c.a.)", angle: 90, position: "insideRight", style: { fontSize: 11 } }} />}
+                  {hayPresion && <Line yAxisId="p" type="linear" dataKey="presion" stroke="#60a5fa" strokeWidth={1.5} strokeDasharray="5 3" dot={false} name="Presión (m.c.a.)" />}
+                  {hayPresion && <ReferenceLine yAxisId="p" y={pressureMin} stroke="#f59e0b" strokeDasharray="3 3" label={{ value: `Pmin ${pressureMin}`, position: "insideTopLeft", style: { fontSize: 9 } }} />}
                 </ComposedChart>
               </ResponsiveContainer>
               {/* Valve legend */}
@@ -512,8 +513,7 @@ export default function ValvulasAirePage() {
                       <th className="px-2 py-2 text-right">Cota</th>
                       <th className="px-2 py-2 text-right">Presión (m.c.a.)</th>
                       <th className="px-2 py-2 text-center">Tipo</th>
-                      <th className="px-2 py-2 text-center">Cuerpo</th>
-                      <th className="px-2 py-2 text-center">Orificio</th>
+                      <th className="px-2 py-2 text-center">Tamaño</th>
                       <th className="px-2 py-2 text-center">Presión nominal (PN)</th>
                       <th className="px-2 py-2 text-left">Razón</th>
                     </tr>
@@ -527,7 +527,6 @@ export default function ValvulasAirePage() {
                         <td className="px-2 py-1.5 text-right font-mono">{v.pressure != null ? formatNumber(v.pressure, 1) : "—"}</td>
                         <td className="px-2 py-1.5 text-center"><span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${typeBadge(v.type)}`}>{v.type}</span></td>
                         <td className="px-2 py-1.5 text-center font-mono" title={v.sizing}>{v.bodySize}</td>
-                        <td className="px-2 py-1.5 text-center font-mono">{v.orificeSize}</td>
                         <td className="px-2 py-1.5 text-center">{v.pn}</td>
                         <td className="px-2 py-1.5 text-gray-600 dark:text-gray-400">{v.reason}{v.cierreLento && <span className="ml-1 text-[10px] px-1.5 py-0.5 rounded bg-orange-100 text-orange-700">con cierre lento</span>}{v.note && <span className="text-[10px] text-gray-400 ml-1">({v.note})</span>}</td>
                       </tr>
