@@ -13,7 +13,7 @@ import { ExportPDFButton } from "@/components/ui/ExportPDFButton";
 import ListaMaterialesSIMEX, { type SIMEXAcc } from "@/components/ListaMaterialesSIMEX";
 import { calculateHazenWilliams, findMaxFlow, compareDiameters } from "@/lib/calculations/hazen-williams";
 import { flowToM3s, m3sToFlow, formatNumber, mcaToKgcm2 } from "@/lib/calculations/conversions";
-import { STANDARD_DNS, STANDARD_DNS_LABELED, MATERIALS, DEFAULTS, getPipeClassesForMaterial, CLASE_RD_HELP } from "@/lib/constants";
+import { STANDARD_DNS, STANDARD_DNS_LABELED, MATERIALS, DEFAULTS, getPipeClassesForMaterial, CLASE_RD_HELP, getRealInternalDiameter } from "@/lib/constants";
 import { saveFormState, loadFormState } from "@/lib/storage/form-persistence";
 import { ResetButton } from "@/components/ui/ResetButton";
 import { FormulaDetail, velocityFormula, hazenWilliamsFormula, gradientFormula, pressureFormula } from "@/components/ui/FormulaDetail";
@@ -55,6 +55,8 @@ export default function TramoSimplePage() {
   // Reactive calculation with debounce
   const runCalculation = useCallback(() => {
     const { mode, rawQ, flowUnit, DN, L, C, P1: P1_kgcm2, z1, z2, P2min: P2min_kgcm2, maxVelocity, fittings } = inputs;
+    // Diametro INTERIOR real (material + clase); sin clase se usa el DN nominal
+    const diOf = (dn: number) => getRealInternalDiameter(inputs.materialName, dn, pipeClass);
 
     // Convert kg/cm² to m.c.a. for engine (1 kg/cm² = 10 m.c.a.)
     const P1 = P1_kgcm2 != null && isFinite(P1_kgcm2) ? P1_kgcm2 * 10 : null;
@@ -71,7 +73,7 @@ export default function TramoSimplePage() {
         return;
       }
       const Q = flowToM3s(rawQ, flowUnit);
-      const D = DN / 1000;
+      const D = (diOf(DN) ?? DN) / 1000;
       const result = calculateHazenWilliams({
         Q, D, L, C, P1, z1, z2, useEstimatedHm: true,
       });
@@ -110,7 +112,7 @@ export default function TramoSimplePage() {
         setResults(null);
         return;
       }
-      const D = DN / 1000;
+      const D = (diOf(DN) ?? DN) / 1000;
       const res = findMaxFlow(D, L, C, P1, P2min, z1, z2, fittings.length > 0 ? fittings : undefined);
       if (!res) { setResults(null); return; }
 
@@ -136,7 +138,7 @@ export default function TramoSimplePage() {
         return;
       }
       const Q = flowToM3s(rawQ, flowUnit);
-      const { rows, recommendedDN } = compareDiameters(Q, L, C, P1, P2min ?? DEFAULTS.P2min, z1, z2, maxVelocity, STANDARD_DNS);
+      const { rows, recommendedDN } = compareDiameters(Q, L, C, P1, P2min ?? DEFAULTS.P2min, z1, z2, maxVelocity, STANDARD_DNS, diOf);
 
       // Get full result for recommended DN
       const recRow = rows.find((r) => r.recommended);
@@ -168,7 +170,7 @@ export default function TramoSimplePage() {
         Qmax: null, diameterComparison: rows, recommendedDN,
       });
     }
-  }, [inputs, setResults]);
+  }, [inputs, pipeClass, setResults]);
 
   useEffect(() => {
     clearTimeout(debounceRef.current);
@@ -359,7 +361,7 @@ export default function TramoSimplePage() {
                       <option key={c.clase} value={c.clase}>{c.clase} — {(c.pn / 0.9807).toFixed(1)} kg/cm²</option>
                     ))}
                   </select>
-                  {!pipeClass && <p className="text-[10px] text-yellow-600">Selecciona la clase para verificar resistencia</p>}
+                  {!pipeClass && <p className="text-[10px] text-yellow-600">Selecciona la clase para verificar resistencia y usar el diámetro interior real (sin clase se calcula con el DN nominal)</p>}
                   <p className="text-[10px] text-gray-400">{CLASE_RD_HELP}</p>
                 </div>
               );

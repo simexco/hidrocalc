@@ -11,7 +11,7 @@ import { ExportPDFButton } from "@/components/ui/ExportPDFButton";
 import { validateHydraulicInputs, InputWarnings } from "@/components/ui/InputWarning";
 import { calculatePumpOperation } from "@/lib/calculations/pump-operation";
 import { formatNumber } from "@/lib/calculations/conversions";
-import { STANDARD_DNS, STANDARD_DNS_LABELED, MATERIALS, getPipeClassesForMaterial, CLASE_RD_HELP } from "@/lib/constants";
+import { STANDARD_DNS, STANDARD_DNS_LABELED, MATERIALS, getPipeClassesForMaterial, CLASE_RD_HELP, getRealInternalDiameter } from "@/lib/constants";
 import { saveFormState, loadFormState } from "@/lib/storage/form-persistence";
 import { ResetButton } from "@/components/ui/ResetButton";
 import type { PumpInputMethod, PumpPoint } from "@/types/hydraulic";
@@ -50,9 +50,11 @@ export default function BombeoPage() {
   const runCalc = useCallback(() => {
     // Hs = Hg + P2_requerida (converted to m.c.a.)
     const Hs = (inputs.Hg ?? 0) + (p2Req * 10);
-    const res = calculatePumpOperation({ ...inputs, Hg: Hs });
+    // Diametro INTERIOR real (material + clase); sin clase se usa el DN nominal
+    const Di = inputs.DN != null ? getRealInternalDiameter(materialName, inputs.DN, pipeClass) : null;
+    const res = calculatePumpOperation({ ...inputs, Hg: Hs, Di });
     setResults(res);
-  }, [inputs, p2Req, setResults]);
+  }, [inputs, p2Req, materialName, pipeClass, setResults]);
 
   useEffect(() => {
     clearTimeout(debounceRef.current);
@@ -138,7 +140,7 @@ export default function BombeoPage() {
                       <option key={c.clase} value={c.clase}>{c.clase} — {(c.pn / 0.9807).toFixed(1)} kg/cm²</option>
                     ))}
                   </select>
-                  {!pipeClass && <p className="text-[10px] text-yellow-600">Selecciona la clase para verificar resistencia</p>}
+                  {!pipeClass && <p className="text-[10px] text-yellow-600">Selecciona la clase para verificar resistencia y usar el diámetro interior real (sin clase se calcula con el DN nominal)</p>}
                   <p className="text-[10px] text-gray-400">{CLASE_RD_HELP}</p>
                 </div>
               );

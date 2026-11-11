@@ -56,7 +56,7 @@ export default function EntregablePage() {
 
   return (
     <div className="max-w-5xl mx-auto space-y-5">
-      <div className="flex items-start justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 sm:gap-4">
         <div>
           <h1 className="text-lg font-semibold text-gray-800 dark:text-gray-200">Entregable {"—"} Reporte de predimensionamiento</h1>
           <p className="text-xs text-gray-500 dark:text-gray-400">Captura los datos del proyecto y genera el reporte PDF de marca Sigma Flow.</p>
@@ -155,8 +155,8 @@ export default function EntregablePage() {
             <div key={i} className="flex gap-2 items-center">
               <input type="number" value={v.cad} onChange={(e) => updVertex(i, { cad: parseFloat(e.target.value) || 0 })} placeholder="m" className="w-20 px-2 py-1 text-xs border border-gray-200 dark:border-gray-600 rounded bg-white dark:bg-gray-800 dark:text-white" />
               <input type="number" value={v.cota} onChange={(e) => updVertex(i, { cota: parseFloat(e.target.value) || 0 })} placeholder="cota" className="w-20 px-2 py-1 text-xs border border-gray-200 dark:border-gray-600 rounded bg-white dark:bg-gray-800 dark:text-white" />
-              <input type="text" value={v.desc} onChange={(e) => updVertex(i, { desc: e.target.value })} placeholder="descripción" className="flex-1 px-2 py-1 text-xs border border-gray-200 dark:border-gray-600 rounded bg-white dark:bg-gray-800 dark:text-white" />
-              <button onClick={() => delVertex(i)} className="text-red-400 hover:text-red-600 text-xs">✕</button>
+              <input type="text" value={v.desc} onChange={(e) => updVertex(i, { desc: e.target.value })} placeholder="descripción" className="flex-1 min-w-0 px-2 py-1 text-xs border border-gray-200 dark:border-gray-600 rounded bg-white dark:bg-gray-800 dark:text-white" />
+              <button onClick={() => delVertex(i)} className="shrink-0 text-red-400 hover:text-red-600 text-xs">✕</button>
             </div>
           ))}
         </div>
@@ -170,8 +170,8 @@ export default function EntregablePage() {
           {d.valvulas.map((v, i) => (
             <div key={i} className="flex gap-2 items-center">
               <input type="text" value={v.cad} onChange={(e) => updValve(i, { cad: e.target.value })} placeholder="450 m" className="w-28 px-2 py-1 text-xs border border-gray-200 dark:border-gray-600 rounded bg-white dark:bg-gray-800 dark:text-white" />
-              <input type="text" value={v.tipo} onChange={(e) => updValve(i, { tipo: e.target.value })} placeholder="VAEA (punto alto)" className="flex-1 px-2 py-1 text-xs border border-gray-200 dark:border-gray-600 rounded bg-white dark:bg-gray-800 dark:text-white" />
-              <button onClick={() => delValve(i)} className="text-red-400 hover:text-red-600 text-xs">✕</button>
+              <input type="text" value={v.tipo} onChange={(e) => updValve(i, { tipo: e.target.value })} placeholder="VAEA (punto alto)" className="flex-1 min-w-0 px-2 py-1 text-xs border border-gray-200 dark:border-gray-600 rounded bg-white dark:bg-gray-800 dark:text-white" />
+              <button onClick={() => delValve(i)} className="shrink-0 text-red-400 hover:text-red-600 text-xs">✕</button>
             </div>
           ))}
         </div>

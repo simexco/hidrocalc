@@ -101,6 +101,7 @@ export function calculateProfile(input: ProfileInputs): ProfileResults | null {
   let criticalPoint: ProfileResults["criticalPoint"] = null;
   let pointsBelowMin = 0;
   let pointsCritical = 0;
+  let pointsNegative = 0;
 
   // Track hf per tramo
   const tramoHf: Record<string, number> = {};
@@ -159,7 +160,7 @@ export function calculateProfile(input: ProfileInputs): ProfileResults | null {
 
     let status: ProfilePointResult["status"] = "ok";
     if (pressure_kgcm2 != null) {
-      if (pressure_kgcm2 < 0) { status = "critical"; pointsCritical++; }
+      if (pressure_kgcm2 < 0) { status = "critical"; pointsCritical++; pointsNegative++; }
       else if (exceedsPN) { status = "critical"; pointsCritical++; }   // sobrepresion sobre PN tambien cuenta como critico
       else if (pressure_kgcm2 < Pmin_kgcm2) { status = "low"; pointsBelowMin++; }
     }
@@ -228,7 +229,7 @@ export function calculateProfile(input: ProfileInputs): ProfileResults | null {
     }
   }
   if (uncovered) alerts.push({ level: "WARN", message: `El perfil topografico (${profileStart}-${profileEnd}m) se extiende mas alla de los tramos definidos. Ajusta el rango de los tramos para cubrir todo el perfil.` });
-  if (pointsCritical > 0) alerts.push({ level: "ERROR", message: `${pointsCritical} punto(s) con presion negativa` });
+  if (pointsNegative > 0) alerts.push({ level: "ERROR", message: `${pointsNegative} punto(s) con presion negativa` });
   if (pointsBelowMin > 0) alerts.push({ level: "WARN", message: `${pointsBelowMin} punto(s) con presion menor a ${Pmin_kgcm2} kg/cm2` });
   if (finalP != null && finalP < Pmin_kgcm2) alerts.push({ level: "ERROR", message: `Presion final (${finalP.toFixed(2)} kg/cm2) no cumple el minimo requerido` });
 

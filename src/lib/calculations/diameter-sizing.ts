@@ -4,10 +4,10 @@
    ════════════════════════════════════════ */
 
 import { compareDiameters } from "./hazen-williams";
-import { STANDARD_DNS } from "@/lib/constants";
+import { STANDARD_DNS, getRealInternalDiameter } from "@/lib/constants";
 import type { PipeSizingInputs, PipeSizingResults } from "@/types/hydraulic";
 
-export function calculatePipeSizing(input: PipeSizingInputs): PipeSizingResults | null {
+export function calculatePipeSizing(input: PipeSizingInputs & { pipeClass?: string | null }): PipeSizingResults | null {
   const { Q, L, C, P1, P2min, z1, z2, maxVelocity } = input;
 
   if (Q == null || L == null || Q <= 0 || L <= 0) return null;
@@ -15,7 +15,8 @@ export function calculatePipeSizing(input: PipeSizingInputs): PipeSizingResults 
   const dns = STANDARD_DNS.filter((d) => d <= 600);
 
   const { rows, recommendedDN } = compareDiameters(
-    Q, L, C, P1, P2min, z1, z2, maxVelocity, dns
+    Q, L, C, P1, P2min, z1, z2, maxVelocity, dns,
+    (dn) => getRealInternalDiameter(input.materialName, dn, input.pipeClass)
   );
 
   const alerts = [];
