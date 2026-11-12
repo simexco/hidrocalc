@@ -329,11 +329,25 @@ function drawProfile(doc: jsPDF, verts: ReportVertex[], y: number): number {
   }
   // puntos + etiquetas
   doc.setFontSize(6); doc.setTextColor(80, 80, 80);
-  for (const p of pts) {
-    doc.setFillColor(...BRAND); doc.circle(sx(p.cad), sy(p.cota), 0.8, "F");
-    doc.text(`${p.cota.toFixed(1)}`, sx(p.cad), sy(p.cota) - 2, { align: "center" });
-    if (p.desc) doc.text(safe(p.desc), sx(p.cad), yTop + h + 4, { align: "center" });
-    doc.text(`${Math.round(p.cad).toLocaleString("es-MX")}`, sx(p.cad), yTop + h + 8, { align: "center" });
+  // Con muchos vértices (trazo en el mapa) las etiquetas se enciman: se rotulan primero el
+  // inicio, el final, el punto más alto y el más bajo, luego los altos y bajos del perfil, y
+  // solo los que quedan a 12 mm o más de otra etiqueta. Todos los vértices llevan su punto.
+  for (const p of pts) { doc.setFillColor(...BRAND); doc.circle(sx(p.cad), sy(p.cota), 0.8, "F"); }
+  const last = pts.length - 1;
+  const iMin = cotas.indexOf(zMin), iMax = cotas.indexOf(zMax);
+  const extremos = pts.map((_, i) => i).filter((i) => i > 0 && i < last && ((cotas[i] > cotas[i - 1] && cotas[i] >= cotas[i + 1]) || (cotas[i] < cotas[i - 1] && cotas[i] <= cotas[i + 1])));
+  const orden = Array.from(new Set([0, last, iMin, iMax, ...extremos, ...pts.map((_, i) => i)]));
+  const rotulados: number[] = [];
+  for (const i of orden) {
+    if (rotulados.some((j) => Math.abs(sx(pts[j].cad) - sx(pts[i].cad)) < 12)) continue;
+    rotulados.push(i);
+  }
+  for (const i of rotulados) {
+    const p = pts[i];
+    const align = i === 0 ? "left" : i === last ? "right" : "center";
+    doc.text(`${p.cota.toFixed(1)}`, sx(p.cad), sy(p.cota) - 2, { align });
+    if (p.desc) doc.text(safe(p.desc), sx(p.cad), yTop + h + 4, { align });
+    doc.text(`${Math.round(p.cad).toLocaleString("es-MX")}`, sx(p.cad), yTop + h + 8, { align });
   }
   doc.setTextColor(120, 120, 120); doc.setFontSize(7);
   doc.text("Distancia desde el inicio (m) - cotas en m.s.n.m.", (x0 + x1) / 2, yTop + h + 13, { align: "center" });
