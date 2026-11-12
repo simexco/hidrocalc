@@ -38,6 +38,14 @@ import type { AssumedValue } from "@/types/hydraulic";
 export default function GolpeArietePage() {
   const { proyecto, setProyecto } = useNombreProyecto();
   const { inputs, results, setInput, setResults, reset } = useWaterHammerStore();
+  // Presion minima de operacion en el perfil: la onda de baja del golpe pega en toda la
+  // linea, asi que el vacio aparece primero en el punto de menor presion (p. ej. un punto
+  // alto), no en la valvula. Se revisa con el mismo ΔH (mismo criterio que Valvulas de aire).
+  const presionMinLinea = useProjectStore((s) => s.project.presionMinLinea);
+  const presionMinPunto = useProjectStore((s) => s.project.presionMinPunto);
+  const pMinPerfil = results?.deltaH != null && presionMinLinea != null ? presionMinLinea * 10 - results.deltaH : null;
+  const pMinGolpe = results?.Pmin != null ? (pMinPerfil != null ? Math.min(results.Pmin, pMinPerfil) : results.Pmin) : pMinPerfil;
+  const vacioEnPerfil = pMinPerfil != null && results?.Pmin != null && pMinPerfil < results.Pmin;
   const singlePipe = useSinglePipeStore();
   const [showThicknessRef, setShowThicknessRef] = useState(false);
   const [pvcSystem, setPvcSystem] = useState<PVCSystem>("métrico");
@@ -676,7 +684,7 @@ export default function GolpeArietePage() {
               {/* ── SEMÁFORO DE PROTECCIÓN ── */}
               {(() => {
                 const pmaxK = results.Pmax != null ? mcaToKgcm2(results.Pmax) : null;
-                const negPres = inputs.P0 != null && results.Pmin != null && results.Pmin < 0;
+                const negPres = inputs.P0 != null && pMinGolpe != null && pMinGolpe < 0;
                 const pmaxBar = results.Pmax_bar;
                 const pnK = userPN != null ? userPN / 0.9807 : null;
                 const fs = (userPN != null && pmaxBar != null && pmaxBar > 0) ? userPN / pmaxBar : null;
@@ -814,7 +822,7 @@ export default function GolpeArietePage() {
                     {negPres && (
                       <div className="mt-3 bg-white/70 dark:bg-gray-800/50 rounded-lg p-3 border border-red-200 dark:border-red-800">
                         <p className="text-[10px] uppercase tracking-wide text-gray-500">Además — presión negativa (vacío)</p>
-                        <p className="text-sm font-bold text-red-700 dark:text-red-300">Ventosas de admisión de aire en los puntos altos</p>
+                        <p className="text-sm font-bold text-red-700 dark:text-red-300">Válvulas de aire combinadas en los puntos altos</p>
                         {ubicacion && ubicacion.altos.length > 0 && (
                           <p className="text-[10px] font-semibold text-red-700 dark:text-red-300 mt-0.5">
                             {"📍"} Puntos altos de tu perfil: {ubicacion.altos.slice(0, 3).map((v) => `${fmtPos(v.cad)} (cota ${v.cota} m)`).join(" · ")}{ubicacion.altos.length > 3 ? " · …" : ""}
@@ -829,17 +837,17 @@ export default function GolpeArietePage() {
               })()}
 
               {/* Proteccion contra presion negativa (vacio) — ventosa de admision de aire */}
-              {inputs.P0 != null && results.Pmin != null && results.Pmin < 0 && (
+              {inputs.P0 != null && pMinGolpe != null && pMinGolpe < 0 && (()=>{ const pm = pMinGolpe; return (
                 <div className="rounded-xl border border-red-300 dark:border-red-700 bg-red-50 dark:bg-red-900/20 p-4 space-y-2">
                   <p className="text-sm font-semibold text-red-700 dark:text-red-300">Protección contra presión negativa (vacío)</p>
                   <p className="text-xs text-red-700/90 dark:text-red-300/80 leading-relaxed">
-                    La presión mínima cae a <strong>{formatNumber(mcaToKgcm2(Math.max(results.Pmin, -10.33)), 1)} kg/cm²</strong> (negativa{results.Pmin < -10.33 ? ", limitada por el vacío físico: la columna se separa" : ""}).
-                    {results.Pmin < -10
+                    La presión mínima cae a <strong>{formatNumber(mcaToKgcm2(Math.max(pm, -10.33)), 1)} kg/cm²</strong>{vacioEnPerfil && presionMinPunto ? <> en el punto de menor presión de la línea, {fmtPos(presionMinPunto.cad)} (cota {presionMinPunto.cota} m)</> : null} (negativa{pm < -10.33 ? ", limitada por el vacío físico: la columna se separa" : ""}).
+                    {pm < -10
                       ? " Es prácticamente vacío total → separación de columna probable y riesgo de colapso del tubo (crítico)."
                       : " Hay riesgo de vacío parcial → un tubo de pared delgada puede colapsar (implosión)."}
                   </p>
                   <p className="text-xs text-gray-700 dark:text-gray-300 leading-relaxed">
-                    <strong>Qué instalar:</strong> una <strong>válvula de admisión de aire (ventosa)</strong> en los <strong>puntos altos</strong> de la línea. Deja entrar aire y rompe el vacío. Es <em>distinta</em> de la válvula de alivio (esa es para la sobrepresión).
+                    <strong>Qué instalar:</strong> una <strong>válvula de aire combinada</strong> en los <strong>puntos altos</strong> de la línea. Deja entrar aire y rompe el vacío. Es <em>distinta</em> de la válvula de alivio (esa es para la sobrepresión).
                   </p>
                   {ubicacion && ubicacion.altos.length > 0 && (
                     <p className="text-xs font-semibold text-red-700 dark:text-red-300">
@@ -847,10 +855,10 @@ export default function GolpeArietePage() {
                     </p>
                   )}
                   <Link href="/valvulas-aire" className="inline-block text-xs bg-[#1C3D5A] text-white px-3 py-1.5 rounded-lg hover:bg-[#0F2438] transition-colors font-medium">
-                    Ubicar las ventosas en el módulo Válvulas de aire →
+                    Ubicar las válvulas en el módulo Válvulas de aire →
                   </Link>
                 </div>
-              )}
+              ); })()}
 
               {/* Detalle tecnico — colapsable */}
               <button onClick={() => setShowDetail(!showDetail)} className="text-xs text-[#1C3D5A] dark:text-blue-300 underline decoration-dotted">

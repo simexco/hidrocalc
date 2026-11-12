@@ -179,6 +179,13 @@ export default function PerfilPage() {
         coefAccesorios: coefAccesorios / 100,
         p1: calcMode === "calcularP1" ? computedP1 : P1,
         presionFinalLinea: results?.finalPressure_kgcm2 ?? null,
+        // Punto de menor presion de operacion: ahi la onda de baja del golpe hace vacio primero
+        ...(() => {
+          const pts = (results?.points ?? []).filter((pt) => pt.pressure_kgcm2 != null);
+          if (!pts.length) return { presionMinLinea: null, presionMinPunto: null };
+          const m = pts.reduce((a, b) => ((b.pressure_kgcm2 as number) < (a.pressure_kgcm2 as number) ? b : a));
+          return { presionMinLinea: m.pressure_kgcm2, presionMinPunto: { cad: m.dist, cota: m.cota } };
+        })(),
       });
     }, 700);
     return () => clearTimeout(t);
