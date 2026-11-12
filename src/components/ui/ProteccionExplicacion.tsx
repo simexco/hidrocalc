@@ -64,7 +64,7 @@ export function PorQueVentosasVacio() {
       Después de la sobrepresión viene la onda de regreso, que baja la presión. En los <strong>puntos altos</strong> la línea tiene menos
       columna de agua encima, así que ahí es donde la presión cae primero bajo cero. Con vacío, un tubo de pared delgada puede colapsar, y la
       columna de agua se puede separar; cuando se vuelve a juntar, el choque es más fuerte que el golpe original. La <strong>válvula de
-      admisión de aire</strong> deja entrar aire en ese instante y rompe el vacío. La aliviadora no sirve para esto: solo actúa contra la
+      aire combinada</strong> deja entrar aire en ese instante y rompe el vacío. La aliviadora no sirve para esto: solo actúa contra la
       sobrepresión.
     </p>
   );
