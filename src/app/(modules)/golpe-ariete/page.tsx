@@ -238,7 +238,21 @@ export default function GolpeArietePage() {
       : PIPE_CLASSES_BY_MATERIAL[inputs.materialName];
     if (!matClasses) return null;
     const porClase: Record<string, number | null> = {};
+    // Vacio por golpe con cada clase (en la valvula o en el punto de menor presion del perfil)
+    const vacioClase: Record<string, boolean> = {};
+    const hayVacio = (Pmin: number | null | undefined, dH: number | null | undefined) => {
+      const pPerfil = dH != null && presionMinLinea != null ? presionMinLinea * 10 - dH : null;
+      const pm = Pmin != null ? (pPerfil != null ? Math.min(Pmin, pPerfil) : Pmin) : pPerfil;
+      return pm != null && pm < 0;
+    };
+    const vacioActual = hayVacio(results.Pmin, results.deltaH);
+    const drDe = (clase: string) => {
+      if (!/^(RD|SDR|DR)\s/.test(clase)) return null;
+      const v = parseFloat(clase.replace(/^(RD|SDR|DR)\s/, ""));
+      return isNaN(v) ? null : v;
+    };
     for (const row of matClasses.classes) {
+      vacioClase[row.clase] = vacioActual;
       const esRD = /^(RD|SDR|DR)\s/.test(row.clase) && computedOD != null;
       if (!esRD) { porClase[row.clase] = results.Pmax_bar; continue; }
       const rd = parseFloat(row.clase.replace(/^(RD|SDR|DR)\s/, ""));
@@ -256,10 +270,30 @@ export default function GolpeArietePage() {
         inputs.materialName === "PVC" ? pvcSystem : undefined,
       );
       porClase[row.clase] = r?.Pmax_bar ?? null;
+      vacioClase[row.clase] = hayVacio(r?.Pmin, r?.deltaH);
     }
-    const rec = matClasses.classes.find((row) => porClase[row.clase] != null && porClase[row.clase]! <= row.pn) ?? null;
-    return { porClase, clase: rec?.clase ?? null };
-  }, [results, inputs, pvcSystem, computedOD, velMode, caudalQ]);
+    // Clase recomendada: la mas delgada que deja el mismo margen que el semaforo pide para
+    // verde (presion maxima <= 90 % de lo que resiste la clase). Si el golpe hace vacio, no
+    // se recomienda una pared mas delgada que la elegida: el vacio puede aplastar tubos de
+    // pared delgada (AWWA M51, p. 9) y la separacion de columna puede dar presiones mayores
+    // que las calculadas (p. 42).
+    const drUsuario = computedDR;
+    const rec = matClasses.classes.find((row) => {
+      const pm = porClase[row.clase];
+      if (pm == null || pm > 0.9 * row.pn) return false;
+      if (vacioClase[row.clase] && drUsuario != null) {
+        const dr = drDe(row.clase);
+        if (dr != null && dr > drUsuario + 0.5) return false;
+      }
+      return true;
+    }) ?? null;
+    const limitadaPorVacio = rec != null && vacioClase[rec.clase] && drUsuario != null && matClasses.classes.some((row) => {
+      const pm = porClase[row.clase];
+      const dr = drDe(row.clase);
+      return pm != null && pm <= 0.9 * row.pn && dr != null && dr > drUsuario + 0.5;
+    });
+    return { porClase, vacioClase, clase: rec?.clase ?? null, limitadaPorVacio };
+  }, [results, inputs, pvcSystem, computedOD, computedDR, velMode, caudalQ, presionMinLinea]);
 
   const handleImportFromMod1 = () => {
     // Velocidad
@@ -965,8 +999,9 @@ export default function GolpeArietePage() {
                     </div>
                     {/* Explanation of the table */}
                     <div className="px-4 py-2 text-[10px] text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700">
-                      <strong>Golpe con esa clase:</strong> el golpe se recalcula para cada clase — la pared más gruesa hace el tubo más rígido y el golpe CRECE.
-                      <strong className="ml-2">REC:</strong> clase mínima que resiste su propio golpe (más económica).
+                      <strong>Presión máxima con esa clase:</strong> presión de operación más el golpe, recalculado con la pared de cada clase. La pared más gruesa hace el tubo más rígido y el golpe crece.
+                      <strong className="ml-2">REC:</strong> la clase más delgada que resiste su propio golpe con margen (presión máxima de hasta 90 % de lo que resiste, el mismo margen del semáforo verde).
+                      {recomendacion?.limitadaPorVacio && <><br /><strong className="text-red-700">Con vacío no se recomienda adelgazar la pared:</strong> el vacío puede aplastar un tubo de pared delgada (AWWA M51, p. 9) y la separación de columna puede dar presiones mayores que las calculadas (p. 42).</>}
                       {computedDR != null && <><br /><strong>Tu seleccion:</strong> DR {computedDR.toFixed(1)} (e={inputs.e} mm). Las clases con pared igual o mas delgada que tu tubo estan marcadas.</>}
                     </div>
                     <table className="w-full text-xs">
@@ -974,7 +1009,7 @@ export default function GolpeArietePage() {
                         <tr className="bg-gray-50 dark:bg-gray-700 text-gray-500 dark:text-gray-400">
                           <th className="px-3 py-2 text-left">Clase</th>
                           <th className="px-3 py-2 text-right">Presión que resiste (PN, bar)</th>
-                          <th className="px-3 py-2 text-right">Golpe con esa clase (bar)</th>
+                          <th className="px-3 py-2 text-right">Presión máxima con esa clase (bar)</th>
                           <th className="px-3 py-2 text-center">Aguanta golpe</th>
                           <th className="px-3 py-2 text-right">Factor de seguridad</th>
                         </tr>
@@ -983,6 +1018,7 @@ export default function GolpeArietePage() {
                         {matClasses.classes.map((row) => {
                           const pmaxClase = recomendacion?.porClase[row.clase] ?? results.Pmax_bar;
                           const cumple = pmaxClase != null && pmaxClase <= row.pn;
+                          const justo = cumple && pmaxClase! > 0.9 * row.pn;
                           const fs = pmaxClase != null && pmaxClase > 0 ? row.pn / pmaxClase : 0;
                           const isRec = recomendacion ? row.clase === recomendacion.clase : row.clase === results.pipeClass;
 
@@ -1003,7 +1039,7 @@ export default function GolpeArietePage() {
                               <td className="px-3 py-2 text-right font-mono">{row.pn}</td>
                               <td className="px-3 py-2 text-right font-mono">{pmaxClase != null ? pmaxClase.toFixed(1) : "—"}</td>
                               <td className="px-3 py-2 text-center">
-                                {cumple ? <span className="text-green-600">{"✓"}</span> : <span className="text-red-500">{"✗"}</span>}
+                                {justo ? <span className="text-amber-600 text-[10px] font-semibold">sin margen</span> : cumple ? <span className="text-green-600">{"✓"}</span> : <span className="text-red-500">{"✗"}</span>}
                               </td>
                               <td className="px-3 py-2 text-right font-mono">{fs > 0 ? fs.toFixed(2) : "—"}</td>
                             </tr>
