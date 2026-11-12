@@ -129,7 +129,7 @@ export default function ValvulasAirePage() {
       patchProject({
         valvulas: results.valves.map((v) => ({
           cad: `${Math.round(v.dist).toLocaleString("es-MX")} m`,
-          tipo: `${fullName(v.type)} ${v.bodySize}${v.cierreLento ? " con dispositivo de cierre lento" : ""} - ${v.reason}`,
+          tipo: `${fullName(v.type)} ${v.bodySize} - ${v.reason}`,
           porQue: v.porQue,
         })),
         puntosPorConfirmar: results.porConfirmar.map(({ dist, cota, sobresale }) => ({ dist, cota, sobresale })),
@@ -591,7 +591,7 @@ export default function ValvulasAirePage() {
                       <tr className={`border-b border-gray-100 dark:border-gray-700 ${fondo}`}>
                         <td />
                         <td colSpan={5} className="px-1 sm:px-2 pb-2 text-[11px] leading-snug text-gray-600 dark:text-gray-400">
-                          {v.reason}. {v.pn}.{v.cierreLento && <span className="ml-1 text-[10px] px-1.5 py-0.5 rounded bg-orange-100 text-orange-700">con cierre lento</span>}{v.note && <span className="text-gray-400"> ({v.note})</span>}
+                          {v.reason}. {v.pn}.{v.note && <span className="text-gray-400"> ({v.note})</span>}
                           <button type="button" className="ml-1 text-[11px] text-[#1C3D5A] dark:text-blue-300 underline decoration-dotted" onClick={() => setAbiertas((s) => { const n = new Set(s); if (n.has(i)) n.delete(i); else n.add(i); return n; })}>
                             {abiertas.has(i) ? "Ocultar explicación" : "Ver explicación"}
                           </button>
@@ -627,8 +627,7 @@ export default function ValvulasAirePage() {
               const vs = results.valves.filter((v) => v.type === t);
               const tam = Array.from(new Set(vs.map((v) => v.bodySize))).map((b) => `${vs.filter((v) => v.bodySize === b).length} de ${b}`).join(", ");
               const donde = Array.from(new Set(vs.map((v) => corto(v.reason)))).join("; ");
-              const lentas = vs.filter((v) => v.cierreLento).length;
-              return { t, n: vs.length, tam, donde, lentas };
+              return { t, n: vs.length, tam, donde };
             }).filter((f) => f.n > 0);
             const nombre: Record<string, string> = { "VA-C": "Combinada", "VA-A": "Admisión y expulsión", "VA-E": "Eliminadora" };
             return (
@@ -648,7 +647,7 @@ export default function ValvulasAirePage() {
                         <td className="py-1.5 pr-2 font-medium"><span className={`text-[10px] px-1.5 py-0.5 rounded mr-1 whitespace-nowrap ${typeBadge(f.t)}`}>{f.t}</span>{nombre[f.t]}</td>
                         <td className="py-1.5 pr-2 text-center font-mono">{f.n}</td>
                         <td className="py-1.5 pr-2 whitespace-nowrap">{f.tam}</td>
-                        <td className="py-1.5 text-gray-600 dark:text-gray-400">{f.donde}{f.lentas > 0 && <span className="block text-[10px] text-orange-700">{f.lentas} con dispositivo de cierre lento (zona de vacío por golpe)</span>}</td>
+                        <td className="py-1.5 text-gray-600 dark:text-gray-400">{f.donde}</td>
                       </tr>
                     ))}
                     {results.desagues.length > 0 && (
