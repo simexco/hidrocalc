@@ -323,10 +323,10 @@ export default function ValvulasAirePage() {
                 className={`w-full px-3 py-2 text-sm border rounded-lg bg-white dark:bg-gray-800 dark:text-white ${llegadaLibre == null ? "border-yellow-300 bg-yellow-50" : "border-gray-300 dark:border-gray-600"}`}
               >
                 <option value="">-- Seleccionar --</option>
-                <option value="libre">Cae libre al tanque (descarga libre)</option>
-                <option value="ahogada">Ahogada o con válvula de llenado (flotador, altitud)</option>
+                <option value="libre">El tubo descarga arriba del agua (el agua cae al tanque)</option>
+                <option value="ahogada">El tubo entra abajo del nivel del agua o tiene válvula de llenado (flotador, altitud)</option>
               </select>
-              <p className="text-[10px] text-gray-400">Con descarga libre la llegada no lleva válvula de aire (AWWA M51, figura 3-1); si llega ahogada o con válvula de llenado, va combinada.</p>
+              <p className="text-[10px] text-gray-400">Si el agua cae al tanque desde arriba, el tubo queda abierto y el aire sale solo: no lleva válvula (AWWA M51, figura 3-1). Si el tubo entra abajo del nivel del agua o tiene válvula de llenado, el aire se junta al final del tubo y va combinada.</p>
             </div>
 
             <label className="flex items-start gap-2 text-[11px] text-gray-600 dark:text-gray-400">

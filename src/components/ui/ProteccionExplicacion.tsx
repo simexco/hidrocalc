@@ -87,7 +87,7 @@ const CRITERIO_AWWA: [string, string, string, string][] = [
   ["Descenso largo, cada 400 a 800 m", "Eliminadora; combinada si el golpe hace vacío", "Purga el aire en operación. Si el golpe hace vacío, la combinada deja entrar aire.", "Fig. 3-1 (p. 18) y p. 19"],
   ["Aumenta la pendiente de subida / disminuye la de bajada", "Ninguna", "Ahí el aire no se detiene: sigue de largo con el agua.", "Fig. 3-1 (p. 18)"],
   ["Punto bajo", "Ninguna: desfogue", "Ahí no hay aire; se pone un desfogue para vaciar la línea y sacar sedimentos.", "Fig. 3-1 (p. 18), «drain valve»; MAPAS §3.1.4"],
-  ["Llegada al tanque", "Descarga libre: ninguna. Ahogada: combinada", "Con descarga libre el extremo está abierto. Ahogada o con válvula de llenado, la llegada funciona como punto alto.", "Fig. 3-1 (p. 18): la línea entra libre al tanque sin válvula"],
+  ["Llegada al tanque", "Si el agua cae desde arriba: ninguna. Si el tubo entra abajo del nivel del agua o tiene válvula de llenado: combinada", "Si el agua cae desde arriba, el tubo está abierto y el aire sale solo. Si entra abajo del agua o tiene válvula de llenado, el aire se junta al final del tubo, como en un punto alto.", "Fig. 3-1 (p. 18): la línea entra libre al tanque sin válvula"],
   ["Donde el golpe de ariete hace vacío", "Combinada con dispositivo de cierre lento", "Deja entrar aire y lo saca despacio, para no provocar un segundo golpe. Se confirma con un estudio de golpe de ariete hecho con software.", "p. 19, 34 y 37-38"],
 ];
 
