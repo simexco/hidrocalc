@@ -11,7 +11,8 @@ const BRAND: [number, number, number] = [28, 61, 90]; // #1C3D5A
 
 // ── Tipos ──────────────────────────────────────────────
 export interface ReportVertex { cad: number; cota: number; desc: string }
-export interface ReportValve { cad: string; tipo: string }
+// porQue: por que va la valvula en ese punto (se lista una vez por motivo, debajo de la tabla)
+export interface ReportValve { cad: string; tipo: string; porQue?: string }
 
 export interface ReportData {
   // Portada
@@ -487,6 +488,22 @@ export async function generateReportPDF(d: ReportData): Promise<jsPDF> {
       margin: { left: 14, right: 14, top: 30 }, didDrawPage: dibujaHeader,
     });
     y = finalY(doc) + 4;
+    // Por que va cada valvula: una sola vez por explicacion (no repetida en cada fila)
+    const porQues = Array.from(new Set(valvList.map((v) => v.porQue).filter((t): t is string => !!t)));
+    if (porQues.length > 0) {
+      asegura(20);
+      doc.setFontSize(8.5); doc.setFont("helvetica", "bold");
+      doc.text("Por que va cada valvula", 14, y); y += 4;
+      doc.setFont("helvetica", "normal"); doc.setFontSize(7.5);
+      for (const t of porQues) {
+        const motivos = valvList.filter((v) => v.porQue === t).map((v) => v.cad).join(", ");
+        const lineas = doc.splitTextToSize(safe(`- ${motivos}: ${t}`), doc.internal.pageSize.getWidth() - 28);
+        asegura(lineas.length * 3.3 + 2);
+        doc.text(lineas, 14, y);
+        y += lineas.length * 3.3 + 1.5;
+      }
+      y += 2;
+    }
     doc.setFontSize(7.5); doc.setTextColor(90, 90, 90);
     const notaM51 = doc.splitTextToSize(safe("Ubicacion segun el Manual AWWA M51 (figura 3-1, p. 18): combinada en puntos altos, inicio y fin de tramos horizontales y donde la bajada se hace mas pronunciada; " + (d.aireOpcionSencilla !== false ? "donde el manual da opcion, la mas sencilla (admision y expulsion o eliminadora), y combinada donde el golpe de ariete hace vacio (con cierre lento, p. 19 y 37-38);" : "donde el manual da opcion, combinada (M51 recomienda combinadas siempre que sea posible, p. 44);") + " en los puntos bajos, desfogue; si el agua cae al tanque desde arriba, sin valvula en la llegada. Tamano por el metodo de M51 (cap. 4): llenado a 0.3 m/s y entrada de aire si la linea se rompe. Seleccion final con las curvas del fabricante."), doc.internal.pageSize.getWidth() - 28);
     doc.text(notaM51, 14, y);
