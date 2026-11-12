@@ -55,6 +55,8 @@ export interface ReportData {
   // Con la VRP recomendada instalada: presión de operación máxima y mínima de la línea
   // (antes de la VRP la del perfil; después, el ajuste de salida más el desnivel)
   presionMaxConVRP?: number | null;
+  // Gasto con el que se calculó la línea (L/s): máximo horario si va a la red, máximo diario si va a la fuente/tanque
+  qLinea?: number | null;
   presionMinConVRP?: number | null;
   he: number | null;
   eficiencia: number | null;
