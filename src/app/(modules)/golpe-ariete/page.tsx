@@ -588,6 +588,11 @@ export default function GolpeArietePage() {
               <input type="checkbox" checked={esBombeo} onChange={(e) => setEsBombeoManual(e.target.checked)} className="mt-0.5" />
               <span><strong>Línea por bombeo</strong> — el golpe lo dispara el paro de la bomba, no el cierre de una válvula.</span>
             </label>
+            {!esBombeo && ubicacion && ubicacion.bajo === ubicacion.inicio && Math.max(...[ubicacion.fin, ...ubicacion.altos].map((v) => v.cota)) - ubicacion.inicio.cota >= 5 && (
+              <p className="rounded-lg border border-yellow-300 bg-yellow-50 dark:bg-yellow-900/20 px-3 py-2 text-[11px] text-yellow-800 dark:text-yellow-300 leading-relaxed">
+                La línea arranca en su punto más bajo y sube: parece de bombeo. Si lo es, marca «Línea por bombeo»: el golpe fuerte lo da el paro de la bomba y la protección va en la descarga de la bomba, no en la llegada.
+              </p>
+            )}
             {esBombeo && (
               <div className="rounded-lg border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/20 px-3 py-2 text-[11px] text-amber-800 dark:text-amber-300 leading-relaxed space-y-1">
                 <p>

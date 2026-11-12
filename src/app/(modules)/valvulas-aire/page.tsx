@@ -114,6 +114,7 @@ export default function ValvulasAirePage() {
   const llegadaLibre = useProjectStore((s) => s.project.llegadaLibre ?? null);
   // Bombeo desde pozo: combinada con cierre lento en la descarga (AWWA M51 p. 19 y 42)
   const esPozo = useProjectStore((s) => s.project.fuenteAgua === "pozo");
+  const fuenteIndicada = useProjectStore((s) => s.project.fuenteAgua != null || s.project.incluyeBombeo);
   // Donde AWWA M51 da dos opciones: la más sencilla por defecto (combinada si el golpe hace
   // vacío); el usuario puede pedir combinada en todos (M51 p. 44)
   const opcionSencilla = useProjectStore((s) => s.project.aireOpcionSencilla !== false);
@@ -137,10 +138,10 @@ export default function ValvulasAirePage() {
     // Hidraulica con el Ø interior REAL del tubo (material+DN+clase); el nominal solo
     // dimensiona las valvulas. Sin clase elegida cae al nominal (comportamiento previo).
     const diReal = getRealInternalDiameter(materialName, DN, pipeClass);
-    const input: AirValveInputs = { projectName, Q, DN_mm: DN, diametroInterior_mm: diReal, C, P0_kgcm2: P0, pressureMin, maxSpacing, vertices, esBombeo, cotasSatelitales, golpeDeltaH, llegadaLibre, esPozo, opcionSencilla, chezyC: chezyDeMaterial(materialName) };
+    const input: AirValveInputs = { projectName, Q, DN_mm: DN, diametroInterior_mm: diReal, C, P0_kgcm2: P0, pressureMin, maxSpacing, vertices, esBombeo, cotasSatelitales, golpeDeltaH, llegadaLibre, esPozo, fuenteIndicada, opcionSencilla, chezyC: chezyDeMaterial(materialName) };
     const res = calculateAirValves(input);
     setResults(res);
-  }, [projectName, rawQ, flowUnit, DN, materialName, pipeClass, C, P0, pressureMin, maxSpacing, vertices, esBombeo, cotasSatelitales, golpeDeltaH, llegadaLibre, esPozo, opcionSencilla]);
+  }, [projectName, rawQ, flowUnit, DN, materialName, pipeClass, C, P0, pressureMin, maxSpacing, vertices, esBombeo, cotasSatelitales, golpeDeltaH, llegadaLibre, esPozo, fuenteIndicada, opcionSencilla]);
 
   useEffect(() => {
     clearTimeout(debounceRef.current);

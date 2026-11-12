@@ -57,6 +57,8 @@ export interface AirValveInputs {
   // Bombeo desde pozo o bomba vertical: AWWA M51 (p. 19 y 42) pide combinada con dispositivo
   // de cierre lento entre la bomba y la check
   esPozo?: boolean;
+  // false = el usuario no indico de donde sale el agua (gravedad o bombeo)
+  fuenteIndicada?: boolean;
   // true = la opcion mas sencilla que permite la figura 3-1 (default en la pagina; combinada si
   // hay vacio por golpe); false = combinada donde M51 da opcion (M51 p. 44)
   opcionSencilla?: boolean;
@@ -430,6 +432,13 @@ export function calculateAirValves(input: AirValveInputs): AirValveOutputs | nul
   if (input.cotasSatelitales === true) {
     alerts.push("Las válvulas se ubicaron con cotas del mapa (satelitales): confirma los puntos altos, bajos y cambios de pendiente con topografía de campo antes del proyecto ejecutivo.");
   }
+  if (!input.esBombeo && input.fuenteIndicada === false && sorted.length >= 2) {
+    const c0 = sorted[0].cota;
+    if (sorted.every((v) => v.cota >= c0) && Math.max(...sorted.map((v) => v.cota)) - c0 >= 5) {
+      alerts.push("La línea arranca en su punto más bajo y sube: parece de bombeo. Indica de dónde sale el agua en «Línea de conducción»: si hay bomba, en la descarga de la bomba va válvula de aire (AWWA M51, p. 19), y si es de pozo, combinada (p. 42).");
+    }
+  }
+
 
   // Avisos de diseno (no son valvulas)
   if (hasHydraulics) {
