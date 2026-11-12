@@ -49,6 +49,8 @@ export default function ValvulasAirePage() {
     { id: uuid(), dist: 1000, cota: 110, desc: "Fin" },
   ]);
   const [results, setResults] = useState<AirValveOutputs | null>(null);
+  // Valvulas con la explicacion abierta (por que va ahi y tamaño por M51)
+  const [abiertas, setAbiertas] = useState<Set<number>>(new Set());
   const [showAdvanced, setShowAdvanced] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
@@ -127,7 +129,8 @@ export default function ValvulasAirePage() {
       patchProject({
         valvulas: results.valves.map((v) => ({
           cad: `${Math.round(v.dist).toLocaleString("es-MX")} m`,
-          tipo: `${fullName(v.type)} ${v.bodySize}${v.cierreLento ? " con dispositivo de cierre lento" : ""} - ${v.reason}. Por que aqui: ${v.porQue}`,
+          tipo: `${fullName(v.type)} ${v.bodySize}${v.cierreLento ? " con dispositivo de cierre lento" : ""} - ${v.reason}`,
+          porQue: v.porQue,
         })),
         puntosPorConfirmar: results.porConfirmar.map(({ dist, cota, sobresale }) => ({ dist, cota, sobresale })),
       });
@@ -144,6 +147,7 @@ export default function ValvulasAirePage() {
     const input: AirValveInputs = { projectName, Q, DN_mm: DN, diametroInterior_mm: diReal, C, P0_kgcm2: P0, pressureMin, maxSpacing, vertices, esBombeo, cotasSatelitales, golpeDeltaH, llegadaLibre, esPozo, fuenteIndicada, opcionSencilla, incluirPorConfirmar, chezyC: chezyDeMaterial(materialName) };
     const res = calculateAirValves(input);
     setResults(res);
+    setAbiertas(new Set());
   }, [projectName, rawQ, flowUnit, DN, materialName, pipeClass, C, P0, pressureMin, maxSpacing, vertices, esBombeo, cotasSatelitales, golpeDeltaH, llegadaLibre, esPozo, fuenteIndicada, opcionSencilla, incluirPorConfirmar]);
 
   useEffect(() => {
@@ -588,8 +592,15 @@ export default function ValvulasAirePage() {
                         <td />
                         <td colSpan={5} className="px-1 sm:px-2 pb-2 text-[11px] leading-snug text-gray-600 dark:text-gray-400">
                           {v.reason}. {v.pn}.{v.cierreLento && <span className="ml-1 text-[10px] px-1.5 py-0.5 rounded bg-orange-100 text-orange-700">con cierre lento</span>}{v.note && <span className="text-gray-400"> ({v.note})</span>}
-                          <div className="text-gray-700 dark:text-gray-300"><b>Por qué aquí:</b> {v.porQue}</div>
-                          {v.sizing && <div className="text-[10px] text-gray-400">Tamaño — {v.sizing}</div>}
+                          <button type="button" className="ml-1 text-[11px] text-[#1C3D5A] dark:text-blue-300 underline decoration-dotted" onClick={() => setAbiertas((s) => { const n = new Set(s); if (n.has(i)) n.delete(i); else n.add(i); return n; })}>
+                            {abiertas.has(i) ? "Ocultar explicación" : "Ver explicación"}
+                          </button>
+                          {abiertas.has(i) && (
+                            <div className="mt-1 space-y-0.5">
+                              <div className="text-gray-700 dark:text-gray-300"><b>Por qué aquí:</b> {v.porQue}</div>
+                              {v.sizing && <div className="text-[10px] text-gray-500">Tamaño — {v.sizing}</div>}
+                            </div>
+                          )}
                         </td>
                       </tr>
                       </Fragment>
