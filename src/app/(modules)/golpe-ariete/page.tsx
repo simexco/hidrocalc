@@ -273,21 +273,22 @@ export default function GolpeArietePage() {
       vacioClase[row.clase] = hayVacio(r?.Pmin, r?.deltaH);
     }
     // Clase recomendada: la mas delgada que deja el mismo margen que el semaforo pide para
-    // verde (presion maxima <= 90 % de lo que resiste la clase). Si el golpe hace vacio, no
-    // se recomienda una pared mas delgada que la elegida: el vacio puede aplastar tubos de
+    // verde (presion maxima <= 90 % de lo que resiste la clase). Si el golpe hace vacio con el
+    // tubo elegido, no se recomienda una pared mas delgada (aunque con su propio golpe el
+    // vacio se reduzca: el perfil se calculo con el tubo elegido y no se contradice el aviso): el vacio puede aplastar tubos de
     // pared delgada (AWWA M51, p. 9) y la separacion de columna puede dar presiones mayores
     // que las calculadas (p. 42).
     const drUsuario = computedDR;
     const rec = matClasses.classes.find((row) => {
       const pm = porClase[row.clase];
       if (pm == null || pm > 0.9 * row.pn) return false;
-      if (vacioClase[row.clase] && drUsuario != null) {
+      if (vacioActual && drUsuario != null) {
         const dr = drDe(row.clase);
         if (dr != null && dr > drUsuario + 0.5) return false;
       }
       return true;
     }) ?? null;
-    const limitadaPorVacio = rec != null && vacioClase[rec.clase] && drUsuario != null && matClasses.classes.some((row) => {
+    const limitadaPorVacio = rec != null && vacioActual && drUsuario != null && matClasses.classes.some((row) => {
       const pm = porClase[row.clase];
       const dr = drDe(row.clase);
       return pm != null && pm <= 0.9 * row.pn && dr != null && dr > drUsuario + 0.5;
