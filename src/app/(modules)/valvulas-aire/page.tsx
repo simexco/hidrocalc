@@ -246,8 +246,9 @@ export default function ValvulasAirePage() {
     const cotas = chartData.map((d) => d.cota);
     const lo = Math.min(...cotas);
     const hi = Math.max(...cotas);
-    const pad = Math.max((hi - lo) * 0.15, 2);
-    return [Math.floor(lo - pad), Math.ceil(hi + pad)] as [number, number];
+    // Margen arriba para las etiquetas de las valvulas y abajo para el relleno del terreno
+    const rango = Math.max(hi - lo, 4);
+    return [Math.floor(lo - rango * 0.25), Math.ceil(hi + rango * 0.35)] as [number, number];
   })();
 
   const typeBadge = (type: string) => {
@@ -482,9 +483,18 @@ export default function ValvulasAirePage() {
           {chartData.length >= 2 && (
             <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
               <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">Perfil y ubicación de válvulas</h3>
+              <div className="rounded-lg bg-gradient-to-b from-[#EAF4FB] via-[#F7FBFE] to-white dark:from-gray-900 dark:via-gray-900 dark:to-gray-800 pt-2">
               <ResponsiveContainer width="100%" height={320}>
                 <ComposedChart data={chartData} margin={{ top: 5, right: 10, bottom: 20, left: 10 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                  <defs>
+                    <linearGradient id="gradTerrenoVA" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#8FA977" />
+                      <stop offset="16%" stopColor="#A08A63" />
+                      <stop offset="55%" stopColor="#6E5B44" />
+                      <stop offset="100%" stopColor="#443A2D" />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="2 5" stroke="#94A3B8" strokeOpacity={0.35} vertical={false} />
                   <XAxis dataKey="dist" type="number" domain={["dataMin", "dataMax"]} label={{ value: "Distancia (m)", position: "insideBottom", offset: -10, style: { fontSize: 11 } }} tick={{ fontSize: 10 }} />
                   <YAxis
                     yAxisId="e"
@@ -495,7 +505,7 @@ export default function ValvulasAirePage() {
                   />
                   <Tooltip />
                   <Legend verticalAlign="top" height={28} />
-                  <Area yAxisId="e" type="linear" dataKey="cota" baseValue="dataMin" stroke="#1C3D5A" fill="#1C3D5A" fillOpacity={0.15} strokeWidth={2} name="Terreno"
+                  <Area yAxisId="e" type="monotone" dataKey="cota" baseValue="dataMin" stroke="#4E4234" fill="url(#gradTerrenoVA)" fillOpacity={1} strokeWidth={2.2} name="Terreno" isAnimationActive={false}
                     dot={(props: Record<string, unknown>) => {
                       const { cx, cy, payload } = props as { cx: number; cy: number; payload: { valveType?: string | null; valveReason?: string | null; desague?: boolean; porConfirmar?: boolean } };
                       if (payload?.porConfirmar && !payload?.valveType) {
@@ -511,8 +521,8 @@ export default function ValvulasAirePage() {
                         // Desague en punto bajo: cuadrito gris con D (debajo del terreno, es drenado)
                         return (
                           <g key={`des-${cx}-${cy}`}>
-                            <rect x={cx - 6.5} y={cy - 6.5} width={13} height={13} rx={3} fill="#475569" stroke="#fff" strokeWidth={2} />
-                            <text x={cx} y={cy + 16} textAnchor="middle" fontSize={9} fontWeight="bold" fill="#475569">D</text>
+                            <rect x={cx - 7.5} y={cy - 7.5} width={15} height={15} rx={3} fill="#334155" stroke="#fff" strokeWidth={2} />
+                            <text x={cx} y={cy + 3.5} textAnchor="middle" fontSize={9.5} fontWeight="bold" fill="#fff">D</text>
                           </g>
                         );
                       }
@@ -529,16 +539,17 @@ export default function ValvulasAirePage() {
                     }}
                   />
                   {hayPresion && <YAxis yAxisId="p" orientation="right" domain={[0, "auto"]} tick={{ fontSize: 10 }} label={{ value: "Presión (m.c.a.)", angle: 90, position: "insideRight", style: { fontSize: 11 } }} />}
-                  {hayPresion && <Line yAxisId="p" type="linear" dataKey="presion" stroke="#60a5fa" strokeWidth={1.5} strokeDasharray="5 3" dot={false} name="Presión (m.c.a.)" />}
+                  {hayPresion && <Line yAxisId="p" type="monotone" dataKey="presion" stroke="#38BDF8" strokeWidth={2} strokeDasharray="5 3" dot={false} name="Presión (m.c.a.)" isAnimationActive={false} />}
                   {hayPresion && <ReferenceLine yAxisId="p" y={pressureMin} stroke="#f59e0b" strokeDasharray="3 3" label={{ value: `Pmin ${pressureMin}`, position: "insideTopLeft", style: { fontSize: 9 } }} />}
                 </ComposedChart>
               </ResponsiveContainer>
+              </div>
               {/* Valve legend */}
               <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2 text-[10px] text-gray-500">
                 <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 bg-blue-500 rounded-full" /> Válvula de aire combinada (VA-C)</span>
                 <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 bg-yellow-500 rounded-full" /> Válvula de admisión y expulsión (VA-A)</span>
                 <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 bg-green-500 rounded-full" /> Válvula eliminadora de aire (VA-E)</span>
-                <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 bg-slate-600 rounded-[3px]" /> Desfogue recomendado (punto bajo)</span>
+                <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 bg-slate-700 rounded-[3px]" /> Desfogue recomendado (punto bajo)</span>
                 {results && results.porConfirmar.length > 0 && <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full border-2 border-dashed border-blue-500" /> Punto alto por confirmar en campo</span>}
               </div>
             </div>
