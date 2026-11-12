@@ -527,7 +527,7 @@ export default function ValvulasAirePage() {
                         {d.presion != null && <p>Presión: <strong>{d.presion.toFixed(1)} m.c.a.</strong> ({(d.presion / 10).toFixed(2)} kg/cm²)</p>}
                         {d.valveType && <p className="text-blue-700 dark:text-blue-300">Válvula {d.valveType}</p>}
                         {d.desague && !d.valveType && <p>Desfogue (punto bajo)</p>}
-                        {d.porConfirmar && <p>Punto alto por confirmar en campo</p>}
+                        {d.porConfirmar && <p>Confirmar con topografía de campo</p>}
                       </div>
                     );
                   }} />
@@ -558,9 +558,10 @@ export default function ValvulasAirePage() {
                       const color = payload.valveType === "VA-C" ? "#3b82f6" : payload.valveType === "VA-A" ? "#f59e0b" : "#22c55e";
                       return (
                         <g key={`valve-${cx}-${cy}`}>
+                          {payload.porConfirmar && <circle cx={cx} cy={cy} r={12} fill="none" stroke={color} strokeWidth={1.5} strokeDasharray="3 2" />}
                           <circle cx={cx} cy={cy} r={8} fill={color} stroke="#fff" strokeWidth={2.5} />
                           <text x={cx} y={cy - 14} textAnchor="middle" fontSize={9} fontWeight="bold" fill={color}>
-                            {payload.valveType === "VA-C" ? "C" : payload.valveType === "VA-A" ? "A" : "E"}{payload.porConfirmar ? "?" : ""}
+                            {payload.valveType === "VA-C" ? "C" : payload.valveType === "VA-A" ? "A" : "E"}
                           </text>
                         </g>
                       );
@@ -577,7 +578,7 @@ export default function ValvulasAirePage() {
                 <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 bg-yellow-500 rounded-full" /> Válvula de admisión y expulsión (VA-A)</span>
                 <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 bg-green-500 rounded-full" /> Válvula eliminadora de aire (VA-E)</span>
                 <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 bg-slate-700 rounded-[3px]" /> Desfogue recomendado (punto bajo)</span>
-                {results && results.porConfirmar.length > 0 && <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full border-2 border-dashed border-blue-500" /> Punto alto por confirmar en campo</span>}
+                {results && results.porConfirmar.length > 0 && <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-full border border-dashed border-blue-500 flex items-center justify-center"><span className="w-1.5 h-1.5 bg-blue-500 rounded-full" /></span> Válvula en punto alto a confirmar con topografía de campo</span>}
               </div>
             </div>
           )}

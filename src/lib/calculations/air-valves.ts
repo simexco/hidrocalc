@@ -120,7 +120,7 @@ function explicaPorQue(reason: string, type: "VA-C" | "VA-A" | "VA-E"): string {
   if (r.startsWith("descarga de bomba")) return "Al arrancar, la bomba empuja el aire que quedó en el tubo y debe salir antes de la check; al parar, deja entrar aire para que no se haga vacío (AWWA M51, figura 3-1, p. 18).";
   if (r.startsWith("fin de línea")) return "Falta indicar cómo llega el agua al tanque. Si el tubo entra abajo del nivel del agua o tiene válvula de llenado, el aire se junta al final y no tiene otra salida; si el agua cae desde arriba, esta válvula se quita (AWWA M51, figura 3-1, p. 18).";
   if (r.startsWith("llegada al tanque")) return "El final del tubo queda tapado por el agua del tanque o por la válvula de llenado: el aire que viaja con el agua se junta ahí y no tiene otra salida (AWWA M51, figura 3-1, p. 18).";
-  if (r.startsWith("punto alto por confirmar")) return "Si la loma existe en el terreno y el tubo la sigue, es punto alto: " + altoTxt.charAt(0).toLowerCase() + altoTxt.slice(1);
+  if (r.includes("confirmar con topografía")) return "Es punto alto, así que lleva combinada. Como la loma se midió con cotas del mapa, confírmala con la topografía de campo: si no existe, esta válvula se quita. Por qué va en un punto alto: " + altoTxt.charAt(0).toLowerCase() + altoTxt.slice(1);
   if (r.includes("punto alto")) return altoTxt;
   if (r.startsWith("tramo horizontal largo")) {
     return ("En un tramo plano largo el aire no tiene hacia dónde subir y cuesta sacarlo; M51 pide una válvula cada 400 a 800 m (p. 19). " + porTipo).trim();
@@ -537,7 +537,7 @@ export function calculateAirValves(input: AirValveInputs): AirValveOutputs | nul
   if (conValvulaPC) {
     for (const pc of porConfirmar) {
       const i = sorted.findIndex((v) => v.dist === pc.dist);
-      candidates.push({ dist: pc.dist, cota: pc.cota, pressure: pressures[i], type: "VA-C", reason: `Punto alto por confirmar en campo (sobresale ~${pc.sobresale.toFixed(1)} m con cotas del mapa)` });
+      candidates.push({ dist: pc.dist, cota: pc.cota, pressure: pressures[i], type: "VA-C", reason: `Punto alto — confirmar con topografía de campo (con cotas del mapa sobresale ~${pc.sobresale.toFixed(1)} m)` });
     }
   }
   if (porConfirmar.length > 0) {
