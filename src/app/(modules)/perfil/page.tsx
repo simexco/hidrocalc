@@ -182,10 +182,10 @@ export default function PerfilPage() {
         ...(() => {
           const pl = planVRP(results ?? null);
           const pts = (results?.points ?? []).filter((pt) => pt.pressure_kgcm2 != null);
-          if (!pl?.viable || !pts.length) return { presionMaxConVRP: null, presionMinConVRP: null };
+          if (!pl?.viable || !pts.length) return { presionMaxConVRP: null, presionMinConVRP: null, presionFinalConVRP: null };
           const pVrp = pts.find((pt) => pt.dist === pl.cad)?.pressure_kgcm2 ?? pl.p1;
           const conVRP = pts.map((pt) => (pt.dist <= pl.cad ? (pt.pressure_kgcm2 as number) : pl.p2 + ((pt.pressure_kgcm2 as number) - pVrp)));
-          return { presionMaxConVRP: Math.max(...conVRP), presionMinConVRP: Math.min(...conVRP) };
+          return { presionMaxConVRP: Math.max(...conVRP), presionMinConVRP: Math.min(...conVRP), presionFinalConVRP: conVRP[conVRP.length - 1] };
         })(),
         coefAccesorios: coefAccesorios / 100,
         qLinea: rawQ != null ? Math.round(flowToM3s(rawQ, flowUnit) * 1000 * 100) / 100 : null,
