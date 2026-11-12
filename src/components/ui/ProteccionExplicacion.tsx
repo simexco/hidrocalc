@@ -75,7 +75,7 @@ export function PorQueVentosasVacio() {
 // si el golpe de ariete hace vacío; se puede pedir combinada en todos (M51 p. 44).
 // Columnas: lugar, válvula, por qué, dónde lo dice M51.
 const CRITERIO_AWWA: [string, string, string, string][] = [
-  ["Descarga de bomba (antes de la check)", "Admisión y expulsión (M51 permite combinada). Pozo: combinada", "Al arrancar la bomba sale de golpe el aire de la columna; al parar, entra aire para que no se haga vacío.", "Fig. 3-1 (p. 18); pozos: p. 19 y 42"],
+  ["Descarga de bomba (antes de la check)", "Admisión y expulsión (M51 permite combinada). Pozo, o si la línea baja después de la bomba (es punto alto): combinada", "Al arrancar la bomba sale de golpe el aire de la columna; al parar, entra aire para que no se haga vacío.", "Fig. 3-1 (p. 18); pozos: p. 19 y 42"],
   ["Inicio de la línea por gravedad, si baja desde el tanque o arranca plana", "Combinada", "Ahí el inicio es un punto alto o un inicio de tramo horizontal. Si la línea sube desde el tanque, no lleva.", "Punto alto e inicio de horizontal: fig. 3-1 y p. 19"],
   ["Punto alto", "Combinada", "Ahí se junta el aire durante la operación y ahí se forma el vacío al vaciar.", "Fig. 3-1 (p. 18) y p. 19"],
   ["Inicio de tramo horizontal (la subida termina)", "Combinada", "El aire que sube con el agua se detiene donde la pendiente se acaba.", "Fig. 3-1 (p. 18) y p. 19"],
