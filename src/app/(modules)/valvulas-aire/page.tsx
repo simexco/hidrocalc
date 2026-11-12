@@ -13,7 +13,7 @@ import { STANDARD_DNS_LABELED, MATERIALS, getPipeClassesForMaterial, getRealInte
 import { saveFormState, loadFormState } from "@/lib/storage/form-persistence";
 import { useProjectStore, useNombreProyecto } from "@/store/projectStore";
 import { ResetButton } from "@/components/ui/ResetButton";
-import { ComposedChart, Line, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine } from "recharts";
+import { ComposedChart, Line, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
 import { NumInput } from "@/components/ui/NumInput";
 import type { FlowUnit } from "@/types/hydraulic";
 import { Desplegable, CriterioValvulasAire } from "@/components/ui/ProteccionExplicacion";
@@ -235,7 +235,9 @@ export default function ValvulasAirePage() {
       const exists = points.find(p => Math.abs(p.dist - pc.dist) < 1);
       if (exists) exists.porConfirmar = true;
     }
-    return points.sort((a, b) => a.dist - b.dist);
+    return points
+      .map((p) => ({ ...p, piezo: p.presion != null ? p.cota + p.presion : null }))
+      .sort((a, b) => a.dist - b.dist);
   })();
 
   // Dominio Y relativo: se ajusta a la variacion real del terreno para que
@@ -243,12 +245,15 @@ export default function ValvulasAirePage() {
   const hayPresion = chartData.some((d) => d.presion != null);
   const yDomain = (() => {
     if (chartData.length < 2) return [0, 100] as [number, number];
-    const cotas = chartData.map((d) => d.cota);
-    const lo = Math.min(...cotas);
-    const hi = Math.max(...cotas);
-    // Margen arriba para las etiquetas de las valvulas y abajo para el relleno del terreno
-    const rango = Math.max(hi - lo, 4);
-    return [Math.floor(lo - rango * 0.25), Math.ceil(hi + rango * 0.35)] as [number, number];
+    // Misma escala que la grafica de Linea de conduccion: terreno y piezometrica juntos
+    const vals = chartData.flatMap((d) => [d.cota, d.piezo]).filter((v): v is number => v != null && isFinite(v));
+    const lo = Math.min(...vals);
+    const hi = Math.max(...vals);
+    // Sin presion (no hay piezometrica) se da un rango minimo para no exagerar las lomas
+    const rango = Math.max(hi - lo, hayPresion ? 0 : 20);
+    const pad = Math.max(rango * 0.1, 2);
+    const mid = (hi + lo) / 2;
+    return [Math.floor(Math.min(lo, mid - rango / 2) - pad), Math.ceil(Math.max(hi, mid + rango / 2) + pad)] as [number, number];
   })();
 
   const typeBadge = (type: string) => {
@@ -493,6 +498,14 @@ export default function ValvulasAirePage() {
                       <stop offset="55%" stopColor="#6E5B44" />
                       <stop offset="100%" stopColor="#443A2D" />
                     </linearGradient>
+                    <linearGradient id="gradAguaVA" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#38BDF8" stopOpacity={0.5} />
+                      <stop offset="100%" stopColor="#0C4A6E" stopOpacity={0.12} />
+                    </linearGradient>
+                    <filter id="glowPiezoVA" x="-20%" y="-20%" width="140%" height="140%">
+                      <feGaussianBlur stdDeviation="2.2" result="b" />
+                      <feMerge><feMergeNode in="b" /><feMergeNode in="SourceGraphic" /></feMerge>
+                    </filter>
                   </defs>
                   <CartesianGrid strokeDasharray="2 5" stroke="#94A3B8" strokeOpacity={0.35} vertical={false} />
                   <XAxis dataKey="dist" type="number" domain={["dataMin", "dataMax"]} label={{ value: "Distancia (m)", position: "insideBottom", offset: -10, style: { fontSize: 11 } }} tick={{ fontSize: 10 }} />
@@ -503,8 +516,23 @@ export default function ValvulasAirePage() {
                     label={{ value: "Elevación (m)", angle: -90, position: "insideLeft", style: { fontSize: 11 } }}
                     tick={{ fontSize: 10 }}
                   />
-                  <Tooltip />
+                  {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                  <Tooltip content={({ active, payload }: any) => {
+                    if (!active || !payload?.length) return null;
+                    const d = payload[0].payload as { dist: number; cota: number; presion: number | null; valveType: string | null; desague: boolean; porConfirmar: boolean };
+                    return (
+                      <div className="bg-white/95 dark:bg-gray-900/95 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl px-3 py-2 text-[11px] text-gray-600 dark:text-gray-300">
+                        <p className="font-bold text-[#1C3D5A] dark:text-blue-300">{Math.round(d.dist).toLocaleString("es-MX")} m del inicio</p>
+                        <p>Cota: <strong>{d.cota.toFixed(1)} m</strong></p>
+                        {d.presion != null && <p>Presión: <strong>{d.presion.toFixed(1)} m.c.a.</strong> ({(d.presion / 10).toFixed(2)} kg/cm²)</p>}
+                        {d.valveType && <p className="text-blue-700 dark:text-blue-300">Válvula {d.valveType}</p>}
+                        {d.desague && !d.valveType && <p>Desfogue (punto bajo)</p>}
+                        {d.porConfirmar && <p>Punto alto por confirmar en campo</p>}
+                      </div>
+                    );
+                  }} />
                   <Legend verticalAlign="top" height={28} />
+                  {hayPresion && <Area yAxisId="e" type="monotone" dataKey="piezo" name="Columna de presión" stroke="none" fill="url(#gradAguaVA)" baseValue="dataMin" connectNulls tooltipType="none" legendType="none" isAnimationActive={false} />}
                   <Area yAxisId="e" type="monotone" dataKey="cota" baseValue="dataMin" stroke="#4E4234" fill="url(#gradTerrenoVA)" fillOpacity={1} strokeWidth={2.2} name="Terreno" isAnimationActive={false}
                     dot={(props: Record<string, unknown>) => {
                       const { cx, cy, payload } = props as { cx: number; cy: number; payload: { valveType?: string | null; valveReason?: string | null; desague?: boolean; porConfirmar?: boolean } };
@@ -538,12 +566,11 @@ export default function ValvulasAirePage() {
                       );
                     }}
                   />
-                  {hayPresion && <YAxis yAxisId="p" orientation="right" domain={[0, "auto"]} tick={{ fontSize: 10 }} label={{ value: "Presión (m.c.a.)", angle: 90, position: "insideRight", style: { fontSize: 11 } }} />}
-                  {hayPresion && <Line yAxisId="p" type="monotone" dataKey="presion" stroke="#38BDF8" strokeWidth={2} strokeDasharray="5 3" dot={false} name="Presión (m.c.a.)" isAnimationActive={false} />}
-                  {hayPresion && <ReferenceLine yAxisId="p" y={pressureMin} stroke="#f59e0b" strokeDasharray="3 3" label={{ value: `Pmin ${pressureMin}`, position: "insideTopLeft", style: { fontSize: 9 } }} />}
+                  {hayPresion && <Line yAxisId="e" type="monotone" dataKey="piezo" stroke="#38BDF8" strokeWidth={2.8} dot={false} connectNulls name="Piezométrica" style={{ filter: "url(#glowPiezoVA)" }} isAnimationActive={false} />}
                 </ComposedChart>
               </ResponsiveContainer>
               </div>
+              {hayPresion && <p className="mt-2 text-[10px] text-gray-500 dark:text-gray-400">La línea azul es la piezométrica: la distancia entre ella y el terreno es la presión en cada punto (10 m ≈ 1 kg/cm²). Pasa el cursor sobre la gráfica para ver la presión.</p>}
               {/* Valve legend */}
               <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2 text-[10px] text-gray-500">
                 <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 bg-blue-500 rounded-full" /> Válvula de aire combinada (VA-C)</span>
