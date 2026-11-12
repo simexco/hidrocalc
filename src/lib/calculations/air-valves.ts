@@ -116,6 +116,7 @@ function explicaPorQue(reason: string, type: "VA-C" | "VA-A" | "VA-E"): string {
     : type === "VA-E" ? "Basta eliminadora: solo hay que purgar el aire en operación." : "";
   const altoTxt = "El aire pesa menos que el agua y sube al punto más alto del tubo; ahí se junta, le quita paso al agua y puede llegar a frenarla. La combinada lo saca al llenar y en operación, y deja entrar aire si la línea se vacía (AWWA M51, p. 1 y 19).";
   if (r.startsWith("descarga de bomba de pozo")) return "Al arrancar, la bomba empuja el aire de la columna del pozo y debe salir antes de la check; al parar, deja entrar aire para que no se haga vacío (AWWA M51, p. 19 y 42).";
+  if (r.startsWith("descarga de bomba que además es punto alto")) return "Después de la bomba la línea baja, así que la descarga también es punto alto: ahí se junta aire en operación y M51 pide combinada en los puntos altos, no solo admisión y expulsión (AWWA M51, figura 3-1 y p. 19).";
   if (r.startsWith("descarga de bomba")) return "Al arrancar, la bomba empuja el aire que quedó en el tubo y debe salir antes de la check; al parar, deja entrar aire para que no se haga vacío (AWWA M51, figura 3-1, p. 18).";
   if (r.startsWith("fin de línea")) return "Falta indicar cómo llega el agua al tanque. Si el tubo entra abajo del nivel del agua o tiene válvula de llenado, el aire se junta al final y no tiene otra salida; si el agua cae desde arriba, esta válvula se quita (AWWA M51, figura 3-1, p. 18).";
   if (r.startsWith("llegada al tanque")) return "El final del tubo queda tapado por el agua del tanque o por la válvula de llenado: el aire que viaja con el agua se junta ahí y no tiene otra salida (AWWA M51, figura 3-1, p. 18).";
@@ -359,6 +360,15 @@ export function calculateAirValves(input: AirValveInputs): AirValveOutputs | nul
   // Inicio de una linea por gravedad: AWWA M51 no lo lista por si mismo. Lleva combinada
   // solo si es punto alto (la linea baja desde el tanque) o arranca un tramo horizontal;
   // si la linea sube desde el tanque, el aire sale por el siguiente punto alto.
+  // Bombeo que arranca bajando: la descarga tambien es punto alto y M51 pide combinada ahi
+  // (p. 19, punto alto); la admision y expulsion no basta.
+  if (input.esBombeo && !input.esPozo && macro.length >= 2) {
+    const b0 = macro[1];
+    const pend0 = ((sorted[b0].cota - sorted[0].cota) / ((sorted[b0].dist - sorted[0].dist) || 1)) * 100;
+    if (pend0 < -1) {
+      candidates.push({ dist: sorted[0].dist, cota: sorted[0].cota, pressure: pressures[0], type: "VA-C", reason: "Descarga de bomba que además es punto alto (la línea baja después de la bomba)" });
+    }
+  }
   if (!input.esBombeo && macro.length >= 2) {
     const b0 = macro[1];
     const pend0 = ((sorted[b0].cota - sorted[0].cota) / ((sorted[b0].dist - sorted[0].dist) || 1)) * 100;
