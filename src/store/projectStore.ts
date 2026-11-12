@@ -22,7 +22,7 @@ export const emptyProject: ActiveProject = {
   poblacion: null, proyectarCrecimiento: false, periodoDiseno: 20, dotacion: 150, cmd: 1.4, cmh: 1.55, horasTanque: 11.0,
   q_ls: null, longitud: null, desnivel: null, presionRequerida: 10,
   material: "PVC Inglés", dn: "", clase: "RD 26", dnNominal_mm: null, diametroInterior: null, c: 150,
-  presionMaxLinea: null, pnLinea: null, p1: null, presionFinalLinea: null, presionMinLinea: null, presionMinPunto: null,
+  presionMaxLinea: null, pnLinea: null, p1: null, presionFinalLinea: null, presionMinLinea: null, presionMinPunto: null, presionMaxConVRP: null, presionMinConVRP: null,
   vertices: [], valvulas: [],
   incluyeBombeo: false, fuenteAgua: null, he: null, eficiencia: 70,
   despiece: [],

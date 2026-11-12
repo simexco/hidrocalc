@@ -52,6 +52,10 @@ export interface ReportData {
   fuenteAgua?: "pozo" | "carcamo" | "tanque-bombeo" | "gravedad" | null;
   presionMinLinea?: number | null;              // kg/cm², punto de menor presión de operación del perfil
   presionMinPunto?: { cad: number; cota: number } | null;
+  // Con la VRP recomendada instalada: presión de operación máxima y mínima de la línea
+  // (antes de la VRP la del perfil; después, el ajuste de salida más el desnivel)
+  presionMaxConVRP?: number | null;
+  presionMinConVRP?: number | null;
   he: number | null;
   eficiencia: number | null;
   // Despiece (lista consolidada de piezas seleccionadas)
@@ -218,8 +222,8 @@ export function computeReport(d: ReportData): ReportResults {
   if (d.golpePmax != null) {
     r.pmaxConGolpe = d.golpePmax;
     r.golpeExcedeClase = d.golpeResiste != null ? !d.golpeResiste : (d.pnLinea != null ? r.pmaxConGolpe > d.pnLinea : null);
-  } else if (d.presionMaxLinea != null && r.sobrepresionGolpe != null) {
-    r.pmaxConGolpe = d.presionMaxLinea + r.sobrepresionGolpe / 10; // kg/cm²
+  } else if ((d.presionMaxConVRP ?? d.presionMaxLinea) != null && r.sobrepresionGolpe != null) {
+    r.pmaxConGolpe = (d.presionMaxConVRP ?? d.presionMaxLinea)! + r.sobrepresionGolpe / 10; // kg/cm²
     if (d.pnLinea != null) r.golpeExcedeClase = r.pmaxConGolpe > d.pnLinea;
   }
   // Riesgo: si excede la clase con golpe → alto; bombeo → al menos medio (paro de bomba); si no → según sobrepresión

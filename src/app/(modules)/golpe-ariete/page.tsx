@@ -41,7 +41,10 @@ export default function GolpeArietePage() {
   // Presion minima de operacion en el perfil: la onda de baja del golpe pega en toda la
   // linea, asi que el vacio aparece primero en el punto de menor presion (p. ej. un punto
   // alto), no en la valvula. Se revisa con el mismo ΔH (mismo criterio que Valvulas de aire).
-  const presionMinLinea = useProjectStore((s) => s.project.presionMinLinea);
+  // Con la VRP recomendada, el golpe se suma a las presiones con la VRP instalada
+  const presionMinLinea = useProjectStore((s) => s.project.presionMinConVRP ?? s.project.presionMinLinea);
+  const vrpUbicacion = useProjectStore((s) => s.project.vrpUbicacion);
+  const presionMaxConVRP = useProjectStore((s) => s.project.presionMaxConVRP);
   const presionMinPunto = useProjectStore((s) => s.project.presionMinPunto);
   const pMinPerfil = results?.deltaH != null && presionMinLinea != null ? presionMinLinea * 10 - results.deltaH : null;
   const pMinGolpe = results?.Pmin != null ? (pMinPerfil != null ? Math.min(results.Pmin, pMinPerfil) : results.Pmin) : pMinPerfil;
@@ -150,7 +153,7 @@ export default function GolpeArietePage() {
       if (_velMode) setVelMode(_velMode);
       if (_caudalQ != null) setCaudalQ(_caudalQ);
       if (!ed.q && p.q_ls != null) { setVelMode("caudal"); setCaudalQ(p.q_ls); }
-      if (!ed.p0 && p.presionMaxLinea != null) setInput("P0", Math.round(p.presionMaxLinea * 10) / 10);
+      if (!ed.p0 && (p.presionMaxConVRP ?? p.presionMaxLinea) != null) setInput("P0", Math.round((p.presionMaxConVRP ?? p.presionMaxLinea)! * 10) / 10);
       if (!ed.l && p.longitud != null) setInput("L", p.longitud);
     } else {
       // Sin datos propios: tuberia por defecto PVC Inglés RD 26 (o lo del proyecto si existe),
@@ -158,7 +161,7 @@ export default function GolpeArietePage() {
       const m = matchGolpeCatalog(p.material || "PVC Inglés", p.dnNominal_mm, p.clase || "RD 26");
       if (m) { setSelectedCatalog(m.gi); setSelectedSize(m.si); setSelectedClass(m.ci); }
       if (p.q_ls != null) { setVelMode("caudal"); setCaudalQ(p.q_ls); }
-      if (p.presionMaxLinea != null) setInput("P0", Math.round(p.presionMaxLinea * 10) / 10);
+      if ((p.presionMaxConVRP ?? p.presionMaxLinea) != null) setInput("P0", Math.round((p.presionMaxConVRP ?? p.presionMaxLinea)! * 10) / 10);
       if (p.longitud != null) setInput("L", p.longitud);
     }
     setTimeout(() => { prefillingRef.current = false; }, 0);
@@ -183,7 +186,7 @@ export default function GolpeArietePage() {
     const m = matchGolpeCatalog(p.material || "PVC Inglés", p.dnNominal_mm, p.clase || "RD 26");
     if (m) { setEntryMode("simple"); setSelectedCatalog(m.gi); setSelectedSize(m.si); setSelectedClass(m.ci); }
     if (p.q_ls != null) { setVelMode("caudal"); setCaudalQ(p.q_ls); }
-    if (p.presionMaxLinea != null) setInput("P0", Math.round(p.presionMaxLinea * 10) / 10);
+    if ((p.presionMaxConVRP ?? p.presionMaxLinea) != null) setInput("P0", Math.round((p.presionMaxConVRP ?? p.presionMaxLinea)! * 10) / 10);
     if (p.longitud != null) setInput("L", p.longitud);
     setTimeout(() => { prefillingRef.current = false; }, 0);
   };
@@ -382,9 +385,12 @@ export default function GolpeArietePage() {
 
   // Dónde va la protección y con qué ajuste (calculado sobre el perfil del proyecto)
   const p1Proyecto = useProjectStore((s) => s.project.p1);
+  // Con VRP en una línea por gravedad, la protección del final se calcula sobre el tramo
+  // que sigue a la VRP: ahí la carga de arranque es la del ajuste de salida, no la del tanque
+  const conVRP = !esBombeo && vrpUbicacion != null;
   const planGolpe = ubicarProteccionGolpe(
-    (vertsPerfil ?? []).filter((v) => v.cad != null && v.cota != null).map((v) => ({ cad: v.cad as number, cota: v.cota as number, desc: v.desc ?? "" })),
-    esBombeo, p1Proyecto ?? null, userPN != null ? userPN / 0.9807 : null,
+    (vertsPerfil ?? []).filter((v) => v.cad != null && v.cota != null && (!conVRP || (v.cad as number) >= vrpUbicacion!.cad)).map((v) => ({ cad: v.cad as number, cota: v.cota as number, desc: v.desc ?? "" })),
+    esBombeo, conVRP ? vrpUbicacion!.p2 : (p1Proyecto ?? null), userPN != null ? userPN / 0.9807 : null,
   );
 
   // Válvula de protección recomendada (alivio/anticipadora) — opción B cuando no resiste.
@@ -715,6 +721,12 @@ export default function GolpeArietePage() {
                   </div>
                 );
               })()}
+
+              {conVRP && (
+                <div className="rounded-xl border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-900/20 px-4 py-2.5 text-xs text-blue-900 dark:text-blue-200">
+                  La línea lleva la <strong>válvula reductora {fmtPos(vrpUbicacion!.cad)}</strong> (ajuste de salida {formatNumber(vrpUbicacion!.p2, 1)} kg/cm²): el golpe se suma a la presión de operación <strong>con la VRP instalada</strong>{presionMaxConVRP != null ? <> (máxima {formatNumber(presionMaxConVRP, 1)} kg/cm²)</> : null}, y la protección del final se calcula sobre el tramo que sigue a la VRP.
+                </div>
+              )}
 
               {/* ── SEMÁFORO DE PROTECCIÓN ── */}
               {(() => {

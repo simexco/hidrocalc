@@ -176,6 +176,17 @@ export default function PerfilPage() {
           const pl = planVRP(results ?? null);
           return pl?.viable ? { cad: pl.cad, cota: pl.cota, p1: pl.p1, p2: pl.p2, bajoCad: pl.puntoBajo.cad, bajoCota: pl.puntoBajo.cota } : null;
         })(),
+        // Presiones de operación con la VRP instalada: antes de la VRP, las del perfil;
+        // después, el ajuste de salida más lo que cada punto gana o pierde respecto a la VRP.
+        // El golpe de ariete se suma a ESTAS presiones (sin VRP la línea no se construye así).
+        ...(() => {
+          const pl = planVRP(results ?? null);
+          const pts = (results?.points ?? []).filter((pt) => pt.pressure_kgcm2 != null);
+          if (!pl?.viable || !pts.length) return { presionMaxConVRP: null, presionMinConVRP: null };
+          const pVrp = pts.find((pt) => pt.dist === pl.cad)?.pressure_kgcm2 ?? pl.p1;
+          const conVRP = pts.map((pt) => (pt.dist <= pl.cad ? (pt.pressure_kgcm2 as number) : pl.p2 + ((pt.pressure_kgcm2 as number) - pVrp)));
+          return { presionMaxConVRP: Math.max(...conVRP), presionMinConVRP: Math.min(...conVRP) };
+        })(),
         coefAccesorios: coefAccesorios / 100,
         p1: calcMode === "calcularP1" ? computedP1 : P1,
         presionFinalLinea: results?.finalPressure_kgcm2 ?? null,
