@@ -423,7 +423,7 @@ export default function ValvulasAirePage() {
                     { label: "Válvulas de admisión y expulsión (VA-A)", value: `${results.totalVAA}` },
                     { label: "Válvulas eliminadoras de aire (VA-E)", value: `${results.totalVAE}` },
                   ],
-                  alerts: results.alerts.map((a) => ({ level: "WARN", message: a })),
+                  alerts: [...results.alerts, ...results.notas].map((a) => ({ level: "WARN", message: a })),
                   tableData: {
                     head: ["Distancia (m)", "Cota (m)", "Presión (m.c.a.)", "Tipo", "Tamaño", "Presión nominal (PN)", "Razón"],
                     body: results.valves.map((v) => [
@@ -442,9 +442,31 @@ export default function ValvulasAirePage() {
           )}
 
           {/* Alerts */}
-          {results?.alerts.map((a, i) => (
-            <AlertBanner key={i} level={a.includes("negativa") || a.includes("rediseño") ? "ERROR" : a.includes("Sin datos") ? "OK" : "WARN"} message={a} />
+          {/* Avisos: lo grave en rojo; lo que hay que revisar en una sola tarjeta; las notas
+              del calculo plegadas (informan, no piden accion) */}
+          {results?.alerts.filter((a) => a.includes("NEGATIVA") || a.includes("rediseño")).map((a, i) => (
+            <AlertBanner key={`err-${i}`} level="ERROR" message={a} />
           ))}
+          {results && (() => {
+            const revisar = results.alerts.filter((a) => !(a.includes("NEGATIVA") || a.includes("rediseño")));
+            if (revisar.length === 0) return null;
+            return (
+              <div className="rounded-xl border border-amber-200 bg-amber-50 dark:bg-amber-900/10 dark:border-amber-800 p-3 sm:p-4">
+                <p className="text-xs font-semibold text-amber-800 dark:text-amber-300 mb-1.5">Para revisar ({revisar.length})</p>
+                <ul className="list-disc pl-4 space-y-1 text-[12px] leading-snug text-amber-900 dark:text-amber-200">
+                  {revisar.map((a, i) => <li key={i}>{a}</li>)}
+                </ul>
+              </div>
+            );
+          })()}
+          {results && results.notas.length > 0 && (
+            <details className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-3 sm:px-4">
+              <summary className="cursor-pointer text-xs font-semibold text-gray-600 dark:text-gray-300">Notas del cálculo ({results.notas.length})</summary>
+              <ul className="list-disc pl-4 mt-2 space-y-1 text-[12px] leading-snug text-gray-600 dark:text-gray-400">
+                {results.notas.map((a, i) => <li key={i}>{a}</li>)}
+              </ul>
+            </details>
+          )}
 
           {/* Summary cards */}
           {results && (
