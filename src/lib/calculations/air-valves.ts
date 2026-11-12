@@ -499,7 +499,7 @@ export function calculateAirValves(input: AirValveInputs): AirValveOutputs | nul
     const lista = porConfirmar.map((pc) => `${Math.round(pc.dist).toLocaleString("es-MX")} m`).join(", ");
     alerts.push(conValvulaPC
       ? `Se puso válvula combinada en ${porConfirmar.length} punto(s) alto(s) por confirmar (a los ${lista}). Con cotas del mapa esas lomas miden menos de 5 m y pueden no existir: si la topografía de campo no las confirma, se quitan.`
-      : `${porConfirmar.length} punto(s) alto(s) por confirmar en campo (a los ${lista}): con cotas del mapa sobresalen menos de 5 m, que es menos que el error del satélite, y no se les puso válvula. Si la topografía de campo confirma la loma, ahí va válvula combinada (AWWA M51, figura 3-1).`);
+      : `${porConfirmar.length} punto(s) alto(s) por confirmar en campo (a los ${lista}): con cotas del mapa sobresalen menos de 5 m, que es menos que el error del satélite, y no se les puso válvula. Si la topografía de campo confirma la loma, hay dos caminos: profundizar la zanja para que el tubo pase sin loma, o poner válvula combinada (AWWA M51, figura 3-1).`);
   }
 
   // Step 4: Deduplicate — within 30m, keep each type's highest priority

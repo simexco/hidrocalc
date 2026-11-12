@@ -523,6 +523,10 @@ export default function ValvulasAirePage() {
             <div className="bg-white dark:bg-gray-800 rounded-xl border border-dashed border-blue-400 p-4 space-y-3">
               <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200">Puntos altos por confirmar en campo ({results.porConfirmar.length})</h3>
               <p className="text-[11px] text-gray-600 dark:text-gray-400">Con las cotas del mapa estas lomas sobresalen menos de 5 m. El satélite puede equivocarse en esa medida, así que pueden existir o no. Manda esta lista al topógrafo: si la loma existe, es punto alto y lleva válvula combinada (AWWA M51, figura 3-1).</p>
+              <div className="text-[11px] text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-900 rounded-lg p-2.5 space-y-1">
+                <p className="font-semibold text-gray-700 dark:text-gray-300">Si el cliente pregunta por qué en esa loma no va válvula</p>
+                <p>AWWA M51 (p. 19) pide válvula donde el <b>tubo</b> forma loma, no donde la forma el terreno, y no fija una altura mínima. Una loma chica del terreno se puede quitar al instalar: se profundiza un poco la zanja y el tubo pasa con pendiente pareja, sin loma, y ahí el aire no se junta. Si el tubo se instala siguiendo la loma, entonces sí es punto alto y lleva combinada.</p>
+              </div>
               <div className="overflow-x-auto">
                 <table className="w-full text-xs">
                   <thead>

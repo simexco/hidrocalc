@@ -505,7 +505,7 @@ export async function generateReportPDF(d: ReportData): Promise<jsPDF> {
     });
     y = finalY(doc) + 4;
     doc.setFontSize(7.5); doc.setTextColor(90, 90, 90);
-    const notaPC = doc.splitTextToSize(safe("Con cotas del mapa (satelitales) estas lomas sobresalen menos de 5 m, que es menos que el error del satelite, asi que pueden no existir en el terreno. Hay que confirmarlas con topografia de campo: si la loma existe, es punto alto y lleva valvula combinada (AWWA M51, figura 3-1)."), doc.internal.pageSize.getWidth() - 28);
+    const notaPC = doc.splitTextToSize(safe("Con cotas del mapa (satelitales) estas lomas sobresalen menos de 5 m, que es menos que el error del satelite, asi que pueden no existir en el terreno. Hay que confirmarlas con topografia de campo. AWWA M51 (p. 19) pide valvula donde el tubo forma loma, no el terreno, y no fija altura minima: si la loma existe, se puede profundizar la zanja para que el tubo pase con pendiente pareja y sin loma; si el tubo se instala siguiendo la loma, es punto alto y lleva valvula combinada (figura 3-1)."), doc.internal.pageSize.getWidth() - 28);
     doc.text(notaPC, 14, y);
     doc.setTextColor(0, 0, 0);
     y += notaPC.length * 3.3 + 3;
