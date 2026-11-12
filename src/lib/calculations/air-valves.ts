@@ -268,7 +268,8 @@ export function calculateAirValves(input: AirValveInputs): AirValveOutputs | nul
       if (!(cotas[i] > cotas[i - 1] && cotas[i] >= cotas[i + 1])) continue;
       if (altosSig.has(i)) continue;
       const sob = Math.min(caida(i, -1), caida(i, 1));
-      if (sob >= 1) porConfirmarIdx.push({ i, sobresale: sob });
+      // Desde 2 m: abajo de eso es ruido del satelite y llenaria el perfil de valvulas
+      if (sob >= 2) porConfirmarIdx.push({ i, sobresale: sob });
     }
   }
 
@@ -527,7 +528,8 @@ export function calculateAirValves(input: AirValveInputs): AirValveOutputs | nul
   // Lomas por confirmar que no quedan a menos de 50 m de una valvula ya puesta. Si el
   // proyectista lo pide, llevan combinada (como punto alto); si no, solo se listan.
   const porConfirmar: AirValveOutputs["porConfirmar"] = [];
-  const conValvulaPC = input.incluirPorConfirmar === true;
+  // Por defecto llevan valvula (como punto alto); el proyectista la puede quitar
+  const conValvulaPC = input.incluirPorConfirmar !== false;
   for (const { i, sobresale } of porConfirmarIdx) {
     if (candidates.some((c) => Math.abs(c.dist - sorted[i].dist) < 50)) continue;
     porConfirmar.push({ dist: sorted[i].dist, cota: sorted[i].cota, sobresale: Math.round(sobresale * 10) / 10, conValvula: conValvulaPC });
@@ -540,8 +542,8 @@ export function calculateAirValves(input: AirValveInputs): AirValveOutputs | nul
   }
   if (porConfirmar.length > 0) {
     const lista = porConfirmar.map((pc) => `${Math.round(pc.dist).toLocaleString("es-MX")} m`).join(", ");
-    notas.push(conValvulaPC
-      ? `Se puso válvula combinada en ${porConfirmar.length} punto(s) alto(s) por confirmar (a los ${lista}). Con cotas del mapa esas lomas miden menos de 5 m y pueden no existir: si la topografía de campo no las confirma, se quitan.`
+    (conValvulaPC ? alerts : notas).push(conValvulaPC
+      ? `Revisar en campo ${porConfirmar.length} punto(s) alto(s) (a los ${lista}): se les puso válvula combinada, pero con cotas del mapa la loma sobresale menos de 5 m y puede no existir. Si la topografía de campo no la confirma, esa válvula se quita.`
       : `${porConfirmar.length} punto(s) alto(s) por confirmar en campo (a los ${lista}): con cotas del mapa sobresalen menos de 5 m, que es menos que el error del satélite, y no se les puso válvula. Si la topografía de campo confirma la loma, hay dos caminos: profundizar la zanja para que el tubo pase sin loma, o poner válvula combinada (AWWA M51, figura 3-1).`);
   }
 
