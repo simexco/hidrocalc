@@ -610,7 +610,7 @@ export default function ValvulasAirePage() {
                 </table>
               </div>
               <div className="px-3 py-2 text-[10px] text-gray-400 border-t border-gray-100 dark:border-gray-700">
-                Ubicación y tamaño según AWWA M51 (2a. ed.) y MAPAS. Abajo de cada válvula va por qué va ahí y el cálculo del tamaño. Selección definitiva con las curvas del fabricante.
+                Ubicación y tamaño según AWWA M51 (2a. ed.) y MAPAS. En «Ver explicación» de cada válvula está por qué va ahí y el cálculo del tamaño. Selección definitiva con las curvas del fabricante.
               </div>
               <div className="px-3 pb-3">
                 <Desplegable titulo="¿Por qué va cada válvula ahí? Criterio de ubicación AWWA M51"><CriterioValvulasAire /></Desplegable>
@@ -645,7 +645,7 @@ export default function ValvulasAirePage() {
                   <tbody>
                     {filas.map((f) => (
                       <tr key={f.t} className="border-b border-gray-100 dark:border-gray-700 align-top">
-                        <td className="py-1.5 pr-2 font-medium"><span className={`text-[10px] px-1.5 py-0.5 rounded mr-1 ${typeBadge(f.t)}`}>{f.t}</span>{nombre[f.t]}</td>
+                        <td className="py-1.5 pr-2 font-medium"><span className={`text-[10px] px-1.5 py-0.5 rounded mr-1 whitespace-nowrap ${typeBadge(f.t)}`}>{f.t}</span>{nombre[f.t]}</td>
                         <td className="py-1.5 pr-2 text-center font-mono">{f.n}</td>
                         <td className="py-1.5 pr-2 whitespace-nowrap">{f.tam}</td>
                         <td className="py-1.5 text-gray-600 dark:text-gray-400">{f.donde}{f.lentas > 0 && <span className="block text-[10px] text-orange-700">{f.lentas} con dispositivo de cierre lento (zona de vacío por golpe)</span>}</td>
