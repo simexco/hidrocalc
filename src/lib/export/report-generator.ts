@@ -57,6 +57,8 @@ export interface ReportData {
   presionMaxConVRP?: number | null;
   // Gasto con el que se calculó la línea (L/s): máximo horario si va a la red, máximo diario si va a la fuente/tanque
   qLinea?: number | null;
+  // Presión al final de la línea con la VRP recomendada instalada (kg/cm²)
+  presionFinalConVRP?: number | null;
   presionMinConVRP?: number | null;
   he: number | null;
   eficiencia: number | null;
@@ -137,8 +139,8 @@ export function computeReport(d: ReportData): ReportResults {
     if (r.qmd != null && d.horasTanque != null) r.vtanque = r.qmd * d.horasTanque;
   }
 
-  // Módulo 2 — gasto de conducción (usa Q capturado, suele ser Qmd)
-  const Q = d.q_ls;
+  // Módulo 2 — gasto con el que se calculó la línea (Línea de conducción); sin él, el de la demanda
+  const Q = d.qLinea ?? d.q_ls;
   // Diámetro hidráulico: el ID real; si solo se conoce el DN nominal, se usa como aproximación
   const Di_mm = d.diametroInterior ?? d.dnNominal_mm;
   if (Q != null && Q > 0 && Di_mm != null && Di_mm > 0) {
@@ -447,7 +449,7 @@ export async function generateReportPDF(d: ReportData): Promise<jsPDF> {
     head: [["Parametro", "Valor"]],
     body: [
       ...(tipoLinea ? [["Tipo de linea", tipoLinea]] : []),
-      ["Gasto de diseño (Q)", `${n(d.q_ls)} L/s`],
+      ["Gasto de diseño (Q)", `${n(d.qLinea ?? d.q_ls)} L/s`],
       ["Longitud total de la linea", `${n(d.longitud, 0)} m`],
       ["Desnivel (cota inicio-fin)", `${n(d.desnivel, 1)} m`],
       ["Presion requerida al final", `${n(d.presionRequerida, 1)} m.c.a.`],
@@ -472,7 +474,9 @@ export async function generateReportPDF(d: ReportData): Promise<jsPDF> {
       ["Perdida total", `${n(r.perdidaTotal, 2)} m`],
       ["Presion estimada al final", r.presionFinal == null
         ? "Requiere P1 (presion de entrada) en la conduccion"
-        : `${n(r.presionFinal, 1)} m.c.a. ${d.presionRequerida != null && r.presionFinal >= d.presionRequerida ? "CUMPLE" : "REVISAR"}`],
+        : d.presionFinalConVRP != null
+          ? `${n(d.presionFinalConVRP * 10, 1)} m.c.a. con la VRP (${n(r.presionFinal, 1)} sin ella) ${d.presionRequerida != null && d.presionFinalConVRP * 10 >= d.presionRequerida ? "CUMPLE" : "REVISAR"}`
+          : `${n(r.presionFinal, 1)} m.c.a. ${d.presionRequerida != null && r.presionFinal >= d.presionRequerida ? "CUMPLE" : "REVISAR"}`],
     ],
     margin: { left: 14, right: 14, top: 30 }, didDrawPage: dibujaHeader,
   });
@@ -617,7 +621,7 @@ export async function generateReportPDF(d: ReportData): Promise<jsPDF> {
       startY: y, theme: "grid", styles: { fontSize: 8 }, headStyles: tableBlue,
       head: [["Parametro", "Valor"]],
       body: [
-        ["Gasto por conducir (Q)", `${n(d.q_ls)} L/s (${n(r.qm3h, 1)} m3/h)`],
+        ["Gasto por conducir (Q)", `${n(d.qLinea ?? d.q_ls)} L/s (${n(r.qm3h, 1)} m3/h)`],
         ["Carga estatica (He)", `${n(d.he, 1)} m`],
         ["Perdidas (Hf + Hac)", `${n(r.perdidaTotal, 1)} m`],
         ["Carga de velocidad (Hv)", `${n(r.hv, 2)} m`],
@@ -632,7 +636,7 @@ export async function generateReportPDF(d: ReportData): Promise<jsPDF> {
     doc.setFontSize(8); doc.setFont("helvetica", "bold"); doc.setTextColor(...BRAND);
     doc.text(r.cdt != null ? "SOLICITAR LA BOMBA CON ESTOS 2 DATOS:" : "CDT INCOMPLETO — falta la conduccion (longitud, C y diametro):", 17, y + 6);
     doc.setFontSize(12);
-    doc.text(r.cdt != null ? `Q = ${n(d.q_ls)} L/s    +    CDT = ${n(r.cdt, 1)} m` : `Q = ${n(d.q_ls)} L/s    +    CDT = pendiente`, 17, y + 13);
+    doc.text(r.cdt != null ? `Q = ${n(d.qLinea ?? d.q_ls)} L/s    +    CDT = ${n(r.cdt, 1)} m` : `Q = ${n(d.qLinea ?? d.q_ls)} L/s    +    CDT = pendiente`, 17, y + 13);
     doc.setTextColor(0, 0, 0); y += 22;
 
     asegura(30);
@@ -642,7 +646,7 @@ export async function generateReportPDF(d: ReportData): Promise<jsPDF> {
       startY: y, theme: "grid", styles: { fontSize: 8 }, headStyles: tableBlue,
       head: [["Concepto", "Valor"]],
       body: [
-        ["Caudal nominal (Q)", `${n(d.q_ls)} L/s (${n(r.qm3h, 1)} m3/h)`],
+        ["Caudal nominal (Q)", `${n(d.qLinea ?? d.q_ls)} L/s (${n(r.qm3h, 1)} m3/h)`],
         ["Carga de diseño (CDT)", `${n(r.cdt, 1)} m.c.a.`],
         ["Potencia hidraulica / al freno", `${n(r.phKW, 2)} / ${n(r.peKW, 2)} kW`],
         ["Potencia estimada (referencia)", `~${n(r.hp, 1)} HP`],
