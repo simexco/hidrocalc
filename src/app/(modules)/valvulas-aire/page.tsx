@@ -122,6 +122,8 @@ export default function ValvulasAirePage() {
   const opcionSencilla = useProjectStore((s) => s.project.aireOpcionSencilla !== false);
   // Cotas del mapa: poner valvula tambien en las lomas de 1 a 5 m (por confirmar en campo)
   const incluirPorConfirmar = useProjectStore((s) => s.project.airePorConfirmar !== false);
+  // VRP recomendada en Línea de conducción: cambia la presión aguas abajo
+  const vrpUbicacion = useProjectStore((s) => s.project.vrpUbicacion ?? null);
   useEffect(() => {
     if (!results) return;
     const fullName = (type: string) => type === "VA-C" ? "Valvula de aire combinada" : type === "VA-A" ? "Valvula de admision y expulsion (VAEA)" : "Valvula eliminadora de aire";
@@ -144,11 +146,11 @@ export default function ValvulasAirePage() {
     // Hidraulica con el Ø interior REAL del tubo (material+DN+clase); el nominal solo
     // dimensiona las valvulas. Sin clase elegida cae al nominal (comportamiento previo).
     const diReal = getRealInternalDiameter(materialName, DN, pipeClass);
-    const input: AirValveInputs = { projectName, Q, DN_mm: DN, diametroInterior_mm: diReal, C, P0_kgcm2: P0, pressureMin, maxSpacing, vertices, esBombeo, cotasSatelitales, golpeDeltaH, llegadaLibre, esPozo, fuenteIndicada, opcionSencilla, incluirPorConfirmar, chezyC: chezyDeMaterial(materialName) };
+    const input: AirValveInputs = { projectName, Q, DN_mm: DN, diametroInterior_mm: diReal, C, P0_kgcm2: P0, pressureMin, maxSpacing, vertices, esBombeo, cotasSatelitales, golpeDeltaH, llegadaLibre, esPozo, fuenteIndicada, opcionSencilla, incluirPorConfirmar, vrp: !esBombeo && vrpUbicacion ? { cad: vrpUbicacion.cad, cota: vrpUbicacion.cota, p2: vrpUbicacion.p2 } : null, chezyC: chezyDeMaterial(materialName) };
     const res = calculateAirValves(input);
     setResults(res);
     setAbiertas(new Set());
-  }, [projectName, rawQ, flowUnit, DN, materialName, pipeClass, C, P0, pressureMin, maxSpacing, vertices, esBombeo, cotasSatelitales, golpeDeltaH, llegadaLibre, esPozo, fuenteIndicada, opcionSencilla, incluirPorConfirmar]);
+  }, [projectName, rawQ, flowUnit, DN, materialName, pipeClass, C, P0, pressureMin, maxSpacing, vertices, esBombeo, cotasSatelitales, golpeDeltaH, llegadaLibre, esPozo, fuenteIndicada, opcionSencilla, incluirPorConfirmar, vrpUbicacion]);
 
   useEffect(() => {
     clearTimeout(debounceRef.current);

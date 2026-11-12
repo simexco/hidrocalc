@@ -59,6 +59,9 @@ export interface AirValveInputs {
   // Bombeo desde pozo o bomba vertical: AWWA M51 (p. 19 y 42) pide combinada con dispositivo
   // de cierre lento entre la bomba y la check
   esPozo?: boolean;
+  // VRP recomendada en Línea de conducción (gravedad): aguas abajo la presión es la de su
+  // ajuste de salida; cambia la presión en cada válvula, su PN y la revisión de vacío
+  vrp?: { cad: number; cota: number; p2: number } | null;
   // true = poner combinada tambien en las lomas por confirmar (cotas del mapa)
   incluirPorConfirmar?: boolean;
   // false = el usuario no indico de donde sale el agua (gravedad o bombeo)
@@ -197,9 +200,28 @@ export function calculateAirValves(input: AirValveInputs): AirValveOutputs | nul
       const hf = hfSegment(Q!, D_m, C, L);
       pressures[i + 1] = pressures[i]! + sorted[i].cota - sorted[i + 1].cota - hf;
     }
+    // Con VRP: después de la válvula, la presión es su ajuste de salida más lo que cada punto
+    // gana o pierde respecto a ella (mismo criterio que Línea de conducción)
+    const vrp = input.vrp;
+    if (vrp) {
+      const iV = sorted.findIndex((v) => Math.abs(v.dist - vrp.cad) < 1);
+      if (iV >= 0 && pressures[iV] != null) {
+        const pV = pressures[iV]!;
+        for (let i = iV + 1; i < sorted.length; i++) pressures[i] = vrp.p2 * 10 + (pressures[i]! - pV);
+      }
+    }
   } else {
     for (let i = 0; i < sorted.length; i++) pressures[i] = null;
   }
+  // PN de cada válvula: con la presión ESTÁTICA (línea detenida, la mayor que verá), no con
+  // la de arranque. Antes de la VRP manda el nivel del tanque; después, el ajuste de la VRP.
+  const cargaTanque = P0_kgcm2 != null ? sorted[0].cota + P0_kgcm2 * 10 : null;
+  const pnEn = (dist: number, cota: number, pOper: number | null): string => {
+    if (cargaTanque == null) return pn;
+    const carga = input.vrp && dist > input.vrp.cad ? input.vrp.cota + input.vrp.p2 * 10 : cargaTanque;
+    const estatica = Math.max(0, (carga - cota) / 10);
+    return getPN(Math.max(estatica, (pOper ?? 0) / 10));
+  };
 
   // Profile points for chart
   const profilePoints = sorted.map((v, i) => ({ dist: v.dist, cota: v.cota, pressure: pressures[i] ?? null }));
@@ -547,6 +569,10 @@ export function calculateAirValves(input: AirValveInputs): AirValveOutputs | nul
       : `${porConfirmar.length} punto(s) alto(s) por confirmar en campo (a los ${lista}): con cotas del mapa sobresalen menos de 5 m, que es menos que el error del satélite, y no se les puso válvula. Si la topografía de campo confirma la loma, hay dos caminos: profundizar la zanja para que el tubo pase sin loma, o poner válvula combinada (AWWA M51, figura 3-1).`);
   }
 
+  if (input.vrp && hasHydraulics) {
+    notas.push(`Presiones con la válvula reductora a los ${Math.round(input.vrp.cad).toLocaleString("es-MX")} m (ajuste de salida ${input.vrp.p2.toFixed(1)} kg/cm²), como en Línea de conducción. El PN de cada válvula sale de la presión con la línea detenida: antes de la VRP, el nivel del tanque; después, el ajuste de la VRP.`);
+  }
+
   // Step 4: Deduplicate — within 30m, keep each type's highest priority
   // But DON'T merge different types — a location can have both VA-C and VA-E
   const sortedCandidates = candidates.sort((a, b) => a.dist - b.dist);
@@ -643,7 +669,7 @@ export function calculateAirValves(input: AirValveInputs): AirValveOutputs | nul
       type: c.type,
       bodySize,
       orificeSize,
-      pn,
+      pn: pnEn(c.dist, c.cota, c.pressure),
       reason: c.reason,
       porQue: explicaPorQue(c.reason, c.type),
       alert,
