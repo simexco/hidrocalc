@@ -133,6 +133,13 @@ export default function PerfilPage() {
   // (el perfil topografico viaja al siguiente paso: Valvulas de aire)
   const patchProject = useProjectStore((s) => s.patch);
   const fuenteAgua = useProjectStore((s) => s.project.fuenteAgua);
+  // La linea arranca en su punto mas bajo y sube: probablemente es de bombeo
+  const lineaPareceBombeo = (() => {
+    const vs = vertices.filter((v) => Number.isFinite(v.dist) && Number.isFinite(v.cota)).sort((x, y) => x.dist - y.dist);
+    if (vs.length < 2) return false;
+    const c0 = vs[0].cota;
+    return vs.every((v) => v.cota >= c0) && Math.max(...vs.map((v) => v.cota)) - c0 >= 5;
+  })();
   // Dónde va la VRP y con qué ajuste: cada punto contra la clase de SU tramo
   const planVRP = (res: ProfileResults | null) => res ? ubicarVRP(
     res.points.map((p) => ({
@@ -655,6 +662,24 @@ export default function PerfilPage() {
           <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 space-y-4">
             <div className="border-b border-gray-100 dark:border-gray-700 pb-2">
               <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300"><span className="inline-flex w-5 h-5 rounded-full bg-[#1C3D5A] text-white text-[10px] font-bold items-center justify-center mr-1.5">2</span>Datos de la linea</h2>
+            </div>
+            {/* ¿De dónde sale el agua? — define si es gravedad o bombeo (golpe de ariete y válvulas de aire) */}
+            <div className="space-y-1">
+              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">¿De dónde sale el agua?</label>
+              <select
+                value={fuenteAgua ?? ""}
+                onChange={(e) => { const v = e.target.value as "pozo" | "carcamo" | "tanque-bombeo" | "gravedad" | ""; patchProject({ fuenteAgua: v || null, incluyeBombeo: v !== "" && v !== "gravedad" }); }}
+                className={`w-full px-3 py-2 text-sm border rounded-lg bg-white dark:bg-gray-800 dark:text-white ${fuenteAgua ? "border-gray-300 dark:border-gray-600" : "border-yellow-400"}`}
+              >
+                <option value="">Sin indicar</option>
+                <option value="gravedad">De un tanque más alto, por gravedad</option>
+                <option value="pozo">De un pozo, con bomba</option>
+                <option value="carcamo">De un cárcamo, con bomba</option>
+                <option value="tanque-bombeo">De un tanque, con bomba (rebombeo)</option>
+              </select>
+              {!fuenteAgua && lineaPareceBombeo && (
+                <p className="text-[10px] text-yellow-700 bg-yellow-50 rounded px-2 py-1">La línea arranca en su punto más bajo y sube: parece de bombeo. Indícalo, porque cambia dónde va la protección contra golpe de ariete (en la descarga de la bomba) y si va válvula de aire en la descarga.</p>
+              )}
             </div>
             {/* ¿Qué se diseña? — define qué caudal usar (Qmd conducción / Qmh distribución) */}
             <div className="space-y-1">
