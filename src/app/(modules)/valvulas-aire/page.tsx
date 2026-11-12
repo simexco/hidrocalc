@@ -121,7 +121,7 @@ export default function ValvulasAirePage() {
   // vacío); el usuario puede pedir combinada en todos (M51 p. 44)
   const opcionSencilla = useProjectStore((s) => s.project.aireOpcionSencilla !== false);
   // Cotas del mapa: poner valvula tambien en las lomas de 1 a 5 m (por confirmar en campo)
-  const incluirPorConfirmar = useProjectStore((s) => s.project.airePorConfirmar === true);
+  const incluirPorConfirmar = useProjectStore((s) => s.project.airePorConfirmar !== false);
   useEffect(() => {
     if (!results) return;
     const fullName = (type: string) => type === "VA-C" ? "Valvula de aire combinada" : type === "VA-A" ? "Valvula de admision y expulsion (VAEA)" : "Valvula eliminadora de aire";
@@ -586,11 +586,11 @@ export default function ValvulasAirePage() {
           {results && results.porConfirmar.length > 0 && (
             <div className="bg-white dark:bg-gray-800 rounded-xl border border-dashed border-blue-400 p-4 space-y-3">
               <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200">Puntos altos por confirmar en campo ({results.porConfirmar.length})</h3>
-              <p className="text-[11px] text-gray-600 dark:text-gray-400">Con las cotas del mapa estas lomas sobresalen menos de 5 m. El satélite puede equivocarse en esa medida, así que pueden existir o no. Manda esta lista al topógrafo: si la loma existe, es punto alto y lleva válvula combinada (AWWA M51, figura 3-1).</p>
-              <div className="text-[11px] text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-900 rounded-lg p-2.5 space-y-1">
+              <p className="text-[11px] text-gray-600 dark:text-gray-400">Con las cotas del mapa estas lomas sobresalen menos de 5 m. El satélite puede equivocarse en esa medida, así que pueden existir o no. {incluirPorConfirmar ? "Se les puso válvula combinada, como a cualquier punto alto (AWWA M51, figura 3-1). Manda esta lista al topógrafo: si la loma no existe, esa válvula se quita." : "Manda esta lista al topógrafo: si la loma existe, es punto alto y lleva válvula combinada (AWWA M51, figura 3-1)."}</p>
+              {!incluirPorConfirmar && <div className="text-[11px] text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-900 rounded-lg p-2.5 space-y-1">
                 <p className="font-semibold text-gray-700 dark:text-gray-300">Si el cliente pregunta por qué en esa loma no va válvula</p>
                 <p>AWWA M51 (p. 19) pide válvula donde el <b>tubo</b> forma loma, no donde la forma el terreno, y no fija una altura mínima. Una loma chica del terreno se puede quitar al instalar: se profundiza un poco la zanja y el tubo pasa con pendiente pareja, sin loma, y ahí el aire no se junta. Si el tubo se instala siguiendo la loma, entonces sí es punto alto y lleva combinada.</p>
-              </div>
+              </div>}
               <div className="overflow-x-auto">
                 <table className="w-full text-xs">
                   <thead>
@@ -612,7 +612,7 @@ export default function ValvulasAirePage() {
               </div>
               <label className="flex items-start gap-2 text-[11px] text-gray-600 dark:text-gray-400">
                 <input type="checkbox" className="mt-0.5" checked={incluirPorConfirmar} onChange={(e) => patchProject({ airePorConfirmar: e.target.checked })} />
-                <span>Poner válvula también en los puntos por confirmar. Es la opción conservadora: si la topografía de campo dice que la loma no existe, esa válvula se quita.</span>
+                <span>Poner válvula en los puntos por confirmar (recomendado). Si la topografía de campo dice que la loma no existe, esa válvula se quita.</span>
               </label>
             </div>
           )}

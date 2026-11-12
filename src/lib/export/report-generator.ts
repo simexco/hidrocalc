@@ -517,7 +517,7 @@ export async function generateReportPDF(d: ReportData): Promise<jsPDF> {
     autoTable(doc, {
       startY: y, theme: "grid", styles: { fontSize: 8 }, headStyles: tableBlue,
       head: [["Distancia desde el inicio", "Cota del mapa", "Sobresale", "Valvula"]],
-      body: pcs.map((p) => [`${Math.round(p.dist).toLocaleString("es-MX")} m`, `${n(p.cota, 1)} m`, `~${n(p.sobresale, 1)} m`, d.airePorConfirmar ? "Combinada (quitar si no se confirma)" : "Sin valvula (poner combinada si se confirma)"]),
+      body: pcs.map((p) => [`${Math.round(p.dist).toLocaleString("es-MX")} m`, `${n(p.cota, 1)} m`, `~${n(p.sobresale, 1)} m`, d.airePorConfirmar !== false ? "Combinada (quitar si no se confirma)" : "Sin valvula (poner combinada si se confirma)"]),
       margin: { left: 14, right: 14, top: 30 }, didDrawPage: dibujaHeader,
     });
     y = finalY(doc) + 4;
