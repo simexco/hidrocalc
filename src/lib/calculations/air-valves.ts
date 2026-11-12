@@ -23,6 +23,8 @@ export interface AirValveResult {
   orificeSize: string;  // ANSI inches
   pn: string;
   reason: string;
+  // Por que va en ese punto, en una frase y con la pagina de AWWA M51 (para explicarlo al cliente)
+  porQue: string;
   alert: "critical" | "low" | null;
   note: string;
   // Detalle del tamaño por AWWA M51 (aire por ruptura y por llenado)
@@ -101,6 +103,33 @@ const VAC_ORIFICE: Record<number, string> = {
   400: '1"', 450: '1"', 500: '1"',
   600: '2"', 750: '2"', 900: '2"',
 };
+
+// Por que va la valvula en ese punto, a partir del motivo de ubicacion. Una frase, con la
+// pagina de AWWA M51 2a ed. donde esta el criterio.
+function explicaPorQue(reason: string, type: "VA-C" | "VA-A" | "VA-E"): string {
+  const r = reason.toLowerCase();
+  const porTipo = type === "VA-C"
+    ? (r.includes("vacío") ? "Va combinada porque con el golpe de ariete ahí se forma vacío y hay que dejar entrar aire (p. 37-38)." : "Va combinada porque se pidió combinada donde M51 da opción (p. 44).")
+    : type === "VA-E" ? "Basta eliminadora: solo hay que purgar el aire en operación." : "";
+  const altoTxt = "El aire pesa menos que el agua y sube al punto más alto del tubo; ahí se junta, le quita paso al agua y puede llegar a frenarla. La combinada lo saca al llenar y en operación, y deja entrar aire si la línea se vacía (AWWA M51, p. 1 y 19).";
+  if (r.startsWith("descarga de bomba de pozo")) return "Al arrancar, la bomba empuja el aire de la columna del pozo y debe salir antes de la check; al parar, deja entrar aire. El cierre lento evita un golpe cuando la válvula se cierra (AWWA M51, p. 19 y 42).";
+  if (r.startsWith("descarga de bomba")) return "Al arrancar, la bomba empuja el aire que quedó en el tubo y debe salir antes de la check; al parar, deja entrar aire para que no se haga vacío (AWWA M51, figura 3-1, p. 18).";
+  if (r.startsWith("fin de línea")) return "Falta indicar cómo llega el agua al tanque. Si el tubo entra abajo del nivel del agua o tiene válvula de llenado, el aire se junta al final y no tiene otra salida; si el agua cae desde arriba, esta válvula se quita (AWWA M51, figura 3-1, p. 18).";
+  if (r.startsWith("llegada al tanque")) return "El final del tubo queda tapado por el agua del tanque o por la válvula de llenado: el aire que viaja con el agua se junta ahí y no tiene otra salida (AWWA M51, figura 3-1, p. 18).";
+  if (r.startsWith("punto alto por confirmar")) return "Si la loma existe en el terreno y el tubo la sigue, es punto alto: " + altoTxt.charAt(0).toLowerCase() + altoTxt.slice(1);
+  if (r.includes("punto alto")) return altoTxt;
+  if (r.startsWith("tramo horizontal largo")) {
+    return ("En un tramo plano largo el aire no tiene hacia dónde subir y cuesta sacarlo; M51 pide una válvula cada 400 a 800 m (p. 19). " + porTipo).trim();
+  }
+  if (r.includes("tramo horizontal")) return "En un tramo plano el aire no tiene hacia dónde subir y se junta al inicio y al final del tramo, donde cambia la pendiente (AWWA M51, p. 19).";
+  if (r.startsWith("disminuye la pendiente de subida")) return "Donde la subida se hace más suave, el aire que viene subiendo pierde empuje y se junta ahí (AWWA M51, p. 19).";
+  if (r.startsWith("aumenta la pendiente de bajada")) return "Si la línea se vacía, el tramo más inclinado de abajo se vacía más rápido que el de arriba; por ahí debe entrar aire para que no se haga vacío (AWWA M51, p. 19 y 29).";
+  if (r.startsWith("ascenso largo")) return "En una subida larga el aire se va juntando en el camino; M51 pide una válvula cada 400 a 800 m (p. 19).";
+  if (r.startsWith("descenso largo")) {
+    return ("En una bajada larga se forman bolsas de aire en el camino; M51 pide una válvula cada 400 a 800 m (p. 19). " + porTipo).trim();
+  }
+  return "Ubicación según AWWA M51, figura 3-1 (p. 18-19).";
+}
 
 function getSize(table: Record<number, string>, dn: number): string {
   return table[dn] || table[Object.keys(table).map(Number).reduce((a, b) => Math.abs(b - dn) < Math.abs(a - dn) ? b : a)];
@@ -600,6 +629,7 @@ export function calculateAirValves(input: AirValveInputs): AirValveOutputs | nul
       orificeSize,
       pn,
       reason: c.reason,
+      porQue: explicaPorQue(c.reason, c.type),
       alert,
       note: nota,
       sizing,
