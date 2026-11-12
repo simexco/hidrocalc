@@ -37,7 +37,7 @@ export default function VRPPage() {
     }
     // Sin datos propios: ligar caudal, presión y diámetro del proyecto activo
     const p = useProjectStore.getState().project;
-    if (p.q_ls != null) { setInput("rawQMax", p.q_ls as never); setInput("flowUnit", "L/s" as never); }
+    if ((p.qLinea ?? p.q_ls) != null) { setInput("rawQMax", (p.qLinea ?? p.q_ls) as never); setInput("flowUnit", "L/s" as never); }
     // Con la ubicación calculada en el perfil, la entrada y el ajuste son los de ESE punto
     // (antes se usaba la presión máxima de la línea, que está en la zona baja, aguas abajo de la VRP)
     if (p.vrpUbicacion) { setInput("P1", p.vrpUbicacion.p1 as never); setInput("P2", p.vrpUbicacion.p2 as never); }

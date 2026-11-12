@@ -67,6 +67,8 @@ export default function GolpeArietePage() {
   // arranque (bombeo) o llegada (gravedad), punto más bajo (ahí pega la presión máxima)
   // y puntos altos (ahí van las ventosas contra vacío)
   const vertsPerfil = useProjectStore((s) => s.project.vertices);
+  const valvulasProyecto = useProjectStore((s) => s.project.valvulas);
+  const cotasSat = useProjectStore((s) => s.project.cotasSatelitales);
   const ubicacion = (() => {
     const vs = (vertsPerfil ?? [])
       .filter((v) => v.cad != null && v.cota != null)
@@ -75,7 +77,21 @@ export default function GolpeArietePage() {
     if (vs.length < 2) return null;
     let bajo = vs[0];
     for (const v of vs) if (v.cota < bajo.cota) bajo = v;
-    const altos = vs.filter((v, i) => i > 0 && i < vs.length - 1 && v.cota > vs[i - 1].cota && v.cota >= vs[i + 1].cota);
+    // Puntos altos: los mismos que el módulo Válvulas de aire (con su filtro de lomas),
+    // para no listar aquí lomitas de 1 m que allá no llevan válvula. Sin ese cálculo, los
+    // máximos locales que sobresalen al menos 5 m (cotas del mapa) o 1 m (topografía).
+    const conValvula = (valvulasProyecto ?? [])
+      .filter((x) => /punto alto/i.test(x.tipo || ""))
+      .map((x) => parseFloat((x.cad || "").replace(/[^0-9.]/g, "")))
+      .filter((d) => Number.isFinite(d));
+    const umbral = cotasSat === false ? 1 : 5;
+    const sobresale = (i: number) => {
+      const caida = (dir: 1 | -1) => { let m = vs[i].cota; for (let j = i + dir; j >= 0 && j < vs.length; j += dir) { if (vs[j].cota > vs[i].cota) break; m = Math.min(m, vs[j].cota); } return vs[i].cota - m; };
+      return Math.min(caida(-1), caida(1));
+    };
+    const altos = conValvula.length > 0
+      ? vs.filter((v) => conValvula.some((d) => Math.abs(d - v.cad) < 30))
+      : vs.filter((v, i) => i > 0 && i < vs.length - 1 && v.cota > vs[i - 1].cota && v.cota >= vs[i + 1].cota && sobresale(i) >= umbral);
     return { inicio: vs[0], fin: vs[vs.length - 1], bajo, altos };
   })();
 
@@ -152,7 +168,7 @@ export default function GolpeArietePage() {
       else if (_cat != null) { setSelectedCatalog(_cat); setSelectedSize(_size ?? 0); setSelectedClass(_class ?? 0); }
       if (_velMode) setVelMode(_velMode);
       if (_caudalQ != null) setCaudalQ(_caudalQ);
-      if (!ed.q && p.q_ls != null) { setVelMode("caudal"); setCaudalQ(p.q_ls); }
+      if (!ed.q && (p.qLinea ?? p.q_ls) != null) { setVelMode("caudal"); setCaudalQ((p.qLinea ?? p.q_ls)!); }
       if (!ed.p0 && (p.presionMaxConVRP ?? p.presionMaxLinea) != null) setInput("P0", Math.round((p.presionMaxConVRP ?? p.presionMaxLinea)! * 10) / 10);
       if (!ed.l && p.longitud != null) setInput("L", p.longitud);
     } else {
@@ -160,7 +176,7 @@ export default function GolpeArietePage() {
       // y ligar caudal/presion del proyecto activo.
       const m = matchGolpeCatalog(p.material || "PVC Inglés", p.dnNominal_mm, p.clase || "RD 26");
       if (m) { setSelectedCatalog(m.gi); setSelectedSize(m.si); setSelectedClass(m.ci); }
-      if (p.q_ls != null) { setVelMode("caudal"); setCaudalQ(p.q_ls); }
+      if ((p.qLinea ?? p.q_ls) != null) { setVelMode("caudal"); setCaudalQ((p.qLinea ?? p.q_ls)!); }
       if ((p.presionMaxConVRP ?? p.presionMaxLinea) != null) setInput("P0", Math.round((p.presionMaxConVRP ?? p.presionMaxLinea)! * 10) / 10);
       if (p.longitud != null) setInput("L", p.longitud);
     }
@@ -185,7 +201,7 @@ export default function GolpeArietePage() {
     editadosRef.current = {}; // re-ligar TODO al proyecto: se olvidan las ediciones manuales
     const m = matchGolpeCatalog(p.material || "PVC Inglés", p.dnNominal_mm, p.clase || "RD 26");
     if (m) { setEntryMode("simple"); setSelectedCatalog(m.gi); setSelectedSize(m.si); setSelectedClass(m.ci); }
-    if (p.q_ls != null) { setVelMode("caudal"); setCaudalQ(p.q_ls); }
+    if ((p.qLinea ?? p.q_ls) != null) { setVelMode("caudal"); setCaudalQ((p.qLinea ?? p.q_ls)!); }
     if ((p.presionMaxConVRP ?? p.presionMaxLinea) != null) setInput("P0", Math.round((p.presionMaxConVRP ?? p.presionMaxLinea)! * 10) / 10);
     if (p.longitud != null) setInput("L", p.longitud);
     setTimeout(() => { prefillingRef.current = false; }, 0);

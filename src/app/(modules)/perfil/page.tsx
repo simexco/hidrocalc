@@ -188,6 +188,7 @@ export default function PerfilPage() {
           return { presionMaxConVRP: Math.max(...conVRP), presionMinConVRP: Math.min(...conVRP) };
         })(),
         coefAccesorios: coefAccesorios / 100,
+        qLinea: rawQ != null ? Math.round(flowToM3s(rawQ, flowUnit) * 1000 * 100) / 100 : null,
         p1: calcMode === "calcularP1" ? computedP1 : P1,
         presionFinalLinea: results?.finalPressure_kgcm2 ?? null,
         // Punto de menor presion de operacion: ahi la onda de baja del golpe hace vacio primero
@@ -200,7 +201,7 @@ export default function PerfilPage() {
       });
     }, 700);
     return () => clearTimeout(t);
-  }, [vertices, tramos, results, P1, computedP1, calcMode, patchProject, Pmin]);
+  }, [vertices, tramos, results, P1, computedP1, calcMode, patchProject, Pmin, rawQ, flowUnit]);
 
   // Calculate
   const runCalc = useCallback(() => {
