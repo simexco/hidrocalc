@@ -251,11 +251,11 @@ export function calculateAirValves(input: AirValveInputs): AirValveOutputs | nul
   if (!llegadaDescendente) {
     if (input.llegadaLibre === true) {
       // M51 fig. 3-1: la linea entra libre al tanque y ahi no lleva valvula (el extremo esta abierto)
-      alerts.push("Llegada al tanque con descarga libre: ahí no va válvula de aire, el extremo está abierto a la atmósfera (AWWA M51, figura 3-1, p. 18).");
+      alerts.push("El agua cae al tanque desde arriba: ahí no va válvula de aire, el tubo está abierto y el aire sale solo (AWWA M51, figura 3-1, p. 18).");
     } else {
-      candidates.push({ dist: sorted[last].dist, cota: sorted[last].cota, pressure: pressures[last], type: "VA-C", reason: input.llegadaLibre === false ? "Llegada al tanque ahogada o con válvula de llenado (el aire se junta al final)" : "Fin de línea (llegada plana/ascendente)" });
+      candidates.push({ dist: sorted[last].dist, cota: sorted[last].cota, pressure: pressures[last], type: "VA-C", reason: input.llegadaLibre === false ? "Llegada al tanque abajo del nivel del agua o con válvula de llenado (el aire se junta al final)" : "Fin de línea (llegada plana/ascendente)" });
       if (input.llegadaLibre == null) {
-        alerts.push("Indica cómo llega el agua al tanque. Si cae libre, la llegada no lleva válvula de aire (AWWA M51, figura 3-1); se dejó combinada mientras no se indique.");
+        alerts.push("Indica cómo llega el agua al tanque. Si cae desde arriba del agua, la llegada no lleva válvula de aire (AWWA M51, figura 3-1); se dejó combinada mientras no se indique.");
       }
     }
   }
