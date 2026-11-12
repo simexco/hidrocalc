@@ -57,6 +57,8 @@ export interface AirValveInputs {
   // Bombeo desde pozo o bomba vertical: AWWA M51 (p. 19 y 42) pide combinada con dispositivo
   // de cierre lento entre la bomba y la check
   esPozo?: boolean;
+  // true = poner combinada tambien en las lomas por confirmar (cotas del mapa)
+  incluirPorConfirmar?: boolean;
   // false = el usuario no indico de donde sale el agua (gravedad o bombeo)
   fuenteIndicada?: boolean;
   // true = la opcion mas sencilla que permite la figura 3-1 (default en la pagina; combinada si
@@ -76,6 +78,9 @@ export interface AirValveOutputs {
   alerts: string[];
   // Puntos bajos significativos: ahi NO va valvula de aire, va un desfogue (se grafican aparte)
   desagues: { dist: number; cota: number }[];
+  // Cotas del mapa: lomas de 1 a 5 m que el filtro no cuenta como punto alto. Se marcan
+  // para confirmarlas con topografia de campo (o se les pone valvula si se pide).
+  porConfirmar: { dist: number; cota: number; sobresale: number; conValvula: boolean }[];
 }
 
 // ── Sizing tables (ANSI inches) ──
@@ -210,6 +215,28 @@ export function calculateAirValves(input: AirValveInputs): AirValveOutputs | nul
       (e.tipo === "alto" ? altosSig : bajosSig).add(e.i);
     }
   });
+
+  // Lomas por confirmar (solo con cotas del mapa): puntos altos que sobresalen al menos
+  // 1 m hacia los dos lados, contando hasta encontrar terreno mas alto o el extremo de la
+  // linea, pero que el filtro de 5 m no conto. No se deciden aqui: se marcan para que la
+  // topografia de campo diga si existen.
+  const porConfirmarIdx: { i: number; sobresale: number }[] = [];
+  if (input.cotasSatelitales !== false) {
+    const caida = (i: number, dir: 1 | -1) => {
+      let m = cotas[i];
+      for (let j = i + dir; j >= 0 && j < cotas.length; j += dir) {
+        if (cotas[j] > cotas[i]) break;
+        m = Math.min(m, cotas[j]);
+      }
+      return cotas[i] - m;
+    };
+    for (let i = 1; i < cotas.length - 1; i++) {
+      if (!(cotas[i] > cotas[i - 1] && cotas[i] >= cotas[i + 1])) continue;
+      if (altosSig.has(i)) continue;
+      const sob = Math.min(caida(i, -1), caida(i, 1));
+      if (sob >= 1) porConfirmarIdx.push({ i, sobresale: sob });
+    }
+  }
 
   // Step 3: Apply rules — collect candidate valves
   // Criterio AWWA M51, figura 3-1 (p. 18) y lista de ubicaciones (p. 19). Donde la tabla da
@@ -454,6 +481,27 @@ export function calculateAirValves(input: AirValveInputs): AirValveOutputs | nul
     alerts.push(`Puntos bajos del perfil (a los ${lista}${extra} del inicio): no llevan válvula de aire — se recomienda un desfogue para drenado y limpieza en cada uno. Puedes armar esos cruceros en el Generador de cruceros.`);
   }
 
+  // Lomas por confirmar que no quedan a menos de 50 m de una valvula ya puesta. Si el
+  // proyectista lo pide, llevan combinada (como punto alto); si no, solo se listan.
+  const porConfirmar: AirValveOutputs["porConfirmar"] = [];
+  const conValvulaPC = input.incluirPorConfirmar === true;
+  for (const { i, sobresale } of porConfirmarIdx) {
+    if (candidates.some((c) => Math.abs(c.dist - sorted[i].dist) < 50)) continue;
+    porConfirmar.push({ dist: sorted[i].dist, cota: sorted[i].cota, sobresale: Math.round(sobresale * 10) / 10, conValvula: conValvulaPC });
+  }
+  if (conValvulaPC) {
+    for (const pc of porConfirmar) {
+      const i = sorted.findIndex((v) => v.dist === pc.dist);
+      candidates.push({ dist: pc.dist, cota: pc.cota, pressure: pressures[i], type: "VA-C", reason: `Punto alto por confirmar en campo (sobresale ~${pc.sobresale.toFixed(1)} m con cotas del mapa)` });
+    }
+  }
+  if (porConfirmar.length > 0) {
+    const lista = porConfirmar.map((pc) => `${Math.round(pc.dist).toLocaleString("es-MX")} m`).join(", ");
+    alerts.push(conValvulaPC
+      ? `Se puso válvula combinada en ${porConfirmar.length} punto(s) alto(s) por confirmar (a los ${lista}). Con cotas del mapa esas lomas miden menos de 5 m y pueden no existir: si la topografía de campo no las confirma, se quitan.`
+      : `${porConfirmar.length} punto(s) alto(s) por confirmar en campo (a los ${lista}): con cotas del mapa sobresalen menos de 5 m, que es menos que el error del satélite, y no se les puso válvula. Si la topografía de campo confirma la loma, ahí va válvula combinada (AWWA M51, figura 3-1).`);
+  }
+
   // Step 4: Deduplicate — within 30m, keep each type's highest priority
   // But DON'T merge different types — a location can have both VA-C and VA-E
   const sortedCandidates = candidates.sort((a, b) => a.dist - b.dist);
@@ -599,5 +647,5 @@ export function calculateAirValves(input: AirValveInputs): AirValveOutputs | nul
     alerts.push("No se encontraron ubicaciones para valvulas de aire con el perfil ingresado.");
   }
 
-  return { valves, profilePoints, totalVAC, totalVAA, totalVAE, alerts, desagues: puntosBajos };
+  return { valves, profilePoints, totalVAC, totalVAA, totalVAE, alerts, desagues: puntosBajos, porConfirmar };
 }

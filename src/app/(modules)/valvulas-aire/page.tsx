@@ -118,6 +118,8 @@ export default function ValvulasAirePage() {
   // Donde AWWA M51 da dos opciones: la más sencilla por defecto (combinada si el golpe hace
   // vacío); el usuario puede pedir combinada en todos (M51 p. 44)
   const opcionSencilla = useProjectStore((s) => s.project.aireOpcionSencilla !== false);
+  // Cotas del mapa: poner valvula tambien en las lomas de 1 a 5 m (por confirmar en campo)
+  const incluirPorConfirmar = useProjectStore((s) => s.project.airePorConfirmar === true);
   useEffect(() => {
     if (!results) return;
     const fullName = (type: string) => type === "VA-C" ? "Valvula de aire combinada" : type === "VA-A" ? "Valvula de admision y expulsion (VAEA)" : "Valvula eliminadora de aire";
@@ -127,6 +129,7 @@ export default function ValvulasAirePage() {
           cad: `${Math.round(v.dist).toLocaleString("es-MX")} m`,
           tipo: `${fullName(v.type)} ${v.bodySize}${v.cierreLento ? " con dispositivo de cierre lento" : ""} - ${v.reason}`,
         })),
+        puntosPorConfirmar: results.porConfirmar.map(({ dist, cota, sobresale }) => ({ dist, cota, sobresale })),
       });
     }, 700);
     return () => clearTimeout(t);
@@ -138,10 +141,10 @@ export default function ValvulasAirePage() {
     // Hidraulica con el Ø interior REAL del tubo (material+DN+clase); el nominal solo
     // dimensiona las valvulas. Sin clase elegida cae al nominal (comportamiento previo).
     const diReal = getRealInternalDiameter(materialName, DN, pipeClass);
-    const input: AirValveInputs = { projectName, Q, DN_mm: DN, diametroInterior_mm: diReal, C, P0_kgcm2: P0, pressureMin, maxSpacing, vertices, esBombeo, cotasSatelitales, golpeDeltaH, llegadaLibre, esPozo, fuenteIndicada, opcionSencilla, chezyC: chezyDeMaterial(materialName) };
+    const input: AirValveInputs = { projectName, Q, DN_mm: DN, diametroInterior_mm: diReal, C, P0_kgcm2: P0, pressureMin, maxSpacing, vertices, esBombeo, cotasSatelitales, golpeDeltaH, llegadaLibre, esPozo, fuenteIndicada, opcionSencilla, incluirPorConfirmar, chezyC: chezyDeMaterial(materialName) };
     const res = calculateAirValves(input);
     setResults(res);
-  }, [projectName, rawQ, flowUnit, DN, materialName, pipeClass, C, P0, pressureMin, maxSpacing, vertices, esBombeo, cotasSatelitales, golpeDeltaH, llegadaLibre, esPozo, fuenteIndicada, opcionSencilla]);
+  }, [projectName, rawQ, flowUnit, DN, materialName, pipeClass, C, P0, pressureMin, maxSpacing, vertices, esBombeo, cotasSatelitales, golpeDeltaH, llegadaLibre, esPozo, fuenteIndicada, opcionSencilla, incluirPorConfirmar]);
 
   useEffect(() => {
     clearTimeout(debounceRef.current);
@@ -200,6 +203,7 @@ export default function ValvulasAirePage() {
       valveType: null as string | null,
       valveReason: null as string | null,
       desague: false,
+      porConfirmar: false,
     }));
     // Add valve points that are interpolated (not on a vertex)
     for (const v of results.valves) {
@@ -211,7 +215,7 @@ export default function ValvulasAirePage() {
         // Insert interpolated valve point
         points.push({
           dist: v.dist, cota: v.cota, presion: v.pressure,
-          valveType: v.type, valveReason: v.reason, desague: false,
+          valveType: v.type, valveReason: v.reason, desague: false, porConfirmar: false,
         });
       }
     }
@@ -220,7 +224,12 @@ export default function ValvulasAirePage() {
     for (const d of results.desagues) {
       const exists = points.find(p => Math.abs(p.dist - d.dist) < 1);
       if (exists) exists.desague = true;
-      else points.push({ dist: d.dist, cota: d.cota, presion: null, valveType: null, valveReason: null, desague: true });
+      else points.push({ dist: d.dist, cota: d.cota, presion: null, valveType: null, valveReason: null, desague: true, porConfirmar: false });
+    }
+    // Lomas por confirmar en campo (cotas del mapa): marca aparte, con o sin valvula
+    for (const pc of results.porConfirmar) {
+      const exists = points.find(p => Math.abs(p.dist - pc.dist) < 1);
+      if (exists) exists.porConfirmar = true;
     }
     return points.sort((a, b) => a.dist - b.dist);
   })();
@@ -462,7 +471,16 @@ export default function ValvulasAirePage() {
                   <Legend verticalAlign="top" height={28} />
                   <Area yAxisId="e" type="linear" dataKey="cota" baseValue="dataMin" stroke="#1C3D5A" fill="#1C3D5A" fillOpacity={0.15} strokeWidth={2} name="Terreno"
                     dot={(props: Record<string, unknown>) => {
-                      const { cx, cy, payload } = props as { cx: number; cy: number; payload: { valveType?: string | null; valveReason?: string | null; desague?: boolean } };
+                      const { cx, cy, payload } = props as { cx: number; cy: number; payload: { valveType?: string | null; valveReason?: string | null; desague?: boolean; porConfirmar?: boolean } };
+                      if (payload?.porConfirmar && !payload?.valveType) {
+                        // Loma por confirmar sin valvula: circulo punteado con "?"
+                        return (
+                          <g key={`pc-${cx}-${cy}`}>
+                            <circle cx={cx} cy={cy} r={8} fill="#fff" stroke="#3b82f6" strokeWidth={2} strokeDasharray="3 2" />
+                            <text x={cx} y={cy + 3.5} textAnchor="middle" fontSize={10} fontWeight="bold" fill="#3b82f6">?</text>
+                          </g>
+                        );
+                      }
                       if (payload?.desague && !payload?.valveType) {
                         // Desague en punto bajo: cuadrito gris con D (debajo del terreno, es drenado)
                         return (
@@ -478,7 +496,7 @@ export default function ValvulasAirePage() {
                         <g key={`valve-${cx}-${cy}`}>
                           <circle cx={cx} cy={cy} r={8} fill={color} stroke="#fff" strokeWidth={2.5} />
                           <text x={cx} y={cy - 14} textAnchor="middle" fontSize={9} fontWeight="bold" fill={color}>
-                            {payload.valveType === "VA-C" ? "C" : payload.valveType === "VA-A" ? "A" : "E"}
+                            {payload.valveType === "VA-C" ? "C" : payload.valveType === "VA-A" ? "A" : "E"}{payload.porConfirmar ? "?" : ""}
                           </text>
                         </g>
                       );
@@ -490,12 +508,44 @@ export default function ValvulasAirePage() {
                 </ComposedChart>
               </ResponsiveContainer>
               {/* Valve legend */}
-              <div className="flex gap-4 mt-2 text-[10px] text-gray-500">
+              <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2 text-[10px] text-gray-500">
                 <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 bg-blue-500 rounded-full" /> Válvula de aire combinada (VA-C)</span>
                 <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 bg-yellow-500 rounded-full" /> Válvula de admisión y expulsión (VA-A)</span>
                 <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 bg-green-500 rounded-full" /> Válvula eliminadora de aire (VA-E)</span>
                 <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 bg-slate-600 rounded-[3px]" /> Desfogue recomendado (punto bajo)</span>
+                {results && results.porConfirmar.length > 0 && <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full border-2 border-dashed border-blue-500" /> Punto alto por confirmar en campo</span>}
               </div>
+            </div>
+          )}
+
+          {/* Lomas por confirmar en campo (solo con cotas del mapa) */}
+          {results && results.porConfirmar.length > 0 && (
+            <div className="bg-white dark:bg-gray-800 rounded-xl border border-dashed border-blue-400 p-4 space-y-3">
+              <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200">Puntos altos por confirmar en campo ({results.porConfirmar.length})</h3>
+              <p className="text-[11px] text-gray-600 dark:text-gray-400">Con las cotas del mapa estas lomas sobresalen menos de 5 m. El satélite puede equivocarse en esa medida, así que pueden existir o no. Manda esta lista al topógrafo: si la loma existe, es punto alto y lleva válvula combinada (AWWA M51, figura 3-1).</p>
+              <div className="overflow-x-auto">
+                <table className="w-full text-xs">
+                  <thead>
+                    <tr className="text-left text-gray-500 border-b border-gray-200 dark:border-gray-700">
+                      <th className="py-1 pr-2 text-right">Distancia (m)</th><th className="py-1 pr-2 text-right">Cota del mapa (m)</th><th className="py-1 pr-2 text-right">Sobresale (m)</th><th className="py-1 text-center">Válvula</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {results.porConfirmar.map((pc) => (
+                      <tr key={pc.dist} className="border-b border-gray-100 dark:border-gray-700">
+                        <td className="py-1.5 pr-2 text-right font-mono">{Math.round(pc.dist).toLocaleString("es-MX")}</td>
+                        <td className="py-1.5 pr-2 text-right font-mono">{pc.cota.toFixed(1)}</td>
+                        <td className="py-1.5 pr-2 text-right font-mono">~{pc.sobresale.toFixed(1)}</td>
+                        <td className="py-1.5 text-center">{pc.conValvula ? "Combinada" : "—"}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <label className="flex items-start gap-2 text-[11px] text-gray-600 dark:text-gray-400">
+                <input type="checkbox" className="mt-0.5" checked={incluirPorConfirmar} onChange={(e) => patchProject({ airePorConfirmar: e.target.checked })} />
+                <span>Poner válvula también en los puntos por confirmar. Es la opción conservadora: si la topografía de campo dice que la loma no existe, esa válvula se quita.</span>
+              </label>
             </div>
           )}
 
