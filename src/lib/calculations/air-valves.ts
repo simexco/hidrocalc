@@ -77,7 +77,10 @@ export interface AirValveOutputs {
   totalVAC: number;
   totalVAA: number;
   totalVAE: number;
+  // Lo que el proyectista debe revisar o completar
   alerts: string[];
+  // Notas del calculo: informan, no piden accion (se muestran plegadas)
+  notas: string[];
   // Puntos bajos significativos: ahi NO va valvula de aire, va un desfogue (se grafican aparte)
   desagues: { dist: number; cota: number }[];
   // Cotas del mapa: lomas de 1 a 5 m que el filtro no cuenta como punto alto. Se marcan
@@ -182,6 +185,7 @@ export function calculateAirValves(input: AirValveInputs): AirValveOutputs | nul
   const pn = getPN(P0_kgcm2);
   const hasHydraulics = Q != null && Q > 0 && P0_kgcm2 != null;
   const alerts: string[] = [];
+  const notas: string[] = [];
 
   // Step 1: Calculate pressures at each vertex
   const pressures: (number | null)[] = [];
@@ -309,7 +313,7 @@ export function calculateAirValves(input: AirValveInputs): AirValveOutputs | nul
   if (!llegadaDescendente) {
     if (input.llegadaLibre === true) {
       // M51 fig. 3-1: la linea entra libre al tanque y ahi no lleva valvula (el extremo esta abierto)
-      alerts.push("El agua cae al tanque desde arriba: ahí no va válvula de aire, el tubo está abierto y el aire sale solo (AWWA M51, figura 3-1, p. 18).");
+      notas.push("El agua cae al tanque desde arriba: ahí no va válvula de aire, el tubo está abierto y el aire sale solo (AWWA M51, figura 3-1, p. 18).");
     } else {
       candidates.push({ dist: sorted[last].dist, cota: sorted[last].cota, pressure: pressures[last], type: "VA-C", reason: input.llegadaLibre === false ? "Llegada al tanque abajo del nivel del agua o con válvula de llenado (el aire se junta al final)" : "Fin de línea (llegada plana/ascendente)" });
       if (input.llegadaLibre == null) {
@@ -363,7 +367,7 @@ export function calculateAirValves(input: AirValveInputs): AirValveOutputs | nul
     } else if (Math.abs(pend0) <= 1) {
       candidates.push({ dist: sorted[0].dist, cota: sorted[0].cota, pressure: pressures[0], type: "VA-C", reason: "Inicio de línea — inicio de tramo horizontal" });
     } else {
-      alerts.push("La línea sube desde el inicio: AWWA M51 no pide válvula de aire ahí; el aire sale por el siguiente punto alto.");
+      notas.push("La línea sube desde el inicio: AWWA M51 no pide válvula de aire ahí; el aire sale por el siguiente punto alto.");
     }
   }
   for (let k = 1; k <= macro.length - 2; k++) {
@@ -479,7 +483,7 @@ export function calculateAirValves(input: AirValveInputs): AirValveOutputs | nul
 
   // Avisos del criterio de los tramos largos (descensos y horizontales)
   if (vacioCambia > 0) {
-    alerts.push(`Con el golpe de ariete calculado (sobrepresión de ${Math.round(dH!)} m) la presión cae a vacío en ${vacioCambia} punto(s) de tramos largos: ahí va combinada y no eliminadora, porque la eliminadora no deja entrar aire suficiente.`);
+    notas.push(`Con el golpe de ariete calculado (sobrepresión de ${Math.round(dH!)} m) la presión cae a vacío en ${vacioCambia} punto(s) de tramos largos: ahí va combinada y no eliminadora, porque la eliminadora no deja entrar aire suficiente.`);
   }
   if (sinGolpeDesc + sinGolpeHor > 0) {
     const falta = dH == null ? "Falta calcular el golpe de ariete (módulo Golpe de ariete)" : "Falta el caudal o la presión de operación";
@@ -507,7 +511,7 @@ export function calculateAirValves(input: AirValveInputs): AirValveOutputs | nul
   if (puntosBajos.length > 0) {
     const lista = puntosBajos.slice(0, 6).map((p) => `${Math.round(p.dist).toLocaleString("es-MX")} m`).join(" · ");
     const extra = puntosBajos.length > 6 ? ` (y ${puntosBajos.length - 6} más)` : "";
-    alerts.push(`Puntos bajos del perfil (a los ${lista}${extra} del inicio): no llevan válvula de aire — se recomienda un desfogue para drenado y limpieza en cada uno. Puedes armar esos cruceros en el Generador de cruceros.`);
+    notas.push(`Puntos bajos del perfil (a los ${lista}${extra} del inicio): no llevan válvula de aire — se recomienda un desfogue para drenado y limpieza en cada uno. Puedes armar esos cruceros en el Generador de cruceros.`);
   }
 
   // Lomas por confirmar que no quedan a menos de 50 m de una valvula ya puesta. Si el
@@ -526,7 +530,7 @@ export function calculateAirValves(input: AirValveInputs): AirValveOutputs | nul
   }
   if (porConfirmar.length > 0) {
     const lista = porConfirmar.map((pc) => `${Math.round(pc.dist).toLocaleString("es-MX")} m`).join(", ");
-    alerts.push(conValvulaPC
+    notas.push(conValvulaPC
       ? `Se puso válvula combinada en ${porConfirmar.length} punto(s) alto(s) por confirmar (a los ${lista}). Con cotas del mapa esas lomas miden menos de 5 m y pueden no existir: si la topografía de campo no las confirma, se quitan.`
       : `${porConfirmar.length} punto(s) alto(s) por confirmar en campo (a los ${lista}): con cotas del mapa sobresalen menos de 5 m, que es menos que el error del satélite, y no se les puso válvula. Si la topografía de campo confirma la loma, hay dos caminos: profundizar la zanja para que el tubo pase sin loma, o poner válvula combinada (AWWA M51, figura 3-1).`);
   }
@@ -657,7 +661,7 @@ export function calculateAirValves(input: AirValveInputs): AirValveOutputs | nul
 
   // Avisos de tamaño, sello y vacio (AWWA M51)
   if (grandes.length > 0) {
-    alerts.push(`Tamaño por el método de AWWA M51 (cap. 4): la válvula debe sacar el aire al llenar la línea a 0.3 m/s y dejar entrar el aire si la línea se rompe y se vacía por gravedad.${maxPorRuptura > 0 ? ` En ${maxPorRuptura} válvula(s) manda la ruptura: depende de la pendiente del tubo.` : ""}${igualadas > 0 ? ` El cálculo da tamaños distintos en cada punto; se pone ${mayor} en todas, el mayor que pide M51 en la línea, porque una válvula más grande que la calculada también cumple y así se compra un solo modelo.` : ""} Confirma con las curvas del fabricante.`);
+    notas.push(`Tamaño por el método de AWWA M51 (cap. 4): la válvula debe sacar el aire al llenar la línea a 0.3 m/s y dejar entrar el aire si la línea se rompe y se vacía por gravedad.${maxPorRuptura > 0 ? ` En ${maxPorRuptura} válvula(s) manda la ruptura: depende de la pendiente del tubo.` : ""}${igualadas > 0 ? ` El cálculo da tamaños distintos en cada punto; se pone ${mayor} en todas, el mayor que pide M51 en la línea, porque una válvula más grande que la calculada también cumple y así se compra un solo modelo.` : ""} Confirma con las curvas del fabricante.`);
   }
   const conVacio = valves.filter((v) => v.type !== "VA-E" && vacioEn(v.pressure) === true).length;
   if (conVacio > 0) {
@@ -665,7 +669,7 @@ export function calculateAirValves(input: AirValveInputs): AirValveOutputs | nul
   }
   // Instalacion (M51 p. 46-47)
   if (valves.some((v) => v.type !== "VA-A") && DN_mm <= 300) {
-    alerts.push("Instalación: monta la combinada y la eliminadora sobre una tee del mismo diámetro de la línea (por ejemplo 6\"×6\") con reducción a la válvula, y válvula de seccionamiento abajo. Ese tramo vertical junta el aire para que la válvula lo saque (AWWA M51, p. 46-47).");
+    notas.push("Instalación: monta la combinada y la eliminadora sobre una tee del mismo diámetro de la línea (por ejemplo 6\"×6\") con reducción a la válvula, y válvula de seccionamiento abajo. Ese tramo vertical junta el aire para que la válvula lo saque (AWWA M51, p. 46-47).");
   }
 
   // Count
@@ -677,5 +681,5 @@ export function calculateAirValves(input: AirValveInputs): AirValveOutputs | nul
     alerts.push("No se encontraron ubicaciones para valvulas de aire con el perfil ingresado.");
   }
 
-  return { valves, profilePoints, totalVAC, totalVAA, totalVAE, alerts, desagues: puntosBajos, porConfirmar };
+  return { valves, profilePoints, totalVAC, totalVAA, totalVAE, alerts, notas, desagues: puntosBajos, porConfirmar };
 }
