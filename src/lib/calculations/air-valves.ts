@@ -112,7 +112,7 @@ function explicaPorQue(reason: string, type: "VA-C" | "VA-A" | "VA-E"): string {
     ? (r.includes("vacío") ? "Va combinada porque con el golpe de ariete ahí se forma vacío y hay que dejar entrar aire (p. 37-38)." : "Va combinada porque se pidió combinada donde M51 da opción (p. 44).")
     : type === "VA-E" ? "Basta eliminadora: solo hay que purgar el aire en operación." : "";
   const altoTxt = "El aire pesa menos que el agua y sube al punto más alto del tubo; ahí se junta, le quita paso al agua y puede llegar a frenarla. La combinada lo saca al llenar y en operación, y deja entrar aire si la línea se vacía (AWWA M51, p. 1 y 19).";
-  if (r.startsWith("descarga de bomba de pozo")) return "Al arrancar, la bomba empuja el aire de la columna del pozo y debe salir antes de la check; al parar, deja entrar aire. El cierre lento evita un golpe cuando la válvula se cierra (AWWA M51, p. 19 y 42).";
+  if (r.startsWith("descarga de bomba de pozo")) return "Al arrancar, la bomba empuja el aire de la columna del pozo y debe salir antes de la check; al parar, deja entrar aire para que no se haga vacío (AWWA M51, p. 19 y 42).";
   if (r.startsWith("descarga de bomba")) return "Al arrancar, la bomba empuja el aire que quedó en el tubo y debe salir antes de la check; al parar, deja entrar aire para que no se haga vacío (AWWA M51, figura 3-1, p. 18).";
   if (r.startsWith("fin de línea")) return "Falta indicar cómo llega el agua al tanque. Si el tubo entra abajo del nivel del agua o tiene válvula de llenado, el aire se junta al final y no tiene otra salida; si el agua cae desde arriba, esta válvula se quita (AWWA M51, figura 3-1, p. 18).";
   if (r.startsWith("llegada al tanque")) return "El final del tubo queda tapado por el agua del tanque o por la válvula de llenado: el aire que viaja con el agua se junta ahí y no tiene otra salida (AWWA M51, figura 3-1, p. 18).";
@@ -295,7 +295,7 @@ export function calculateAirValves(input: AirValveInputs): AirValveOutputs | nul
   const opcion = (t: "VA-A" | "VA-E"): "VA-C" | "VA-A" | "VA-E" => (simple ? t : "VA-C");
   if (input.esBombeo) {
     if (input.esPozo) {
-      candidates.push({ dist: sorted[0].dist, cota: sorted[0].cota, pressure: pressures[0], type: "VA-C", reason: "Descarga de bomba de pozo — combinada con dispositivo de cierre lento, entre la bomba y la check" });
+      candidates.push({ dist: sorted[0].dist, cota: sorted[0].cota, pressure: pressures[0], type: "VA-C", reason: "Descarga de bomba de pozo — combinada, entre la bomba y la check" });
     } else {
       candidates.push({ dist: sorted[0].dist, cota: sorted[0].cota, pressure: pressures[0], type: opcion("VA-A"), reason: "Descarga de bomba (antes de la válvula check)" });
     }
@@ -483,7 +483,7 @@ export function calculateAirValves(input: AirValveInputs): AirValveOutputs | nul
   }
   if (sinGolpeDesc + sinGolpeHor > 0) {
     const falta = dH == null ? "Falta calcular el golpe de ariete (módulo Golpe de ariete)" : "Falta el caudal o la presión de operación";
-    alerts.push(`${falta} para revisar el vacío: en ${sinGolpeDesc + sinGolpeHor} punto(s) de tramos planos o descensos largos se puso válvula eliminadora de aire. Si el golpe de ariete hace vacío ahí, la plataforma la cambia a válvula combinada con dispositivo de cierre lento.`);
+    alerts.push(`${falta} para revisar el vacío: en ${sinGolpeDesc + sinGolpeHor} punto(s) de tramos planos o descensos largos se puso válvula eliminadora de aire. Si el golpe de ariete hace vacío ahí, la plataforma la cambia a válvula combinada.`);
   }
   if (input.cotasSatelitales === true) {
     alerts.push("Las válvulas se ubicaron con cotas del mapa (satelitales): confirma los puntos altos, bajos y cambios de pendiente con topografía de campo antes del proyecto ejecutivo.");
@@ -661,7 +661,7 @@ export function calculateAirValves(input: AirValveInputs): AirValveOutputs | nul
   }
   const conVacio = valves.filter((v) => v.type !== "VA-E" && vacioEn(v.pressure) === true).length;
   if (conVacio > 0) {
-    alerts.push(`Con el golpe de ariete calculado, ${conVacio} válvula(s) quedan en zona de vacío: deben llevar dispositivo de cierre lento para no provocar un segundo golpe al expulsar el aire (AWWA M51, p. 19 y 37-38). Confirma dónde van y de qué tamaño con un estudio de golpe de ariete hecho con software.`);
+    alerts.push(`Con el golpe de ariete calculado, ${conVacio} válvula(s) quedan en zona de vacío: van combinadas, que dejan entrar aire (AWWA M51, p. 37-38). Confirma dónde van y de qué tamaño con un estudio de golpe de ariete hecho con software.`);
   }
   // Instalacion (M51 p. 46-47)
   if (valves.some((v) => v.type !== "VA-A") && DN_mm <= 300) {

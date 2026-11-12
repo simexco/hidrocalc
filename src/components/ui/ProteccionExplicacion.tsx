@@ -75,7 +75,7 @@ export function PorQueVentosasVacio() {
 // si el golpe de ariete hace vacío; se puede pedir combinada en todos (M51 p. 44).
 // Columnas: lugar, válvula, por qué, dónde lo dice M51.
 const CRITERIO_AWWA: [string, string, string, string][] = [
-  ["Descarga de bomba (antes de la check)", "Admisión y expulsión (M51 permite combinada). Pozo: combinada con cierre lento", "Al arrancar la bomba sale de golpe el aire de la columna; al parar, entra aire para que no se haga vacío.", "Fig. 3-1 (p. 18); pozos: p. 19 y 42"],
+  ["Descarga de bomba (antes de la check)", "Admisión y expulsión (M51 permite combinada). Pozo: combinada", "Al arrancar la bomba sale de golpe el aire de la columna; al parar, entra aire para que no se haga vacío.", "Fig. 3-1 (p. 18); pozos: p. 19 y 42"],
   ["Inicio de la línea por gravedad, si baja desde el tanque o arranca plana", "Combinada", "Ahí el inicio es un punto alto o un inicio de tramo horizontal. Si la línea sube desde el tanque, no lleva.", "Punto alto e inicio de horizontal: fig. 3-1 y p. 19"],
   ["Punto alto", "Combinada", "Ahí se junta el aire durante la operación y ahí se forma el vacío al vaciar.", "Fig. 3-1 (p. 18) y p. 19"],
   ["Inicio de tramo horizontal (la subida termina)", "Combinada", "El aire que sube con el agua se detiene donde la pendiente se acaba.", "Fig. 3-1 (p. 18) y p. 19"],
@@ -88,7 +88,7 @@ const CRITERIO_AWWA: [string, string, string, string][] = [
   ["Aumenta la pendiente de subida / disminuye la de bajada", "Ninguna", "Ahí el aire no se detiene: sigue de largo con el agua.", "Fig. 3-1 (p. 18)"],
   ["Punto bajo", "Ninguna: desfogue", "Ahí no hay aire; se pone un desfogue para vaciar la línea y sacar sedimentos.", "Fig. 3-1 (p. 18), «drain valve»; MAPAS §3.1.4"],
   ["Llegada al tanque", "Si el agua cae desde arriba: ninguna. Si el tubo entra abajo del nivel del agua o tiene válvula de llenado: combinada", "Si el agua cae desde arriba, el tubo está abierto y el aire sale solo. Si entra abajo del agua o tiene válvula de llenado, el aire se junta al final del tubo, como en un punto alto.", "Fig. 3-1 (p. 18): la línea entra libre al tanque sin válvula"],
-  ["Donde el golpe de ariete hace vacío", "Combinada con dispositivo de cierre lento", "Deja entrar aire y lo saca despacio, para no provocar un segundo golpe. Se confirma con un estudio de golpe de ariete hecho con software.", "p. 19, 34 y 37-38"],
+  ["Donde el golpe de ariete hace vacío", "Combinada", "Deja entrar aire para que no se haga vacío. Se confirma con un estudio de golpe de ariete hecho con software.", "p. 19, 34 y 37-38"],
 ];
 
 const CRITERIO_TAMANO: [string, string][] = [
