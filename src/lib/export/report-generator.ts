@@ -433,9 +433,11 @@ export async function generateReportPDF(d: ReportData): Promise<jsPDF> {
   doc.setFillColor(233, 239, 245); doc.rect(14, y, doc.internal.pageSize.getWidth() - 28, 16, "F");
   doc.setFontSize(8); doc.setFont("helvetica", "bold"); doc.setTextColor(...BRAND);
   doc.text("LA FUENTE DEBE ENTREGAR CUANDO MENOS:", 17, y + 6);
+  // El texto explicativo empieza después de la etiqueta, para que no se encimen
+  const xNota = 17 + doc.getTextWidth("LA FUENTE DEBE ENTREGAR CUANDO MENOS:") + 6;
   doc.setFontSize(13); doc.text(`${n(r.qmd)} L/s`, 17, y + 13);
   doc.setFont("helvetica", "normal"); doc.setFontSize(7.5); doc.setTextColor(60, 60, 60);
-  doc.text(safe("El aforo de la fuente (pozo, manantial, toma) debe ser >= Qmd. Si no se conoce, solicitar prueba de aforo antes de construir."), 70, y + 8, { maxWidth: doc.internal.pageSize.getWidth() - 90 });
+  doc.text(safe("El aforo de la fuente (pozo, manantial, toma) debe ser >= Qmd. Si no se conoce, solicitar prueba de aforo antes de construir."), xNota, y + 7, { maxWidth: doc.internal.pageSize.getWidth() - 14 - 3 - xNota });
   doc.setTextColor(0, 0, 0);
 
   // ─────────── HOJA 2 — CONDUCCION ───────────
