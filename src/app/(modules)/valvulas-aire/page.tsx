@@ -558,16 +558,13 @@ export default function ValvulasAirePage() {
                       const color = payload.valveType === "VA-C" ? "#3b82f6" : payload.valveType === "VA-A" ? "#f59e0b" : "#22c55e";
                       return (
                         <g key={`valve-${cx}-${cy}`}>
-                          {payload.porConfirmar ? (
-                            // Valvula en loma por confirmar: la misma valvula, con contorno punteado
-                            <circle cx={cx} cy={cy} r={8} fill="#DBEAFE" stroke={color} strokeWidth={2} strokeDasharray="3 2" />
-                          ) : (
-                            <circle cx={cx} cy={cy} r={8} fill={color} stroke="#fff" strokeWidth={2.5} />
-                          )}
-                          <text x={cx} y={cy - 14} textAnchor="middle" fontSize={9} fontWeight="bold" fill={color}>
+                          {/* Valvula en loma por confirmar: identica, con un aro punteado alrededor */}
+                          {payload.porConfirmar && <circle cx={cx} cy={cy} r={12.5} fill="none" stroke={color} strokeWidth={1.8} strokeDasharray="3 2" />}
+                          <circle cx={cx} cy={cy} r={8} fill={color} stroke="#fff" strokeWidth={2.5} />
+                          <text x={cx} y={payload.porConfirmar ? cy - 16 : cy - 14} textAnchor="middle" fontSize={9} fontWeight="bold" fill={color}>
                             {payload.valveType === "VA-C" ? "C" : payload.valveType === "VA-A" ? "A" : "E"}
                           </text>
-                          {payload.porConfirmar && <text x={cx} y={cy - 24} textAnchor="middle" fontSize={8} fontWeight={600} fill={color}>por confirmar</text>}
+                          {payload.porConfirmar && <text x={cx} y={cy - 26} textAnchor="middle" fontSize={8} fontWeight={600} fill={color}>por confirmar</text>}
                         </g>
                       );
                     }}
@@ -583,7 +580,7 @@ export default function ValvulasAirePage() {
                 <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 bg-yellow-500 rounded-full" /> Válvula de admisión y expulsión (VA-A)</span>
                 <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 bg-green-500 rounded-full" /> Válvula eliminadora de aire (VA-E)</span>
                 <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 bg-slate-700 rounded-[3px]" /> Desfogue recomendado (punto bajo)</span>
-                {results && results.porConfirmar.length > 0 && <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full border-2 border-dashed border-blue-500 bg-blue-100" /> Combinada por confirmar con topografía de campo</span>}
+                {results && results.porConfirmar.length > 0 && <span className="flex items-center gap-1"><span className="w-3.5 h-3.5 rounded-full border border-dashed border-blue-500 flex items-center justify-center"><span className="w-2 h-2 bg-blue-500 rounded-full" /></span> Combinada por confirmar con topografía de campo</span>}
               </div>
             </div>
           )}
