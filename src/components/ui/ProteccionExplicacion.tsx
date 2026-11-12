@@ -129,7 +129,7 @@ export function CriterioValvulasAire() {
           <li key={t}><strong>{t}:</strong> <span className="text-gray-600 dark:text-gray-400">{d}</span></li>
         ))}
       </ul>
-      <p className="text-gray-500">Con cotas satelitales (mapa o KML) las lomas de menos de 5 m no cuentan: el SRTM tiene 16 m de precisión vertical (90 %, USGS) y una loma menor no se distingue del error. Es criterio de la plataforma. Con topografía de campo (CSV o Excel) se toman en cuenta desde 1 m.</p>
+      <p className="text-gray-500">Con cotas satelitales (mapa o KML) las lomas de menos de 5 m no cuentan: el SRTM tiene 16 m de precisión vertical (90 %, USGS) y una loma menor no se distingue del error. Es criterio de la plataforma. Las lomas de 1 a 5 m no se pierden: salen como «puntos altos por confirmar en campo», con su lista para el topógrafo, y se les puede poner válvula desde una casilla. Con topografía de campo (CSV o Excel) se toman en cuenta desde 1 m.</p>
       <p className="text-gray-500">Combinada = admite y expulsa mucho aire (llenado y vaciado) y además purga burbujas con la línea en presión. Admisión y expulsión = solo grandes volúmenes (llenado y vaciado). Eliminadora = solo purga burbujas con la línea en presión.</p>
     </div>
   );

@@ -80,6 +80,10 @@ export interface ReportData {
   llegadaLibre?: boolean | null;
   // Valvulas de aire: true = opcion sencilla donde AWWA M51 da dos opciones (default: combinada)
   aireOpcionSencilla?: boolean | null;
+  // Cotas del mapa: true = tambien llevan valvula los puntos altos por confirmar en campo
+  airePorConfirmar?: boolean | null;
+  // Lomas de 1 a 5 m con cotas del mapa: se mandan a confirmar con topografia de campo
+  puntosPorConfirmar?: { dist: number; cota: number; sobresale: number }[] | null;
 }
 
 export interface ReportResults {
@@ -488,6 +492,23 @@ export async function generateReportPDF(d: ReportData): Promise<jsPDF> {
     doc.text(notaM51, 14, y);
     doc.setTextColor(0, 0, 0);
     y += notaM51.length * 3.3 + 3;
+  }
+  const pcs = d.puntosPorConfirmar ?? [];
+  if (pcs.length > 0) {
+    asegura(30);
+    y = subhead(doc, "Puntos altos por confirmar en campo", y);
+    autoTable(doc, {
+      startY: y, theme: "grid", styles: { fontSize: 8 }, headStyles: tableBlue,
+      head: [["Distancia desde el inicio", "Cota del mapa", "Sobresale", "Valvula"]],
+      body: pcs.map((p) => [`${Math.round(p.dist).toLocaleString("es-MX")} m`, `${n(p.cota, 1)} m`, `~${n(p.sobresale, 1)} m`, d.airePorConfirmar ? "Combinada (quitar si no se confirma)" : "Sin valvula (poner combinada si se confirma)"]),
+      margin: { left: 14, right: 14, top: 30 }, didDrawPage: dibujaHeader,
+    });
+    y = finalY(doc) + 4;
+    doc.setFontSize(7.5); doc.setTextColor(90, 90, 90);
+    const notaPC = doc.splitTextToSize(safe("Con cotas del mapa (satelitales) estas lomas sobresalen menos de 5 m, que es menos que el error del satelite, asi que pueden no existir en el terreno. Hay que confirmarlas con topografia de campo: si la loma existe, es punto alto y lleva valvula combinada (AWWA M51, figura 3-1)."), doc.internal.pageSize.getWidth() - 28);
+    doc.text(notaPC, 14, y);
+    doc.setTextColor(0, 0, 0);
+    y += notaPC.length * 3.3 + 3;
   }
 
   // ── Recomendaciones de proteccion (VRP y golpe de ariete) ──
